@@ -6,6 +6,7 @@ import {
   FileText,
 } from "@phosphor-icons/react";
 import { useNoteStore } from "../../stores/noteStore";
+import { useNoteColors } from "../../hooks/useNoteColors";
 import { NoteCard } from "./NoteCard";
 import { Input, ToggleGroup, EmptyState } from "../ui";
 import type { NoteColorId } from "../../lib/config";
@@ -13,6 +14,7 @@ import type { NoteColorId } from "../../lib/config";
 export function NotesGrid() {
   const { notes, folders, ui, loadNotes, loadNote, deleteNote } =
     useNoteStore();
+  const { getColor, setColor, removeColor } = useNoteColors();
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
@@ -31,14 +33,12 @@ export function NotesGrid() {
   };
 
   const handleDeleteNote = async (noteId: string) => {
-    if (confirm("Are you sure you want to delete this note?")) {
-      await deleteNote(noteId);
-    }
+    await deleteNote(noteId);
+    removeColor(noteId);
   };
 
   const handleColorChange = (noteId: string, colorId: NoteColorId) => {
-    // TODO: Implement color change in backend
-    console.log("Change color for note", noteId, "to", colorId);
+    setColor(noteId, colorId);
   };
 
   const currentFolder = ui.selectedFolderId
@@ -47,9 +47,12 @@ export function NotesGrid() {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-sidebar">
-      {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-sidebar-border">
-        <div className="flex items-center gap-2 text-sm">
+      {/* Draggable region for macOS */}
+      <div
+        className="h-[50px] shrink-0 flex items-center px-6"
+        data-tauri-drag-region
+      >
+        <div className="flex items-center gap-2 text-sm [-webkit-app-region:no-drag]">
           <button className="text-muted-foreground hover:text-foreground transition-colors">
             Home
           </button>
@@ -58,10 +61,10 @@ export function NotesGrid() {
             {currentFolder?.name || "All notes"}
           </span>
         </div>
-      </header>
+      </div>
 
       {/* Search */}
-      <div className="flex items-center gap-3 px-6 py-4">
+      <div className="flex items-center gap-3 px-6 py-4 border-t border-sidebar-border">
         <Input
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -103,6 +106,7 @@ export function NotesGrid() {
                   <NoteCard
                     key={note.id}
                     note={note}
+                    colorId={getColor(note.id)}
                     onOpen={handleOpenNote}
                     onDelete={handleDeleteNote}
                     onColorChange={handleColorChange}
@@ -118,6 +122,7 @@ export function NotesGrid() {
                   <NoteCard
                     key={note.id}
                     note={note}
+                    colorId={getColor(note.id)}
                     onOpen={handleOpenNote}
                     onDelete={handleDeleteNote}
                     onColorChange={handleColorChange}

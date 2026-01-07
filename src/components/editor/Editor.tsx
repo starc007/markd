@@ -103,13 +103,16 @@ export function Editor({ noteId, content }: EditorProps) {
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-card">
-      {/* Editor Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-        <div className="flex items-center gap-3">
+      {/* Draggable region for macOS */}
+      <div
+        className="h-[50px] shrink-0 flex items-center border-b border-border px-4"
+        data-tauri-drag-region
+      >
+        <div className="flex items-center gap-3 [-webkit-app-region:no-drag]">
           <Button
             variant="ghost"
             onClick={handleBack}
-            className="hover:bg-transparent"
+            className="hover:bg-transparent !px-0"
           >
             <ArrowLeft className="w-4 h-4" />
             Back

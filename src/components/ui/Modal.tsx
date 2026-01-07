@@ -1,4 +1,10 @@
-import { useEffect, useCallback } from "react";
+import {
+  Dialog,
+  DialogPanel,
+  DialogTitle,
+  DialogBackdrop,
+} from "@headlessui/react";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../../lib/utils";
 
 interface ModalProps {
@@ -9,6 +15,9 @@ interface ModalProps {
   className?: string;
 }
 
+const MotionBackdrop = motion.create(DialogBackdrop);
+const MotionPanel = motion.create(DialogPanel);
+
 export function Modal({
   isOpen,
   onClose,
@@ -16,41 +25,45 @@ export function Modal({
   children,
   className,
 }: ModalProps) {
-  // Close on escape key
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    },
-    [onClose]
-  );
-
-  useEffect(() => {
-    if (isOpen) {
-      document.addEventListener("keydown", handleKeyDown);
-      return () => document.removeEventListener("keydown", handleKeyDown);
-    }
-  }, [isOpen, handleKeyDown]);
-
-  if (!isOpen) return null;
-
   return (
-    <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
-      onClick={onClose}
-    >
-      <div
-        className={cn(
-          "bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-xl",
-          className
-        )}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {title && <h2 className="text-lg font-semibold mb-4">{title}</h2>}
-        {children}
-      </div>
-    </div>
+    <AnimatePresence>
+      {isOpen && (
+        <Dialog
+          static
+          open={isOpen}
+          onClose={onClose}
+          className="relative z-50"
+        >
+          <MotionBackdrop
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+          />
+
+          <div className="fixed inset-0 flex items-center justify-center p-4">
+            <MotionPanel
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.15 }}
+              className={cn(
+                "bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-xl",
+                className
+              )}
+            >
+              {title && (
+                <DialogTitle className="text-lg font-semibold mb-4">
+                  {title}
+                </DialogTitle>
+              )}
+              {children}
+            </MotionPanel>
+          </div>
+        </Dialog>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -61,7 +74,7 @@ interface ModalFooterProps {
 
 export function ModalFooter({ children, className }: ModalFooterProps) {
   return (
-    <div className={cn("flex justify-end gap-2 mt-4", className)}>
+    <div className={cn("flex justify-end gap-2 mt-6", className)}>
       {children}
     </div>
   );

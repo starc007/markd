@@ -6,11 +6,10 @@ import {
   Tag,
   Folder,
   Gear,
-  NotePencil,
   PencilSimpleLine,
 } from "@phosphor-icons/react";
 import { useNoteStore } from "../../stores/noteStore";
-import { APP_CONFIG } from "../../lib/config";
+
 import { Button, NavItem, SectionHeading } from "../ui";
 
 export function Sidebar() {
@@ -39,10 +38,16 @@ export function Sidebar() {
 
   return (
     <aside className="w-[280px] shrink-0 flex flex-col bg-sidebar border-r border-sidebar-border overflow-hidden">
+      {/* Draggable region for macOS - accounts for traffic lights */}
+      <div
+        className="h-[30px] shrink-0 flex items-end"
+        data-tauri-drag-region
+      />
+
       {/* App Branding */}
-      <div className="p-4 border-b border-sidebar-border">
+      {/* <div className="px-4 pb-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
             <NotePencil className="w-5 h-5 text-foreground" weight="duotone" />
           </div>
           <div className="flex-1 min-w-0">
@@ -50,17 +55,17 @@ export function Sidebar() {
               {APP_CONFIG.name}
             </div>
             <div className="text-xs text-muted-foreground truncate">
-              {APP_CONFIG.description}
+              Local Notes
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* New Note Button */}
       <div className="pt-3 px-3">
         <Button
           onClick={handleNewNote}
-          className="hover:bg-transparent"
+          className="hover:bg-transparent [-webkit-app-region:no-drag]"
           variant="ghost"
         >
           <PencilSimpleLine className="w-4 h-4" weight="bold" />
