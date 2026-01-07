@@ -1,9 +1,7 @@
-import { useEffect, useRef, useCallback, useState } from "react";
-import { EditorView } from "@codemirror/view";
-import { EditorState } from "@codemirror/state";
+import { useCallback, useState, useRef } from "react";
 import { ArrowLeft, DotsThree, Trash, Export } from "@phosphor-icons/react";
 import { save } from "@tauri-apps/plugin-dialog";
-import { createEditorSetup } from "../../lib/codemirror/setup";
+import type { EditorView } from "@codemirror/view";
 import { useNoteStore } from "../../stores/noteStore";
 import { EDITOR_CONFIG } from "../../lib/config";
 import {
@@ -16,6 +14,8 @@ import {
   DropdownSeparator,
 } from "../ui";
 import { DeleteNoteModal } from "../notes/DeleteNoteModal";
+import { EditorToolbar } from "./EditorToolbar";
+import { EditorContent, type EditorContentRef } from "./EditorContent";
 
 interface EditorProps {
   noteId: string;
@@ -23,17 +23,12 @@ interface EditorProps {
 }
 
 export function Editor({ noteId, content }: EditorProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const viewRef = useRef<EditorView | null>(null);
-  const initialContentRef = useRef(content);
-  const noteIdRef = useRef(noteId);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [editorView, setEditorView] = useState<EditorView | null>(null);
+  const editorRef = useRef<EditorContentRef>(null);
+  const saveTimeoutRef = useRef<number | null>(null);
 
-  // Store refs for callbacks to avoid dependency issues
-  const storeRef = useRef(useNoteStore.getState());
-  useEffect(() => {
-    storeRef.current = useNoteStore.getState();
-  });
+  const currentNote = useNoteStore((state) => state.currentNote);
 
   // Handle back navigation
   const handleBack = useCallback(() => {
@@ -50,11 +45,11 @@ export function Editor({ noteId, content }: EditorProps) {
 
   // Handle export
   const handleExport = useCallback(async () => {
-    const currentNote = useNoteStore.getState().currentNote;
-    if (!currentNote) return;
+    const note = useNoteStore.getState().currentNote;
+    if (!note) return;
 
     const filePath = await save({
-      defaultPath: `${currentNote.title || "untitled"}.md`,
+      defaultPath: `${note.title || "untitled"}.md`,
       filters: [{ name: "Markdown", extensions: ["md"] }],
     });
 
@@ -63,81 +58,36 @@ export function Editor({ noteId, content }: EditorProps) {
     }
   }, []);
 
-  // Initialize editor only when noteId changes
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    // Clean up previous editor
-    if (viewRef.current) {
-      viewRef.current.destroy();
-      viewRef.current = null;
+  // Debounced content save
+  const handleContentChange = useCallback((newContent: string) => {
+    if (saveTimeoutRef.current) {
+      window.clearTimeout(saveTimeoutRef.current);
     }
+    saveTimeoutRef.current = window.setTimeout(() => {
+      useNoteStore.getState().saveCurrentNoteContent(newContent);
+    }, EDITOR_CONFIG.autosaveDelay);
+  }, []);
 
-    // Store the noteId for this editor instance
-    noteIdRef.current = noteId;
-    initialContentRef.current = content;
-
-    // Debounced save
-    let saveTimeoutId: number | null = null;
-    const debouncedSave = (newContent: string) => {
-      if (saveTimeoutId) {
-        window.clearTimeout(saveTimeoutId);
+  // Title change handler
+  const handleTitleChange = useCallback(
+    (title: string) => {
+      const note = useNoteStore.getState().currentNote;
+      if (note && title !== note.title) {
+        useNoteStore.getState().updateNote(noteId, { title });
       }
-      saveTimeoutId = window.setTimeout(() => {
-        storeRef.current.saveCurrentNoteContent(newContent);
-      }, EDITOR_CONFIG.autosaveDelay);
-    };
+    },
+    [noteId]
+  );
 
-    // Create update listener
-    const onUpdate = EditorView.updateListener.of((update) => {
-      if (update.docChanged) {
-        const newContent = update.state.doc.toString();
-        debouncedSave(newContent);
-
-        // Extract title from first line
-        const firstLine = newContent.split("\n")[0];
-        const title = firstLine.replace(/^#+\s*/, "").trim() || "Untitled";
-        const currentNote = storeRef.current.currentNote;
-        if (currentNote && title !== currentNote.title) {
-          storeRef.current.updateNote(noteIdRef.current, { title });
-        }
-      }
-    });
-
-    // Create editor state
-    const state = EditorState.create({
-      doc: content,
-      extensions: [...createEditorSetup(), onUpdate],
-    });
-
-    // Create editor view
-    const view = new EditorView({
-      state,
-      parent: containerRef.current,
-    });
-
-    viewRef.current = view;
-
-    // Focus the editor after a short delay
-    requestAnimationFrame(() => {
-      view.focus();
-    });
-
-    // Cleanup
-    return () => {
-      if (saveTimeoutId) {
-        window.clearTimeout(saveTimeoutId);
-      }
-      view.destroy();
-    };
-  }, [noteId]); // Only depend on noteId
-
-  const currentNote = useNoteStore((state) => state.currentNote);
+  // Get editor view when content is ready
+  const handleViewReady = useCallback((view: EditorView) => {
+    setEditorView(view);
+  }, []);
 
   return (
     <>
       <div className="flex-1 flex flex-col h-full overflow-hidden bg-card">
-        {/* Draggable region for macOS */}
+        {/* Header with drag region */}
         <div
           className="h-[50px] shrink-0 flex items-center justify-between border-b border-border px-4"
           data-tauri-drag-region
@@ -186,8 +136,18 @@ export function Editor({ noteId, content }: EditorProps) {
           </div>
         </div>
 
+        {/* Toolbar */}
+        <EditorToolbar editorView={editorView} />
+
         {/* Editor Content */}
-        <div ref={containerRef} className="flex-1 overflow-y-auto" />
+        <EditorContent
+          ref={editorRef}
+          noteId={noteId}
+          content={content}
+          onContentChange={handleContentChange}
+          onTitleChange={handleTitleChange}
+          onViewReady={handleViewReady}
+        />
       </div>
 
       <DeleteNoteModal

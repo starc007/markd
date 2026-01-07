@@ -8,8 +8,6 @@ export function useKeyboardShortcuts() {
     setCommandPaletteOpen,
     createNote,
     loadNote,
-    deleteNote,
-    currentNote,
   } = useNoteStore();
 
   useEffect(() => {
@@ -46,15 +44,6 @@ export function useKeyboardShortcuts() {
         return;
       }
 
-      // Delete note: Cmd+Backspace
-      if (isMod && e.key === "Backspace" && currentNote) {
-        e.preventDefault();
-        if (confirm(`Delete "${currentNote.title || "Untitled"}"?`)) {
-          deleteNote(currentNote.id);
-        }
-        return;
-      }
-
       // Quick switch: Cmd+O
       if (isMod && e.key === "o") {
         e.preventDefault();
@@ -77,7 +66,5 @@ export function useKeyboardShortcuts() {
     setCommandPaletteOpen,
     createNote,
     loadNote,
-    deleteNote,
-    currentNote,
   ]);
 }
