@@ -106,6 +106,7 @@ export function NotesGrid() {
                   <NoteCard
                     key={note.id}
                     note={note}
+                    variant="card"
                     colorId={getColor(note.id)}
                     onOpen={handleOpenNote}
                     onDelete={handleDeleteNote}
@@ -117,11 +118,12 @@ export function NotesGrid() {
 
             {/* List View */}
             {viewMode === "list" && (
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {filteredNotes.map((note) => (
                   <NoteCard
                     key={note.id}
                     note={note}
+                    variant="list"
                     colorId={getColor(note.id)}
                     onOpen={handleOpenNote}
                     onDelete={handleDeleteNote}

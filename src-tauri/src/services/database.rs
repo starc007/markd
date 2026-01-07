@@ -39,6 +39,7 @@ impl Database {
             "CREATE TABLE IF NOT EXISTS notes (
                 id TEXT PRIMARY KEY,
                 title TEXT NOT NULL,
+                preview TEXT,
                 file_path TEXT NOT NULL UNIQUE,
                 folder_id TEXT,
                 created_at INTEGER NOT NULL,
@@ -47,6 +48,9 @@ impl Database {
             )",
             [],
         )?;
+
+        // Add preview column if it doesn't exist (migration for existing databases)
+        let _ = conn.execute("ALTER TABLE notes ADD COLUMN preview TEXT", []);
 
         // Create tags table
         conn.execute(
@@ -110,8 +114,8 @@ impl Database {
     ) -> Result<()> {
         let conn = self.conn.lock().unwrap();
         conn.execute(
-            "INSERT INTO notes (id, title, file_path, folder_id, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            "INSERT INTO notes (id, title, preview, file_path, folder_id, created_at, updated_at)
+             VALUES (?1, ?2, NULL, ?3, ?4, ?5, ?6)",
             params![id, title, file_path, folder_id, created_at, updated_at],
         )?;
         Ok(())
@@ -150,6 +154,20 @@ impl Database {
         Ok(())
     }
 
+    pub fn update_note_preview(
+        &self,
+        id: &str,
+        preview: Option<&str>,
+        updated_at: i64,
+    ) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "UPDATE notes SET preview = ?1, updated_at = ?2 WHERE id = ?3",
+            params![preview, updated_at, id],
+        )?;
+        Ok(())
+    }
+
     pub fn delete_note_metadata(&self, id: &str) -> Result<()> {
         let conn = self.conn.lock().unwrap();
         conn.execute("DELETE FROM notes WHERE id = ?1", params![id])?;
@@ -159,7 +177,7 @@ impl Database {
     pub fn get_note_metadata(&self, id: &str) -> Result<Option<NoteMetadata>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT id, title, folder_id, created_at, updated_at FROM notes WHERE id = ?1"
+            "SELECT id, title, preview, folder_id, created_at, updated_at FROM notes WHERE id = ?1"
         )?;
         
         let mut rows = stmt.query(params![id])?;
@@ -168,9 +186,10 @@ impl Database {
             Ok(Some(NoteMetadata {
                 id: row.get(0)?,
                 title: row.get(1)?,
-                folder_id: row.get(2)?,
-                created_at: row.get(3)?,
-                updated_at: row.get(4)?,
+                preview: row.get(2)?,
+                folder_id: row.get(3)?,
+                created_at: row.get(4)?,
+                updated_at: row.get(5)?,
             }))
         } else {
             Ok(None)
@@ -195,10 +214,10 @@ impl Database {
         let mut notes = Vec::new();
         
         let sql = if folder_id.is_some() {
-            "SELECT id, title, folder_id, created_at, updated_at 
+            "SELECT id, title, preview, folder_id, created_at, updated_at 
              FROM notes WHERE folder_id = ?1 ORDER BY updated_at DESC"
         } else {
-            "SELECT id, title, folder_id, created_at, updated_at 
+            "SELECT id, title, preview, folder_id, created_at, updated_at 
              FROM notes ORDER BY updated_at DESC"
         };
         
@@ -214,9 +233,10 @@ impl Database {
             Ok(NoteMetadata {
                 id: row.get(0)?,
                 title: row.get(1)?,
-                folder_id: row.get(2)?,
-                created_at: row.get(3)?,
-                updated_at: row.get(4)?,
+                preview: row.get(2)?,
+                folder_id: row.get(3)?,
+                created_at: row.get(4)?,
+                updated_at: row.get(5)?,
             })
         });
         

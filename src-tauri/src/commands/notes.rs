@@ -4,7 +4,7 @@ use uuid::Uuid;
 use chrono::Utc;
 
 use crate::state::AppState;
-use crate::models::note::{Note, NoteMetadata};
+use crate::models::note::{Note, NoteMetadata, extract_preview};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateNoteParams {
@@ -20,6 +20,8 @@ pub struct UpdateNoteParams {
     pub content: Option<String>,
     pub folder_id: Option<String>,
 }
+
+const PREVIEW_MAX_LENGTH: usize = 150;
 
 #[tauri::command]
 pub async fn create_note(
@@ -49,6 +51,12 @@ pub async fn create_note(
             now,
         )
         .map_err(|e| format!("Failed to insert note metadata: {}", e))?;
+    
+    // Update preview
+    let preview = extract_preview(&content, PREVIEW_MAX_LENGTH);
+    state.db
+        .update_note_preview(&id, preview.as_deref(), now)
+        .map_err(|e| format!("Failed to update note preview: {}", e))?;
     
     // Index for search
     state.db
@@ -125,6 +133,13 @@ pub async fn update_note(
         file_service
             .write_note(&params.id, new_content)
             .map_err(|e| format!("Failed to write note content: {}", e))?;
+        
+        // Update preview
+        let preview = extract_preview(new_content, PREVIEW_MAX_LENGTH);
+        state.db
+            .update_note_preview(&params.id, preview.as_deref(), now)
+            .map_err(|e| format!("Failed to update note preview: {}", e))?;
+        
         new_content.clone()
     } else {
         let file_service = state.file_service.lock().await;
@@ -212,10 +227,11 @@ pub async fn save_note_content(
         .write_note(&id, &content)
         .map_err(|e| format!("Failed to write note content: {}", e))?;
     
-    // Update timestamp
+    // Update preview
+    let preview = extract_preview(&content, PREVIEW_MAX_LENGTH);
     state.db
-        .update_note_metadata(&id, None, None, now)
-        .map_err(|e| format!("Failed to update note timestamp: {}", e))?;
+        .update_note_preview(&id, preview.as_deref(), now)
+        .map_err(|e| format!("Failed to update note preview: {}", e))?;
     
     // Get title for re-indexing
     let meta = state.db

@@ -14,6 +14,7 @@ export interface Note {
 export interface NoteMetadata {
   id: string;
   title: string;
+  preview: string | null;
   folder_id: string | null;
   created_at: number;
   updated_at: number;
