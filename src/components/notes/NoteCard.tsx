@@ -24,7 +24,6 @@ import type { NoteMetadata } from "../../lib/tauri/commands";
 interface NoteCardProps {
   note: NoteMetadata;
   colorId?: NoteColorId;
-  variant?: "card" | "list";
   onOpen: (noteId: string) => void;
   onDelete: (noteId: string) => void;
   onColorChange?: (noteId: string, colorId: NoteColorId) => void;
@@ -33,7 +32,6 @@ interface NoteCardProps {
 export function NoteCard({
   note,
   colorId = "default",
-  variant = "card",
   onOpen,
   onDelete,
   onColorChange,
@@ -156,9 +154,11 @@ export function NoteCard({
 
           {/* Title & Preview */}
           <div className="flex-1 min-w-0">
-            <h3 className="font-medium text-foreground truncate">
-              {note.title || "Untitled"}
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-medium text-foreground truncate">
+                {note.title || "Untitled"}
+              </h3>
+            </div>
             {note.preview && (
               <p className="text-sm text-muted-foreground truncate mt-0.5">
                 {note.preview}

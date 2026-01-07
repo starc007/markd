@@ -13,6 +13,7 @@ interface UIState {
   commandPaletteOpen: boolean;
   searchOpen: boolean;
   selectedFolderId: string | null;
+  showFavorites: boolean;
 }
 
 interface NoteStore {
@@ -54,6 +55,7 @@ interface NoteStore {
   toggleFocusMode: () => void;
   toggleCommandPalette: () => void;
   toggleSearch: () => void;
+  toggleFavorites: () => void;
   setCommandPaletteOpen: (open: boolean) => void;
   setSearchOpen: (open: boolean) => void;
 
@@ -80,6 +82,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
     commandPaletteOpen: false,
     searchOpen: false,
     selectedFolderId: null,
+    showFavorites: false,
   },
 
   // Note actions
@@ -308,6 +311,13 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
   setSearchOpen: (open) => {
     const { ui } = get();
     set({ ui: { ...ui, searchOpen: open } });
+  },
+
+  toggleFavorites: () => {
+    const { ui } = get();
+    set({
+      ui: { ...ui, showFavorites: !ui.showFavorites, selectedFolderId: null },
+    });
   },
 
   // Export actions

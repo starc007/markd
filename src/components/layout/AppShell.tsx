@@ -2,9 +2,9 @@ import { Sidebar } from "./Sidebar";
 import { Editor } from "../editor/Editor";
 import { CommandPalette } from "../command-palette/CommandPalette";
 import { TitleBar } from "./TitleBar";
+import { NotesGrid } from "../notes/NotesGrid";
 import { useNoteStore } from "../../stores/noteStore";
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
-import { NotesGrid } from "../notes/NotesGrid";
 
 export function AppShell() {
   const { currentNote, ui } = useNoteStore();

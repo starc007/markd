@@ -1,11 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Menu01Icon, Grid02Icon, File02Icon } from "@hugeicons/core-free-icons";
-import { useNoteStore } from "../../stores/noteStore";
-import { useNoteColors } from "../../hooks/useNoteColors";
-import { NoteCard } from "./NoteCard";
-import { ToggleGroup, EmptyState } from "../ui";
-import type { NoteColorId } from "../../lib/config";
+import { File02Icon } from "@hugeicons/core-free-icons";
+import { useStickyNotes } from "../../hooks/useStickyNotes";
+import { StickyNote } from "./StickyNote";
+import { EmptyState } from "../ui";
 
 export function NotesGrid() {
   const { notes, folders, ui, loadNotes, loadNote, deleteNote } =
@@ -18,10 +16,14 @@ export function NotesGrid() {
     loadNotes();
   }, [loadNotes]);
 
-  const filteredNotes = notes.filter(
-    (note) =>
-      ui.selectedFolderId === null || note.folder_id === ui.selectedFolderId
-  );
+  const filteredNotes = notes.filter((note) => {
+    // Filter by folder if a folder is selected
+    if (ui.selectedFolderId !== null) {
+      return note.folder_id === ui.selectedFolderId;
+    }
+    // Show all notes otherwise
+    return true;
+  });
 
   const handleOpenNote = (noteId: string) => {
     loadNote(noteId);
@@ -53,7 +55,9 @@ export function NotesGrid() {
           </button>
           <span className="text-muted-foreground">/</span>
           <span className="font-medium">
-            {currentFolder?.name || "All notes"}
+            {ui.showFavorites
+              ? "Sticky Notes"
+              : currentFolder?.name || "All notes"}
           </span>
         </div>
         <ToggleGroup

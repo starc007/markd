@@ -1,16 +1,33 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  Task01Icon,
-  FavouriteIcon,
   FolderIcon,
   SettingsIcon,
   EditIcon,
-  File02Icon,
+  MoreVerticalIcon,
+  DeleteIcon,
+  Tick02Icon,
+  StickyNoteIcon,
 } from "@hugeicons/core-free-icons";
 import { useNoteStore } from "../../stores/noteStore";
+import { useNoteColors } from "../../hooks/useNoteColors";
+import { getNoteColor, NOTE_COLORS } from "../../lib/config";
+import type { NoteColorId } from "../../lib/config";
 
-import { Button, NavItem, SectionHeading } from "../ui";
+import {
+  Button,
+  NavItem,
+  SectionHeading,
+  IconButton,
+  Dropdown,
+  DropdownTrigger,
+  DropdownContent,
+  DropdownItem,
+  DropdownSeparator,
+  DropdownLabel,
+} from "../ui";
+import { DeleteNoteModal } from "../notes/DeleteNoteModal";
 
 export function Sidebar() {
   const {
@@ -23,7 +40,13 @@ export function Sidebar() {
     selectFolder,
     createNote,
     loadNote,
+    deleteNote,
+    toggleFavorites,
   } = useNoteStore();
+  const { getColor, setColor, removeColor } = useNoteColors();
+  const [deleteModalNoteId, setDeleteModalNoteId] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     loadFolders();
@@ -37,25 +60,31 @@ export function Sidebar() {
     }
   };
 
+  const handleEditNote = (noteId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    loadNote(noteId);
+  };
+
+  const handleColorSelect = (
+    noteId: string,
+    newColorId: NoteColorId,
+    e: React.MouseEvent
+  ) => {
+    e.stopPropagation();
+    setColor(noteId, newColorId);
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    await deleteNote(noteId);
+    removeColor(noteId);
+    setDeleteModalNoteId(null);
+    if (currentNote?.id === noteId) {
+      useNoteStore.setState({ currentNote: null });
+    }
+  };
+
   return (
     <aside className="w-[280px] shrink-0 flex flex-col bg-sidebar border-r border-sidebar-border overflow-hidden">
-      {/* App Branding */}
-      {/* <div className="px-4 pb-4 border-b border-sidebar-border">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
-            <NotePencil className="w-5 h-5 text-foreground" weight="duotone" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="font-semibold text-sidebar-foreground truncate">
-              {APP_CONFIG.name}
-            </div>
-            <div className="text-xs text-muted-foreground truncate">
-              Local Notes
-            </div>
-          </div>
-        </div>
-      </div> */}
-
       {/* New Note Button */}
       <div className="pt-3 px-3">
         <Button
@@ -75,35 +104,25 @@ export function Sidebar() {
 
       {/* Navigation - Fixed */}
       <div className="shrink-0 p-3 space-y-6 border-b border-sidebar-border">
-        {/* Main Section */}
+        {/* Sticky Notes Section */}
         <div>
-          <SectionHeading>Main</SectionHeading>
+          <SectionHeading>Sticky Notes</SectionHeading>
           <div className="space-y-0.5">
             <NavItem
               icon={
                 <HugeiconsIcon
-                  icon={Task01Icon}
+                  icon={StickyNoteIcon}
                   size={20}
                   color="currentColor"
                   strokeWidth={1.5}
                 />
               }
-              label="All notes"
-              count={notes.length}
-              isActive={ui.selectedFolderId === null}
-              onClick={() => selectFolder(null)}
-            />
-            <NavItem
-              icon={
-                <HugeiconsIcon
-                  icon={FavouriteIcon}
-                  size={20}
-                  color="currentColor"
-                  strokeWidth={1.5}
-                />
-              }
-              label="Favorites"
-              onClick={() => {}}
+              label="Sticky Notes"
+              count={0}
+              isActive={ui.showFavorites}
+              onClick={() => {
+                toggleFavorites();
+              }}
             />
           </div>
         </div>
@@ -146,11 +165,14 @@ export function Sidebar() {
         </div>
         <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-1">
           {(() => {
-            const filteredNotes = notes.filter(
-              (note) =>
-                ui.selectedFolderId === null ||
-                note.folder_id === ui.selectedFolderId
-            );
+            let filteredNotes = notes;
+
+            // Filter by folder if a folder is selected
+            if (ui.selectedFolderId !== null) {
+              filteredNotes = notes.filter(
+                (note) => note.folder_id === ui.selectedFolderId
+              );
+            }
 
             // Sort by updated_at descending
             const sortedNotes = [...filteredNotes].sort(
@@ -167,38 +189,132 @@ export function Sidebar() {
 
             return sortedNotes.map((note) => {
               const isActive = currentNote?.id === note.id;
+              const colorId = getColor(note.id);
+              const color = getNoteColor(colorId);
               return (
-                <button
-                  key={note.id}
-                  onClick={() => loadNote(note.id)}
-                  className={`w-full flex items-start gap-3 px-3 py-2 rounded-lg text-left transition-colors [-webkit-app-region:no-drag] ${
-                    isActive
-                      ? "bg-accent text-accent-foreground"
-                      : "hover:bg-accent/50 text-sidebar-foreground"
-                  }`}
-                >
-                  <HugeiconsIcon
-                    icon={File02Icon}
-                    size={16}
-                    color="currentColor"
-                    strokeWidth={1.5}
-                    className={`shrink-0 mt-0.5 ${
-                      isActive ? "opacity-100" : "opacity-40"
+                <div key={note.id} className="group relative">
+                  <button
+                    onClick={() => loadNote(note.id)}
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors [-webkit-app-region:no-drag] ${
+                      isActive
+                        ? "bg-sidebar-accent/70 text-sidebar-accent-foreground"
+                        : "hover:bg-accent text-sidebar-foreground"
                     }`}
-                  />
-                  <div className="flex-1 min-w-0">
+                  >
+                    {/* Color indicator */}
                     <div
-                      className={`text-sm font-medium truncate ${
-                        isActive ? "text-accent-foreground" : "text-foreground"
+                      className="w-1 h-6 rounded-full shrink-0"
+                      style={{ backgroundColor: color.header }}
+                    />
+                    {/* <HugeiconsIcon
+                      icon={File02Icon}
+                      size={16}
+                      color="currentColor"
+                      strokeWidth={1.5}
+                      className={`shrink-0 ${
+                        isActive ? "opacity-100" : "opacity-40"
                       }`}
-                    >
-                      {note.title || "Untitled"}
+                    /> */}
+                    <div className="flex-1 min-w-0">
+                      <div
+                        className={`text-sm font-medium truncate ${
+                          isActive
+                            ? "text-accent-foreground"
+                            : "text-foreground"
+                        }`}
+                      >
+                        {note.title || "Untitled"}
+                      </div>
                     </div>
-                    {/* <div className="text-xs text-muted-foreground mt-1">
-                      {formatRelativeTime(note.updated_at)}
-                    </div> */}
-                  </div>
-                </button>
+                    {/* Dropdown Menu */}
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 [-webkit-app-region:no-drag]">
+                      <Dropdown>
+                        <DropdownTrigger>
+                          <IconButton
+                            onClick={(e) => e.stopPropagation()}
+                            size="sm"
+                            title="More options"
+                          >
+                            <HugeiconsIcon
+                              icon={MoreVerticalIcon}
+                              size={16}
+                              color="currentColor"
+                              strokeWidth={1.5}
+                            />
+                          </IconButton>
+                        </DropdownTrigger>
+
+                        <DropdownContent align="end" className="w-48">
+                          <DropdownItem
+                            onClick={(e) => handleEditNote(note.id, e)}
+                          >
+                            <HugeiconsIcon
+                              icon={EditIcon}
+                              size={16}
+                              color="currentColor"
+                              strokeWidth={1.5}
+                              className="text-muted-foreground"
+                            />
+                            Edit note
+                          </DropdownItem>
+
+                          <DropdownSeparator />
+
+                          <DropdownLabel>Background Color</DropdownLabel>
+                          <div
+                            className="px-2 pb-2"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="grid grid-cols-7 gap-1">
+                              {NOTE_COLORS.map((c) => (
+                                <motion.button
+                                  key={c.id}
+                                  onClick={(e) =>
+                                    handleColorSelect(note.id, c.id, e)
+                                  }
+                                  className="w-5 h-5 rounded-md border border-border/50 hover:border-ring/50 flex items-center justify-center"
+                                  style={{ backgroundColor: c.header }}
+                                  title={c.name}
+                                  whileHover={{ scale: 1.15 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  transition={{ duration: 0.1 }}
+                                >
+                                  {colorId === c.id && (
+                                    <HugeiconsIcon
+                                      icon={Tick02Icon}
+                                      size={12}
+                                      color="currentColor"
+                                      strokeWidth={1.5}
+                                      className="text-foreground/70"
+                                    />
+                                  )}
+                                </motion.button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <DropdownSeparator />
+
+                          <DropdownItem
+                            onClick={(e) => {
+                              e?.stopPropagation();
+                              setDeleteModalNoteId(note.id);
+                            }}
+                            variant="destructive"
+                          >
+                            <HugeiconsIcon
+                              icon={DeleteIcon}
+                              size={16}
+                              color="currentColor"
+                              strokeWidth={1.5}
+                            />
+                            Delete note
+                          </DropdownItem>
+                        </DropdownContent>
+                      </Dropdown>
+                    </div>
+                  </button>
+                </div>
               );
             });
           })()}
@@ -223,6 +339,16 @@ export function Sidebar() {
           />
         </div>
       </div>
+
+      {/* Delete Note Modal */}
+      {deleteModalNoteId && (
+        <DeleteNoteModal
+          isOpen={!!deleteModalNoteId}
+          onClose={() => setDeleteModalNoteId(null)}
+          onConfirm={() => handleDeleteNote(deleteModalNoteId)}
+          noteTitle={notes.find((n) => n.id === deleteModalNoteId)?.title}
+        />
+      )}
     </aside>
   );
 }
