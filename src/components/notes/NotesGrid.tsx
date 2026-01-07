@@ -1,46 +1,17 @@
-import { useEffect } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { File02Icon } from "@hugeicons/core-free-icons";
-import { useStickyNotes } from "../../hooks/useStickyNotes";
+import { File02Icon, Plus } from "@hugeicons/core-free-icons";
+
 import { StickyNote } from "./StickyNote";
-import { EmptyState } from "../ui";
+import { Button, EmptyState } from "../ui";
+import { useStickyNotesStore } from "../../stores/stickyNotesStore";
 
 export function NotesGrid() {
-  const { notes, folders, ui, loadNotes, loadNote, deleteNote } =
-    useNoteStore();
-  const { getColor, setColor, removeColor } = useNoteColors();
+  const { stickyNotes, createStickyNote, updateStickyNote, deleteStickyNote } =
+    useStickyNotesStore();
 
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-
-  useEffect(() => {
-    loadNotes();
-  }, [loadNotes]);
-
-  const filteredNotes = notes.filter((note) => {
-    // Filter by folder if a folder is selected
-    if (ui.selectedFolderId !== null) {
-      return note.folder_id === ui.selectedFolderId;
-    }
-    // Show all notes otherwise
-    return true;
-  });
-
-  const handleOpenNote = (noteId: string) => {
-    loadNote(noteId);
+  const handleCreateStickyNote = () => {
+    createStickyNote();
   };
-
-  const handleDeleteNote = async (noteId: string) => {
-    await deleteNote(noteId);
-    removeColor(noteId);
-  };
-
-  const handleColorChange = (noteId: string, colorId: NoteColorId) => {
-    setColor(noteId, colorId);
-  };
-
-  const currentFolder = ui.selectedFolderId
-    ? folders.find((f) => f.id === ui.selectedFolderId)
-    : null;
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-sidebar">
@@ -50,54 +21,28 @@ export function NotesGrid() {
         data-tauri-drag-region
       >
         <div className="flex items-center gap-2 text-sm [-webkit-app-region:no-drag]">
-          <button className="text-muted-foreground hover:text-foreground transition-colors">
-            Home
-          </button>
-          <span className="text-muted-foreground">/</span>
-          <span className="font-medium">
-            {ui.showFavorites
-              ? "Sticky Notes"
-              : currentFolder?.name || "All notes"}
-          </span>
+          <span className="font-medium">Sticky Notes</span>
         </div>
-        <ToggleGroup
-          value={viewMode}
-          onChange={setViewMode}
-          options={[
-            {
-              value: "list",
-              icon: (
-                <HugeiconsIcon
-                  icon={Menu01Icon}
-                  size={16}
-                  color="currentColor"
-                  strokeWidth={1.5}
-                />
-              ),
-              title: "List view",
-            },
-            {
-              value: "grid",
-              icon: (
-                <HugeiconsIcon
-                  icon={Grid02Icon}
-                  size={16}
-                  color="currentColor"
-                  strokeWidth={1.5}
-                />
-              ),
-              title: "Grid view",
-            },
-          ]}
-        />
+        {/* <button
+          onClick={handleCreateStickyNote}
+          className="px-3 py-1.5 text-sm bg-accent hover:bg-accent/80 text-accent-foreground rounded-lg transition-colors [-webkit-app-region:no-drag]"
+        >
+          New Sticky Note
+        </button> */}
+        <Button variant="secondary" onClick={handleCreateStickyNote}>
+          <HugeiconsIcon
+            icon={Plus}
+            size={16}
+            color="currentColor"
+            strokeWidth={1.5}
+          />
+          New Sticky Note
+        </Button>
       </div>
 
-      {/* Search */}
-      {/* <div className="flex items-center gap-3 px-6 py-4 border-t border-sidebar-border"></div> */}
-
-      {/* Notes Grid/List */}
+      {/* Sticky Notes Grid */}
       <div className="flex-1 overflow-y-auto px-6 py-4 border-t border-sidebar-border">
-        {filteredNotes.length === 0 ? (
+        {stickyNotes.length === 0 ? (
           <EmptyState
             icon={
               <HugeiconsIcon
@@ -107,45 +52,20 @@ export function NotesGrid() {
                 strokeWidth={1.5}
               />
             }
-            title="No notes yet"
-            description='Click "New Note" in the sidebar to get started'
+            title="No sticky notes yet"
+            description='Click "New Sticky Note" to create one'
           />
         ) : (
-          <>
-            {/* Grid View */}
-            {viewMode === "grid" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filteredNotes.map((note) => (
-                  <NoteCard
-                    key={note.id}
-                    note={note}
-                    variant="card"
-                    colorId={getColor(note.id)}
-                    onOpen={handleOpenNote}
-                    onDelete={handleDeleteNote}
-                    onColorChange={handleColorChange}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* List View */}
-            {viewMode === "list" && (
-              <div className="space-y-1">
-                {filteredNotes.map((note) => (
-                  <NoteCard
-                    key={note.id}
-                    note={note}
-                    variant="list"
-                    colorId={getColor(note.id)}
-                    onOpen={handleOpenNote}
-                    onDelete={handleDeleteNote}
-                    onColorChange={handleColorChange}
-                  />
-                ))}
-              </div>
-            )}
-          </>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {stickyNotes.map((stickyNote) => (
+              <StickyNote
+                key={stickyNote.id}
+                stickyNote={stickyNote}
+                onUpdate={updateStickyNote}
+                onDelete={deleteStickyNote}
+              />
+            ))}
+          </div>
         )}
       </div>
     </div>

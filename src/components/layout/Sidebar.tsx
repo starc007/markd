@@ -12,6 +12,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { useNoteStore } from "../../stores/noteStore";
 import { useNoteColors } from "../../hooks/useNoteColors";
+import { useStickyNotesStore } from "../../stores/stickyNotesStore";
 import { getNoteColor, NOTE_COLORS } from "../../lib/config";
 import type { NoteColorId } from "../../lib/config";
 
@@ -44,6 +45,7 @@ export function Sidebar() {
     toggleFavorites,
   } = useNoteStore();
   const { getColor, setColor, removeColor } = useNoteColors();
+  const { stickyNotes } = useStickyNotesStore();
   const [deleteModalNoteId, setDeleteModalNoteId] = useState<string | null>(
     null
   );
@@ -118,7 +120,7 @@ export function Sidebar() {
                 />
               }
               label="Sticky Notes"
-              count={0}
+              count={stickyNotes.length}
               isActive={ui.showFavorites}
               onClick={() => {
                 toggleFavorites();
