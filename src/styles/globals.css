@@ -76,7 +76,7 @@
   --sidebar-primary-foreground: #fafafa;
   --sidebar-accent: #f0f0f0;
   --sidebar-accent-foreground: #171717;
-  --sidebar-border: #e5e5e5;
+  --sidebar-border: #f4f4f4;
   --sidebar-ring: #a3a3a3;
 }
 
@@ -191,4 +191,17 @@
 /* Search result mark highlight */
 mark {
   @apply bg-primary/20 text-inherit px-0.5 rounded-sm;
+}
+
+/* Tauri drag region */
+[data-tauri-drag-region] {
+  -webkit-app-region: drag;
+}
+
+[data-tauri-drag-region] button,
+[data-tauri-drag-region] a,
+[data-tauri-drag-region] input,
+[data-tauri-drag-region] select,
+[data-tauri-drag-region] textarea {
+  -webkit-app-region: no-drag;
 }

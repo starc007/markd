@@ -1,21 +1,16 @@
 import { useEffect, useState } from "react";
-import {
-  MagnifyingGlass,
-  List,
-  SquaresFour,
-  FileText,
-} from "@phosphor-icons/react";
+import { List, SquaresFour, FileText } from "@phosphor-icons/react";
 import { useNoteStore } from "../../stores/noteStore";
 import { useNoteColors } from "../../hooks/useNoteColors";
 import { NoteCard } from "./NoteCard";
-import { Input, ToggleGroup, EmptyState } from "../ui";
+import { ToggleGroup, EmptyState } from "../ui";
 import type { NoteColorId } from "../../lib/config";
 
 export function NotesGrid() {
   const { notes, folders, ui, loadNotes, loadNote, deleteNote } =
     useNoteStore();
   const { getColor, setColor, removeColor } = useNoteColors();
-  const [searchQuery, setSearchQuery] = useState("");
+
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   useEffect(() => {
@@ -24,8 +19,7 @@ export function NotesGrid() {
 
   const filteredNotes = notes.filter(
     (note) =>
-      note.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-      (ui.selectedFolderId === null || note.folder_id === ui.selectedFolderId)
+      ui.selectedFolderId === null || note.folder_id === ui.selectedFolderId
   );
 
   const handleOpenNote = (noteId: string) => {
@@ -49,7 +43,7 @@ export function NotesGrid() {
     <div className="flex-1 flex flex-col overflow-hidden bg-sidebar">
       {/* Draggable region for macOS */}
       <div
-        className="h-[50px] shrink-0 flex items-center px-6"
+        className="h-[50px] shrink-0 flex items-center justify-between px-6"
         data-tauri-drag-region
       >
         <div className="flex items-center gap-2 text-sm [-webkit-app-region:no-drag]">
@@ -61,16 +55,6 @@ export function NotesGrid() {
             {currentFolder?.name || "All notes"}
           </span>
         </div>
-      </div>
-
-      {/* Search */}
-      <div className="flex items-center gap-3 px-6 py-4 border-t border-sidebar-border">
-        <Input
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search a note"
-          icon={<MagnifyingGlass className="w-4 h-4" />}
-        />
         <ToggleGroup
           value={viewMode}
           onChange={setViewMode}
@@ -89,8 +73,11 @@ export function NotesGrid() {
         />
       </div>
 
+      {/* Search */}
+      {/* <div className="flex items-center gap-3 px-6 py-4 border-t border-sidebar-border"></div> */}
+
       {/* Notes Grid/List */}
-      <div className="flex-1 overflow-y-auto px-6 pb-6">
+      <div className="flex-1 overflow-y-auto px-6 py-4 border-t border-sidebar-border">
         {filteredNotes.length === 0 ? (
           <EmptyState
             icon={<FileText className="w-16 h-16" />}

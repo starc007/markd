@@ -59,6 +59,9 @@ interface NoteStore {
 
   // Export actions
   exportCurrentNote: (destination: string) => Promise<void>;
+
+  // Import actions
+  importFile: (filePath: string, folderId?: string | null) => Promise<Note>;
 }
 
 export const useNoteStore = create<NoteStore>((set, get) => ({
@@ -114,6 +117,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
           {
             id: note.id,
             title: note.title,
+            preview: null,
             folder_id: note.folder_id,
             created_at: note.created_at,
             updated_at: note.updated_at,
@@ -315,6 +319,34 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       await commands.exportNote(currentNote.id, destination);
     } catch (error) {
       set({ error: String(error) });
+      throw error;
+    }
+  },
+
+  // Import actions
+  importFile: async (filePath, folderId) => {
+    set({ isLoading: true, error: null });
+    try {
+      const note = await commands.importFile(filePath, folderId);
+      const { notes } = get();
+      set({
+        notes: [
+          {
+            id: note.id,
+            title: note.title,
+            preview: null,
+            folder_id: note.folder_id,
+            created_at: note.created_at,
+            updated_at: note.updated_at,
+          },
+          ...notes,
+        ],
+        currentNote: note,
+        isLoading: false,
+      });
+      return note;
+    } catch (error) {
+      set({ error: String(error), isLoading: false });
       throw error;
     }
   },

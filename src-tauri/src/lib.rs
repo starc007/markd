@@ -26,6 +26,7 @@ pub fn run() {
             delete_note,
             list_notes,
             save_note_content,
+            import_file,
             // Folder commands
             create_folder,
             get_folder,

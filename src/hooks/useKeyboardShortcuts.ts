@@ -14,7 +14,7 @@ export function useKeyboardShortcuts() {
     const handleKeyDown = async (e: KeyboardEvent) => {
       const isMod = e.metaKey || e.ctrlKey;
 
-      // Command palette: Cmd+K or Cmd+P
+      // Unified search/command palette: Cmd+K or Cmd+P
       if (isMod && (e.key === "k" || e.key === "p")) {
         e.preventDefault();
         toggleCommandPalette();

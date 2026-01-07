@@ -136,3 +136,10 @@ export async function exportNote(
 export async function getNoteContentForExport(noteId: string): Promise<string> {
   return invoke<string>("get_note_content_for_export", { noteId });
 }
+
+export async function importFile(
+  filePath: string,
+  folderId?: string | null
+): Promise<Note> {
+  return invoke<Note>("import_file", { filePath, folderId });
+}

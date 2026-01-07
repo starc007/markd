@@ -58,15 +58,10 @@ export function Editor({ noteId, content }: EditorProps) {
 
   // Debounced content save
   const handleContentChange = useCallback((newContent: string) => {
-    console.log(
-      "handleContentChange called with:",
-      newContent.substring(0, 100)
-    );
     if (saveTimeoutRef.current) {
       window.clearTimeout(saveTimeoutRef.current);
     }
     saveTimeoutRef.current = window.setTimeout(() => {
-      console.log("Saving to store:", newContent.substring(0, 100));
       useNoteStore.getState().saveCurrentNoteContent(newContent);
     }, EDITOR_CONFIG.autosaveDelay);
   }, []);
@@ -96,7 +91,7 @@ export function Editor({ noteId, content }: EditorProps) {
       <div className="flex-1 flex flex-col h-full overflow-hidden bg-card">
         {/* Header with drag region */}
         <div
-          className="h-[50px] shrink-0 flex items-center justify-between border-b border-border px-4"
+          className="h-[50px] shrink-0 flex items-center justify-between border-b border-sidebar-border px-4"
           data-tauri-drag-region
         >
           <div className="flex items-center gap-3 [-webkit-app-region:no-drag]">

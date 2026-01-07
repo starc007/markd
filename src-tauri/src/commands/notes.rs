@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 use tauri::State;
 use uuid::Uuid;
 use chrono::Utc;
+use std::path::PathBuf;
+use std::fs;
 
 use crate::state::AppState;
 use crate::models::note::{Note, NoteMetadata, extract_preview};
@@ -245,4 +247,74 @@ pub async fn save_note_content(
         .map_err(|e| format!("Failed to re-index note: {}", e))?;
     
     Ok(now)
+}
+
+#[tauri::command]
+pub async fn import_file(
+    state: State<'_, AppState>,
+    file_path: String,
+    folder_id: Option<String>,
+) -> Result<Note, String> {
+    let path = PathBuf::from(&file_path);
+    
+    // Check if file exists
+    if !path.exists() {
+        return Err("File does not exist".to_string());
+    }
+    
+    // Read file content
+    let content = fs::read_to_string(&path)
+        .map_err(|e| format!("Failed to read file: {}", e))?;
+    
+    // Extract title from filename (without extension)
+    let title = path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("Imported Note")
+        .to_string();
+    
+    // Create note with imported content
+    let id = Uuid::new_v4().to_string();
+    let now = Utc::now().timestamp_millis();
+    
+    // Write content to note file
+    let file_service = state.file_service.lock().await;
+    let note_file_path = file_service
+        .write_note(&id, &content)
+        .map_err(|e| format!("Failed to write note file: {}", e))?;
+    
+    let note_file_path_str = note_file_path.to_string_lossy().to_string();
+    
+    // Insert metadata into database
+    state.db
+        .insert_note_metadata(
+            &id,
+            &title,
+            &note_file_path_str,
+            folder_id.as_deref(),
+            now,
+            now,
+        )
+        .map_err(|e| format!("Failed to insert note metadata: {}", e))?;
+    
+    // Update preview
+    let preview = extract_preview(&content, PREVIEW_MAX_LENGTH);
+    state.db
+        .update_note_preview(&id, preview.as_deref(), now)
+        .map_err(|e| format!("Failed to update note preview: {}", e))?;
+    
+    // Index for search
+    state.db
+        .index_note(&id, &title, &content, "")
+        .map_err(|e| format!("Failed to index note: {}", e))?;
+    
+    Ok(Note {
+        id,
+        title,
+        content,
+        file_path: note_file_path_str,
+        folder_id,
+        created_at: now,
+        updated_at: now,
+    })
 }

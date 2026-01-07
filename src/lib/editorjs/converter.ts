@@ -179,13 +179,13 @@ export function blocksToMarkdown(blocks: OutputBlockData[]): string {
   for (const block of blocks) {
     switch (block.type) {
       case "header":
-        const level = (block.data as any).level || 1;
-        const headerText = (block.data as any).text || "";
+        const level = block.data.level || 1;
+        const headerText = block.data.text || "";
         markdown.push(`${"#".repeat(level)} ${headerText}`);
         break;
 
       case "paragraph":
-        const text = (block.data as any).text || "";
+        const text = block.data.text || "";
         if (text.trim()) {
           markdown.push(text);
         } else {

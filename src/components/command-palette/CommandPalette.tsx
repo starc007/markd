@@ -2,11 +2,11 @@ import { Command } from "cmdk";
 import { useEffect, useState, useCallback } from "react";
 import {
   Plus,
-  MagnifyingGlass,
   ClipboardText,
   ArrowsOut,
   Export,
   FileText,
+  Command as CommandIcon,
 } from "@phosphor-icons/react";
 import { useNoteStore } from "../../stores/noteStore";
 import { save } from "@tauri-apps/plugin-dialog";
@@ -38,16 +38,15 @@ export function CommandPalette() {
     }
   }, [ui.commandPaletteOpen, clearSearch]);
 
-  // Trigger search when input changes in search mode
+  // Unified search: show both filtered commands and search results (like Spotlight)
   useEffect(() => {
-    if (mode === "search") {
-      if (inputValue.trim()) {
-        search(inputValue);
-      } else {
-        clearSearch();
-      }
+    if (inputValue.trim()) {
+      // Always search notes when typing
+      search(inputValue);
+    } else {
+      clearSearch();
     }
-  }, [inputValue, mode, search, clearSearch]);
+  }, [inputValue, search, clearSearch]);
 
   // Create a new note and open it immediately
   const handleCreateNote = useCallback(async () => {
@@ -63,10 +62,6 @@ export function CommandPalette() {
       switch (action) {
         case "new-note":
           await handleCreateNote();
-          break;
-        case "search":
-          setMode("search");
-          setInputValue("");
           break;
         case "notes":
           setMode("notes");
@@ -132,10 +127,9 @@ export function CommandPalette() {
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => {
           if (e.key === "Escape") {
-            if (mode !== "commands") {
+            if (mode === "notes") {
               setMode("commands");
               setInputValue("");
-              clearSearch();
             } else {
               setCommandPaletteOpen(false);
             }
@@ -145,122 +139,91 @@ export function CommandPalette() {
         <Command.Input
           value={inputValue}
           onValueChange={setInputValue}
-          placeholder={
-            mode === "commands"
-              ? "Type a command or search..."
-              : mode === "search"
-              ? "Search notes..."
-              : "Go to note..."
-          }
+          placeholder="Search notes or commands..."
           className="w-full px-5 py-4 text-[15px] bg-transparent border-b border-border text-foreground placeholder:text-muted-foreground outline-none"
           autoFocus
         />
         <Command.List className="max-h-[360px] overflow-y-auto p-2">
           <Command.Empty className="py-8 text-center text-[13px] text-muted-foreground">
-            {mode === "search" ? "No results found" : "No results"}
+            No results found
           </Command.Empty>
 
-          {mode === "commands" && (
-            <>
-              <Command.Group heading="Actions">
-                <Command.Item
-                  value="new-note"
-                  onSelect={() => handleSelect("new-note")}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
-                >
-                  <Plus className="w-[18px] h-[18px] opacity-50" />
-                  <span className="flex-1 font-medium">New Note</span>
-                  <kbd className="text-[11px] font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
-                    ⌘N
-                  </kbd>
-                </Command.Item>
-                <Command.Item
-                  value="search"
-                  onSelect={() => handleSelect("search")}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
-                >
-                  <MagnifyingGlass className="w-[18px] h-[18px] opacity-50" />
-                  <span className="flex-1 font-medium">Search Notes</span>
-                  <kbd className="text-[11px] font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
-                    ⌘P
-                  </kbd>
-                </Command.Item>
-                <Command.Item
-                  value="notes"
-                  onSelect={() => handleSelect("notes")}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
-                >
-                  <ClipboardText className="w-[18px] h-[18px] opacity-50" />
-                  <span className="flex-1 font-medium">Go to Note</span>
-                  <kbd className="text-[11px] font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
-                    ⌘O
-                  </kbd>
-                </Command.Item>
-              </Command.Group>
+          {/* Commands - cmdk automatically filters based on value prop */}
+          <Command.Group heading="Commands">
+            <Command.Item
+              value="new note"
+              onSelect={() => handleSelect("new-note")}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
+            >
+              <Plus className="w-[18px] h-[18px] opacity-50" />
+              <span className="flex-1 font-medium">New Note</span>
+              <kbd className="flex items-center gap-1 text-sm font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
+                <CommandIcon size={17} weight="regular" />
+                <span>N</span>
+              </kbd>
+            </Command.Item>
+            <Command.Item
+              value="go to note"
+              onSelect={() => handleSelect("notes")}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
+            >
+              <ClipboardText className="w-[18px] h-[18px] opacity-50" />
+              <span className="flex-1 font-medium">Go to Note</span>
+              <kbd className="flex items-center gap-1 text-sm font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
+                <CommandIcon size={17} weight="regular" />
+                <span>O</span>
+              </kbd>
+            </Command.Item>
+            <Command.Item
+              value="toggle sidebar"
+              onSelect={() => handleSelect("focus-mode")}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
+            >
+              <ArrowsOut className="w-[18px] h-[18px] opacity-50" />
+              <span className="flex-1 font-medium">Toggle Sidebar</span>
+              <kbd className="flex items-center gap-1 text-sm font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
+                <CommandIcon size={17} weight="regular" />
+                <span>\</span>
+              </kbd>
+            </Command.Item>
+            {currentNote && (
+              <Command.Item
+                value="export note"
+                onSelect={() => handleSelect("export")}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
+              >
+                <Export className="w-[18px] h-[18px] opacity-50" />
+                <span className="flex-1 font-medium">Export Note</span>
+              </Command.Item>
+            )}
+          </Command.Group>
 
-              <Command.Group heading="View">
-                <Command.Item
-                  value="focus-mode"
-                  onSelect={() => handleSelect("focus-mode")}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
-                >
-                  <ArrowsOut className="w-[18px] h-[18px] opacity-50" />
-                  <span className="flex-1 font-medium">Toggle Sidebar</span>
-                  <kbd className="text-[11px] font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
-                    ⌘\
-                  </kbd>
-                </Command.Item>
-              </Command.Group>
-
-              {currentNote && (
-                <Command.Group heading="Current Note">
-                  <Command.Item
-                    value="export"
-                    onSelect={() => handleSelect("export")}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
-                  >
-                    <Export className="w-[18px] h-[18px] opacity-50" />
-                    <span className="flex-1 font-medium">Export Note</span>
-                  </Command.Item>
-                </Command.Group>
-              )}
-            </>
-          )}
-
-          {mode === "search" && (
+          {/* Search Results - shown when there are results */}
+          {inputValue.trim() && searchResults.length > 0 && (
             <Command.Group heading="Search Results">
-              {searchResults.length > 0 ? (
-                searchResults.map((result) => (
-                  <Command.Item
-                    key={result.id}
-                    value={`search:${result.id} ${result.title}`}
-                    onSelect={() => handleSelect(`search:${result.id}`)}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
-                  >
-                    <FileText className="w-[18px] h-[18px] opacity-50 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">{result.title}</div>
-                      {result.snippet && (
-                        <div
-                          className="text-[12px] text-muted-foreground truncate mt-0.5"
-                          dangerouslySetInnerHTML={{ __html: result.snippet }}
-                        />
-                      )}
-                    </div>
-                  </Command.Item>
-                ))
-              ) : inputValue.trim() ? (
-                <div className="py-6 text-center text-[13px] text-muted-foreground">
-                  No notes found for "{inputValue}"
-                </div>
-              ) : (
-                <div className="py-6 text-center text-[13px] text-muted-foreground">
-                  Type to search notes...
-                </div>
-              )}
+              {searchResults.map((result) => (
+                <Command.Item
+                  key={result.id}
+                  value={`search:${result.id} ${result.title}`}
+                  onSelect={() => handleSelect(`search:${result.id}`)}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
+                >
+                  <FileText className="w-[18px] h-[18px] opacity-50 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate">{result.title}</div>
+                    {result.snippet && (
+                      <div
+                        className="text-[12px] text-muted-foreground truncate mt-0.5"
+                        dangerouslySetInnerHTML={{ __html: result.snippet }}
+                      />
+                    )}
+                  </div>
+                </Command.Item>
+              ))}
             </Command.Group>
           )}
 
+          {/* Notes mode - when "Go to Note" is selected */}
           {mode === "notes" && (
             <Command.Group heading="Notes">
               {notes.length > 0 ? (
@@ -279,7 +242,11 @@ export function CommandPalette() {
                 ))
               ) : (
                 <div className="py-6 text-center text-[13px] text-muted-foreground">
-                  No notes yet. Create one with ⌘N
+                  No notes yet. Create one with{" "}
+                  <span className="inline-flex items-center gap-1">
+                    <CommandIcon className="w-3 h-3" weight="regular" />
+                    <span>N</span>
+                  </span>
                 </div>
               )}
             </Command.Group>

@@ -38,12 +38,6 @@ export function Sidebar() {
 
   return (
     <aside className="w-[280px] shrink-0 flex flex-col bg-sidebar border-r border-sidebar-border overflow-hidden">
-      {/* Draggable region for macOS - accounts for traffic lights */}
-      <div
-        className="h-[30px] shrink-0 flex items-end"
-        data-tauri-drag-region
-      />
-
       {/* App Branding */}
       {/* <div className="px-4 pb-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
