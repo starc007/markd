@@ -1,7 +1,6 @@
 import { useCallback, useState, useRef } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  ArrowLeftIcon,
   MoreVerticalIcon,
   DeleteIcon,
   Download01Icon,
@@ -10,7 +9,6 @@ import { save } from "@tauri-apps/plugin-dialog";
 import { useNoteStore } from "../../stores/noteStore";
 import { EDITOR_CONFIG } from "../../lib/config";
 import {
-  Button,
   IconButton,
   Dropdown,
   DropdownTrigger,
@@ -101,20 +99,6 @@ export function Editor({ noteId, content }: EditorProps) {
           data-tauri-drag-region
         >
           <div className="flex items-center gap-3 [-webkit-app-region:no-drag]">
-            <Button
-              variant="ghost"
-              onClick={handleBack}
-              className="hover:bg-transparent px-0!"
-            >
-              <HugeiconsIcon
-                icon={ArrowLeftIcon}
-                size={16}
-                color="currentColor"
-                strokeWidth={1.5}
-              />
-              Back
-            </Button>
-            <span className="text-border">|</span>
             <span className="font-medium text-foreground truncate">
               {currentNote?.title || "Untitled"}
             </span>

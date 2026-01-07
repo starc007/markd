@@ -13,7 +13,7 @@ interface UIState {
   commandPaletteOpen: boolean;
   searchOpen: boolean;
   selectedFolderId: string | null;
-  showFavorites: boolean;
+  showStickyNotes: boolean;
 }
 
 interface NoteStore {
@@ -55,7 +55,8 @@ interface NoteStore {
   toggleFocusMode: () => void;
   toggleCommandPalette: () => void;
   toggleSearch: () => void;
-  toggleFavorites: () => void;
+  toggleStickyNotes: () => void;
+
   setCommandPaletteOpen: (open: boolean) => void;
   setSearchOpen: (open: boolean) => void;
 
@@ -82,7 +83,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
     commandPaletteOpen: false,
     searchOpen: false,
     selectedFolderId: null,
-    showFavorites: false,
+    showStickyNotes: false,
   },
 
   // Note actions
@@ -97,10 +98,15 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
   },
 
   loadNote: async (id) => {
+    const { ui } = get();
     set({ isLoading: true, error: null });
     try {
       const note = await commands.getNote(id);
-      set({ currentNote: note, isLoading: false });
+      set({
+        currentNote: note,
+        isLoading: false,
+        ui: { ...ui, showStickyNotes: false },
+      });
     } catch (error) {
       set({ error: String(error), isLoading: false });
     }
@@ -314,11 +320,9 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
     set({ ui: { ...ui, searchOpen: open } });
   },
 
-  toggleFavorites: () => {
+  toggleStickyNotes: () => {
     const { ui } = get();
-    set({
-      ui: { ...ui, showFavorites: !ui.showFavorites, selectedFolderId: null },
-    });
+    set({ ui: { ...ui, showStickyNotes: true }, currentNote: null });
   },
 
   // Export actions

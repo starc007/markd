@@ -26,7 +26,7 @@ export function AppShell() {
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col overflow-hidden">
-          {currentNote ? (
+          {currentNote && !ui.showStickyNotes ? (
             <Editor
               key={currentNote.id}
               noteId={currentNote.id}

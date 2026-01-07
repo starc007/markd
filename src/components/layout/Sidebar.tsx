@@ -42,7 +42,7 @@ export function Sidebar() {
     createNote,
     loadNote,
     deleteNote,
-    toggleFavorites,
+    toggleStickyNotes,
   } = useNoteStore();
   const { getColor, setColor, removeColor } = useNoteColors();
   const { stickyNotes, loadStickyNotes } = useStickyNotesStore();
@@ -115,17 +115,15 @@ export function Sidebar() {
               icon={
                 <HugeiconsIcon
                   icon={StickyNoteIcon}
-                  size={20}
+                  size={18}
                   color="currentColor"
                   strokeWidth={1.5}
                 />
               }
               label="Sticky Notes"
               count={stickyNotes.length}
-              isActive={ui.showFavorites}
-              onClick={() => {
-                toggleFavorites();
-              }}
+              isActive={ui.showStickyNotes}
+              onClick={toggleStickyNotes}
             />
           </div>
         </div>
