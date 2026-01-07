@@ -5,6 +5,7 @@ import { ArrowLeft } from "@phosphor-icons/react";
 import { createEditorSetup } from "../../lib/codemirror/setup";
 import { useNoteStore } from "../../stores/noteStore";
 import { EDITOR_CONFIG } from "../../lib/config";
+import { Button } from "../ui";
 
 interface EditorProps {
   noteId: string;
@@ -14,47 +15,69 @@ interface EditorProps {
 export function Editor({ noteId, content }: EditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
-  const contentRef = useRef(content);
-  const { saveCurrentNoteContent, updateNote, currentNote, loadNotes } =
-    useNoteStore();
+  const initialContentRef = useRef(content);
+  const noteIdRef = useRef(noteId);
 
-  // Debounced save function
-  const saveTimeoutRef = useRef<number | null>(null);
-  const debouncedSave = useCallback(
-    (newContent: string) => {
-      if (saveTimeoutRef.current) {
-        window.clearTimeout(saveTimeoutRef.current);
-      }
-      saveTimeoutRef.current = window.setTimeout(() => {
-        saveCurrentNoteContent(newContent);
-      }, EDITOR_CONFIG.autosaveDelay);
-    },
-    [saveCurrentNoteContent]
-  );
+  // Store refs for callbacks to avoid dependency issues
+  const storeRef = useRef(useNoteStore.getState());
+  useEffect(() => {
+    storeRef.current = useNoteStore.getState();
+  });
 
+  // Handle back navigation
+  const handleBack = useCallback(() => {
+    useNoteStore.setState({ currentNote: null });
+    useNoteStore.getState().loadNotes();
+  }, []);
+
+  // Initialize editor only when noteId changes
   useEffect(() => {
     if (!containerRef.current) return;
 
+    // Clean up previous editor
+    if (viewRef.current) {
+      viewRef.current.destroy();
+      viewRef.current = null;
+    }
+
+    // Store the noteId for this editor instance
+    noteIdRef.current = noteId;
+    initialContentRef.current = content;
+
+    // Debounced save
+    let saveTimeoutId: number | null = null;
+    const debouncedSave = (newContent: string) => {
+      if (saveTimeoutId) {
+        window.clearTimeout(saveTimeoutId);
+      }
+      saveTimeoutId = window.setTimeout(() => {
+        storeRef.current.saveCurrentNoteContent(newContent);
+      }, EDITOR_CONFIG.autosaveDelay);
+    };
+
+    // Create update listener
     const onUpdate = EditorView.updateListener.of((update) => {
       if (update.docChanged) {
         const newContent = update.state.doc.toString();
-        contentRef.current = newContent;
         debouncedSave(newContent);
 
         // Extract title from first line
         const firstLine = newContent.split("\n")[0];
         const title = firstLine.replace(/^#+\s*/, "").trim() || "Untitled";
+        const currentNote = storeRef.current.currentNote;
         if (currentNote && title !== currentNote.title) {
-          updateNote(noteId, { title });
+          storeRef.current.updateNote(noteIdRef.current, { title });
         }
       }
     });
 
+    // Create editor state
     const state = EditorState.create({
       doc: content,
       extensions: [...createEditorSetup(), onUpdate],
     });
 
+    // Create editor view
     const view = new EditorView({
       state,
       parent: containerRef.current,
@@ -62,35 +85,35 @@ export function Editor({ noteId, content }: EditorProps) {
 
     viewRef.current = view;
 
-    // Focus the editor
-    view.focus();
+    // Focus the editor after a short delay
+    requestAnimationFrame(() => {
+      view.focus();
+    });
 
+    // Cleanup
     return () => {
-      view.destroy();
-      if (saveTimeoutRef.current) {
-        window.clearTimeout(saveTimeoutRef.current);
+      if (saveTimeoutId) {
+        window.clearTimeout(saveTimeoutId);
       }
+      view.destroy();
     };
-  }, [noteId, content, debouncedSave, currentNote, updateNote]);
+  }, [noteId]); // Only depend on noteId
 
-  // Handle back navigation
-  const handleBack = useCallback(() => {
-    useNoteStore.setState({ currentNote: null });
-    loadNotes();
-  }, [loadNotes]);
+  const currentNote = useNoteStore((state) => state.currentNote);
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-card">
       {/* Editor Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-border">
         <div className="flex items-center gap-3">
-          <button
+          <Button
+            variant="ghost"
             onClick={handleBack}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="hover:bg-transparent"
           >
             <ArrowLeft className="w-4 h-4" />
             Back
-          </button>
+          </Button>
           <span className="text-border">|</span>
           <span className="font-medium text-foreground truncate">
             {currentNote?.title || "Untitled"}

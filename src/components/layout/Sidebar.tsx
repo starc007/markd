@@ -7,45 +7,35 @@ import {
   Folder,
   Gear,
   NotePencil,
+  PencilSimpleLine,
 } from "@phosphor-icons/react";
 import { useNoteStore } from "../../stores/noteStore";
 import { APP_CONFIG } from "../../lib/config";
-
-interface NavItemProps {
-  icon: React.ReactNode;
-  label: string;
-  count?: number;
-  isActive?: boolean;
-  onClick: () => void;
-}
-
-function NavItem({ icon, label, count, isActive, onClick }: NavItemProps) {
-  return (
-    <button
-      onClick={onClick}
-      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-        isActive
-          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-          : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-      }`}
-    >
-      <span className="w-5 h-5 flex items-center justify-center">{icon}</span>
-      <span className="flex-1 text-left">{label}</span>
-      {count !== undefined && (
-        <span className="text-xs text-muted-foreground">{count}</span>
-      )}
-    </button>
-  );
-}
+import { Button, NavItem, SectionHeading } from "../ui";
 
 export function Sidebar() {
-  const { notes, folders, ui, loadNotes, loadFolders, selectFolder } =
-    useNoteStore();
+  const {
+    notes,
+    folders,
+    ui,
+    loadNotes,
+    loadFolders,
+    selectFolder,
+    createNote,
+    loadNote,
+  } = useNoteStore();
 
   useEffect(() => {
     loadFolders();
     loadNotes();
   }, [loadFolders, loadNotes]);
+
+  const handleNewNote = async () => {
+    const note = await createNote("Untitled", ui.selectedFolderId || undefined);
+    if (note) {
+      loadNote(note.id);
+    }
+  };
 
   return (
     <aside className="w-[280px] shrink-0 flex flex-col bg-sidebar border-r border-sidebar-border overflow-hidden">
@@ -66,13 +56,23 @@ export function Sidebar() {
         </div>
       </div>
 
+      {/* New Note Button */}
+      <div className="pt-3 px-3">
+        <Button
+          onClick={handleNewNote}
+          className="hover:bg-transparent"
+          variant="ghost"
+        >
+          <PencilSimpleLine className="w-4 h-4" weight="bold" />
+          New Note
+        </Button>
+      </div>
+
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto p-3 space-y-6">
         {/* Main Section */}
         <div>
-          <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Main
-          </div>
+          <SectionHeading>Main</SectionHeading>
           <div className="space-y-0.5">
             <NavItem
               icon={<ClipboardText className="w-5 h-5" weight="duotone" />}
@@ -101,9 +101,7 @@ export function Sidebar() {
 
         {/* Folders Section */}
         <div>
-          <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Folders
-          </div>
+          <SectionHeading>Folders</SectionHeading>
           <div className="space-y-0.5">
             {folders.length > 0 ? (
               folders.map((folder) => (
@@ -127,9 +125,7 @@ export function Sidebar() {
 
       {/* Settings Section */}
       <div className="p-3 border-t border-sidebar-border">
-        <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Settings
-        </div>
+        <SectionHeading>Settings</SectionHeading>
         <div className="space-y-0.5">
           <NavItem
             icon={<Gear className="w-5 h-5" weight="duotone" />}
