@@ -1,8 +1,10 @@
 import { useEffect, useRef, useCallback } from "react";
 import { EditorView } from "@codemirror/view";
 import { EditorState } from "@codemirror/state";
+import { ArrowLeft } from "@phosphor-icons/react";
 import { createEditorSetup } from "../../lib/codemirror/setup";
 import { useNoteStore } from "../../stores/noteStore";
+import { EDITOR_CONFIG } from "../../lib/config";
 
 interface EditorProps {
   noteId: string;
@@ -25,7 +27,7 @@ export function Editor({ noteId, content }: EditorProps) {
       }
       saveTimeoutRef.current = window.setTimeout(() => {
         saveCurrentNoteContent(newContent);
-      }, 500);
+      }, EDITOR_CONFIG.autosaveDelay);
     },
     [saveCurrentNoteContent]
   );
@@ -69,15 +71,12 @@ export function Editor({ noteId, content }: EditorProps) {
         window.clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [noteId]);
+  }, [noteId, content, debouncedSave, currentNote, updateNote]);
 
   // Handle back navigation
   const handleBack = useCallback(() => {
-    const { currentNote } = useNoteStore.getState();
-    if (currentNote) {
-      useNoteStore.setState({ currentNote: null });
-      loadNotes();
-    }
+    useNoteStore.setState({ currentNote: null });
+    loadNotes();
   }, [loadNotes]);
 
   return (
@@ -89,13 +88,7 @@ export function Editor({ noteId, content }: EditorProps) {
             onClick={handleBack}
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-              <path
-                fillRule="evenodd"
-                d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
-                clipRule="evenodd"
-              />
-            </svg>
+            <ArrowLeft className="w-4 h-4" />
             Back
           </button>
           <span className="text-border">|</span>

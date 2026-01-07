@@ -1,25 +1,27 @@
 import { useEffect, useState } from "react";
+import {
+  MagnifyingGlass,
+  Funnel,
+  List,
+  SquaresFour,
+  Plus,
+  FileText,
+} from "@phosphor-icons/react";
 import { useNoteStore } from "../../stores/noteStore";
-
-function formatDate(timestamp: number): string {
-  const date = new Date(timestamp);
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
+import { NoteCard } from "./NoteCard";
+import type { NoteColorId } from "../../lib/config";
 
 export function NotesGrid() {
-  const { notes, folders, ui, loadNotes, loadNote, createNote } =
+  const { notes, folders, ui, loadNotes, loadNote, createNote, deleteNote } =
     useNoteStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [newNoteTitle, setNewNoteTitle] = useState("");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   useEffect(() => {
     loadNotes();
-  }, []);
+  }, [loadNotes]);
 
   const filteredNotes = notes.filter(
     (note) =>
@@ -33,6 +35,21 @@ export function NotesGrid() {
       setNewNoteTitle("");
       setIsCreating(false);
     }
+  };
+
+  const handleOpenNote = (noteId: string) => {
+    loadNote(noteId);
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    if (confirm("Are you sure you want to delete this note?")) {
+      await deleteNote(noteId);
+    }
+  };
+
+  const handleColorChange = (noteId: string, colorId: NoteColorId) => {
+    // TODO: Implement color change in backend
+    console.log("Change color for note", noteId, "to", colorId);
   };
 
   const currentFolder = ui.selectedFolderId
@@ -57,17 +74,7 @@ export function NotesGrid() {
       {/* Search and Filters */}
       <div className="flex items-center gap-3 px-6 py-4">
         <div className="flex-1 relative">
-          <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-              clipRule="evenodd"
-            />
-          </svg>
+          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
             value={searchQuery}
@@ -77,46 +84,40 @@ export function NotesGrid() {
           />
         </div>
         <button className="flex items-center gap-2 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground bg-background border border-border rounded-xl hover:border-ring/50 transition-all">
-          <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" />
-          </svg>
+          <Funnel className="w-4 h-4" />
           Filters
         </button>
         <div className="flex items-center border border-border rounded-xl overflow-hidden">
-          <button className="p-2.5 bg-background hover:bg-accent transition-colors">
-            <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-              <path
-                fillRule="evenodd"
-                d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-                clipRule="evenodd"
-              />
-            </svg>
+          <button
+            onClick={() => setViewMode("list")}
+            className={`p-2.5 transition-colors ${
+              viewMode === "list"
+                ? "bg-accent"
+                : "bg-background hover:bg-accent"
+            }`}
+            title="List view"
+          >
+            <List className="w-4 h-4" />
           </button>
-          <button className="p-2.5 bg-accent transition-colors">
-            <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-            </svg>
+          <button
+            onClick={() => setViewMode("grid")}
+            className={`p-2.5 transition-colors ${
+              viewMode === "grid"
+                ? "bg-accent"
+                : "bg-background hover:bg-accent"
+            }`}
+            title="Grid view"
+          >
+            <SquaresFour className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      {/* Notes Grid */}
+      {/* Notes Grid/List */}
       <div className="flex-1 overflow-y-auto px-6 pb-6">
         {filteredNotes.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <svg
-              className="w-16 h-16 text-muted-foreground/30 mb-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-              />
-            </svg>
+            <FileText className="w-16 h-16 text-muted-foreground/30 mb-4" />
             <h3 className="text-lg font-medium text-foreground mb-1">
               No notes yet
             </h3>
@@ -125,64 +126,55 @@ export function NotesGrid() {
             </p>
             <button
               onClick={() => setIsCreating(true)}
-              className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
             >
+              <Plus className="w-4 h-4" />
               Create Note
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredNotes.map((note) => (
+          <>
+            {/* Create Note Button */}
+            <div className="mb-4">
               <button
-                key={note.id}
-                onClick={() => loadNote(note.id)}
-                className="group flex flex-col text-left bg-card border border-border rounded-2xl overflow-hidden hover:shadow-lg hover:border-ring/30 transition-all"
+                onClick={() => setIsCreating(true)}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
               >
-                {/* Card Header */}
-                <div className="px-4 py-3 border-b border-border bg-secondary/30">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-foreground truncate">
-                      {note.title || "Untitled"}
-                    </h3>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="p-1 hover:bg-accent rounded">
-                        <svg
-                          className="w-4 h-4 text-muted-foreground"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </button>
-                      <button className="p-1 hover:bg-accent rounded">
-                        <svg
-                          className="w-4 h-4 text-muted-foreground"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                {/* Card Content */}
-                <div className="flex-1 p-4">
-                  <p className="text-sm text-muted-foreground line-clamp-4">
-                    Click to edit this note...
-                  </p>
-                </div>
-                {/* Card Footer */}
-                <div className="px-4 py-2 text-xs text-muted-foreground border-t border-border">
-                  {formatDate(note.updated_at)}
-                </div>
+                <Plus className="w-4 h-4" />
+                New Note
               </button>
-            ))}
-          </div>
+            </div>
+
+            {/* Grid View */}
+            {viewMode === "grid" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {filteredNotes.map((note) => (
+                  <NoteCard
+                    key={note.id}
+                    note={note}
+                    onOpen={handleOpenNote}
+                    onDelete={handleDeleteNote}
+                    onColorChange={handleColorChange}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* List View */}
+            {viewMode === "list" && (
+              <div className="space-y-2">
+                {filteredNotes.map((note) => (
+                  <NoteCard
+                    key={note.id}
+                    note={note}
+                    onOpen={handleOpenNote}
+                    onDelete={handleDeleteNote}
+                    onColorChange={handleColorChange}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
 

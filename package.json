@@ -19,6 +19,7 @@
     "@codemirror/state": "^6.5.3",
     "@codemirror/view": "^6.39.9",
     "@lezer/highlight": "^1.2.3",
+    "@phosphor-icons/react": "^2.1.10",
     "@tailwindcss/vite": "^4.1.18",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-dialog": "^2.4.2",

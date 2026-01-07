@@ -1,5 +1,15 @@
 import { Command } from "cmdk";
 import { useEffect, useState, useCallback } from "react";
+import {
+  Plus,
+  MagnifyingGlass,
+  ClipboardText,
+  SidebarSimple,
+  ArrowsOut,
+  Export,
+  Trash,
+  FileText,
+} from "@phosphor-icons/react";
 import { useNoteStore } from "../../stores/noteStore";
 import { save } from "@tauri-apps/plugin-dialog";
 
@@ -32,13 +42,13 @@ export function CommandPalette() {
       setMode("commands");
       clearSearch();
     }
-  }, [ui.commandPaletteOpen]);
+  }, [ui.commandPaletteOpen, clearSearch]);
 
   useEffect(() => {
     if (mode === "search" && inputValue) {
       search(inputValue);
     }
-  }, [inputValue, mode]);
+  }, [inputValue, mode, search]);
 
   const handleSelect = useCallback(
     async (action: string) => {
@@ -106,7 +116,18 @@ export function CommandPalette() {
           break;
       }
     },
-    [inputValue, currentNote]
+    [
+      inputValue,
+      currentNote,
+      createNote,
+      setCommandPaletteOpen,
+      toggleSidebar,
+      toggleFocusMode,
+      deleteNote,
+      exportCurrentNote,
+      createFolder,
+      loadNote,
+    ]
   );
 
   const handleCreateNote = async () => {
@@ -168,17 +189,7 @@ export function CommandPalette() {
                   onSelect={() => handleSelect("new-note")}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
                 >
-                  <svg
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    className="w-[18px] h-[18px] opacity-50"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                  <Plus className="w-[18px] h-[18px] opacity-50" />
                   <span className="flex-1 font-medium">New Note</span>
                   <kbd className="text-[11px] font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
                     ⌘N
@@ -189,17 +200,7 @@ export function CommandPalette() {
                   onSelect={() => handleSelect("search")}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
                 >
-                  <svg
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    className="w-[18px] h-[18px] opacity-50"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                  <MagnifyingGlass className="w-[18px] h-[18px] opacity-50" />
                   <span className="flex-1 font-medium">Search Notes</span>
                   <kbd className="text-[11px] font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
                     ⌘P
@@ -210,18 +211,7 @@ export function CommandPalette() {
                   onSelect={() => handleSelect("notes")}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
                 >
-                  <svg
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    className="w-[18px] h-[18px] opacity-50"
-                  >
-                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-                    <path
-                      fillRule="evenodd"
-                      d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                  <ClipboardText className="w-[18px] h-[18px] opacity-50" />
                   <span className="flex-1 font-medium">Go to Note</span>
                   <kbd className="text-[11px] font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
                     ⌘O
@@ -235,17 +225,7 @@ export function CommandPalette() {
                   onSelect={() => handleSelect("toggle-sidebar")}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
                 >
-                  <svg
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    className="w-[18px] h-[18px] opacity-50"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                  <SidebarSimple className="w-[18px] h-[18px] opacity-50" />
                   <span className="flex-1 font-medium">Toggle Sidebar</span>
                   <kbd className="text-[11px] font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
                     ⌘\
@@ -256,13 +236,7 @@ export function CommandPalette() {
                   onSelect={() => handleSelect("focus-mode")}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
                 >
-                  <svg
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    className="w-[18px] h-[18px] opacity-50"
-                  >
-                    <path d="M3 4a1 1 0 011-1h4a1 1 0 010 2H6.414l2.293 2.293a1 1 0 01-1.414 1.414L5 6.414V8a1 1 0 01-2 0V4zm9 1a1 1 0 110-2h4a1 1 0 011 1v4a1 1 0 11-2 0V6.414l-2.293 2.293a1 1 0 11-1.414-1.414L13.586 5H12zm-9 7a1 1 0 112 0v1.586l2.293-2.293a1 1 0 011.414 1.414L6.414 15H8a1 1 0 110 2H4a1 1 0 01-1-1v-4zm13-1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 110-2h1.586l-2.293-2.293a1 1 0 011.414-1.414L15 13.586V12a1 1 0 011-1z" />
-                  </svg>
+                  <ArrowsOut className="w-[18px] h-[18px] opacity-50" />
                   <span className="flex-1 font-medium">Focus Mode</span>
                   <kbd className="text-[11px] font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
                     ⌘⇧F
@@ -277,17 +251,7 @@ export function CommandPalette() {
                     onSelect={() => handleSelect("export")}
                     className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
                   >
-                    <svg
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      className="w-[18px] h-[18px] opacity-50"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
+                    <Export className="w-[18px] h-[18px] opacity-50" />
                     <span className="flex-1 font-medium">Export Note</span>
                   </Command.Item>
                   <Command.Item
@@ -295,17 +259,7 @@ export function CommandPalette() {
                     onSelect={() => handleSelect("delete-note")}
                     className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-destructive data-[selected=true]:bg-destructive/10"
                   >
-                    <svg
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      className="w-[18px] h-[18px] opacity-70"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
+                    <Trash className="w-[18px] h-[18px] opacity-70" />
                     <span className="flex-1 font-medium">Delete Note</span>
                     <kbd className="text-[11px] font-mono font-medium text-destructive/70 bg-destructive/10 px-2 py-0.5 rounded">
                       ⌘⌫
@@ -325,17 +279,7 @@ export function CommandPalette() {
                   onSelect={() => handleSelect(`search:${result.id}`)}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
                 >
-                  <svg
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    className="w-[18px] h-[18px] opacity-50 shrink-0"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                  <FileText className="w-[18px] h-[18px] opacity-50 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="font-medium truncate">{result.title}</div>
                     {result.snippet && (
@@ -359,17 +303,7 @@ export function CommandPalette() {
                   onSelect={() => handleSelect(`note:${note.id}`)}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
                 >
-                  <svg
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    className="w-[18px] h-[18px] opacity-50"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                  <FileText className="w-[18px] h-[18px] opacity-50" />
                   <span className="flex-1 font-medium truncate">
                     {note.title || "Untitled"}
                   </span>
@@ -385,17 +319,7 @@ export function CommandPalette() {
                 onSelect={handleCreateNote}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
               >
-                <svg
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  className="w-[18px] h-[18px] opacity-50"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                    clipRule="evenodd"
-                  />
-                </svg>
+                <Plus className="w-[18px] h-[18px] opacity-50" />
                 <span className="flex-1 font-medium">
                   Create "{inputValue || "Untitled"}"
                 </span>
