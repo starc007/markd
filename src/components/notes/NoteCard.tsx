@@ -11,10 +11,8 @@ import {
   DropdownItem,
   DropdownSeparator,
   DropdownLabel,
-  Modal,
-  ModalFooter,
-  Button,
 } from "../ui";
+import { DeleteNoteModal } from "./DeleteNoteModal";
 import type { NoteMetadata } from "../../lib/tauri/commands";
 
 interface NoteCardProps {
@@ -110,27 +108,6 @@ export function NoteCard({
     </Dropdown>
   );
 
-  const DeleteModal = (
-    <Modal
-      isOpen={showDeleteModal}
-      onClose={() => setShowDeleteModal(false)}
-      title="Delete Note"
-    >
-      <p className="text-muted-foreground">
-        Are you sure you want to delete "{note.title || "Untitled"}"? This
-        action cannot be undone.
-      </p>
-      <ModalFooter>
-        <Button variant="ghost" onClick={() => setShowDeleteModal(false)}>
-          Cancel
-        </Button>
-        <Button variant="destructive" onClick={handleDeleteConfirm}>
-          Delete
-        </Button>
-      </ModalFooter>
-    </Modal>
-  );
-
   // List View
   if (variant === "list") {
     return (
@@ -172,7 +149,12 @@ export function NoteCard({
           </div>
         </motion.button>
 
-        {DeleteModal}
+        <DeleteNoteModal
+          isOpen={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          onConfirm={handleDeleteConfirm}
+          noteTitle={note.title}
+        />
       </>
     );
   }
@@ -222,7 +204,12 @@ export function NoteCard({
         </div>
       </motion.button>
 
-      {DeleteModal}
+      <DeleteNoteModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteConfirm}
+        noteTitle={note.title}
+      />
     </>
   );
 }

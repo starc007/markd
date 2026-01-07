@@ -6,7 +6,6 @@ import {
   ClipboardText,
   ArrowsOut,
   Export,
-  Trash,
   FileText,
 } from "@phosphor-icons/react";
 import { useNoteStore } from "../../stores/noteStore";
@@ -20,7 +19,6 @@ export function CommandPalette() {
     setCommandPaletteOpen,
     loadNote,
     createNote,
-    deleteNote,
     createFolder,
     toggleFocusMode,
     exportCurrentNote,
@@ -78,12 +76,6 @@ export function CommandPalette() {
           toggleFocusMode();
           setCommandPaletteOpen(false);
           break;
-        case "delete-note":
-          if (currentNote) {
-            await deleteNote(currentNote.id);
-          }
-          setCommandPaletteOpen(false);
-          break;
         case "export":
           if (currentNote) {
             const filePath = await save({
@@ -121,7 +113,6 @@ export function CommandPalette() {
       currentNote,
       setCommandPaletteOpen,
       toggleFocusMode,
-      deleteNote,
       exportCurrentNote,
       createFolder,
       loadNote,
@@ -230,17 +221,6 @@ export function CommandPalette() {
                   >
                     <Export className="w-[18px] h-[18px] opacity-50" />
                     <span className="flex-1 font-medium">Export Note</span>
-                  </Command.Item>
-                  <Command.Item
-                    value="delete-note"
-                    onSelect={() => handleSelect("delete-note")}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-destructive data-[selected=true]:bg-destructive/10"
-                  >
-                    <Trash className="w-[18px] h-[18px] opacity-70" />
-                    <span className="flex-1 font-medium">Delete Note</span>
-                    <kbd className="text-[11px] font-mono font-medium text-destructive/70 bg-destructive/10 px-2 py-0.5 rounded">
-                      ⌘⌫
-                    </kbd>
                   </Command.Item>
                 </Command.Group>
               )}
