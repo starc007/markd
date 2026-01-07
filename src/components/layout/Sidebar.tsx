@@ -45,7 +45,7 @@ export function Sidebar() {
     toggleFavorites,
   } = useNoteStore();
   const { getColor, setColor, removeColor } = useNoteColors();
-  const { stickyNotes } = useStickyNotesStore();
+  const { stickyNotes, loadStickyNotes } = useStickyNotesStore();
   const [deleteModalNoteId, setDeleteModalNoteId] = useState<string | null>(
     null
   );
@@ -53,7 +53,8 @@ export function Sidebar() {
   useEffect(() => {
     loadFolders();
     loadNotes();
-  }, [loadFolders, loadNotes]);
+    loadStickyNotes();
+  }, [loadFolders, loadNotes, loadStickyNotes]);
 
   const handleNewNote = async () => {
     const note = await createNote("Untitled", ui.selectedFolderId || undefined);

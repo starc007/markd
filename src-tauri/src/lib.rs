@@ -8,6 +8,7 @@ use commands::notes::*;
 use commands::folders::*;
 use commands::search::*;
 use commands::export::*;
+use commands::sticky_notes::*;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -27,6 +28,7 @@ pub fn run() {
             list_notes,
             save_note_content,
             import_file,
+            toggle_note_pinned,
             // Folder commands
             create_folder,
             get_folder,
@@ -39,6 +41,12 @@ pub fn run() {
             // Export commands
             export_note,
             get_note_content_for_export,
+            // Sticky Notes commands
+            create_sticky_note,
+            get_sticky_note,
+            update_sticky_note,
+            delete_sticky_note,
+            list_sticky_notes,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

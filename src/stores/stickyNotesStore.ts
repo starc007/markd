@@ -1,8 +1,8 @@
 import { create } from "zustand";
 import type { NoteColorId } from "../lib/config";
+import * as commands from "../lib/tauri/commands";
 
-const STORAGE_KEY = "draft-sticky-notes";
-
+// Frontend representation of sticky note (with camelCase)
 export interface StickyNote {
   id: string;
   content: string;
@@ -11,74 +11,113 @@ export interface StickyNote {
   updatedAt: number;
 }
 
+// Convert backend format (snake_case) to frontend format (camelCase)
+function fromBackend(note: commands.StickyNote): StickyNote {
+  return {
+    id: note.id,
+    content: note.content,
+    colorId: note.color_id as NoteColorId,
+    createdAt: note.created_at,
+    updatedAt: note.updated_at,
+  };
+}
+
+// Convert frontend format (camelCase) to backend format (snake_case)
+function toBackend(note: Partial<StickyNote>): {
+  content?: string;
+  color_id?: string;
+} {
+  const result: { content?: string; color_id?: string } = {};
+  if (note.content !== undefined) result.content = note.content;
+  if (note.colorId !== undefined) result.color_id = note.colorId;
+  return result;
+}
+
 interface StickyNotesStore {
   // State
   stickyNotes: StickyNote[];
+  isLoading: boolean;
+  error: string | null;
 
   // Actions
-  createStickyNote: () => StickyNote;
+  createStickyNote: () => Promise<StickyNote>;
   updateStickyNote: (
     id: string,
     updates: Partial<Pick<StickyNote, "content" | "colorId">>
-  ) => void;
-  deleteStickyNote: (id: string) => void;
-  loadStickyNotes: () => void;
+  ) => Promise<void>;
+  deleteStickyNote: (id: string) => Promise<void>;
+  loadStickyNotes: () => Promise<void>;
 }
 
-// Load sticky notes from localStorage
-const loadStickyNotesFromStorage = (): StickyNote[] => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
-  }
-};
-
-// Save sticky notes to localStorage
-const saveStickyNotesToStorage = (stickyNotes: StickyNote[]) => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(stickyNotes));
-  } catch (error) {
-    console.error("Failed to save sticky notes:", error);
-  }
-};
-
-export const useStickyNotesStore = create<StickyNotesStore>((set, get) => ({
+export const useStickyNotesStore = create<StickyNotesStore>((set) => ({
   // Initial state
-  stickyNotes: loadStickyNotesFromStorage(),
+  stickyNotes: [],
+  isLoading: false,
+  error: null,
 
   // Actions
-  createStickyNote: () => {
-    const newNote: StickyNote = {
-      id: crypto.randomUUID(),
-      content: "",
-      colorId: "default",
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
-    const updatedNotes = [newNote, ...get().stickyNotes];
-    set({ stickyNotes: updatedNotes });
-    saveStickyNotesToStorage(updatedNotes);
-    return newNote;
+  createStickyNote: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const note = await commands.createStickyNote({
+        content: "",
+        color_id: "default",
+      });
+      const frontendNote = fromBackend(note);
+      set((state) => ({
+        stickyNotes: [frontendNote, ...state.stickyNotes],
+        isLoading: false,
+      }));
+      return frontendNote;
+    } catch (error) {
+      set({ error: String(error), isLoading: false });
+      throw error;
+    }
   },
 
-  updateStickyNote: (id, updates) => {
-    const updatedNotes = get().stickyNotes.map((note) =>
-      note.id === id ? { ...note, ...updates, updatedAt: Date.now() } : note
-    );
-    set({ stickyNotes: updatedNotes });
-    saveStickyNotesToStorage(updatedNotes);
+  updateStickyNote: async (id, updates) => {
+    set({ isLoading: true, error: null });
+    try {
+      const backendUpdates = toBackend(updates);
+      const updated = await commands.updateStickyNote({
+        id,
+        ...backendUpdates,
+      });
+      const frontendNote = fromBackend(updated);
+      set((state) => ({
+        stickyNotes: state.stickyNotes.map((note) =>
+          note.id === id ? frontendNote : note
+        ),
+        isLoading: false,
+      }));
+    } catch (error) {
+      set({ error: String(error), isLoading: false });
+      throw error;
+    }
   },
 
-  deleteStickyNote: (id) => {
-    const updatedNotes = get().stickyNotes.filter((note) => note.id !== id);
-    set({ stickyNotes: updatedNotes });
-    saveStickyNotesToStorage(updatedNotes);
+  deleteStickyNote: async (id) => {
+    set({ isLoading: true, error: null });
+    try {
+      await commands.deleteStickyNote(id);
+      set((state) => ({
+        stickyNotes: state.stickyNotes.filter((note) => note.id !== id),
+        isLoading: false,
+      }));
+    } catch (error) {
+      set({ error: String(error), isLoading: false });
+      throw error;
+    }
   },
 
-  loadStickyNotes: () => {
-    const notes = loadStickyNotesFromStorage();
-    set({ stickyNotes: notes });
+  loadStickyNotes: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const notes = await commands.listStickyNotes();
+      const frontendNotes = notes.map(fromBackend);
+      set({ stickyNotes: frontendNotes, isLoading: false });
+    } catch (error) {
+      set({ error: String(error), isLoading: false });
+    }
   },
 }));

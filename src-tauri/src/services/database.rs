@@ -4,6 +4,7 @@ use std::sync::Mutex;
 
 use crate::models::folder::Folder;
 use crate::models::note::NoteMetadata;
+use crate::models::sticky_note::StickyNote;
 
 pub struct Database {
     conn: Mutex<Connection>,
@@ -42,6 +43,7 @@ impl Database {
                 preview TEXT,
                 file_path TEXT NOT NULL UNIQUE,
                 folder_id TEXT,
+                pinned INTEGER NOT NULL DEFAULT 0,
                 created_at INTEGER NOT NULL,
                 updated_at INTEGER NOT NULL,
                 FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE SET NULL
@@ -51,6 +53,20 @@ impl Database {
 
         // Add preview column if it doesn't exist (migration for existing databases)
         let _ = conn.execute("ALTER TABLE notes ADD COLUMN preview TEXT", []);
+        // Add pinned column if it doesn't exist (migration for existing databases)
+        let _ = conn.execute("ALTER TABLE notes ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0", []);
+
+        // Create sticky_notes table
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS sticky_notes (
+                id TEXT PRIMARY KEY,
+                content TEXT NOT NULL,
+                color_id TEXT NOT NULL DEFAULT 'default',
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL
+            )",
+            [],
+        )?;
 
         // Create tags table
         conn.execute(
@@ -114,8 +130,8 @@ impl Database {
     ) -> Result<()> {
         let conn = self.conn.lock().unwrap();
         conn.execute(
-            "INSERT INTO notes (id, title, preview, file_path, folder_id, created_at, updated_at)
-             VALUES (?1, ?2, NULL, ?3, ?4, ?5, ?6)",
+            "INSERT INTO notes (id, title, preview, file_path, folder_id, pinned, created_at, updated_at)
+             VALUES (?1, ?2, NULL, ?3, ?4, 0, ?5, ?6)",
             params![id, title, file_path, folder_id, created_at, updated_at],
         )?;
         Ok(())
@@ -177,7 +193,7 @@ impl Database {
     pub fn get_note_metadata(&self, id: &str) -> Result<Option<NoteMetadata>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT id, title, preview, folder_id, created_at, updated_at FROM notes WHERE id = ?1"
+            "SELECT id, title, preview, folder_id, pinned, created_at, updated_at FROM notes WHERE id = ?1"
         )?;
         
         let mut rows = stmt.query(params![id])?;
@@ -188,8 +204,9 @@ impl Database {
                 title: row.get(1)?,
                 preview: row.get(2)?,
                 folder_id: row.get(3)?,
-                created_at: row.get(4)?,
-                updated_at: row.get(5)?,
+                pinned: row.get::<_, i32>(4)? != 0,
+                created_at: row.get(5)?,
+                updated_at: row.get(6)?,
             }))
         } else {
             Ok(None)
@@ -214,11 +231,11 @@ impl Database {
         let mut notes = Vec::new();
         
         let sql = if folder_id.is_some() {
-            "SELECT id, title, preview, folder_id, created_at, updated_at 
-             FROM notes WHERE folder_id = ?1 ORDER BY updated_at DESC"
+            "SELECT id, title, preview, folder_id, pinned, created_at, updated_at 
+             FROM notes WHERE folder_id = ?1 ORDER BY pinned DESC, updated_at DESC"
         } else {
-            "SELECT id, title, preview, folder_id, created_at, updated_at 
-             FROM notes ORDER BY updated_at DESC"
+            "SELECT id, title, preview, folder_id, pinned, created_at, updated_at 
+             FROM notes ORDER BY pinned DESC, updated_at DESC"
         };
         
         let mut stmt = conn.prepare(sql)?;
@@ -235,8 +252,9 @@ impl Database {
                 title: row.get(1)?,
                 preview: row.get(2)?,
                 folder_id: row.get(3)?,
-                created_at: row.get(4)?,
-                updated_at: row.get(5)?,
+                pinned: row.get::<_, i32>(4)? != 0,
+                created_at: row.get(5)?,
+                updated_at: row.get(6)?,
             })
         });
         
@@ -245,6 +263,117 @@ impl Database {
         }
         
         Ok(notes)
+    }
+
+    pub fn toggle_note_pinned(&self, id: &str, pinned: bool, updated_at: i64) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "UPDATE notes SET pinned = ?1, updated_at = ?2 WHERE id = ?3",
+            params![if pinned { 1 } else { 0 }, updated_at, id],
+        )?;
+        Ok(())
+    }
+
+    // Sticky Notes operations
+    pub fn insert_sticky_note(
+        &self,
+        id: &str,
+        content: &str,
+        color_id: &str,
+        created_at: i64,
+        updated_at: i64,
+    ) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO sticky_notes (id, content, color_id, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![id, content, color_id, created_at, updated_at],
+        )?;
+        Ok(())
+    }
+
+    pub fn update_sticky_note(
+        &self,
+        id: &str,
+        content: Option<&str>,
+        color_id: Option<&str>,
+        updated_at: i64,
+    ) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        
+        if let Some(c) = content {
+            conn.execute(
+                "UPDATE sticky_notes SET content = ?1, updated_at = ?2 WHERE id = ?3",
+                params![c, updated_at, id],
+            )?;
+        }
+        
+        if let Some(cid) = color_id {
+            conn.execute(
+                "UPDATE sticky_notes SET color_id = ?1, updated_at = ?2 WHERE id = ?3",
+                params![cid, updated_at, id],
+            )?;
+        }
+        
+        if content.is_none() && color_id.is_none() {
+            conn.execute(
+                "UPDATE sticky_notes SET updated_at = ?1 WHERE id = ?2",
+                params![updated_at, id],
+            )?;
+        }
+        
+        Ok(())
+    }
+
+    pub fn delete_sticky_note(&self, id: &str) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute("DELETE FROM sticky_notes WHERE id = ?1", params![id])?;
+        Ok(())
+    }
+
+    pub fn get_sticky_note(&self, id: &str) -> Result<Option<StickyNote>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, content, color_id, created_at, updated_at FROM sticky_notes WHERE id = ?1"
+        )?;
+        
+        let mut rows = stmt.query(params![id])?;
+        
+        if let Some(row) = rows.next()? {
+            Ok(Some(StickyNote {
+                id: row.get(0)?,
+                content: row.get(1)?,
+                color_id: row.get(2)?,
+                created_at: row.get(3)?,
+                updated_at: row.get(4)?,
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn list_sticky_notes(&self) -> Result<Vec<StickyNote>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, content, color_id, created_at, updated_at FROM sticky_notes ORDER BY updated_at DESC"
+        )?;
+        
+        let mut sticky_notes = Vec::new();
+        let rows = stmt.query_map([], |row| {
+            Ok(StickyNote {
+                id: row.get(0)?,
+                content: row.get(1)?,
+                color_id: row.get(2)?,
+                created_at: row.get(3)?,
+                updated_at: row.get(4)?,
+            })
+        })?;
+        
+        for note in rows {
+            sticky_notes.push(note?);
+        }
+        
+        Ok(sticky_notes)
     }
 
     // Folder operations

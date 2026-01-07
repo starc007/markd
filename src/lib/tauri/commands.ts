@@ -16,6 +16,7 @@ export interface NoteMetadata {
   title: string;
   preview: string | null;
   folder_id: string | null;
+  pinned: boolean;
   created_at: number;
   updated_at: number;
 }
@@ -32,6 +33,25 @@ export interface SearchResult {
   title: string;
   snippet: string;
   rank: number;
+}
+
+export interface StickyNote {
+  id: string;
+  content: string;
+  color_id: string;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface CreateStickyNoteParams {
+  content?: string;
+  color_id?: string;
+}
+
+export interface UpdateStickyNoteParams {
+  id: string;
+  content?: string;
+  color_id?: string;
 }
 
 export interface CreateNoteParams {
@@ -142,4 +162,36 @@ export async function importFile(
   folderId?: string | null
 ): Promise<Note> {
   return invoke<Note>("import_file", { filePath, folderId });
+}
+
+export async function toggleNotePinned(
+  id: string,
+  pinned: boolean
+): Promise<void> {
+  return invoke<void>("toggle_note_pinned", { id, pinned });
+}
+
+// Sticky Notes commands
+export async function createStickyNote(
+  params: CreateStickyNoteParams
+): Promise<StickyNote> {
+  return invoke<StickyNote>("create_sticky_note", { params });
+}
+
+export async function getStickyNote(id: string): Promise<StickyNote | null> {
+  return invoke<StickyNote | null>("get_sticky_note", { id });
+}
+
+export async function updateStickyNote(
+  params: UpdateStickyNoteParams
+): Promise<StickyNote> {
+  return invoke<StickyNote>("update_sticky_note", { params });
+}
+
+export async function deleteStickyNote(id: string): Promise<void> {
+  return invoke<void>("delete_sticky_note", { id });
+}
+
+export async function listStickyNotes(): Promise<StickyNote[]> {
+  return invoke<StickyNote[]>("list_sticky_notes");
 }

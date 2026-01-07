@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { File02Icon, Plus } from "@hugeicons/core-free-icons";
 
@@ -6,11 +7,20 @@ import { Button, EmptyState } from "../ui";
 import { useStickyNotesStore } from "../../stores/stickyNotesStore";
 
 export function NotesGrid() {
-  const { stickyNotes, createStickyNote, updateStickyNote, deleteStickyNote } =
-    useStickyNotesStore();
+  const {
+    stickyNotes,
+    createStickyNote,
+    updateStickyNote,
+    deleteStickyNote,
+    loadStickyNotes,
+  } = useStickyNotesStore();
 
-  const handleCreateStickyNote = () => {
-    createStickyNote();
+  useEffect(() => {
+    loadStickyNotes();
+  }, [loadStickyNotes]);
+
+  const handleCreateStickyNote = async () => {
+    await createStickyNote();
   };
 
   return (

@@ -216,6 +216,19 @@ pub async fn list_notes(
 }
 
 #[tauri::command]
+pub async fn toggle_note_pinned(
+    state: State<'_, AppState>,
+    id: String,
+    pinned: bool,
+) -> Result<(), String> {
+    let now = Utc::now().timestamp_millis();
+    state.db
+        .toggle_note_pinned(&id, pinned, now)
+        .map_err(|e| format!("Failed to toggle note pinned status: {}", e))?;
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn save_note_content(
     state: State<'_, AppState>,
     id: String,
