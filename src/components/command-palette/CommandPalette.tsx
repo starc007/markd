@@ -26,7 +26,6 @@ export function CommandPalette() {
     "commands"
   );
 
-  // Reset state when closing
   useEffect(() => {
     if (!ui.commandPaletteOpen) {
       setInputValue("");
@@ -35,7 +34,6 @@ export function CommandPalette() {
     }
   }, [ui.commandPaletteOpen]);
 
-  // Handle search mode
   useEffect(() => {
     if (mode === "search" && inputValue) {
       search(inputValue);
@@ -95,13 +93,11 @@ export function CommandPalette() {
           }
           break;
         default:
-          // Check if it's a note ID
           if (action.startsWith("note:")) {
             const noteId = action.replace("note:", "");
             await loadNote(noteId);
             setCommandPaletteOpen(false);
           }
-          // Check if it's a search result
           if (action.startsWith("search:")) {
             const noteId = action.replace("search:", "");
             await loadNote(noteId);
@@ -124,11 +120,11 @@ export function CommandPalette() {
 
   return (
     <div
-      className="command-palette-overlay"
+      className="fixed inset-0 flex items-start justify-center pt-24 bg-foreground/20 backdrop-blur-sm z-50"
       onClick={() => setCommandPaletteOpen(false)}
     >
       <Command
-        className="command-palette"
+        className="w-full max-w-[520px] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => {
           if (e.key === "Escape") {
@@ -156,29 +152,26 @@ export function CommandPalette() {
               ? "Go to note..."
               : "Enter note title..."
           }
-          className="command-palette-input"
+          className="w-full px-5 py-4 text-[15px] bg-transparent border-b border-border text-foreground placeholder:text-muted-foreground outline-none"
           autoFocus
         />
-        <Command.List className="command-palette-list">
-          <Command.Empty className="command-palette-empty">
+        <Command.List className="max-h-[360px] overflow-y-auto p-2">
+          <Command.Empty className="py-8 text-center text-[13px] text-muted-foreground">
             {mode === "search" ? "No results found" : "No results"}
           </Command.Empty>
 
           {mode === "commands" && (
             <>
-              <Command.Group
-                heading="Actions"
-                className="command-palette-group"
-              >
+              <Command.Group heading="Actions">
                 <Command.Item
                   value="new-note"
                   onSelect={() => handleSelect("new-note")}
-                  className="command-palette-item"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
                 >
                   <svg
                     viewBox="0 0 20 20"
                     fill="currentColor"
-                    className="command-icon"
+                    className="w-[18px] h-[18px] opacity-50"
                   >
                     <path
                       fillRule="evenodd"
@@ -186,18 +179,20 @@ export function CommandPalette() {
                       clipRule="evenodd"
                     />
                   </svg>
-                  <span>New Note</span>
-                  <kbd className="command-shortcut">⌘N</kbd>
+                  <span className="flex-1 font-medium">New Note</span>
+                  <kbd className="text-[11px] font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
+                    ⌘N
+                  </kbd>
                 </Command.Item>
                 <Command.Item
                   value="search"
                   onSelect={() => handleSelect("search")}
-                  className="command-palette-item"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
                 >
                   <svg
                     viewBox="0 0 20 20"
                     fill="currentColor"
-                    className="command-icon"
+                    className="w-[18px] h-[18px] opacity-50"
                   >
                     <path
                       fillRule="evenodd"
@@ -205,18 +200,20 @@ export function CommandPalette() {
                       clipRule="evenodd"
                     />
                   </svg>
-                  <span>Search Notes</span>
-                  <kbd className="command-shortcut">⌘P</kbd>
+                  <span className="flex-1 font-medium">Search Notes</span>
+                  <kbd className="text-[11px] font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
+                    ⌘P
+                  </kbd>
                 </Command.Item>
                 <Command.Item
                   value="notes"
                   onSelect={() => handleSelect("notes")}
-                  className="command-palette-item"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
                 >
                   <svg
                     viewBox="0 0 20 20"
                     fill="currentColor"
-                    className="command-icon"
+                    className="w-[18px] h-[18px] opacity-50"
                   >
                     <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
                     <path
@@ -225,21 +222,23 @@ export function CommandPalette() {
                       clipRule="evenodd"
                     />
                   </svg>
-                  <span>Go to Note</span>
-                  <kbd className="command-shortcut">⌘O</kbd>
+                  <span className="flex-1 font-medium">Go to Note</span>
+                  <kbd className="text-[11px] font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
+                    ⌘O
+                  </kbd>
                 </Command.Item>
               </Command.Group>
 
-              <Command.Group heading="View" className="command-palette-group">
+              <Command.Group heading="View">
                 <Command.Item
                   value="toggle-sidebar"
                   onSelect={() => handleSelect("toggle-sidebar")}
-                  className="command-palette-item"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
                 >
                   <svg
                     viewBox="0 0 20 20"
                     fill="currentColor"
-                    className="command-icon"
+                    className="w-[18px] h-[18px] opacity-50"
                   >
                     <path
                       fillRule="evenodd"
@@ -247,40 +246,41 @@ export function CommandPalette() {
                       clipRule="evenodd"
                     />
                   </svg>
-                  <span>Toggle Sidebar</span>
-                  <kbd className="command-shortcut">⌘\</kbd>
+                  <span className="flex-1 font-medium">Toggle Sidebar</span>
+                  <kbd className="text-[11px] font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
+                    ⌘\
+                  </kbd>
                 </Command.Item>
                 <Command.Item
                   value="focus-mode"
                   onSelect={() => handleSelect("focus-mode")}
-                  className="command-palette-item"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
                 >
                   <svg
                     viewBox="0 0 20 20"
                     fill="currentColor"
-                    className="command-icon"
+                    className="w-[18px] h-[18px] opacity-50"
                   >
                     <path d="M3 4a1 1 0 011-1h4a1 1 0 010 2H6.414l2.293 2.293a1 1 0 01-1.414 1.414L5 6.414V8a1 1 0 01-2 0V4zm9 1a1 1 0 110-2h4a1 1 0 011 1v4a1 1 0 11-2 0V6.414l-2.293 2.293a1 1 0 11-1.414-1.414L13.586 5H12zm-9 7a1 1 0 112 0v1.586l2.293-2.293a1 1 0 011.414 1.414L6.414 15H8a1 1 0 110 2H4a1 1 0 01-1-1v-4zm13-1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 110-2h1.586l-2.293-2.293a1 1 0 011.414-1.414L15 13.586V12a1 1 0 011-1z" />
                   </svg>
-                  <span>Focus Mode</span>
-                  <kbd className="command-shortcut">⌘⇧F</kbd>
+                  <span className="flex-1 font-medium">Focus Mode</span>
+                  <kbd className="text-[11px] font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
+                    ⌘⇧F
+                  </kbd>
                 </Command.Item>
               </Command.Group>
 
               {currentNote && (
-                <Command.Group
-                  heading="Current Note"
-                  className="command-palette-group"
-                >
+                <Command.Group heading="Current Note">
                   <Command.Item
                     value="export"
                     onSelect={() => handleSelect("export")}
-                    className="command-palette-item"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
                   >
                     <svg
                       viewBox="0 0 20 20"
                       fill="currentColor"
-                      className="command-icon"
+                      className="w-[18px] h-[18px] opacity-50"
                     >
                       <path
                         fillRule="evenodd"
@@ -288,17 +288,17 @@ export function CommandPalette() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    <span>Export Note</span>
+                    <span className="flex-1 font-medium">Export Note</span>
                   </Command.Item>
                   <Command.Item
                     value="delete-note"
                     onSelect={() => handleSelect("delete-note")}
-                    className="command-palette-item danger"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-destructive data-[selected=true]:bg-destructive/10"
                   >
                     <svg
                       viewBox="0 0 20 20"
                       fill="currentColor"
-                      className="command-icon"
+                      className="w-[18px] h-[18px] opacity-70"
                     >
                       <path
                         fillRule="evenodd"
@@ -306,8 +306,10 @@ export function CommandPalette() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    <span>Delete Note</span>
-                    <kbd className="command-shortcut">⌘⌫</kbd>
+                    <span className="flex-1 font-medium">Delete Note</span>
+                    <kbd className="text-[11px] font-mono font-medium text-destructive/70 bg-destructive/10 px-2 py-0.5 rounded">
+                      ⌘⌫
+                    </kbd>
                   </Command.Item>
                 </Command.Group>
               )}
@@ -315,21 +317,18 @@ export function CommandPalette() {
           )}
 
           {mode === "search" && (
-            <Command.Group
-              heading="Search Results"
-              className="command-palette-group"
-            >
+            <Command.Group heading="Search Results">
               {searchResults.map((result) => (
                 <Command.Item
                   key={result.id}
                   value={`search:${result.id}`}
                   onSelect={() => handleSelect(`search:${result.id}`)}
-                  className="command-palette-item"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
                 >
                   <svg
                     viewBox="0 0 20 20"
                     fill="currentColor"
-                    className="command-icon"
+                    className="w-[18px] h-[18px] opacity-50 shrink-0"
                   >
                     <path
                       fillRule="evenodd"
@@ -337,11 +336,11 @@ export function CommandPalette() {
                       clipRule="evenodd"
                     />
                   </svg>
-                  <div className="command-item-content">
-                    <span className="command-item-title">{result.title}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate">{result.title}</div>
                     {result.snippet && (
-                      <span
-                        className="command-item-snippet"
+                      <div
+                        className="text-[12px] text-muted-foreground truncate mt-0.5"
                         dangerouslySetInnerHTML={{ __html: result.snippet }}
                       />
                     )}
@@ -352,18 +351,18 @@ export function CommandPalette() {
           )}
 
           {mode === "notes" && (
-            <Command.Group heading="Notes" className="command-palette-group">
+            <Command.Group heading="Notes">
               {notes.map((note) => (
                 <Command.Item
                   key={note.id}
                   value={`note:${note.id} ${note.title}`}
                   onSelect={() => handleSelect(`note:${note.id}`)}
-                  className="command-palette-item"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
                 >
                   <svg
                     viewBox="0 0 20 20"
                     fill="currentColor"
-                    className="command-icon"
+                    className="w-[18px] h-[18px] opacity-50"
                   >
                     <path
                       fillRule="evenodd"
@@ -371,26 +370,25 @@ export function CommandPalette() {
                       clipRule="evenodd"
                     />
                   </svg>
-                  <span>{note.title || "Untitled"}</span>
+                  <span className="flex-1 font-medium truncate">
+                    {note.title || "Untitled"}
+                  </span>
                 </Command.Item>
               ))}
             </Command.Group>
           )}
 
           {mode === "create" && (
-            <Command.Group
-              heading="Create Note"
-              className="command-palette-group"
-            >
+            <Command.Group heading="Create Note">
               <Command.Item
                 value="create-confirm"
                 onSelect={handleCreateNote}
-                className="command-palette-item"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
               >
                 <svg
                   viewBox="0 0 20 20"
                   fill="currentColor"
-                  className="command-icon"
+                  className="w-[18px] h-[18px] opacity-50"
                 >
                   <path
                     fillRule="evenodd"
@@ -398,8 +396,12 @@ export function CommandPalette() {
                     clipRule="evenodd"
                   />
                 </svg>
-                <span>Create "{inputValue || "Untitled"}"</span>
-                <kbd className="command-shortcut">↵</kbd>
+                <span className="flex-1 font-medium">
+                  Create "{inputValue || "Untitled"}"
+                </span>
+                <kbd className="text-[11px] font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
+                  ↵
+                </kbd>
               </Command.Item>
             </Command.Group>
           )}

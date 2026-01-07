@@ -1,62 +1,56 @@
 import { useEffect, useRef, useCallback } from "react";
 import { EditorView } from "@codemirror/view";
-import { createEditorState } from "../../lib/codemirror/setup";
+import { EditorState } from "@codemirror/state";
+import { createEditorSetup } from "../../lib/codemirror/setup";
 import { useNoteStore } from "../../stores/noteStore";
 
 interface EditorProps {
-  noteId?: string;
-  content?: string;
-  onChange?: (content: string) => void;
-  onSave?: () => void;
+  noteId: string;
+  content: string;
 }
 
-export function Editor({
-  noteId,
-  content = "",
-  onChange,
-  onSave,
-}: EditorProps) {
+export function Editor({ noteId, content }: EditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const contentRef = useRef(content);
+  const { saveCurrentNoteContent, updateNote, currentNote, loadNotes } =
+    useNoteStore();
 
-  // Debounced save
+  // Debounced save function
   const saveTimeoutRef = useRef<number | null>(null);
-  const { saveCurrentNoteContent, isSaving } = useNoteStore();
-
-  const handleChange = useCallback(
+  const debouncedSave = useCallback(
     (newContent: string) => {
-      contentRef.current = newContent;
-      onChange?.(newContent);
-
-      // Debounced auto-save
       if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
+        window.clearTimeout(saveTimeoutRef.current);
       }
-
       saveTimeoutRef.current = window.setTimeout(() => {
         saveCurrentNoteContent(newContent);
       }, 500);
     },
-    [onChange, saveCurrentNoteContent]
+    [saveCurrentNoteContent]
   );
 
-  const handleSave = useCallback(() => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    saveCurrentNoteContent(contentRef.current);
-    onSave?.();
-  }, [onSave, saveCurrentNoteContent]);
-
-  // Initialize editor
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const state = createEditorState({
-      initialContent: content,
-      onChange: handleChange,
-      onSave: handleSave,
+    const onUpdate = EditorView.updateListener.of((update) => {
+      if (update.docChanged) {
+        const newContent = update.state.doc.toString();
+        contentRef.current = newContent;
+        debouncedSave(newContent);
+
+        // Extract title from first line
+        const firstLine = newContent.split("\n")[0];
+        const title = firstLine.replace(/^#+\s*/, "").trim() || "Untitled";
+        if (currentNote && title !== currentNote.title) {
+          updateNote(noteId, { title });
+        }
+      }
+    });
+
+    const state = EditorState.create({
+      doc: content,
+      extensions: [...createEditorSetup(), onUpdate],
     });
 
     const view = new EditorView({
@@ -66,42 +60,53 @@ export function Editor({
 
     viewRef.current = view;
 
+    // Focus the editor
+    view.focus();
+
     return () => {
       view.destroy();
-      viewRef.current = null;
-    };
-  }, [noteId]); // Recreate when noteId changes
-
-  // Update content when it changes externally
-  useEffect(() => {
-    if (!viewRef.current) return;
-
-    const currentContent = viewRef.current.state.doc.toString();
-    if (content !== currentContent && content !== contentRef.current) {
-      viewRef.current.dispatch({
-        changes: {
-          from: 0,
-          to: viewRef.current.state.doc.length,
-          insert: content,
-        },
-      });
-      contentRef.current = content;
-    }
-  }, [content]);
-
-  // Cleanup save timeout
-  useEffect(() => {
-    return () => {
       if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
+        window.clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, []);
+  }, [noteId]);
+
+  // Handle back navigation
+  const handleBack = useCallback(() => {
+    const { currentNote } = useNoteStore.getState();
+    if (currentNote) {
+      useNoteStore.setState({ currentNote: null });
+      loadNotes();
+    }
+  }, [loadNotes]);
 
   return (
-    <div className="editor-container">
-      <div ref={containerRef} className="editor-content" />
-      {isSaving && <div className="save-indicator">Saving...</div>}
+    <div className="flex-1 flex flex-col h-full overflow-hidden bg-card">
+      {/* Editor Header */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleBack}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+              <path
+                fillRule="evenodd"
+                d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Back
+          </button>
+          <span className="text-border">|</span>
+          <span className="font-medium text-foreground truncate">
+            {currentNote?.title || "Untitled"}
+          </span>
+        </div>
+      </div>
+
+      {/* Editor Content */}
+      <div ref={containerRef} className="flex-1 overflow-y-auto" />
     </div>
   );
 }
