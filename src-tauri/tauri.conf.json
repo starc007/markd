@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "usedraft",
+  "productName": "Draft",
   "version": "0.1.0",
   "identifier": "app.usedraft.draft",
   "build": {
@@ -12,9 +12,15 @@
   "app": {
     "windows": [
       {
-        "title": "usedraft",
-        "width": 800,
-        "height": 600
+        "title": "Draft",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "decorations": true,
+        "transparent": false
       }
     ],
     "security": {
@@ -30,6 +36,9 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "category": "Productivity",
+    "shortDescription": "A fast, local-first notes app for developers",
+    "longDescription": "Draft is a macOS-first, local-only, ultra high-performance notes app designed for developers and content creators who care deeply about speed, privacy, and data ownership."
   }
 }
