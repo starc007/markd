@@ -1,7 +1,6 @@
 import { useCallback, useState, useRef } from "react";
 import { ArrowLeft, DotsThree, Trash, Export } from "@phosphor-icons/react";
 import { save } from "@tauri-apps/plugin-dialog";
-import type { EditorView } from "@codemirror/view";
 import { useNoteStore } from "../../stores/noteStore";
 import { EDITOR_CONFIG } from "../../lib/config";
 import {
@@ -14,7 +13,7 @@ import {
   DropdownSeparator,
 } from "../ui";
 import { DeleteNoteModal } from "../notes/DeleteNoteModal";
-import { EditorToolbar } from "./EditorToolbar";
+import { EditorTitle } from "./EditorTitle";
 import { EditorContent, type EditorContentRef } from "./EditorContent";
 
 interface EditorProps {
@@ -24,7 +23,6 @@ interface EditorProps {
 
 export function Editor({ noteId, content }: EditorProps) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [editorView, setEditorView] = useState<EditorView | null>(null);
   const editorRef = useRef<EditorContentRef>(null);
   const saveTimeoutRef = useRef<number | null>(null);
 
@@ -60,10 +58,15 @@ export function Editor({ noteId, content }: EditorProps) {
 
   // Debounced content save
   const handleContentChange = useCallback((newContent: string) => {
+    console.log(
+      "handleContentChange called with:",
+      newContent.substring(0, 100)
+    );
     if (saveTimeoutRef.current) {
       window.clearTimeout(saveTimeoutRef.current);
     }
     saveTimeoutRef.current = window.setTimeout(() => {
+      console.log("Saving to store:", newContent.substring(0, 100));
       useNoteStore.getState().saveCurrentNoteContent(newContent);
     }, EDITOR_CONFIG.autosaveDelay);
   }, []);
@@ -72,16 +75,20 @@ export function Editor({ noteId, content }: EditorProps) {
   const handleTitleChange = useCallback(
     (title: string) => {
       const note = useNoteStore.getState().currentNote;
-      if (note && title !== note.title) {
-        useNoteStore.getState().updateNote(noteId, { title });
+      // Use "Untitled" only for saving/display, but allow empty during editing
+      const displayTitle = title.trim() || "Untitled";
+      // Only update if the display title (with "Untitled" fallback) is different
+      // This allows the user to clear the title without it immediately coming back
+      if (note && displayTitle !== (note.title || "Untitled")) {
+        useNoteStore.getState().updateNote(noteId, { title: displayTitle });
       }
     },
     [noteId]
   );
 
-  // Get editor view when content is ready
-  const handleViewReady = useCallback((view: EditorView) => {
-    setEditorView(view);
+  // Handle Enter in title to focus content editor
+  const handleTitleEnter = useCallback(() => {
+    editorRef.current?.focus();
   }, []);
 
   return (
@@ -136,18 +143,26 @@ export function Editor({ noteId, content }: EditorProps) {
           </div>
         </div>
 
-        {/* Toolbar */}
-        <EditorToolbar editorView={editorView} />
+        {/* Editor Content - Notion style */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-[900px] mx-auto px-12 py-8">
+            {/* Title Editor */}
+            <EditorTitle
+              title={currentNote?.title || ""}
+              noteId={noteId}
+              onTitleChange={handleTitleChange}
+              onEnter={handleTitleEnter}
+            />
 
-        {/* Editor Content */}
-        <EditorContent
-          ref={editorRef}
-          noteId={noteId}
-          content={content}
-          onContentChange={handleContentChange}
-          onTitleChange={handleTitleChange}
-          onViewReady={handleViewReady}
-        />
+            {/* Content Editor */}
+            <EditorContent
+              ref={editorRef}
+              noteId={noteId}
+              content={content}
+              onContentChange={handleContentChange}
+            />
+          </div>
+        </div>
       </div>
 
       <DeleteNoteModal
