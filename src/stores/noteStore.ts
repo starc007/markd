@@ -280,11 +280,10 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
     set({ ui: { ...ui, sidebarCollapsed: !ui.sidebarCollapsed } });
   },
 
+  // Focus mode just toggles sidebar visibility
   toggleFocusMode: () => {
     const { ui } = get();
-    set({
-      ui: { ...ui, focusMode: !ui.focusMode, sidebarCollapsed: !ui.focusMode },
-    });
+    set({ ui: { ...ui, sidebarCollapsed: !ui.sidebarCollapsed } });
   },
 
   toggleCommandPalette: () => {

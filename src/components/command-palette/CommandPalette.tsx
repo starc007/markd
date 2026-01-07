@@ -4,7 +4,6 @@ import {
   Plus,
   MagnifyingGlass,
   ClipboardText,
-  SidebarSimple,
   ArrowsOut,
   Export,
   Trash,
@@ -24,7 +23,6 @@ export function CommandPalette() {
     deleteNote,
     createFolder,
     toggleFocusMode,
-    toggleSidebar,
     exportCurrentNote,
     search,
     searchResults,
@@ -32,9 +30,7 @@ export function CommandPalette() {
   } = useNoteStore();
 
   const [inputValue, setInputValue] = useState("");
-  const [mode, setMode] = useState<"commands" | "search" | "notes" | "create">(
-    "commands"
-  );
+  const [mode, setMode] = useState<"commands" | "search" | "notes">("commands");
 
   useEffect(() => {
     if (!ui.commandPaletteOpen) {
@@ -44,23 +40,31 @@ export function CommandPalette() {
     }
   }, [ui.commandPaletteOpen, clearSearch]);
 
+  // Trigger search when input changes in search mode
   useEffect(() => {
-    if (mode === "search" && inputValue) {
-      search(inputValue);
+    if (mode === "search") {
+      if (inputValue.trim()) {
+        search(inputValue);
+      } else {
+        clearSearch();
+      }
     }
-  }, [inputValue, mode, search]);
+  }, [inputValue, mode, search, clearSearch]);
+
+  // Create a new note and open it immediately
+  const handleCreateNote = useCallback(async () => {
+    const note = await createNote("Untitled");
+    if (note) {
+      await loadNote(note.id);
+    }
+    setCommandPaletteOpen(false);
+  }, [createNote, loadNote, setCommandPaletteOpen]);
 
   const handleSelect = useCallback(
     async (action: string) => {
       switch (action) {
         case "new-note":
-          if (inputValue.trim()) {
-            await createNote(inputValue.trim());
-            setCommandPaletteOpen(false);
-          } else {
-            setMode("create");
-            setInputValue("");
-          }
+          await handleCreateNote();
           break;
         case "search":
           setMode("search");
@@ -69,10 +73,6 @@ export function CommandPalette() {
         case "notes":
           setMode("notes");
           setInputValue("");
-          break;
-        case "toggle-sidebar":
-          toggleSidebar();
-          setCommandPaletteOpen(false);
           break;
         case "focus-mode":
           toggleFocusMode();
@@ -117,25 +117,17 @@ export function CommandPalette() {
       }
     },
     [
-      inputValue,
+      handleCreateNote,
       currentNote,
-      createNote,
       setCommandPaletteOpen,
-      toggleSidebar,
       toggleFocusMode,
       deleteNote,
       exportCurrentNote,
       createFolder,
       loadNote,
+      inputValue,
     ]
   );
-
-  const handleCreateNote = async () => {
-    if (inputValue.trim()) {
-      await createNote(inputValue.trim());
-      setCommandPaletteOpen(false);
-    }
-  };
 
   if (!ui.commandPaletteOpen) return null;
 
@@ -152,12 +144,10 @@ export function CommandPalette() {
             if (mode !== "commands") {
               setMode("commands");
               setInputValue("");
+              clearSearch();
             } else {
               setCommandPaletteOpen(false);
             }
-          }
-          if (e.key === "Enter" && mode === "create" && inputValue.trim()) {
-            handleCreateNote();
           }
         }}
       >
@@ -169,9 +159,7 @@ export function CommandPalette() {
               ? "Type a command or search..."
               : mode === "search"
               ? "Search notes..."
-              : mode === "notes"
-              ? "Go to note..."
-              : "Enter note title..."
+              : "Go to note..."
           }
           className="w-full px-5 py-4 text-[15px] bg-transparent border-b border-border text-foreground placeholder:text-muted-foreground outline-none"
           autoFocus
@@ -221,25 +209,14 @@ export function CommandPalette() {
 
               <Command.Group heading="View">
                 <Command.Item
-                  value="toggle-sidebar"
-                  onSelect={() => handleSelect("toggle-sidebar")}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
-                >
-                  <SidebarSimple className="w-[18px] h-[18px] opacity-50" />
-                  <span className="flex-1 font-medium">Toggle Sidebar</span>
-                  <kbd className="text-[11px] font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
-                    ⌘\
-                  </kbd>
-                </Command.Item>
-                <Command.Item
                   value="focus-mode"
                   onSelect={() => handleSelect("focus-mode")}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
                 >
                   <ArrowsOut className="w-[18px] h-[18px] opacity-50" />
-                  <span className="flex-1 font-medium">Focus Mode</span>
+                  <span className="flex-1 font-medium">Toggle Sidebar</span>
                   <kbd className="text-[11px] font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
-                    ⌘⇧F
+                    ⌘\
                   </kbd>
                 </Command.Item>
               </Command.Group>
@@ -272,61 +249,59 @@ export function CommandPalette() {
 
           {mode === "search" && (
             <Command.Group heading="Search Results">
-              {searchResults.map((result) => (
-                <Command.Item
-                  key={result.id}
-                  value={`search:${result.id}`}
-                  onSelect={() => handleSelect(`search:${result.id}`)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
-                >
-                  <FileText className="w-[18px] h-[18px] opacity-50 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{result.title}</div>
-                    {result.snippet && (
-                      <div
-                        className="text-[12px] text-muted-foreground truncate mt-0.5"
-                        dangerouslySetInnerHTML={{ __html: result.snippet }}
-                      />
-                    )}
-                  </div>
-                </Command.Item>
-              ))}
+              {searchResults.length > 0 ? (
+                searchResults.map((result) => (
+                  <Command.Item
+                    key={result.id}
+                    value={`search:${result.id} ${result.title}`}
+                    onSelect={() => handleSelect(`search:${result.id}`)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
+                  >
+                    <FileText className="w-[18px] h-[18px] opacity-50 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">{result.title}</div>
+                      {result.snippet && (
+                        <div
+                          className="text-[12px] text-muted-foreground truncate mt-0.5"
+                          dangerouslySetInnerHTML={{ __html: result.snippet }}
+                        />
+                      )}
+                    </div>
+                  </Command.Item>
+                ))
+              ) : inputValue.trim() ? (
+                <div className="py-6 text-center text-[13px] text-muted-foreground">
+                  No notes found for "{inputValue}"
+                </div>
+              ) : (
+                <div className="py-6 text-center text-[13px] text-muted-foreground">
+                  Type to search notes...
+                </div>
+              )}
             </Command.Group>
           )}
 
           {mode === "notes" && (
             <Command.Group heading="Notes">
-              {notes.map((note) => (
-                <Command.Item
-                  key={note.id}
-                  value={`note:${note.id} ${note.title}`}
-                  onSelect={() => handleSelect(`note:${note.id}`)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
-                >
-                  <FileText className="w-[18px] h-[18px] opacity-50" />
-                  <span className="flex-1 font-medium truncate">
-                    {note.title || "Untitled"}
-                  </span>
-                </Command.Item>
-              ))}
-            </Command.Group>
-          )}
-
-          {mode === "create" && (
-            <Command.Group heading="Create Note">
-              <Command.Item
-                value="create-confirm"
-                onSelect={handleCreateNote}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
-              >
-                <Plus className="w-[18px] h-[18px] opacity-50" />
-                <span className="flex-1 font-medium">
-                  Create "{inputValue || "Untitled"}"
-                </span>
-                <kbd className="text-[11px] font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
-                  ↵
-                </kbd>
-              </Command.Item>
+              {notes.length > 0 ? (
+                notes.map((note) => (
+                  <Command.Item
+                    key={note.id}
+                    value={`note:${note.id} ${note.title}`}
+                    onSelect={() => handleSelect(`note:${note.id}`)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
+                  >
+                    <FileText className="w-[18px] h-[18px] opacity-50" />
+                    <span className="flex-1 font-medium truncate">
+                      {note.title || "Untitled"}
+                    </span>
+                  </Command.Item>
+                ))
+              ) : (
+                <div className="py-6 text-center text-[13px] text-muted-foreground">
+                  No notes yet. Create one with ⌘N
+                </div>
+              )}
             </Command.Group>
           )}
         </Command.List>

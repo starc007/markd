@@ -15,8 +15,6 @@ export function NotesGrid() {
   const { notes, folders, ui, loadNotes, loadNote, createNote, deleteNote } =
     useNoteStore();
   const [searchQuery, setSearchQuery] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
-  const [newNoteTitle, setNewNoteTitle] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   useEffect(() => {
@@ -29,11 +27,11 @@ export function NotesGrid() {
       (ui.selectedFolderId === null || note.folder_id === ui.selectedFolderId)
   );
 
+  // Create note and immediately open it
   const handleCreateNote = async () => {
-    if (newNoteTitle.trim()) {
-      await createNote(newNoteTitle.trim(), ui.selectedFolderId || undefined);
-      setNewNoteTitle("");
-      setIsCreating(false);
+    const note = await createNote("Untitled", ui.selectedFolderId || undefined);
+    if (note) {
+      loadNote(note.id);
     }
   };
 
@@ -125,7 +123,7 @@ export function NotesGrid() {
               Create your first note to get started
             </p>
             <button
-              onClick={() => setIsCreating(true)}
+              onClick={handleCreateNote}
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
             >
               <Plus className="w-4 h-4" />
@@ -137,7 +135,7 @@ export function NotesGrid() {
             {/* Create Note Button */}
             <div className="mb-4">
               <button
-                onClick={() => setIsCreating(true)}
+                onClick={handleCreateNote}
                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
               >
                 <Plus className="w-4 h-4" />
@@ -177,44 +175,6 @@ export function NotesGrid() {
           </>
         )}
       </div>
-
-      {/* Create Note Modal */}
-      {isCreating && (
-        <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
-          onClick={() => setIsCreating(false)}
-        >
-          <div
-            className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="text-lg font-semibold mb-4">Create New Note</h2>
-            <input
-              type="text"
-              value={newNoteTitle}
-              onChange={(e) => setNewNoteTitle(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleCreateNote()}
-              placeholder="Note title..."
-              className="w-full px-4 py-3 bg-background border border-border rounded-xl text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-ring transition-all mb-4"
-              autoFocus
-            />
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setIsCreating(false)}
-                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateNote}
-                className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-              >
-                Create
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
