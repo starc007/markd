@@ -1,13 +1,14 @@
 import { Command } from "cmdk";
 import { useEffect, useState, useCallback } from "react";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  Plus,
-  ClipboardText,
-  ArrowsOut,
-  Export,
-  FileText,
-  Command as CommandIcon,
-} from "@phosphor-icons/react";
+  AddIcon,
+  ClipboardIcon,
+  MaximizeIcon,
+  Download01Icon,
+  FileEditIcon,
+  CommandIcon,
+} from "@hugeicons/core-free-icons";
 import { useNoteStore } from "../../stores/noteStore";
 import { save } from "@tauri-apps/plugin-dialog";
 
@@ -155,10 +156,21 @@ export function CommandPalette() {
               onSelect={() => handleSelect("new-note")}
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
             >
-              <Plus className="w-[18px] h-[18px] opacity-50" />
+              <HugeiconsIcon
+                icon={AddIcon}
+                size={18}
+                color="currentColor"
+                strokeWidth={1.5}
+                className="opacity-50"
+              />
               <span className="flex-1 font-medium">New Note</span>
               <kbd className="flex items-center gap-1 text-sm font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
-                <CommandIcon size={17} weight="regular" />
+                <HugeiconsIcon
+                  icon={CommandIcon}
+                  size={17}
+                  color="currentColor"
+                  strokeWidth={1.5}
+                />
                 <span>N</span>
               </kbd>
             </Command.Item>
@@ -167,10 +179,21 @@ export function CommandPalette() {
               onSelect={() => handleSelect("notes")}
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
             >
-              <ClipboardText className="w-[18px] h-[18px] opacity-50" />
+              <HugeiconsIcon
+                icon={ClipboardIcon}
+                size={18}
+                color="currentColor"
+                strokeWidth={1.5}
+                className="opacity-50"
+              />
               <span className="flex-1 font-medium">Go to Note</span>
               <kbd className="flex items-center gap-1 text-sm font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
-                <CommandIcon size={17} weight="regular" />
+                <HugeiconsIcon
+                  icon={CommandIcon}
+                  size={17}
+                  color="currentColor"
+                  strokeWidth={1.5}
+                />
                 <span>O</span>
               </kbd>
             </Command.Item>
@@ -179,10 +202,21 @@ export function CommandPalette() {
               onSelect={() => handleSelect("focus-mode")}
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
             >
-              <ArrowsOut className="w-[18px] h-[18px] opacity-50" />
+              <HugeiconsIcon
+                icon={MaximizeIcon}
+                size={18}
+                color="currentColor"
+                strokeWidth={1.5}
+                className="opacity-50"
+              />
               <span className="flex-1 font-medium">Toggle Sidebar</span>
               <kbd className="flex items-center gap-1 text-sm font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
-                <CommandIcon size={17} weight="regular" />
+                <HugeiconsIcon
+                  icon={CommandIcon}
+                  size={17}
+                  color="currentColor"
+                  strokeWidth={1.5}
+                />
                 <span>\</span>
               </kbd>
             </Command.Item>
@@ -192,7 +226,13 @@ export function CommandPalette() {
                 onSelect={() => handleSelect("export")}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
               >
-                <Export className="w-[18px] h-[18px] opacity-50" />
+                <HugeiconsIcon
+                  icon={Download01Icon}
+                  size={18}
+                  color="currentColor"
+                  strokeWidth={1.5}
+                  className="opacity-50"
+                />
                 <span className="flex-1 font-medium">Export Note</span>
               </Command.Item>
             )}
@@ -208,7 +248,13 @@ export function CommandPalette() {
                   onSelect={() => handleSelect(`search:${result.id}`)}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
                 >
-                  <FileText className="w-[18px] h-[18px] opacity-50 shrink-0" />
+                  <HugeiconsIcon
+                    icon={FileEditIcon}
+                    size={18}
+                    color="currentColor"
+                    strokeWidth={1.5}
+                    className="opacity-50 shrink-0"
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="font-medium truncate">{result.title}</div>
                     {result.snippet && (
@@ -234,7 +280,13 @@ export function CommandPalette() {
                     onSelect={() => handleSelect(`note:${note.id}`)}
                     className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
                   >
-                    <FileText className="w-[18px] h-[18px] opacity-50" />
+                    <HugeiconsIcon
+                      icon={FileEditIcon}
+                      size={18}
+                      color="currentColor"
+                      strokeWidth={1.5}
+                      className="opacity-50"
+                    />
                     <span className="flex-1 font-medium truncate">
                       {note.title || "Untitled"}
                     </span>
@@ -244,7 +296,12 @@ export function CommandPalette() {
                 <div className="py-6 text-center text-[13px] text-muted-foreground">
                   No notes yet. Create one with{" "}
                   <span className="inline-flex items-center gap-1">
-                    <CommandIcon className="w-3 h-3" weight="regular" />
+                    <HugeiconsIcon
+                      icon={CommandIcon}
+                      size={12}
+                      color="currentColor"
+                      strokeWidth={1.5}
+                    />
                     <span>N</span>
                   </span>
                 </div>

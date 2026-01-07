@@ -1,5 +1,11 @@
 import { motion } from "framer-motion";
-import { DotsThree, Trash, PencilSimple, Check } from "@phosphor-icons/react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  MoreVerticalIcon,
+  DeleteIcon,
+  EditIcon,
+  Tick02Icon,
+} from "@hugeicons/core-free-icons";
 import { useState } from "react";
 import { NOTE_COLORS, getNoteColor, type NoteColorId } from "../../lib/config";
 import { formatRelativeTime } from "../../lib/utils";
@@ -58,13 +64,24 @@ export function NoteCard({
           size="sm"
           title="More options"
         >
-          <DotsThree className="w-4 h-4" weight="bold" />
+          <HugeiconsIcon
+            icon={MoreVerticalIcon}
+            size={16}
+            color="currentColor"
+            strokeWidth={1.5}
+          />
         </IconButton>
       </DropdownTrigger>
 
       <DropdownContent align="end" className="w-48">
         <DropdownItem onClick={handleEditClick}>
-          <PencilSimple className="w-4 h-4 text-muted-foreground" />
+          <HugeiconsIcon
+            icon={EditIcon}
+            size={16}
+            color="currentColor"
+            strokeWidth={1.5}
+            className="text-muted-foreground"
+          />
           Edit note
         </DropdownItem>
 
@@ -85,7 +102,13 @@ export function NoteCard({
                 transition={{ duration: 0.1 }}
               >
                 {colorId === c.id && (
-                  <Check className="w-3 h-3 text-foreground/70" weight="bold" />
+                  <HugeiconsIcon
+                    icon={Tick02Icon}
+                    size={12}
+                    color="currentColor"
+                    strokeWidth={1.5}
+                    className="text-foreground/70"
+                  />
                 )}
               </motion.button>
             ))}
@@ -101,7 +124,12 @@ export function NoteCard({
           }}
           variant="destructive"
         >
-          <Trash className="w-4 h-4" />
+          <HugeiconsIcon
+            icon={DeleteIcon}
+            size={16}
+            color="currentColor"
+            strokeWidth={1.5}
+          />
           Delete note
         </DropdownItem>
       </DropdownContent>

@@ -1,5 +1,11 @@
 import { useCallback, useState, useRef } from "react";
-import { ArrowLeft, DotsThree, Trash, Export } from "@phosphor-icons/react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  ArrowLeftIcon,
+  MoreVerticalIcon,
+  DeleteIcon,
+  Download01Icon,
+} from "@hugeicons/core-free-icons";
 import { save } from "@tauri-apps/plugin-dialog";
 import { useNoteStore } from "../../stores/noteStore";
 import { EDITOR_CONFIG } from "../../lib/config";
@@ -100,7 +106,12 @@ export function Editor({ noteId, content }: EditorProps) {
               onClick={handleBack}
               className="hover:bg-transparent px-0!"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <HugeiconsIcon
+                icon={ArrowLeftIcon}
+                size={16}
+                color="currentColor"
+                strokeWidth={1.5}
+              />
               Back
             </Button>
             <span className="text-border">|</span>
@@ -114,13 +125,24 @@ export function Editor({ noteId, content }: EditorProps) {
             <Dropdown>
               <DropdownTrigger>
                 <IconButton size="sm" title="More options">
-                  <DotsThree className="w-5 h-5" weight="bold" />
+                  <HugeiconsIcon
+                    icon={MoreVerticalIcon}
+                    size={20}
+                    color="currentColor"
+                    strokeWidth={1.5}
+                  />
                 </IconButton>
               </DropdownTrigger>
 
               <DropdownContent align="end">
                 <DropdownItem onClick={handleExport}>
-                  <Export className="w-4 h-4 text-muted-foreground" />
+                  <HugeiconsIcon
+                    icon={Download01Icon}
+                    size={16}
+                    color="currentColor"
+                    strokeWidth={1.5}
+                    className="text-muted-foreground"
+                  />
                   Export note
                 </DropdownItem>
 
@@ -130,7 +152,12 @@ export function Editor({ noteId, content }: EditorProps) {
                   onClick={() => setShowDeleteModal(true)}
                   variant="destructive"
                 >
-                  <Trash className="w-4 h-4" />
+                  <HugeiconsIcon
+                    icon={DeleteIcon}
+                    size={16}
+                    color="currentColor"
+                    strokeWidth={1.5}
+                  />
                   Delete note
                 </DropdownItem>
               </DropdownContent>

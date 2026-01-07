@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { List, SquaresFour, FileText } from "@phosphor-icons/react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Menu01Icon, Grid02Icon, File02Icon } from "@hugeicons/core-free-icons";
 import { useNoteStore } from "../../stores/noteStore";
 import { useNoteColors } from "../../hooks/useNoteColors";
 import { NoteCard } from "./NoteCard";
@@ -61,12 +62,26 @@ export function NotesGrid() {
           options={[
             {
               value: "list",
-              icon: <List className="w-4 h-4" />,
+              icon: (
+                <HugeiconsIcon
+                  icon={Menu01Icon}
+                  size={16}
+                  color="currentColor"
+                  strokeWidth={1.5}
+                />
+              ),
               title: "List view",
             },
             {
               value: "grid",
-              icon: <SquaresFour className="w-4 h-4" />,
+              icon: (
+                <HugeiconsIcon
+                  icon={Grid02Icon}
+                  size={16}
+                  color="currentColor"
+                  strokeWidth={1.5}
+                />
+              ),
               title: "Grid view",
             },
           ]}
@@ -80,7 +95,14 @@ export function NotesGrid() {
       <div className="flex-1 overflow-y-auto px-6 py-4 border-t border-sidebar-border">
         {filteredNotes.length === 0 ? (
           <EmptyState
-            icon={<FileText className="w-16 h-16" />}
+            icon={
+              <HugeiconsIcon
+                icon={File02Icon}
+                size={64}
+                color="currentColor"
+                strokeWidth={1.5}
+              />
+            }
             title="No notes yet"
             description='Click "New Note" in the sidebar to get started'
           />

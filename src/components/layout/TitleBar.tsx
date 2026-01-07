@@ -1,4 +1,5 @@
-import { MagnifyingGlass, Command } from "@phosphor-icons/react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { SearchIcon, CommandIcon } from "@hugeicons/core-free-icons";
 import { useNoteStore } from "../../stores/noteStore";
 
 export function TitleBar() {
@@ -40,9 +41,12 @@ export function TitleBar() {
         {/* Search Bar - Clickable to open command palette */}
         <div className="relative [-webkit-app-region:no-drag]">
           <div className="relative w-[250px]">
-            <MagnifyingGlass
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none"
-              weight="regular"
+            <HugeiconsIcon
+              icon={SearchIcon}
+              size={16}
+              color="currentColor"
+              strokeWidth={1.5}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
             />
             <input
               type="text"
@@ -54,7 +58,13 @@ export function TitleBar() {
             />
             {/* Keyboard shortcut hint */}
             <p className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center text-sm font-mono font-medium text-muted-foreground pointer-events-none">
-              <Command size={17} weight="regular" />K
+              <HugeiconsIcon
+                icon={CommandIcon}
+                size={17}
+                color="currentColor"
+                strokeWidth={1.5}
+              />
+              K
             </p>
           </div>
         </div>
