@@ -2,18 +2,19 @@ mod commands;
 mod models;
 mod services;
 mod state;
+mod utils;
 
-use state::AppState;
-use commands::notes::*;
-use commands::folders::*;
-use commands::search::*;
 use commands::export::*;
+use commands::folders::*;
+use commands::notes::*;
+use commands::search::*;
 use commands::sticky_notes::*;
+use state::AppState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app_state = AppState::new().expect("Failed to initialize app state");
-    
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_fs::init())

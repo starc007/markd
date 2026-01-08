@@ -36,13 +36,13 @@ export const PasteMarkdown = Extension.create({
               //   const { state, dispatch } = view;
 
               // Parse the Markdown text to Tiptap JSON using the converter
-              const json = editor?.markdown?.parse(text);
-              if (!json) {
-                return false;
-              }
+              // const json = editor?.markdown?.parse(text);
+              // if (!json) {
+              //   return false;
+              // }
 
               // Insert the parsed JSON content at cursor position
-              editor.commands.insertContent(json);
+              // editor.commands.insertContent(json);
               return true;
             }
 

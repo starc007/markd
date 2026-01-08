@@ -34,7 +34,7 @@ interface NoteStore {
   createNote: (title: string, folderId?: string) => Promise<Note>;
   updateNote: (
     id: string,
-    updates: { title?: string; content?: string }
+    updates: { title?: string; content?: string },
   ) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   saveCurrentNoteContent: (content: string) => Promise<void>;
@@ -154,7 +154,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       const updatedNotes = notes.map((n) =>
         n.id === id
           ? { ...n, title: note.title, updated_at: note.updated_at }
-          : n
+          : n,
       );
 
       // Sort by updated_at desc
@@ -205,7 +205,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 
       // Update notes list timestamp
       const updatedNotes = notes.map((n) =>
-        n.id === currentNote.id ? { ...n, updated_at: updatedAt } : n
+        n.id === currentNote.id ? { ...n, updated_at: updatedAt } : n,
       );
       updatedNotes.sort((a, b) => b.updated_at - a.updated_at);
       set({ notes: updatedNotes });
@@ -331,7 +331,15 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
     if (!currentNote) return;
 
     try {
-      await commands.exportNote(currentNote.id, destination);
+      // Parse JSON content
+      const json = JSON.parse(currentNote.content);
+
+      // Convert to markdown using our utility
+      const { jsonToMarkdown } = await import("../lib/tiptap/json-to-markdown");
+      const markdown = jsonToMarkdown(json);
+
+      // Export with markdown content
+      await commands.exportNote(currentNote.id, destination, markdown);
     } catch (error) {
       set({ error: String(error) });
       throw error;

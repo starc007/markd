@@ -7,8 +7,6 @@ import Highlight from "@tiptap/extension-highlight";
 import Placeholder from "@tiptap/extension-placeholder";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
-import { Markdown } from "@tiptap/markdown";
-import { markdownToJSON, jsonToMarkdown } from "../../lib/tiptap/converter";
 import { UiState } from "../../lib/tiptap-extension/ui-state-extension";
 import { NodeAlignment } from "../../lib/tiptap-extension/node-alignment-extension";
 import { NodeBackground } from "../../lib/tiptap-extension/node-background-extension";
@@ -48,7 +46,6 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
             levels: [1, 2, 3],
           },
         }),
-        Markdown,
         TaskList,
         TaskItem.configure({
           nested: true,
@@ -70,7 +67,7 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
         ListNormalizationExtension,
         PasteMarkdown,
       ],
-      content: markdownToJSON(content),
+      content: JSON.parse(content),
       editorProps: {
         attributes: {
           class: "tiptap-editor focus:outline-none",
@@ -86,8 +83,7 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
         saveTimeoutRef.current = window.setTimeout(() => {
           if (editorRef.current && onContentChangeRef.current) {
             const json = editor.getJSON();
-            const markdown = jsonToMarkdown(json);
-            onContentChangeRef.current(markdown);
+            onContentChangeRef.current(JSON.stringify(json));
           }
         }, 500);
       },
@@ -103,8 +99,17 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
     useEffect(() => {
       if (noteIdRef.current !== noteId && editor) {
         noteIdRef.current = noteId;
-        const json = markdownToJSON(content);
-        editor.commands.setContent(json);
+        try {
+          const json = JSON.parse(content);
+          editor.commands.setContent(json);
+        } catch (e) {
+          console.error("Failed to parse note content:", e);
+          // Fallback to empty content
+          editor.commands.setContent({
+            type: "doc",
+            content: [{ type: "paragraph" }],
+          });
+        }
       }
     }, [noteId, content, editor]);
 
@@ -125,8 +130,7 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
         }
         if (editor) {
           const json = editor.getJSON();
-          const markdown = jsonToMarkdown(json);
-          onContentChangeRef.current(markdown);
+          onContentChangeRef.current(JSON.stringify(json));
         }
       };
 
@@ -142,8 +146,7 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
         }
         if (editor) {
           const json = editor.getJSON();
-          const markdown = jsonToMarkdown(json);
-          onContentChangeRef.current(markdown);
+          onContentChangeRef.current(JSON.stringify(json));
         }
       };
     }, [editor]);
@@ -160,7 +163,7 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
         </TiptapEditorContent>
       </div>
     );
-  }
+  },
 );
 
 EditorContent.displayName = "EditorContent";

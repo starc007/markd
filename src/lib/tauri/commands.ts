@@ -96,21 +96,21 @@ export async function deleteNote(id: string): Promise<void> {
 }
 
 export async function listNotes(
-  folderId?: string | null
+  folderId?: string | null,
 ): Promise<NoteMetadata[]> {
   return invoke<NoteMetadata[]>("list_notes", { folderId });
 }
 
 export async function saveNoteContent(
   id: string,
-  content: string
+  content: string,
 ): Promise<number> {
   return invoke<number>("save_note_content", { id, content });
 }
 
 // Folder commands
 export async function createFolder(
-  params: CreateFolderParams
+  params: CreateFolderParams,
 ): Promise<Folder> {
   return invoke<Folder>("create_folder", { params });
 }
@@ -120,7 +120,7 @@ export async function getFolder(id: string): Promise<Folder | null> {
 }
 
 export async function updateFolder(
-  params: UpdateFolderParams
+  params: UpdateFolderParams,
 ): Promise<Folder> {
   return invoke<Folder>("update_folder", { params });
 }
@@ -135,7 +135,7 @@ export async function listFolders(): Promise<Folder[]> {
 
 export async function moveNoteToFolder(
   noteId: string,
-  folderId?: string | null
+  folderId?: string | null,
 ): Promise<void> {
   return invoke<void>("move_note_to_folder", { noteId, folderId });
 }
@@ -148,9 +148,10 @@ export async function searchNotes(query: string): Promise<SearchResult[]> {
 // Export commands
 export async function exportNote(
   noteId: string,
-  destination: string
+  destination: string,
+  markdownContent: string,
 ): Promise<void> {
-  return invoke<void>("export_note", { noteId, destination });
+  return invoke<void>("export_note", { noteId, destination, markdownContent });
 }
 
 export async function getNoteContentForExport(noteId: string): Promise<string> {
@@ -159,21 +160,21 @@ export async function getNoteContentForExport(noteId: string): Promise<string> {
 
 export async function importFile(
   filePath: string,
-  folderId?: string | null
+  folderId?: string | null,
 ): Promise<Note> {
   return invoke<Note>("import_file", { filePath, folderId });
 }
 
 export async function toggleNotePinned(
   id: string,
-  pinned: boolean
+  pinned: boolean,
 ): Promise<void> {
   return invoke<void>("toggle_note_pinned", { id, pinned });
 }
 
 // Sticky Notes commands
 export async function createStickyNote(
-  params: CreateStickyNoteParams
+  params: CreateStickyNoteParams,
 ): Promise<StickyNote> {
   return invoke<StickyNote>("create_sticky_note", { params });
 }
@@ -183,7 +184,7 @@ export async function getStickyNote(id: string): Promise<StickyNote | null> {
 }
 
 export async function updateStickyNote(
-  params: UpdateStickyNoteParams
+  params: UpdateStickyNoteParams,
 ): Promise<StickyNote> {
   return invoke<StickyNote>("update_sticky_note", { params });
 }
