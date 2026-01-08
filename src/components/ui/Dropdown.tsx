@@ -6,7 +6,7 @@ import {
   Portal,
 } from "@headlessui/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "../../lib/utils";
+import { cn } from "@/lib/utils";
 
 // Dropdown Root
 interface DropdownProps {

@@ -63,8 +63,15 @@
   padding-left: 24px;
 }
 
+.ProseMirror ol {
+  list-style: decimal;
+}
+
+.ProseMirror ul {
+  list-style: disc;
+}
+
 .ProseMirror li {
-  padding: 3px 0;
   font-size: 16px;
   line-height: 1.6;
 }

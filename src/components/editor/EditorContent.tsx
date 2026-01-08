@@ -7,11 +7,13 @@ import Highlight from "@tiptap/extension-highlight";
 import Placeholder from "@tiptap/extension-placeholder";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
+import { Markdown } from "@tiptap/markdown";
 import { markdownToJSON, jsonToMarkdown } from "../../lib/tiptap/converter";
 import { UiState } from "../../lib/tiptap-extension/ui-state-extension";
 import { NodeAlignment } from "../../lib/tiptap-extension/node-alignment-extension";
 import { NodeBackground } from "../../lib/tiptap-extension/node-background-extension";
 import { ListNormalizationExtension } from "../../lib/tiptap-extension/list-normalization-extension";
+import { PasteMarkdown } from "./extensions/markdown-paste";
 import { SlashDropdownMenu } from "./slash-dropdown-menu";
 import { FloatingToolbar } from "./floating-toolbar";
 
@@ -46,6 +48,7 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
             levels: [1, 2, 3],
           },
         }),
+        Markdown,
         TaskList,
         TaskItem.configure({
           nested: true,
@@ -65,6 +68,7 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
         NodeAlignment,
         NodeBackground,
         ListNormalizationExtension,
+        PasteMarkdown,
       ],
       content: markdownToJSON(content),
       editorProps: {
