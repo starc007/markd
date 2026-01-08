@@ -19,6 +19,7 @@ import {
 import { DeleteNoteModal } from "../notes/DeleteNoteModal";
 import { EditorTitle } from "./EditorTitle";
 import { EditorContent, type EditorContentRef } from "./EditorContent";
+import { AppProvider } from "../../context/app-context";
 
 interface EditorProps {
   noteId: string;
@@ -161,12 +162,14 @@ export function Editor({ noteId, content }: EditorProps) {
             />
 
             {/* Content Editor */}
-            <EditorContent
-              ref={editorRef}
-              noteId={noteId}
-              content={content}
-              onContentChange={handleContentChange}
-            />
+            <AppProvider>
+              <EditorContent
+                ref={editorRef}
+                noteId={noteId}
+                content={content}
+                onContentChange={handleContentChange}
+              />
+            </AppProvider>
           </div>
         </div>
       </div>

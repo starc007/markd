@@ -9,6 +9,7 @@ import {
   DeleteIcon,
   Tick02Icon,
   StickyNoteIcon,
+  Bookmark01Icon,
 } from "@hugeicons/core-free-icons";
 import { useNoteStore } from "../../stores/noteStore";
 import { useNoteColors } from "../../hooks/useNoteColors";
@@ -63,11 +64,6 @@ export function Sidebar() {
     }
   };
 
-  const handleEditNote = (noteId: string, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    loadNote(noteId);
-  };
-
   const handleColorSelect = (
     noteId: string,
     newColorId: NoteColorId,
@@ -109,7 +105,7 @@ export function Sidebar() {
       <div className="shrink-0 p-3 space-y-6 border-b border-sidebar-border">
         {/* Sticky Notes Section */}
         <div>
-          <SectionHeading>Sticky Notes</SectionHeading>
+          <SectionHeading>Personal</SectionHeading>
           <div className="space-y-0.5">
             <NavItem
               icon={
@@ -124,6 +120,20 @@ export function Sidebar() {
               count={stickyNotes.length}
               isActive={ui.showStickyNotes}
               onClick={toggleStickyNotes}
+            />
+            <NavItem
+              icon={
+                <HugeiconsIcon
+                  icon={Bookmark01Icon}
+                  size={18}
+                  color="currentColor"
+                  strokeWidth={1.5}
+                />
+              }
+              label="Bookmarks"
+              count={0}
+              isActive={false}
+              onClick={() => {}}
             />
           </div>
         </div>
@@ -246,21 +256,6 @@ export function Sidebar() {
                         </DropdownTrigger>
 
                         <DropdownContent align="end" className="w-48">
-                          <DropdownItem
-                            onClick={(e) => handleEditNote(note.id, e)}
-                          >
-                            <HugeiconsIcon
-                              icon={EditIcon}
-                              size={16}
-                              color="currentColor"
-                              strokeWidth={1.5}
-                              className="text-muted-foreground"
-                            />
-                            Edit note
-                          </DropdownItem>
-
-                          <DropdownSeparator />
-
                           <DropdownLabel>Background Color</DropdownLabel>
                           <div
                             className="px-2 pb-2"
