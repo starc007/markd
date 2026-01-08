@@ -85,16 +85,101 @@
   display: flex;
   align-items: flex-start;
   gap: 8px;
+  margin: 2px 0;
 }
 
 .ProseMirror ul[data-type="taskList"] li > label {
   flex: 0 0 auto;
-  margin-top: 2px;
+  margin-top: 6px;
   user-select: none;
+  cursor: pointer;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
 }
 
+/* Hide default checkbox */
+.ProseMirror ul[data-type="taskList"] li > label input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+}
+
+/* Custom checkbox box */
+.ProseMirror ul[data-type="taskList"] li > label::before {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--ring);
+  border-radius: 4px;
+  background: var(--background);
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+/* Hover state */
+.ProseMirror ul[data-type="taskList"] li > label:hover::before {
+  border-color: var(--primary);
+  background: var(--muted);
+}
+
+/* Checked state - using data-checked attribute and input:checked */
+.ProseMirror ul[data-type="taskList"] li[data-checked="true"] > label::before,
+.ProseMirror
+  ul[data-type="taskList"]
+  li
+  > label:has(input[type="checkbox"]:checked)::before {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+/* Checkmark */
+.ProseMirror ul[data-type="taskList"] li > label::after {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 3.5px;
+  width: 5px;
+  height: 9px;
+  border: solid var(--primary-foreground);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(0);
+  transition: transform 0.15s ease;
+  opacity: 0;
+  z-index: 1;
+}
+
+.ProseMirror ul[data-type="taskList"] li[data-checked="true"] > label::after,
+.ProseMirror
+  ul[data-type="taskList"]
+  li
+  > label:has(input[type="checkbox"]:checked)::after {
+  transform: rotate(45deg) scale(1);
+  opacity: 1;
+}
+
+/* Content styling */
 .ProseMirror ul[data-type="taskList"] li > div {
   flex: 1 1 auto;
+  transition: opacity 0.15s ease, text-decoration 0.15s ease;
+}
+
+/* Strikethrough for checked items */
+.ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div,
+.ProseMirror
+  ul[data-type="taskList"]
+  li:has(label input[type="checkbox"]:checked)
+  > div {
+  opacity: 0.6;
+  text-decoration: line-through;
 }
 
 /* Blockquote */
