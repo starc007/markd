@@ -3,13 +3,16 @@ import { Editor } from "../editor/Editor";
 import { CommandPalette } from "../command-palette/CommandPalette";
 import { TitleBar } from "./TitleBar";
 import { NotesGrid } from "../notes/NotesGrid";
+import { Settings } from "../settings/Settings";
 import { useNoteStore } from "../../stores/noteStore";
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
+import { useTheme } from "../../hooks/useTheme";
 
 export function AppShell() {
   const { currentNote, ui } = useNoteStore();
 
   useKeyboardShortcuts();
+  useTheme(); // Apply theme
 
   return (
     <div
@@ -26,7 +29,9 @@ export function AppShell() {
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col overflow-hidden">
-          {currentNote && !ui.showStickyNotes ? (
+          {ui.showSettings ? (
+            <Settings />
+          ) : currentNote && !ui.showStickyNotes ? (
             <Editor
               key={currentNote.id}
               noteId={currentNote.id}

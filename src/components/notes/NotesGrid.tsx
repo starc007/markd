@@ -24,7 +24,7 @@ export function NotesGrid() {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-sidebar">
+    <div className="flex-1 flex flex-col overflow-hidden bg-background">
       {/* Draggable region for macOS */}
       <div
         className="h-[50px] shrink-0 flex items-center justify-between px-6"

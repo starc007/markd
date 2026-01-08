@@ -195,7 +195,7 @@ export function StickyNote({
               onInput={adjustTextareaHeight}
               onBlur={handleBlur}
               onClick={(e) => e.stopPropagation()}
-              className="w-full bg-transparent text-foreground resize-none outline-none placeholder:text-muted-foreground/50"
+              className="w-full bg-transparent text-black resize-none outline-none placeholder:text-muted-foreground/50"
               placeholder="Write your note here..."
               style={{
                 fontFamily: "inherit",
@@ -207,11 +207,11 @@ export function StickyNote({
             />
           ) : (
             <div
-              className="w-full min-h-[120px] text-foreground whitespace-pre-wrap wrap-break-word"
+              className="w-full min-h-[120px] text-black whitespace-pre-wrap wrap-break-word"
               onClick={handleClick}
             >
               {stickyNote.content || (
-                <span className="text-muted-foreground/50 italic">
+                <span className="text-black/50 italic">
                   Click to start writing...
                 </span>
               )}

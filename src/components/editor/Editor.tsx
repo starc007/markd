@@ -114,7 +114,7 @@ export function Editor({ noteId, content }: EditorProps) {
                 </IconButton>
               </DropdownTrigger>
 
-              <DropdownContent align="end">
+              <DropdownContent align="end" className="w-48">
                 <DropdownItem onClick={handleExport}>
                   <HugeiconsIcon
                     icon={Download01Icon}
@@ -123,7 +123,7 @@ export function Editor({ noteId, content }: EditorProps) {
                     strokeWidth={1.5}
                     className="text-muted-foreground"
                   />
-                  Export note
+                  Export as Markdown
                 </DropdownItem>
 
                 <DropdownSeparator />

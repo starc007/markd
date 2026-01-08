@@ -298,7 +298,9 @@ export function Sidebar() {
               />
             }
             label="Settings"
-            onClick={() => {}}
+            onClick={() => {
+              useNoteStore.getState().setSettingsOpen(true);
+            }}
           />
         </div>
       </div>

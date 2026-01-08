@@ -14,6 +14,7 @@ interface UIState {
   searchOpen: boolean;
   selectedFolderId: string | null;
   showStickyNotes: boolean;
+  showSettings: boolean;
 }
 
 interface NoteStore {
@@ -34,7 +35,7 @@ interface NoteStore {
   createNote: (title: string, folderId?: string) => Promise<Note>;
   updateNote: (
     id: string,
-    updates: { title?: string; content?: string },
+    updates: { title?: string; content?: string }
   ) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   saveCurrentNoteContent: (content: string) => Promise<void>;
@@ -59,6 +60,7 @@ interface NoteStore {
 
   setCommandPaletteOpen: (open: boolean) => void;
   setSearchOpen: (open: boolean) => void;
+  setSettingsOpen: (open: boolean) => void;
 
   // Export actions
   exportCurrentNote: (destination: string) => Promise<void>;
@@ -84,6 +86,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
     searchOpen: false,
     selectedFolderId: null,
     showStickyNotes: false,
+    showSettings: false,
   },
 
   // Note actions
@@ -105,7 +108,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       set({
         currentNote: note,
         isLoading: false,
-        ui: { ...ui, showStickyNotes: false },
+        ui: { ...ui, showStickyNotes: false, showSettings: false },
       });
     } catch (error) {
       set({ error: String(error), isLoading: false });
@@ -154,7 +157,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       const updatedNotes = notes.map((n) =>
         n.id === id
           ? { ...n, title: note.title, updated_at: note.updated_at }
-          : n,
+          : n
       );
 
       // Sort by updated_at desc
@@ -205,7 +208,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 
       // Update notes list timestamp
       const updatedNotes = notes.map((n) =>
-        n.id === currentNote.id ? { ...n, updated_at: updatedAt } : n,
+        n.id === currentNote.id ? { ...n, updated_at: updatedAt } : n
       );
       updatedNotes.sort((a, b) => b.updated_at - a.updated_at);
       set({ notes: updatedNotes });
@@ -323,6 +326,14 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
   toggleStickyNotes: () => {
     const { ui } = get();
     set({ ui: { ...ui, showStickyNotes: true }, currentNote: null });
+  },
+  toggleSettings: () => {
+    const { ui } = get();
+    set({ ui: { ...ui, showSettings: !ui.showSettings } });
+  },
+  setSettingsOpen: (open: boolean) => {
+    const { ui } = get();
+    set({ ui: { ...ui, showSettings: open } });
   },
 
   // Export actions

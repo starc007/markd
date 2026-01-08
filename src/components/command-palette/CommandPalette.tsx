@@ -8,6 +8,7 @@ import {
   Download01Icon,
   FileEditIcon,
   CommandIcon,
+  SettingsIcon,
 } from "@hugeicons/core-free-icons";
 import { useNoteStore } from "../../stores/noteStore";
 import { save } from "@tauri-apps/plugin-dialog";
@@ -26,6 +27,7 @@ export function CommandPalette() {
     search,
     searchResults,
     clearSearch,
+    setSettingsOpen,
   } = useNoteStore();
 
   const [inputValue, setInputValue] = useState("");
@@ -113,6 +115,7 @@ export function CommandPalette() {
       createFolder,
       loadNote,
       inputValue,
+      setSettingsOpen,
     ]
   );
 
@@ -236,6 +239,20 @@ export function CommandPalette() {
                 <span className="flex-1 font-medium">Export Note</span>
               </Command.Item>
             )}
+            <Command.Item
+              value="settings"
+              onSelect={() => handleSelect("settings")}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
+            >
+              <HugeiconsIcon
+                icon={SettingsIcon}
+                size={18}
+                color="currentColor"
+                strokeWidth={1.5}
+                className="opacity-50"
+              />
+              <span className="flex-1 font-medium">Settings</span>
+            </Command.Item>
           </Command.Group>
 
           {/* Search Results - shown when there are results */}
