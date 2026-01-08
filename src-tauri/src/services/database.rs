@@ -139,8 +139,8 @@ impl Database {
     ) -> Result<()> {
         let conn = self.conn.lock().unwrap();
         conn.execute(
-            "INSERT INTO notes (id, title, content, preview, folder_id, pinned, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, 0, ?6, ?7)",
+            "INSERT INTO notes (id, title, content, preview, file_path, folder_id, pinned, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, NULL, ?5, 0, ?6, ?7)",
             params![id, title, content, preview, folder_id, created_at, updated_at],
         )?;
         Ok(())

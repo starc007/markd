@@ -61,14 +61,10 @@ export function Editor({ noteId, content }: EditorProps) {
     }
   }, []);
 
-  // Debounced content save
+  // Content save handler (already debounced in EditorContent)
   const handleContentChange = useCallback((newContent: string) => {
-    if (saveTimeoutRef.current) {
-      window.clearTimeout(saveTimeoutRef.current);
-    }
-    saveTimeoutRef.current = window.setTimeout(() => {
-      useNoteStore.getState().saveCurrentNoteContent(newContent);
-    }, EDITOR_CONFIG.autosaveDelay);
+    console.log("Saving content to store...");
+    useNoteStore.getState().saveCurrentNoteContent(newContent);
   }, []);
 
   // Title change handler
@@ -83,7 +79,7 @@ export function Editor({ noteId, content }: EditorProps) {
         useNoteStore.getState().updateNote(noteId, { title: displayTitle });
       }
     },
-    [noteId]
+    [noteId],
   );
 
   // Handle Enter in title to focus content editor

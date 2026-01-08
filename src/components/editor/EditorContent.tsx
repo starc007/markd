@@ -11,7 +11,6 @@ import { UiState } from "../../lib/tiptap-extension/ui-state-extension";
 import { NodeAlignment } from "../../lib/tiptap-extension/node-alignment-extension";
 import { NodeBackground } from "../../lib/tiptap-extension/node-background-extension";
 import { ListNormalizationExtension } from "../../lib/tiptap-extension/list-normalization-extension";
-import { PasteMarkdown } from "./extensions/markdown-paste";
 import { SlashDropdownMenu } from "./slash-dropdown-menu";
 import { FloatingToolbar } from "./floating-toolbar";
 
@@ -32,11 +31,26 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
     const saveTimeoutRef = useRef<number | null>(null);
     const noteIdRef = useRef<string | null>(null);
     const onContentChangeRef = useRef(onContentChange);
+    const lastSavedContentRef = useRef<string>("");
+    const isSwitchingNotesRef = useRef<boolean>(false);
 
     // Keep callback ref updated
     useEffect(() => {
       onContentChangeRef.current = onContentChange;
     }, [onContentChange]);
+
+    // Parse content safely
+    const parseContent = (content: string) => {
+      if (!content || content.trim() === "") {
+        return { type: "doc", content: [{ type: "paragraph" }] };
+      }
+      try {
+        return JSON.parse(content);
+      } catch (e) {
+        console.error("Failed to parse note content:", e);
+        return { type: "doc", content: [{ type: "paragraph" }] };
+      }
+    };
 
     // Initialize editor
     const editor = useEditor({
@@ -65,15 +79,24 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
         NodeAlignment,
         NodeBackground,
         ListNormalizationExtension,
-        PasteMarkdown,
       ],
-      content: JSON.parse(content),
+      content: parseContent(content),
       editorProps: {
         attributes: {
           class: "tiptap-editor focus:outline-none",
         },
       },
-      onUpdate: ({ editor }) => {
+      onUpdate: ({ editor, transaction }) => {
+        // Ignore if we're switching notes
+        if (isSwitchingNotesRef.current) {
+          return;
+        }
+
+        // Ignore if this is not a user-initiated change
+        if (!transaction.docChanged) {
+          return;
+        }
+
         // Clear previous timeout
         if (saveTimeoutRef.current) {
           window.clearTimeout(saveTimeoutRef.current);
@@ -81,9 +104,19 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
 
         // Debounce saves - save after 500ms of no changes
         saveTimeoutRef.current = window.setTimeout(() => {
-          if (editorRef.current && onContentChangeRef.current) {
+          if (
+            editor &&
+            onContentChangeRef.current &&
+            !isSwitchingNotesRef.current
+          ) {
             const json = editor.getJSON();
-            onContentChangeRef.current(JSON.stringify(json));
+            const jsonString = JSON.stringify(json);
+
+            // Only save if content actually changed
+            if (jsonString !== lastSavedContentRef.current) {
+              lastSavedContentRef.current = jsonString;
+              onContentChangeRef.current(jsonString);
+            }
           }
         }, 500);
       },
@@ -98,18 +131,31 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
     // Update content when noteId changes
     useEffect(() => {
       if (noteIdRef.current !== noteId && editor) {
+        // Set flag to prevent saves during note switch
+        isSwitchingNotesRef.current = true;
+
         noteIdRef.current = noteId;
-        try {
-          const json = JSON.parse(content);
-          editor.commands.setContent(json);
-        } catch (e) {
-          console.error("Failed to parse note content:", e);
-          // Fallback to empty content
-          editor.commands.setContent({
-            type: "doc",
-            content: [{ type: "paragraph" }],
-          });
+
+        // Clear any pending saves
+        if (saveTimeoutRef.current) {
+          window.clearTimeout(saveTimeoutRef.current);
+          saveTimeoutRef.current = null;
         }
+
+        const json = parseContent(content);
+
+        // Use emitUpdate: false to prevent onUpdate event
+        editor.commands.setContent(json, {
+          emitUpdate: false,
+        });
+
+        // Reset last saved content when switching notes
+        lastSavedContentRef.current = content;
+
+        // Reset flag after a short delay to allow any pending updates to complete
+        setTimeout(() => {
+          isSwitchingNotesRef.current = false;
+        }, 100);
       }
     }, [noteId, content, editor]);
 
@@ -124,13 +170,24 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
     // Save on window blur
     useEffect(() => {
       const handleWindowBlur = () => {
+        // Don't save if we're switching notes
+        if (isSwitchingNotesRef.current) {
+          return;
+        }
+
         if (editor && saveTimeoutRef.current) {
           window.clearTimeout(saveTimeoutRef.current);
           saveTimeoutRef.current = null;
         }
         if (editor) {
           const json = editor.getJSON();
-          onContentChangeRef.current(JSON.stringify(json));
+          const jsonString = JSON.stringify(json);
+
+          // Only save if content actually changed
+          if (jsonString !== lastSavedContentRef.current) {
+            lastSavedContentRef.current = jsonString;
+            onContentChangeRef.current(jsonString);
+          }
         }
       };
 
@@ -144,9 +201,16 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
         if (saveTimeoutRef.current) {
           window.clearTimeout(saveTimeoutRef.current);
         }
-        if (editor) {
+        // Don't save on unmount if we're switching notes
+        if (editor && !isSwitchingNotesRef.current) {
           const json = editor.getJSON();
-          onContentChangeRef.current(JSON.stringify(json));
+          const jsonString = JSON.stringify(json);
+
+          // Only save if content actually changed
+          if (jsonString !== lastSavedContentRef.current) {
+            lastSavedContentRef.current = jsonString;
+            onContentChangeRef.current(jsonString);
+          }
         }
       };
     }, [editor]);
@@ -163,7 +227,7 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
         </TiptapEditorContent>
       </div>
     );
-  },
+  }
 );
 
 EditorContent.displayName = "EditorContent";
