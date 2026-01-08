@@ -49,7 +49,7 @@ export function Modal({
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ duration: 0.15 }}
               className={cn(
-                "bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-xl",
+                "bg-card border border-border rounded-2xl p-6 w-full max-w-md",
                 className
               )}
             >

@@ -57,13 +57,24 @@ export function NotesGrid() {
             icon={
               <HugeiconsIcon
                 icon={File02Icon}
-                size={64}
+                size={60}
                 color="currentColor"
                 strokeWidth={1.5}
               />
             }
             title="No sticky notes yet"
-            description='Click "New Sticky Note" to create one'
+            description="Create a sticky note to get started"
+            action={
+              <Button variant="secondary" onClick={handleCreateStickyNote}>
+                <HugeiconsIcon
+                  icon={Plus}
+                  size={16}
+                  color="currentColor"
+                  strokeWidth={1.5}
+                />
+                New Sticky Note
+              </Button>
+            }
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

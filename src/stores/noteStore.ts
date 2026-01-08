@@ -7,14 +7,20 @@ import type {
 } from "../lib/tauri/commands";
 import * as commands from "../lib/tauri/commands";
 
+export enum UIView {
+  Notes = "notes",
+  StickyNotes = "sticky_notes",
+  Settings = "settings",
+  None = "idle",
+}
+
 interface UIState {
   sidebarCollapsed: boolean;
   focusMode: boolean;
   commandPaletteOpen: boolean;
   searchOpen: boolean;
   selectedFolderId: string | null;
-  showStickyNotes: boolean;
-  showSettings: boolean;
+  currentView: UIView | null;
 }
 
 interface NoteStore {
@@ -56,11 +62,10 @@ interface NoteStore {
   toggleFocusMode: () => void;
   toggleCommandPalette: () => void;
   toggleSearch: () => void;
-  toggleStickyNotes: () => void;
+  setView: (view: UIView) => void;
 
   setCommandPaletteOpen: (open: boolean) => void;
   setSearchOpen: (open: boolean) => void;
-  setSettingsOpen: (open: boolean) => void;
 
   // Export actions
   exportCurrentNote: (destination: string) => Promise<void>;
@@ -85,8 +90,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
     commandPaletteOpen: false,
     searchOpen: false,
     selectedFolderId: null,
-    showStickyNotes: false,
-    showSettings: false,
+    currentView: UIView.None,
   },
 
   // Note actions
@@ -108,7 +112,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       set({
         currentNote: note,
         isLoading: false,
-        ui: { ...ui, showStickyNotes: false, showSettings: false },
+        ui: { ...ui, currentView: UIView.None },
       });
     } catch (error) {
       set({ error: String(error), isLoading: false });
@@ -139,7 +143,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         ],
         currentNote: note,
         isLoading: false,
-        ui: { ...ui, showStickyNotes: false, showSettings: false },
+        ui: { ...ui, currentView: UIView.None },
       });
       return note;
     } catch (error) {
@@ -324,25 +328,15 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
     set({ ui: { ...ui, searchOpen: open } });
   },
 
-  toggleStickyNotes: () => {
+  setView: (view: UIView | null) => {
     const { ui } = get();
+    // When setting view to null or Notes, keep currentNote if it exists
+    // When setting to other views, clear currentNote
+    const shouldClearNote =
+      view !== null && view !== UIView.Notes && view !== UIView.None;
     set({
-      ui: { ...ui, showStickyNotes: true, showSettings: false },
-      currentNote: null,
-    });
-  },
-  toggleSettings: () => {
-    const { ui } = get();
-    set({
-      ui: { ...ui, showSettings: !ui.showSettings, showStickyNotes: false },
-      currentNote: ui.showSettings ? get().currentNote : null,
-    });
-  },
-  setSettingsOpen: (open: boolean) => {
-    const { ui } = get();
-    set({
-      ui: { ...ui, showSettings: open, showStickyNotes: false },
-      currentNote: open ? null : get().currentNote,
+      ui: { ...ui, currentView: view },
+      currentNote: shouldClearNote ? null : get().currentNote,
     });
   },
 

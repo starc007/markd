@@ -10,7 +10,7 @@ import {
   StickyNoteIcon,
   Bookmark01Icon,
 } from "@hugeicons/core-free-icons";
-import { useNoteStore } from "../../stores/noteStore";
+import { useNoteStore, UIView } from "../../stores/noteStore";
 import { useNoteColors } from "../../hooks/useNoteColors";
 import { useStickyNotesStore } from "../../stores/stickyNotesStore";
 import { getNoteColor, NOTE_COLORS } from "../../lib/config";
@@ -40,7 +40,7 @@ export function Sidebar() {
     createNote,
     loadNote,
     deleteNote,
-    toggleStickyNotes,
+    setView,
   } = useNoteStore();
   const { getColor, setColor, removeColor } = useNoteColors();
   const { stickyNotes, loadStickyNotes } = useStickyNotesStore();
@@ -115,8 +115,8 @@ export function Sidebar() {
               }
               label="Sticky Notes"
               count={stickyNotes.length}
-              isActive={ui.showStickyNotes}
-              onClick={toggleStickyNotes}
+              isActive={ui.currentView === UIView.StickyNotes}
+              onClick={() => setView(UIView.StickyNotes)}
             />
             <NavItem
               icon={
@@ -299,7 +299,7 @@ export function Sidebar() {
             }
             label="Settings"
             onClick={() => {
-              useNoteStore.getState().setSettingsOpen(true);
+              useNoteStore.getState().setView(UIView.Settings);
             }}
           />
         </div>

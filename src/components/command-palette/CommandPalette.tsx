@@ -10,7 +10,7 @@ import {
   CommandIcon,
   SettingsIcon,
 } from "@hugeicons/core-free-icons";
-import { useNoteStore } from "../../stores/noteStore";
+import { useNoteStore, UIView } from "../../stores/noteStore";
 import { save } from "@tauri-apps/plugin-dialog";
 
 export function CommandPalette() {
@@ -27,7 +27,7 @@ export function CommandPalette() {
     search,
     searchResults,
     clearSearch,
-    setSettingsOpen,
+    setView,
   } = useNoteStore();
 
   const [inputValue, setInputValue] = useState("");
@@ -93,7 +93,7 @@ export function CommandPalette() {
           }
           break;
         case "settings":
-          setSettingsOpen(true);
+          setView(UIView.Settings);
           setCommandPaletteOpen(false);
           break;
         default:
@@ -119,7 +119,6 @@ export function CommandPalette() {
       createFolder,
       loadNote,
       inputValue,
-      setSettingsOpen,
     ]
   );
 

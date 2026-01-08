@@ -4,7 +4,7 @@ import { CommandPalette } from "../command-palette/CommandPalette";
 import { TitleBar } from "./TitleBar";
 import { NotesGrid } from "../notes/NotesGrid";
 import { Settings } from "../settings/Settings";
-import { useNoteStore } from "../../stores/noteStore";
+import { useNoteStore, UIView } from "../../stores/noteStore";
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
 import { useTheme } from "../../hooks/useTheme";
 
@@ -29,9 +29,11 @@ export function AppShell() {
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col overflow-hidden">
-          {ui.showSettings ? (
+          {ui.currentView === UIView.Settings ? (
             <Settings />
-          ) : currentNote && !ui.showStickyNotes ? (
+          ) : ui.currentView === UIView.StickyNotes ? (
+            <NotesGrid />
+          ) : currentNote ? (
             <Editor
               key={currentNote.id}
               noteId={currentNote.id}
