@@ -184,7 +184,7 @@
 
 /* Blockquote */
 .ProseMirror blockquote {
-  border-left: 4px solid var(--border);
+  border-left: 4px solid var(--ring);
   padding-left: 12px;
   margin: 1em 0;
   font-style: italic;
