@@ -95,7 +95,7 @@ export function Editor({ noteId, content }: EditorProps) {
           data-tauri-drag-region
         >
           <div className="flex items-center gap-3 [-webkit-app-region:no-drag]">
-            <span className="font-medium text-muted-foreground truncate text-sm">
+            <span className="font-medium text-muted-foreground truncate text-xs italic">
               updated {formatRelativeTime(currentNote?.updated_at || 0)}
             </span>
           </div>

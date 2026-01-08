@@ -3,20 +3,20 @@ import { useEffect, useState, useCallback } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   AddIcon,
-  ClipboardIcon,
   MaximizeIcon,
   Download01Icon,
   FileEditIcon,
   CommandIcon,
   SettingsIcon,
+  StickyNoteIcon,
 } from "@hugeicons/core-free-icons";
 import { useNoteStore, UIView } from "../../stores/noteStore";
+import { useStickyNotesStore } from "../../stores/stickyNotesStore";
 import { save } from "@tauri-apps/plugin-dialog";
 
 export function CommandPalette() {
   const {
     ui,
-    notes,
     currentNote,
     setCommandPaletteOpen,
     loadNote,
@@ -29,14 +29,13 @@ export function CommandPalette() {
     clearSearch,
     setView,
   } = useNoteStore();
+  const { createStickyNote } = useStickyNotesStore();
 
   const [inputValue, setInputValue] = useState("");
-  const [mode, setMode] = useState<"commands" | "search" | "notes">("commands");
 
   useEffect(() => {
     if (!ui.commandPaletteOpen) {
       setInputValue("");
-      setMode("commands");
       clearSearch();
     }
   }, [ui.commandPaletteOpen, clearSearch]);
@@ -66,9 +65,10 @@ export function CommandPalette() {
         case "new-note":
           await handleCreateNote();
           break;
-        case "notes":
-          setMode("notes");
-          setInputValue("");
+        case "new-sticky-note":
+          await createStickyNote();
+          setView(UIView.StickyNotes);
+          setCommandPaletteOpen(false);
           break;
         case "focus-mode":
           toggleFocusMode();
@@ -119,6 +119,7 @@ export function CommandPalette() {
       createFolder,
       loadNote,
       inputValue,
+      createStickyNote,
     ]
   );
 
@@ -134,12 +135,7 @@ export function CommandPalette() {
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => {
           if (e.key === "Escape") {
-            if (mode === "notes") {
-              setMode("commands");
-              setInputValue("");
-            } else {
-              setCommandPaletteOpen(false);
-            }
+            setCommandPaletteOpen(false);
           }
         }}
       >
@@ -181,18 +177,18 @@ export function CommandPalette() {
               </kbd>
             </Command.Item>
             <Command.Item
-              value="go to note"
-              onSelect={() => handleSelect("notes")}
+              value="new sticky note"
+              onSelect={() => handleSelect("new-sticky-note")}
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
             >
               <HugeiconsIcon
-                icon={ClipboardIcon}
+                icon={StickyNoteIcon}
                 size={18}
                 color="currentColor"
                 strokeWidth={1.5}
                 className="opacity-50"
               />
-              <span className="flex-1 font-medium">Go to Note</span>
+              <span className="flex-1 font-medium">New Sticky Note</span>
               <kbd className="flex items-center gap-1 text-sm font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
                 <HugeiconsIcon
                   icon={CommandIcon}
@@ -200,9 +196,13 @@ export function CommandPalette() {
                   color="currentColor"
                   strokeWidth={1.5}
                 />
-                <span>O</span>
+                <span>+</span>
+                <span>Shift</span>
+                <span>+</span>
+                <span>N</span>
               </kbd>
             </Command.Item>
+
             <Command.Item
               value="toggle sidebar"
               onSelect={() => handleSelect("focus-mode")}
@@ -255,6 +255,18 @@ export function CommandPalette() {
                 className="opacity-50"
               />
               <span className="flex-1 font-medium">Settings</span>
+              <kbd className="flex items-center gap-1 text-sm font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
+                <HugeiconsIcon
+                  icon={CommandIcon}
+                  size={17}
+                  color="currentColor"
+                  strokeWidth={1.5}
+                />
+                <span>+</span>
+                <span>Shift</span>
+                <span>+</span>
+                <span>T</span>
+              </kbd>
             </Command.Item>
           </Command.Group>
 
@@ -286,46 +298,6 @@ export function CommandPalette() {
                   </div>
                 </Command.Item>
               ))}
-            </Command.Group>
-          )}
-
-          {/* Notes mode - when "Go to Note" is selected */}
-          {mode === "notes" && (
-            <Command.Group heading="Notes">
-              {notes.length > 0 ? (
-                notes.map((note) => (
-                  <Command.Item
-                    key={note.id}
-                    value={`note:${note.id} ${note.title}`}
-                    onSelect={() => handleSelect(`note:${note.id}`)}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
-                  >
-                    <HugeiconsIcon
-                      icon={FileEditIcon}
-                      size={18}
-                      color="currentColor"
-                      strokeWidth={1.5}
-                      className="opacity-50"
-                    />
-                    <span className="flex-1 font-medium truncate">
-                      {note.title || "Untitled"}
-                    </span>
-                  </Command.Item>
-                ))
-              ) : (
-                <div className="py-6 text-center text-[13px] text-muted-foreground">
-                  No notes yet. Create one with{" "}
-                  <span className="inline-flex items-center gap-1">
-                    <HugeiconsIcon
-                      icon={CommandIcon}
-                      size={12}
-                      color="currentColor"
-                      strokeWidth={1.5}
-                    />
-                    <span>N</span>
-                  </span>
-                </div>
-              )}
             </Command.Group>
           )}
         </Command.List>

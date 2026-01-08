@@ -9,6 +9,8 @@ import {
   Tick02Icon,
   StickyNoteIcon,
   Bookmark01Icon,
+  CommandIcon,
+  SearchIcon,
 } from "@hugeicons/core-free-icons";
 import { useNoteStore, UIView } from "../../stores/noteStore";
 import { useNoteColors } from "../../hooks/useNoteColors";
@@ -41,6 +43,7 @@ export function Sidebar() {
     loadNote,
     deleteNote,
     setView,
+    toggleCommandPalette,
   } = useNoteStore();
   const { getColor, setColor, removeColor } = useNoteColors();
   const { stickyNotes, loadStickyNotes } = useStickyNotesStore();
@@ -81,6 +84,36 @@ export function Sidebar() {
 
   return (
     <aside className="w-[280px] shrink-0 flex flex-col bg-sidebar border-r border-sidebar-border overflow-hidden">
+      <div className="relative [-webkit-app-region:no-drag] px-3 pt-3">
+        <div className="relative w-full">
+          <HugeiconsIcon
+            icon={SearchIcon}
+            size={16}
+            color="currentColor"
+            strokeWidth={1.5}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+          />
+          <input
+            type="text"
+            readOnly
+            onClick={toggleCommandPalette}
+            onFocus={toggleCommandPalette}
+            placeholder="Search"
+            className="w-full pl-10 pr-14 py-2 text-[13px] bg-secondary border border-border/60 rounded-lg text-foreground placeholder:text-muted-foreground outline-none cursor-pointer hover:bg-accent transition-colors"
+          />
+          {/* Keyboard shortcut hint */}
+          <p className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center text-sm font-mono font-medium text-muted-foreground pointer-events-none">
+            <HugeiconsIcon
+              icon={CommandIcon}
+              size={15}
+              color="currentColor"
+              strokeWidth={1.5}
+            />
+            K
+          </p>
+        </div>
+      </div>
+
       {/* New Note Button */}
       <div className="pt-3 px-3">
         <Button
