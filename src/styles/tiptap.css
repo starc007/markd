@@ -10,7 +10,7 @@
     "Segoe UI Variable Display", "Segoe UI", Helvetica, Arial, sans-serif;
   font-size: 16px;
   line-height: 1.6;
-  color: rgba(55, 53, 47, 0.9);
+  color: var(--foreground);
   min-height: 200px;
 }
 
@@ -22,7 +22,7 @@
 .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;
-  color: rgba(55, 53, 47, 0.4);
+  color: var(--foreground);
   pointer-events: none;
   height: 0;
   font-style: normal;
@@ -33,25 +33,25 @@
   font-size: 32px;
   font-weight: 700;
   line-height: 1.2;
-  color: rgba(55, 53, 47, 0.9);
+  color: var(--foreground);
   margin: 0;
-  padding: 3px 0;
+  padding: 8px 0;
 }
 
 .ProseMirror h2 {
   font-size: 22px;
   font-weight: 700;
   line-height: 1.2;
-  color: rgba(55, 53, 47, 0.9);
+  color: var(--foreground);
   margin: 0;
-  padding: 3px 0;
+  padding: 8px 0;
 }
 
 .ProseMirror h3 {
   font-size: 18px;
   font-weight: 700;
   line-height: 1.2;
-  color: rgba(55, 53, 47, 0.9);
+  color: var(--foreground);
   margin: 0;
   padding: 3px 0;
 }
@@ -99,24 +99,25 @@
 
 /* Blockquote */
 .ProseMirror blockquote {
-  border-left: 4px solid #e5e5e5;
+  border-left: 4px solid var(--border);
   padding-left: 12px;
   margin: 1em 0;
   font-style: italic;
-  color: rgba(55, 53, 47, 0.8);
+  color: var(--muted-foreground);
 }
 
 /* Code */
 .ProseMirror code {
-  background: rgba(135, 131, 120, 0.08);
+  background: var(--muted);
   border-radius: 4px;
   padding: 2px 4px;
   font-family: ui-monospace, monospace;
   font-size: 14px;
+  color: var(--foreground);
 }
 
 .ProseMirror pre {
-  background: rgba(135, 131, 120, 0.08);
+  background: var(--muted);
   border-radius: 4px;
   padding: 12px;
   margin: 1em 0;
@@ -127,18 +128,23 @@
   background: transparent;
   padding: 0;
   font-size: 14px;
+  color: var(--foreground);
 }
 
 /* Horizontal Rule */
 .ProseMirror hr {
   border: none;
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid var(--border);
   margin: 24px 0;
 }
 
 /* Selection */
 .ProseMirror ::selection {
-  background: rgba(55, 53, 47, 0.15);
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.dark .ProseMirror ::selection {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* Focus */
@@ -150,7 +156,7 @@
 .ProseMirror p[data-placeholder]::before {
   content: attr(data-placeholder);
   float: left;
-  color: rgba(55, 53, 47, 0.4);
+  color: var(--muted-foreground);
   pointer-events: none;
   height: 0;
 }

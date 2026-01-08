@@ -71,7 +71,7 @@ export const EditorTitle = forwardRef<EditorTitleRef, EditorTitleProps>(
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         placeholder="Untitled"
-        className="w-full outline-none border-none bg-transparent text-[36px] font-bold leading-tight placeholder:text-muted-foreground/40 resize-none overflow-hidden text-primary/90"
+        className="w-full outline-none border-none bg-transparent text-[36px] font-bold leading-tight placeholder:text-muted-foreground/40 resize-none overflow-hidden text-primary"
         style={{
           lineHeight: "1.2",
           minHeight: "60px",

@@ -88,7 +88,7 @@ export function Editor({ noteId, content }: EditorProps) {
 
   return (
     <>
-      <div className="flex-1 flex flex-col h-full overflow-hidden bg-card">
+      <div className="flex-1 flex flex-col h-full overflow-hidden bg-background">
         {/* Header with drag region */}
         <div
           className="h-[50px] shrink-0 flex items-center justify-between border-b border-sidebar-border px-4"

@@ -92,6 +92,10 @@ export function CommandPalette() {
             setCommandPaletteOpen(false);
           }
           break;
+        case "settings":
+          setSettingsOpen(true);
+          setCommandPaletteOpen(false);
+          break;
         default:
           if (action.startsWith("note:")) {
             const noteId = action.replace("note:", "");

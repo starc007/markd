@@ -123,7 +123,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         content: "",
         folder_id: folderId,
       });
-      const { notes } = get();
+      const { notes, ui } = get();
       set({
         notes: [
           {
@@ -139,6 +139,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         ],
         currentNote: note,
         isLoading: false,
+        ui: { ...ui, showStickyNotes: false, showSettings: false },
       });
       return note;
     } catch (error) {
@@ -325,15 +326,24 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 
   toggleStickyNotes: () => {
     const { ui } = get();
-    set({ ui: { ...ui, showStickyNotes: true }, currentNote: null });
+    set({
+      ui: { ...ui, showStickyNotes: true, showSettings: false },
+      currentNote: null,
+    });
   },
   toggleSettings: () => {
     const { ui } = get();
-    set({ ui: { ...ui, showSettings: !ui.showSettings } });
+    set({
+      ui: { ...ui, showSettings: !ui.showSettings, showStickyNotes: false },
+      currentNote: ui.showSettings ? get().currentNote : null,
+    });
   },
   setSettingsOpen: (open: boolean) => {
     const { ui } = get();
-    set({ ui: { ...ui, showSettings: open } });
+    set({
+      ui: { ...ui, showSettings: open, showStickyNotes: false },
+      currentNote: open ? null : get().currentNote,
+    });
   },
 
   // Export actions

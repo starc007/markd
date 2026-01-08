@@ -52,11 +52,11 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #0a0a0a;
+  --foreground: #171717;
   --card: #ffffff;
-  --card-foreground: #0a0a0a;
+  --card-foreground: #171717;
   --popover: #ffffff;
-  --popover-foreground: #0a0a0a;
+  --popover-foreground: #171717;
   --primary: #171717;
   --primary-foreground: #fafafa;
   --secondary: #f5f5f5;
@@ -82,7 +82,7 @@
 
 .dark {
   --background: #212121;
-  --foreground: #fafafa;
+  --foreground: #efefef;
   --card: #171717;
   --card-foreground: #fafafa;
   --popover: #171717;

@@ -176,13 +176,13 @@ export function Sidebar() {
                     className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-left transition-colors [-webkit-app-region:no-drag] ${
                       isActive
                         ? "bg-sidebar-accent/70 text-sidebar-accent-foreground"
-                        : "hover:bg-accent text-sidebar-foreground"
+                        : "hover:bg-sidebar-accent text-sidebar-sidebar-foreground"
                     }`}
                   >
                     {/* Color indicator */}
                     <div
-                      className="w-1 h-6 rounded-full shrink-0"
-                      style={{ backgroundColor: color.header }}
+                      className="w-1 h-5 rounded-full shrink-0"
+                      style={{ backgroundColor: color.darkHeader }}
                     />
                     {/* <HugeiconsIcon
                       icon={File02Icon}
@@ -236,7 +236,7 @@ export function Sidebar() {
                                     handleColorSelect(note.id, c.id, e)
                                   }
                                   className="w-5 h-5 rounded-md border border-border/50 hover:border-ring/50 flex items-center justify-center"
-                                  style={{ backgroundColor: c.header }}
+                                  style={{ backgroundColor: c.darkHeader }}
                                   title={c.name}
                                   whileHover={{ scale: 1.15 }}
                                   whileTap={{ scale: 0.95 }}
