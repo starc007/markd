@@ -7,12 +7,31 @@ import { Settings } from "../settings/Settings";
 import { useNoteStore, UIView } from "../../stores/noteStore";
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
 import { useTheme } from "../../hooks/useTheme";
+import Welcome from "../welcome";
 
 export function AppShell() {
   const { currentNote, ui } = useNoteStore();
 
   useKeyboardShortcuts();
   useTheme(); // Apply theme
+
+  const renderContent = () => {
+    if (ui.currentView === UIView.Settings) {
+      return <Settings />;
+    } else if (ui.currentView === UIView.StickyNotes) {
+      return <NotesGrid />;
+    } else if (currentNote) {
+      return (
+        <Editor
+          key={currentNote.id}
+          noteId={currentNote.id}
+          content={currentNote.content}
+        />
+      );
+    } else {
+      return <Welcome />;
+    }
+  };
 
   return (
     <div
@@ -29,19 +48,7 @@ export function AppShell() {
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col overflow-hidden">
-          {ui.currentView === UIView.Settings ? (
-            <Settings />
-          ) : ui.currentView === UIView.StickyNotes ? (
-            <NotesGrid />
-          ) : currentNote ? (
-            <Editor
-              key={currentNote.id}
-              noteId={currentNote.id}
-              content={currentNote.content}
-            />
-          ) : (
-            <NotesGrid />
-          )}
+          {renderContent()}
         </main>
       </div>
 
