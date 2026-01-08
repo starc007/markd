@@ -5,20 +5,14 @@ import {
   ComputerIcon,
   UserIcon,
   DatabaseSync01Icon,
-  ArrowLeft02Icon,
 } from "@hugeicons/core-free-icons";
-import { useSettingsStore, type Theme } from "../../stores/settingsStore";
-import { useNoteStore } from "../../stores/noteStore";
-import { Button, Input, ToggleGroup } from "../ui";
+import { useSettingsStore, type Theme } from "@/stores/settingsStore";
+
+import { Button, Input, ToggleGroup } from "@/components/ui";
 
 export function Settings() {
   const { theme, syncEnabled, isLoggedIn, setTheme, setSyncEnabled } =
     useSettingsStore();
-  const { setSettingsOpen } = useNoteStore();
-
-  const handleBack = () => {
-    setSettingsOpen(false);
-  };
 
   const themeOptions: Array<{
     value: Theme;
@@ -70,20 +64,6 @@ export function Settings() {
         className="h-[50px] shrink-0 flex items-center gap-3 border-b border-sidebar-border px-4"
         data-tauri-drag-region
       >
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleBack}
-          className="[-webkit-app-region:no-drag]"
-        >
-          <HugeiconsIcon
-            icon={ArrowLeft02Icon}
-            size={18}
-            color="currentColor"
-            strokeWidth={1.5}
-          />
-          Back
-        </Button>
         <span className="font-medium text-foreground [-webkit-app-region:no-drag]">
           Settings
         </span>
