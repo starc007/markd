@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  FolderIcon,
   SettingsIcon,
   EditIcon,
   MoreVerticalIcon,
@@ -34,12 +33,10 @@ import { DeleteNoteModal } from "../notes/DeleteNoteModal";
 export function Sidebar() {
   const {
     notes,
-    folders,
     ui,
     currentNote,
     loadNotes,
     loadFolders,
-    selectFolder,
     createNote,
     loadNote,
     deleteNote,
@@ -137,36 +134,6 @@ export function Sidebar() {
             />
           </div>
         </div>
-
-        {/* Folders Section */}
-        <div>
-          <SectionHeading>Folders</SectionHeading>
-          <div className="space-y-0.5">
-            {folders.length > 0 ? (
-              folders.map((folder) => (
-                <NavItem
-                  key={folder.id}
-                  icon={
-                    <HugeiconsIcon
-                      icon={FolderIcon}
-                      size={20}
-                      color="currentColor"
-                      strokeWidth={1.5}
-                    />
-                  }
-                  label={folder.name}
-                  count={notes.filter((n) => n.folder_id === folder.id).length}
-                  isActive={ui.selectedFolderId === folder.id}
-                  onClick={() => selectFolder(folder.id)}
-                />
-              ))
-            ) : (
-              <p className="px-3 py-2 text-sm text-muted-foreground">
-                No folders yet
-              </p>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* Notes List Section - Scrollable */}
@@ -206,7 +173,7 @@ export function Sidebar() {
                 <div key={note.id} className="group relative">
                   <button
                     onClick={() => loadNote(note.id)}
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors [-webkit-app-region:no-drag] ${
+                    className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-left transition-colors [-webkit-app-region:no-drag] ${
                       isActive
                         ? "bg-sidebar-accent/70 text-sidebar-accent-foreground"
                         : "hover:bg-accent text-sidebar-foreground"

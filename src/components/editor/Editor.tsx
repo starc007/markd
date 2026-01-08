@@ -7,7 +7,6 @@ import {
 } from "@hugeicons/core-free-icons";
 import { save } from "@tauri-apps/plugin-dialog";
 import { useNoteStore } from "../../stores/noteStore";
-import { EDITOR_CONFIG } from "../../lib/config";
 import {
   IconButton,
   Dropdown,
@@ -17,9 +16,10 @@ import {
   DropdownSeparator,
 } from "../ui";
 import { DeleteNoteModal } from "../notes/DeleteNoteModal";
-import { EditorTitle } from "./EditorTitle";
+import { EditorTitle, type EditorTitleRef } from "./EditorTitle";
 import { EditorContent, type EditorContentRef } from "./EditorContent";
 import { AppProvider } from "../../context/app-context";
+import { formatRelativeTime } from "@/lib/utils";
 
 interface EditorProps {
   noteId: string;
@@ -29,7 +29,7 @@ interface EditorProps {
 export function Editor({ noteId, content }: EditorProps) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const editorRef = useRef<EditorContentRef>(null);
-  const saveTimeoutRef = useRef<number | null>(null);
+  const titleRef = useRef<EditorTitleRef>(null);
 
   const currentNote = useNoteStore((state) => state.currentNote);
 
@@ -63,7 +63,6 @@ export function Editor({ noteId, content }: EditorProps) {
 
   // Content save handler (already debounced in EditorContent)
   const handleContentChange = useCallback((newContent: string) => {
-    console.log("Saving content to store...");
     useNoteStore.getState().saveCurrentNoteContent(newContent);
   }, []);
 
@@ -79,7 +78,7 @@ export function Editor({ noteId, content }: EditorProps) {
         useNoteStore.getState().updateNote(noteId, { title: displayTitle });
       }
     },
-    [noteId],
+    [noteId]
   );
 
   // Handle Enter in title to focus content editor
@@ -96,8 +95,8 @@ export function Editor({ noteId, content }: EditorProps) {
           data-tauri-drag-region
         >
           <div className="flex items-center gap-3 [-webkit-app-region:no-drag]">
-            <span className="font-medium text-foreground truncate">
-              {currentNote?.title || "Untitled"}
+            <span className="font-medium text-muted-foreground truncate text-sm">
+              updated {formatRelativeTime(currentNote?.updated_at || 0)}
             </span>
           </div>
 
@@ -151,6 +150,7 @@ export function Editor({ noteId, content }: EditorProps) {
           <div className="max-w-[900px] mx-auto px-12 py-8">
             {/* Title Editor */}
             <EditorTitle
+              ref={titleRef}
               title={currentNote?.title || ""}
               noteId={noteId}
               onTitleChange={handleTitleChange}

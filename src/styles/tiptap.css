@@ -30,7 +30,7 @@
 
 /* Headings */
 .ProseMirror h1 {
-  font-size: 40px;
+  font-size: 32px;
   font-weight: 700;
   line-height: 1.2;
   color: rgba(55, 53, 47, 0.9);
@@ -39,7 +39,7 @@
 }
 
 .ProseMirror h2 {
-  font-size: 30px;
+  font-size: 22px;
   font-weight: 700;
   line-height: 1.2;
   color: rgba(55, 53, 47, 0.9);
@@ -48,7 +48,7 @@
 }
 
 .ProseMirror h3 {
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 700;
   line-height: 1.2;
   color: rgba(55, 53, 47, 0.9);

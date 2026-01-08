@@ -122,13 +122,16 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
       },
       onCreate: ({ editor }) => {
         editorRef.current = editor;
+        // Initialize lastSavedContentRef with current content
+        const json = editor.getJSON();
+        lastSavedContentRef.current = JSON.stringify(json);
       },
       onDestroy: () => {
         editorRef.current = null;
       },
     });
 
-    // Update content when noteId changes
+    // Update content when noteId changes (only when noteId actually changes, not when content updates)
     useEffect(() => {
       if (noteIdRef.current !== noteId && editor) {
         // Set flag to prevent saves during note switch
@@ -149,20 +152,28 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
           emitUpdate: false,
         });
 
-        // Reset last saved content when switching notes
-        lastSavedContentRef.current = content;
+        // Reset last saved content when switching notes (use the content prop as-is since it's already JSON string)
+        lastSavedContentRef.current = content || JSON.stringify(json);
 
         // Reset flag after a short delay to allow any pending updates to complete
         setTimeout(() => {
           isSwitchingNotesRef.current = false;
         }, 100);
       }
-    }, [noteId, content, editor]);
+    }, [noteId, editor]); // Removed content from dependencies to prevent re-triggering on content updates
 
     // Expose methods to parent
     useImperativeHandle(ref, () => ({
       focus: () => {
-        editor?.commands.focus();
+        if (editor) {
+          editor.commands.focus();
+          // Move cursor to end of content
+          const { from, to } = editor.state.selection;
+          const docSize = editor.state.doc.content.size;
+          if (from === to && from < docSize) {
+            editor.commands.setTextSelection(docSize);
+          }
+        }
       },
       getEditor: () => editor,
     }));
