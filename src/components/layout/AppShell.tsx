@@ -4,21 +4,28 @@ import { CommandPalette } from "../command-palette/CommandPalette";
 import { TitleBar } from "./TitleBar";
 import { NotesGrid } from "../notes/NotesGrid";
 import { Settings } from "../settings/Settings";
-import { useNoteStore, UIView } from "../../stores/noteStore";
+import { useNoteStore } from "../../stores/noteStore";
+import { useUIStore, UIView } from "../../stores/uiStore";
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
 import { useTheme } from "../../hooks/useTheme";
+import { useWindowFocus } from "../../hooks/useWindowFocus";
 import Welcome from "../welcome";
 
 export function AppShell() {
-  const { currentNote, ui } = useNoteStore();
+  // Use selective subscriptions to prevent unnecessary re-renders
+  const currentNote = useNoteStore((state) => state.currentNote);
+  const currentView = useUIStore((state) => state.currentView);
+  const focusMode = useUIStore((state) => state.focusMode);
+  const sidebarCollapsed = useUIStore((state) => state.sidebarCollapsed);
 
   useKeyboardShortcuts();
   useTheme(); // Apply theme
+  useWindowFocus(); // Refresh data on window focus
 
   const renderContent = () => {
-    if (ui.currentView === UIView.Settings) {
+    if (currentView === UIView.Settings) {
       return <Settings />;
-    } else if (ui.currentView === UIView.StickyNotes) {
+    } else if (currentView === UIView.StickyNotes) {
       return <NotesGrid />;
     } else if (currentNote) {
       return (
@@ -36,15 +43,15 @@ export function AppShell() {
   return (
     <div
       className={`flex flex-col h-screen overflow-hidden bg-background ${
-        ui.focusMode ? "focus-mode" : ""
+        focusMode ? "focus-mode" : ""
       }`}
     >
       {/* Title Bar with drag region - hidden in focus mode */}
-      {!ui.focusMode && <TitleBar />}
+      {!focusMode && <TitleBar />}
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar - hidden in focus mode or when collapsed */}
-        {!ui.sidebarCollapsed && !ui.focusMode && <Sidebar />}
+        {!sidebarCollapsed && !focusMode && <Sidebar />}
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col overflow-hidden">

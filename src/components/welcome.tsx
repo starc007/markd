@@ -5,10 +5,12 @@ import {
   FileEditIcon,
 } from "@hugeicons/core-free-icons";
 import { useNoteStore } from "../stores/noteStore";
+import { useUIStore } from "../stores/uiStore";
 import { Button } from "./ui";
 
 const Welcome = () => {
-  const { createNote, loadNote, toggleCommandPalette } = useNoteStore();
+  const { createNote, loadNote } = useNoteStore();
+  const { toggleCommandPalette } = useUIStore();
 
   const handleNewNote = async () => {
     const note = await createNote("Untitled");

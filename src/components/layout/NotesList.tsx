@@ -12,9 +12,11 @@ interface NotesListProps {
   onColorSelect: (
     noteId: string,
     colorId: NoteColorId,
-    e: React.MouseEvent
+    e: React.MouseEvent,
   ) => void;
   onDeleteClick: (noteId: string) => void;
+  onCreateSubpage?: (parentId: string) => void;
+  onToggleExpand?: (pageId: string) => void;
 }
 
 export function NotesList({
@@ -24,6 +26,8 @@ export function NotesList({
   onNoteClick,
   onColorSelect,
   onDeleteClick,
+  onCreateSubpage,
+  onToggleExpand,
 }: NotesListProps) {
   const useVirtualization = notes.length > 50;
 
@@ -63,6 +67,10 @@ export function NotesList({
                     onNoteClick={onNoteClick}
                     onColorSelect={onColorSelect}
                     onDeleteClick={onDeleteClick}
+                    onCreateSubpage={onCreateSubpage || (() => {})}
+                    onToggleExpand={onToggleExpand || (() => {})}
+                    hasChildren={false}
+                    isExpanded={false}
                   />
                 </div>
               );
@@ -83,6 +91,10 @@ export function NotesList({
                   onNoteClick={onNoteClick}
                   onColorSelect={onColorSelect}
                   onDeleteClick={onDeleteClick}
+                  onCreateSubpage={onCreateSubpage || (() => {})}
+                  onToggleExpand={onToggleExpand || (() => {})}
+                  hasChildren={false}
+                  isExpanded={false}
                 />
               );
             })}

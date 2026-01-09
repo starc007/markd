@@ -7,21 +7,8 @@ import type {
 } from "../lib/tauri/commands";
 import * as commands from "../lib/tauri/commands";
 
-export enum UIView {
-  Notes = "notes",
-  StickyNotes = "sticky_notes",
-  Settings = "settings",
-  None = "idle",
-}
-
-interface UIState {
-  sidebarCollapsed: boolean;
-  focusMode: boolean;
-  commandPaletteOpen: boolean;
-  searchOpen: boolean;
-  selectedFolderId: string | null;
-  currentView: UIView | null;
-}
+// Re-export UIView from UI store for backward compatibility
+export { UIView } from "./uiStore";
 
 interface NoteStore {
   // State
@@ -33,7 +20,6 @@ interface NoteStore {
   error: string | null;
   searchResults: SearchResult[];
   searchQuery: string;
-  ui: UIState;
   // Hierarchy state
   childrenMap: Map<string, NoteMetadata[]>; // parent_id -> children
   expandedPages: Set<string>; // Set of expanded page IDs
@@ -67,21 +53,10 @@ interface NoteStore {
   createFolder: (name: string, parentId?: string) => Promise<Folder>;
   updateFolder: (id: string, name: string) => Promise<void>;
   deleteFolder: (id: string) => Promise<void>;
-  selectFolder: (id: string | null) => void;
 
   // Search actions
   search: (query: string) => Promise<void>;
   clearSearch: () => void;
-
-  // UI actions
-  toggleSidebar: () => void;
-  toggleFocusMode: () => void;
-  toggleCommandPalette: () => void;
-  toggleSearch: () => void;
-  setView: (view: UIView) => void;
-
-  setCommandPaletteOpen: (open: boolean) => void;
-  setSearchOpen: (open: boolean) => void;
 
   // Export actions
   exportCurrentNote: (destination: string) => Promise<void>;
@@ -89,6 +64,10 @@ interface NoteStore {
   // Import actions
   importFile: (filePath: string, folderId?: string | null) => Promise<Note>;
 }
+
+// Save operation tracker outside of Zustand store to prevent race conditions
+let activeSaveOperation: Promise<void> | null = null;
+let activeSafetyTimeout: ReturnType<typeof setTimeout> | null = null;
 
 export const useNoteStore = create<NoteStore>((set, get) => ({
   // Initial state
@@ -103,20 +82,21 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
   childrenMap: new Map(),
   expandedPages: new Set(),
   loadedChildren: new Set(),
-  ui: {
-    sidebarCollapsed: false,
-    focusMode: false,
-    commandPaletteOpen: false,
-    searchOpen: false,
-    selectedFolderId: null,
-    currentView: UIView.None,
-  },
 
   // Note actions
   loadNotes: async (folderId, parentId) => {
     set({ isLoading: true, error: null });
     try {
-      const notes = await commands.listNotes(folderId, parentId);
+      const notes = await Promise.race([
+        commands.listNotes(folderId ?? undefined, parentId ?? undefined),
+        new Promise<NoteMetadata[]>((_, reject) =>
+          setTimeout(
+            () => reject(new Error("listNotes timeout after 5s")),
+            5000
+          )
+        ),
+      ]);
+
       if (parentId) {
         // Loading children for a specific parent
         const { childrenMap } = get();
@@ -132,19 +112,22 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         set({ notes, isLoading: false });
       }
     } catch (error) {
+      console.log("error", error);
       set({ error: String(error), isLoading: false });
     }
   },
 
   loadNote: async (id) => {
-    const { ui } = get();
     set({ isLoading: true, error: null });
     try {
       const note = await commands.getNote(id);
+      if (!note) {
+        set({ error: "Note not found", isLoading: false });
+        return;
+      }
       set({
         currentNote: note,
         isLoading: false,
-        ui: { ...ui, currentView: UIView.None },
       });
     } catch (error) {
       set({ error: String(error), isLoading: false });
@@ -152,15 +135,40 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
   },
 
   createNote: async (title, folderId, parentId) => {
-    set({ isLoading: true, error: null });
+    const { notes, childrenMap } = get();
+
+    // Generate temporary ID for optimistic update
+    const tempId = `temp-${Date.now()}`;
+    const now = Date.now();
+    const tempMetadata = {
+      id: tempId,
+      title,
+      preview: null,
+      folder_id: folderId || null,
+      parent_id: parentId || null,
+      pinned: false,
+      children_count: 0,
+      created_at: now,
+      updated_at: now,
+    };
+
+    // Optimistic update - add to UI immediately
+    if (parentId) {
+      const newMap = new Map(childrenMap);
+      const parentChildren = newMap.get(parentId) || [];
+      newMap.set(parentId, [tempMetadata, ...parentChildren]);
+      set({ childrenMap: newMap, isLoading: false });
+    } else {
+      set({ notes: [tempMetadata, ...notes], isLoading: false });
+    }
+
     try {
       const note = await commands.createNote({
         title,
-        content: "",
         folder_id: folderId,
         parent_id: parentId,
       });
-      const { notes, ui, childrenMap } = get();
+
       const metadata = {
         id: note.id,
         title: note.title,
@@ -173,29 +181,43 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         updated_at: note.updated_at,
       };
 
+      // Replace temp with real data
       if (parentId) {
-        // Add to parent's children
-        const newMap = new Map(childrenMap);
+        const newMap = new Map(get().childrenMap);
         const parentChildren = newMap.get(parentId) || [];
-        newMap.set(parentId, [metadata, ...parentChildren]);
+        const updatedChildren = parentChildren.map((n) =>
+          n.id === tempId ? metadata : n
+        );
+        newMap.set(parentId, updatedChildren);
         set({
           childrenMap: newMap,
           currentNote: note,
           isLoading: false,
-          ui: { ...ui, currentView: UIView.None },
         });
       } else {
-        // Add to top-level notes
+        // Replace temp with real data in notes list
+        const updatedNotes = get().notes.map((n) =>
+          n.id === tempId ? metadata : n
+        );
         set({
-          notes: [metadata, ...notes],
+          notes: updatedNotes,
           currentNote: note,
           isLoading: false,
-          ui: { ...ui, currentView: UIView.None },
         });
       }
       return note;
     } catch (error) {
-      set({ error: String(error), isLoading: false });
+      // Rollback optimistic update on error
+      if (parentId) {
+        const newMap = new Map(get().childrenMap);
+        const parentChildren = newMap.get(parentId) || [];
+        const rolledBack = parentChildren.filter((n) => n.id !== tempId);
+        newMap.set(parentId, rolledBack);
+        set({ childrenMap: newMap, error: String(error), isLoading: false });
+      } else {
+        const rolledBack = get().notes.filter((n) => n.id !== tempId);
+        set({ notes: rolledBack, error: String(error), isLoading: false });
+      }
       throw error;
     }
   },
@@ -204,17 +226,24 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const note = await commands.createSubpage(parentId, title);
-      const { childrenMap, ui, expandedPages, loadedChildren } = get();
+
+      // Reload the full note data from database to ensure we have correct content
+      const fullNote = await commands.getNote(note.id);
+      if (!fullNote) {
+        throw new Error("Failed to load created sub-page");
+      }
+
+      const { childrenMap, expandedPages, loadedChildren } = get();
       const metadata = {
-        id: note.id,
-        title: note.title,
+        id: fullNote.id,
+        title: fullNote.title,
         preview: null,
-        folder_id: note.folder_id,
-        parent_id: note.parent_id,
+        folder_id: fullNote.folder_id,
+        parent_id: fullNote.parent_id,
         pinned: false,
         children_count: 0,
-        created_at: note.created_at,
-        updated_at: note.updated_at,
+        created_at: fullNote.created_at,
+        updated_at: fullNote.updated_at,
       };
 
       // Add to parent's children
@@ -244,16 +273,19 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       const newLoaded = new Set(loadedChildren);
       newLoaded.add(parentId);
 
+      // When creating via /page command, don't switch to the sub-page - stay on parent
+      // The sub-page will be created and linked, but user stays on parent
+      const { currentNote } = get();
       set({
         childrenMap: newMap,
         notes: updatedNotes,
         expandedPages: newExpanded,
         loadedChildren: newLoaded,
-        currentNote: note,
+        // Don't change currentNote - keep user on parent page
+        currentNote: currentNote, // Keep current note unchanged
         isLoading: false,
-        ui: { ...ui, currentView: UIView.None },
       });
-      return note;
+      return fullNote;
     } catch (error) {
       set({ error: String(error), isLoading: false });
       throw error;
@@ -284,13 +316,48 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       for (const [parentId, children] of newMap.entries()) {
         const updatedChildren = children.map((n) =>
           n.id === id
-            ? { ...n, title: note.title, updated_at: note.updated_at }
+            ? {
+                ...n,
+                title: note.title,
+                updated_at: note.updated_at,
+                parent_id: note.parent_id,
+              }
             : n
         );
         if (updatedChildren.some((n) => n.id === id)) {
           newMap.set(parentId, updatedChildren);
         }
       }
+
+      // Also check if the note's parent_id changed and move it to the correct parent
+      const oldNote = notes.find((n) => n.id === id);
+      if (oldNote && oldNote.parent_id !== note.parent_id) {
+        // Remove from old parent
+        if (oldNote.parent_id) {
+          const oldParentChildren = newMap.get(oldNote.parent_id) || [];
+          newMap.set(
+            oldNote.parent_id,
+            oldParentChildren.filter((n) => n.id !== id)
+          );
+        }
+        // Add to new parent
+        if (note.parent_id) {
+          const newParentChildren = newMap.get(note.parent_id) || [];
+          const metadata = {
+            id: note.id,
+            title: note.title,
+            preview: oldNote.preview,
+            folder_id: note.folder_id,
+            parent_id: note.parent_id,
+            pinned: oldNote.pinned,
+            children_count: oldNote.children_count,
+            created_at: oldNote.created_at,
+            updated_at: note.updated_at,
+          };
+          newMap.set(note.parent_id, [metadata, ...newParentChildren]);
+        }
+      }
+
       set({ childrenMap: newMap });
 
       // Sort by updated_at desc
@@ -298,6 +365,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 
       set({
         notes: updatedNotes,
+        childrenMap: newMap,
         currentNote: currentNote?.id === id ? note : currentNote,
         isSaving: false,
       });
@@ -358,28 +426,129 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
   },
 
   saveCurrentNoteContent: async (content) => {
-    const { currentNote } = get();
-    if (!currentNote) return;
+    const { currentNote, notes, childrenMap } = get();
+    if (!currentNote) {
+      console.log("[saveCurrentNoteContent] No current note, returning early");
+      return;
+    }
 
-    set({ isSaving: true });
-    try {
-      const updatedAt = await commands.saveNoteContent(currentNote.id, content);
-      const { notes } = get();
-
-      // Update current note
-      set({
-        currentNote: { ...currentNote, content, updated_at: updatedAt },
-        isSaving: false,
-      });
-
-      // Update notes list timestamp
-      const updatedNotes = notes.map((n) =>
-        n.id === currentNote.id ? { ...n, updated_at: updatedAt } : n
+    // Prevent concurrent saves using module-level tracker
+    // If a save is already in progress, wait for it to complete first
+    if (activeSaveOperation) {
+      console.warn(
+        "[saveCurrentNoteContent] Save already in progress, waiting for completion",
+        {
+          noteId: currentNote.id,
+          timestamp: new Date().toISOString(),
+        }
       );
-      updatedNotes.sort((a, b) => b.updated_at - a.updated_at);
-      set({ notes: updatedNotes });
-    } catch (error) {
-      set({ error: String(error), isSaving: false });
+      try {
+        await activeSaveOperation;
+      } catch (error) {}
+    }
+
+    // Check if another save started while we were waiting
+    const currentState = get();
+    if (currentState.isSaving) {
+      console.warn(
+        "[saveCurrentNoteContent] Save still in progress after waiting, aborting"
+      );
+      return;
+    }
+
+    // Set isSaving flag BEFORE creating the promise to ensure atomicity
+    set({ isSaving: true });
+
+    // Create the save operation promise
+    const saveOperation = (async () => {
+      // Log after setting the flag
+
+      // Safety timeout: ensure isSaving is reset even if save hangs
+      // Clear any previous safety timeout
+      if (activeSafetyTimeout) {
+        clearTimeout(activeSafetyTimeout);
+      }
+
+      activeSafetyTimeout = setTimeout(() => {
+        const currentState = get();
+        if (currentState.isSaving) {
+          console.warn(
+            "[saveCurrentNoteContent] SAFETY TIMEOUT: Save took too long, resetting isSaving",
+            {
+              noteId: currentNote.id,
+              elapsed: "5s",
+              timestamp: new Date().toISOString(),
+            }
+          );
+          set({ isSaving: false });
+        }
+        activeSafetyTimeout = null;
+      }, 5000); // 5 seconds should be more than enough for any save
+
+      try {
+        const updatedAt = await commands.saveNoteContent(
+          currentNote.id,
+          content
+        );
+
+        // Clear safety timeout since save completed
+        if (activeSafetyTimeout) {
+          clearTimeout(activeSafetyTimeout);
+          activeSafetyTimeout = null;
+        }
+
+        // Update current note
+        set({
+          currentNote: { ...currentNote, content, updated_at: updatedAt },
+          isSaving: false,
+        });
+
+        // Update notes list timestamp
+        const updatedNotes = notes.map((n) =>
+          n.id === currentNote.id ? { ...n, updated_at: updatedAt } : n
+        );
+        updatedNotes.sort((a, b) => b.updated_at - a.updated_at);
+
+        // Update childrenMap if this note is a child
+        const newMap = new Map(childrenMap);
+        for (const [parentId, children] of newMap.entries()) {
+          const updatedChildren = children.map((n) =>
+            n.id === currentNote.id ? { ...n, updated_at: updatedAt } : n
+          );
+          if (updatedChildren.some((n) => n.id === currentNote.id)) {
+            newMap.set(parentId, updatedChildren);
+          }
+        }
+
+        set({ notes: updatedNotes, childrenMap: newMap });
+      } catch (error) {
+        console.error("[saveCurrentNoteContent] Save failed with error", {
+          noteId: currentNote.id,
+          error: String(error),
+          errorStack: error instanceof Error ? error.stack : undefined,
+          timestamp: new Date().toISOString(),
+        });
+
+        // Clear safety timeout on error
+        if (activeSafetyTimeout) {
+          clearTimeout(activeSafetyTimeout);
+          activeSafetyTimeout = null;
+        }
+        set({ error: String(error), isSaving: false });
+        console.log(
+          "[saveCurrentNoteContent] Set isSaving: false (after error)"
+        );
+      }
+    })();
+
+    // Track the active save operation
+    activeSaveOperation = saveOperation;
+
+    // Execute and clear the tracker when done
+    try {
+      await saveOperation;
+    } finally {
+      activeSaveOperation = null;
     }
   },
 
@@ -421,21 +590,14 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
   deleteFolder: async (id) => {
     try {
       await commands.deleteFolder(id);
-      const { folders, ui } = get();
+      const { folders } = get();
       set({
         folders: folders.filter((f) => f.id !== id),
-        ui: ui.selectedFolderId === id ? { ...ui, selectedFolderId: null } : ui,
       });
     } catch (error) {
       set({ error: String(error) });
       throw error;
     }
-  },
-
-  selectFolder: (id) => {
-    const { ui, loadNotes } = get();
-    set({ ui: { ...ui, selectedFolderId: id } });
-    loadNotes(id, null);
   },
 
   // Search actions
@@ -455,57 +617,6 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 
   clearSearch: () => {
     set({ searchQuery: "", searchResults: [] });
-  },
-
-  // UI actions
-  toggleSidebar: () => {
-    const { ui } = get();
-    set({ ui: { ...ui, sidebarCollapsed: !ui.sidebarCollapsed } });
-  },
-
-  // Focus mode hides all UI chrome (sidebar, title bar, etc.) for distraction-free writing
-  toggleFocusMode: () => {
-    const { ui } = get();
-    set({
-      ui: {
-        ...ui,
-        focusMode: !ui.focusMode,
-        // In focus mode, also hide sidebar
-        sidebarCollapsed: !ui.focusMode ? true : ui.sidebarCollapsed,
-      },
-    });
-  },
-
-  toggleCommandPalette: () => {
-    const { ui } = get();
-    set({ ui: { ...ui, commandPaletteOpen: !ui.commandPaletteOpen } });
-  },
-
-  toggleSearch: () => {
-    const { ui } = get();
-    set({ ui: { ...ui, searchOpen: !ui.searchOpen } });
-  },
-
-  setCommandPaletteOpen: (open) => {
-    const { ui } = get();
-    set({ ui: { ...ui, commandPaletteOpen: open } });
-  },
-
-  setSearchOpen: (open) => {
-    const { ui } = get();
-    set({ ui: { ...ui, searchOpen: open } });
-  },
-
-  setView: (view: UIView | null) => {
-    const { ui } = get();
-    // When setting view to null or Notes, keep currentNote if it exists
-    // When setting to other views, clear currentNote
-    const shouldClearNote =
-      view !== null && view !== UIView.Notes && view !== UIView.None;
-    set({
-      ui: { ...ui, currentView: view },
-      currentNote: shouldClearNote ? null : get().currentNote,
-    });
   },
 
   // Export actions

@@ -1,16 +1,16 @@
 import { useEffect } from "react";
-import { useNoteStore, UIView } from "../stores/noteStore";
+import { useNoteStore } from "../stores/noteStore";
+import { useUIStore, UIView } from "../stores/uiStore";
 import { useStickyNotesStore } from "../stores/stickyNotesStore";
 
 export function useKeyboardShortcuts() {
+  const { createNote, loadNote } = useNoteStore();
   const {
     toggleFocusMode,
     toggleCommandPalette,
     setCommandPaletteOpen,
-    createNote,
-    loadNote,
     setView,
-  } = useNoteStore();
+  } = useUIStore();
   const { createStickyNote } = useStickyNotesStore();
 
   useEffect(() => {

@@ -39,8 +39,7 @@ pub async fn create_note(
         .unwrap_or_else(|| DEFAULT_CONTENT.to_string());
 
     // Validate TipTap JSON structure
-    validate_tiptap_json(&content)
-        .map_err(|e| format!("Invalid note content: {}", e))?;
+    validate_tiptap_json(&content).map_err(|e| format!("Invalid note content: {}", e))?;
 
     // Generate preview from JSON
     let preview = generate_preview(&content, PREVIEW_MAX_LENGTH);
@@ -131,8 +130,7 @@ pub async fn update_note(
     // Update content if provided
     let content = if let Some(new_content) = &params.content {
         // Validate TipTap JSON structure
-        validate_tiptap_json(new_content)
-            .map_err(|e| format!("Invalid note content: {}", e))?;
+        validate_tiptap_json(new_content).map_err(|e| format!("Invalid note content: {}", e))?;
 
         // Generate preview
         let preview = generate_preview(new_content, PREVIEW_MAX_LENGTH);
@@ -207,10 +205,12 @@ pub async fn list_notes(
     folder_id: Option<String>,
     parent_id: Option<String>,
 ) -> Result<Vec<NoteMetadata>, String> {
-    state
+    let result = state
         .db
         .list_notes(folder_id.as_deref(), parent_id.as_deref())
-        .map_err(|e| format!("Failed to list notes: {}", e))
+        .map_err(|e| format!("Failed to list notes: {}", e));
+
+    result
 }
 
 #[tauri::command]
@@ -233,37 +233,34 @@ pub async fn save_note_content(
     id: String,
     content: String,
 ) -> Result<i64, String> {
+    eprintln!(
+        "[save_note_content] Called for note: {}, content length: {}",
+        id,
+        content.len()
+    );
+
     // Validate TipTap JSON structure
-    validate_tiptap_json(&content)
-        .map_err(|e| format!("Invalid note content: {}", e))?;
+    validate_tiptap_json(&content).map_err(|e| {
+        eprintln!("[save_note_content] Validation failed: {}", e);
+        format!("Invalid note content: {}", e)
+    })?;
 
     let now = Utc::now().timestamp_millis();
 
     // Generate preview from JSON
     let preview = generate_preview(&content, PREVIEW_MAX_LENGTH);
+    eprintln!("[save_note_content] Generated preview: {:?}", preview);
 
     // Update content in database
     state
         .db
         .update_note_content(&id, &content, preview.as_deref(), now)
-        .map_err(|e| format!("Failed to update note content: {}", e))?;
+        .map_err(|e| {
+            eprintln!("[save_note_content] Database update failed: {}", e);
+            format!("Failed to update note content: {}", e)
+        })?;
 
-    // Get title for re-indexing
-    let meta = state
-        .db
-        .get_note_metadata(&id)
-        .map_err(|e| format!("Failed to get note metadata: {}", e))?
-        .ok_or_else(|| "Note not found".to_string())?;
-
-    // Re-index for search with plain text (debounced by frontend, so this is already optimized)
-    // Only index if content has meaningful text (skip empty notes)
-    let plain_text = extract_plain_text(&content);
-    if !plain_text.trim().is_empty() {
-        state
-            .db
-            .index_note(&id, &meta.title, &plain_text, "")
-            .map_err(|e| format!("Failed to re-index note: {}", e))?;
-    }
+    eprintln!("[save_note_content] Successfully saved note content");
 
     Ok(now)
 }

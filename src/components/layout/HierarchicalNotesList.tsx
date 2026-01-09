@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
 import { Virtuoso } from "react-virtuoso";
 
 import type { NoteMetadata } from "../../lib/tauri/commands";
@@ -22,7 +22,7 @@ interface HierarchicalNotesListProps {
   onColorSelect: (
     noteId: string,
     colorId: NoteColorId,
-    e: React.MouseEvent
+    e: React.MouseEvent,
   ) => void;
   onDeleteClick: (noteId: string) => void;
   onToggleExpand: (pageId: string) => void;
@@ -34,7 +34,7 @@ function flattenHierarchy(
   notes: NoteMetadata[],
   childrenMap: Map<string, NoteMetadata[]>,
   expandedPages: Set<string>,
-  depth: number = 0
+  depth: number = 0,
 ): HierarchicalNote[] {
   const result: HierarchicalNote[] = [];
 
@@ -53,7 +53,7 @@ function flattenHierarchy(
     // Recursively add children if expanded
     if (isExpanded && children.length > 0) {
       result.push(
-        ...flattenHierarchy(children, childrenMap, expandedPages, depth + 1)
+        ...flattenHierarchy(children, childrenMap, expandedPages, depth + 1),
       );
     }
   }
@@ -61,7 +61,7 @@ function flattenHierarchy(
   return result;
 }
 
-export function HierarchicalNotesList({
+export const HierarchicalNotesList = memo(function HierarchicalNotesList({
   notes,
   childrenMap,
   expandedPages,
@@ -75,7 +75,7 @@ export function HierarchicalNotesList({
 }: HierarchicalNotesListProps) {
   const flatNotes = useMemo(
     () => flattenHierarchy(notes, childrenMap, expandedPages),
-    [notes, childrenMap, expandedPages]
+    [notes, childrenMap, expandedPages],
   );
 
   const useVirtualization = flatNotes.length > 50;
@@ -147,4 +147,4 @@ export function HierarchicalNotesList({
       </div>
     </div>
   );
-}
+});

@@ -1,7 +1,7 @@
 import { HugeiconsIcon } from "@hugeicons/react";
 import { StickyNoteIcon, Bookmark01Icon } from "@hugeicons/core-free-icons";
 import { NavItem, SectionHeading } from "../ui";
-import { UIView } from "../../stores/noteStore";
+import { UIView } from "../../stores/uiStore";
 
 interface SidebarNavigationProps {
   stickyNotesCount: number;

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { motion } from "framer-motion";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -29,7 +30,7 @@ interface NoteListItemProps {
   onColorSelect: (
     noteId: string,
     colorId: NoteColorId,
-    e: React.MouseEvent
+    e: React.MouseEvent,
   ) => void;
   onDeleteClick: (noteId: string) => void;
   className?: string;
@@ -39,7 +40,7 @@ interface NoteListItemProps {
   onToggleExpand: (pageId: string) => void;
 }
 
-export function NoteListItem({
+export const NoteListItem = memo(function NoteListItem({
   note,
   isActive,
   colorId,
@@ -200,4 +201,4 @@ export function NoteListItem({
       </button>
     </div>
   );
-}
+});

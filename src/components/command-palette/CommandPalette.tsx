@@ -10,35 +10,36 @@ import {
   SettingsIcon,
   StickyNoteIcon,
 } from "@hugeicons/core-free-icons";
-import { useNoteStore, UIView } from "../../stores/noteStore";
+import { useNoteStore } from "../../stores/noteStore";
+import { useUIStore, UIView } from "../../stores/uiStore";
 import { useStickyNotesStore } from "../../stores/stickyNotesStore";
 import { save } from "@tauri-apps/plugin-dialog";
+import { toast } from "sonner";
 
 export function CommandPalette() {
+  const currentNote = useNoteStore((state) => state.currentNote);
+  const searchResults = useNoteStore((state) => state.searchResults);
   const {
-    ui,
-    currentNote,
-    setCommandPaletteOpen,
     loadNote,
     createNote,
     createFolder,
-    toggleFocusMode,
     exportCurrentNote,
     search,
-    searchResults,
     clearSearch,
-    setView,
   } = useNoteStore();
+
+  const commandPaletteOpen = useUIStore((state) => state.commandPaletteOpen);
+  const { setCommandPaletteOpen, toggleFocusMode, setView } = useUIStore();
   const { createStickyNote } = useStickyNotesStore();
 
   const [inputValue, setInputValue] = useState("");
 
   useEffect(() => {
-    if (!ui.commandPaletteOpen) {
+    if (!commandPaletteOpen) {
       setInputValue("");
       clearSearch();
     }
-  }, [ui.commandPaletteOpen, clearSearch]);
+  }, [commandPaletteOpen, clearSearch]);
 
   // Unified search: show both filtered commands and search results (like Spotlight)
   useEffect(() => {
@@ -61,53 +62,61 @@ export function CommandPalette() {
 
   const handleSelect = useCallback(
     async (action: string) => {
-      switch (action) {
-        case "new-note":
-          await handleCreateNote();
-          break;
-        case "new-sticky-note":
-          await createStickyNote();
-          setView(UIView.StickyNotes);
-          setCommandPaletteOpen(false);
-          break;
-        case "focus-mode":
-          toggleFocusMode();
-          setCommandPaletteOpen(false);
-          break;
-        case "export":
-          if (currentNote) {
-            const filePath = await save({
-              defaultPath: `${currentNote.title || "untitled"}.md`,
-              filters: [{ name: "Markdown", extensions: ["md"] }],
-            });
-            if (filePath) {
-              await exportCurrentNote(filePath);
+      try {
+        switch (action) {
+          case "new-note":
+            await handleCreateNote();
+            break;
+          case "new-sticky-note":
+            await createStickyNote();
+            setView(UIView.StickyNotes);
+            setCommandPaletteOpen(false);
+            break;
+          case "focus-mode":
+            toggleFocusMode();
+            setCommandPaletteOpen(false);
+            break;
+          case "export":
+            if (currentNote) {
+              const filePath = await save({
+                defaultPath: `${currentNote.title || "untitled"}.md`,
+                filters: [{ name: "Markdown", extensions: ["md"] }],
+              });
+              if (filePath) {
+                await exportCurrentNote(filePath);
+              }
             }
-          }
-          setCommandPaletteOpen(false);
-          break;
-        case "new-folder":
-          if (inputValue.trim()) {
-            await createFolder(inputValue.trim());
             setCommandPaletteOpen(false);
-          }
-          break;
-        case "settings":
-          setView(UIView.Settings);
-          setCommandPaletteOpen(false);
-          break;
-        default:
-          if (action.startsWith("note:")) {
-            const noteId = action.replace("note:", "");
-            await loadNote(noteId);
+            break;
+          case "new-folder":
+            if (inputValue.trim()) {
+              await createFolder(inputValue.trim());
+              setCommandPaletteOpen(false);
+            }
+            break;
+          case "settings":
+            setView(UIView.Settings);
             setCommandPaletteOpen(false);
-          }
-          if (action.startsWith("search:")) {
-            const noteId = action.replace("search:", "");
-            await loadNote(noteId);
-            setCommandPaletteOpen(false);
-          }
-          break;
+            break;
+          default:
+            if (action.startsWith("note:")) {
+              const noteId = action.replace("note:", "");
+              await loadNote(noteId);
+              setCommandPaletteOpen(false);
+            }
+            if (action.startsWith("search:")) {
+              const noteId = action.replace("search:", "");
+              await loadNote(noteId);
+              setCommandPaletteOpen(false);
+            }
+            break;
+        }
+      } catch (error) {
+        console.error("Command failed:", error);
+        toast.error(
+          `Operation failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
+        // Don't close palette on error so user can retry
       }
     },
     [
@@ -120,10 +129,11 @@ export function CommandPalette() {
       loadNote,
       inputValue,
       createStickyNote,
-    ]
+      setView,
+    ],
   );
 
-  if (!ui.commandPaletteOpen) return null;
+  if (!commandPaletteOpen) return null;
 
   return (
     <div

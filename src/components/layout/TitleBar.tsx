@@ -1,7 +1,9 @@
 import { useNoteStore } from "../../stores/noteStore";
 
 export function TitleBar() {
-  const { currentNote, isSaving } = useNoteStore();
+  // Use selective subscriptions to prevent unnecessary re-renders
+  const currentNote = useNoteStore((state) => state.currentNote);
+  const isSaving = useNoteStore((state) => state.isSaving);
 
   return (
     <header

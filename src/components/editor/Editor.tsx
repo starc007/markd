@@ -7,6 +7,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { save } from "@tauri-apps/plugin-dialog";
 import { useNoteStore } from "../../stores/noteStore";
+import { useUIStore } from "../../stores/uiStore";
 import {
   IconButton,
   Dropdown,
@@ -32,13 +33,13 @@ export function Editor({ noteId, content }: EditorProps) {
   const titleRef = useRef<EditorTitleRef>(null);
 
   const currentNote = useNoteStore((state) => state.currentNote);
-  const focusMode = useNoteStore((state) => state.ui.focusMode);
+  const focusMode = useUIStore((state) => state.focusMode);
 
   // Handle back navigation
   const handleBack = useCallback(() => {
-    const { ui } = useNoteStore.getState();
+    const selectedFolderId = useUIStore.getState().selectedFolderId;
     useNoteStore.setState({ currentNote: null });
-    useNoteStore.getState().loadNotes(ui.selectedFolderId || undefined, null);
+    useNoteStore.getState().loadNotes(selectedFolderId || undefined, null);
   }, []);
 
   // Handle delete
@@ -64,9 +65,12 @@ export function Editor({ noteId, content }: EditorProps) {
   }, []);
 
   // Content save handler (already debounced in EditorContent)
-  const handleContentChange = useCallback((newContent: string) => {
-    useNoteStore.getState().saveCurrentNoteContent(newContent);
-  }, []);
+  const handleContentChange = useCallback(
+    (newContent: string) => {
+      useNoteStore.getState().saveCurrentNoteContent(newContent);
+    },
+    [noteId],
+  );
 
   // Title change handler
   const handleTitleChange = useCallback(
@@ -80,7 +84,7 @@ export function Editor({ noteId, content }: EditorProps) {
         useNoteStore.getState().updateNote(noteId, { title: displayTitle });
       }
     },
-    [noteId]
+    [noteId],
   );
 
   // Handle Enter in title to focus content editor

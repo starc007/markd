@@ -1,7 +1,8 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { EditIcon } from "@hugeicons/core-free-icons";
-import { useNoteStore, UIView } from "../../stores/noteStore";
+import { useNoteStore } from "../../stores/noteStore";
+import { useUIStore, UIView } from "../../stores/uiStore";
 import { useNoteColors } from "../../hooks/useNoteColors";
 import { useStickyNotesStore } from "../../stores/stickyNotesStore";
 import type { NoteColorId } from "../../lib/config";
@@ -11,60 +12,71 @@ import { SidebarSearch } from "./SidebarSearch";
 import { SidebarNavigation } from "./SidebarNavigation";
 import { HierarchicalNotesList } from "./HierarchicalNotesList";
 import { SidebarSettings } from "./SidebarSettings";
+import { toast } from "sonner";
 
 export function Sidebar() {
-  const {
-    notes,
-    ui,
-    currentNote,
-    loadNotes,
-    loadFolders,
-    createNote,
-    createSubpage,
-    loadNote,
-    deleteNote,
-    setView,
-    toggleCommandPalette,
-    childrenMap,
-    expandedPages,
-    togglePageExpanded,
-  } = useNoteStore();
+  // Use selective subscriptions to prevent unnecessary re-renders
+  const notes = useNoteStore((state) => state.notes);
+  const currentNote = useNoteStore((state) => state.currentNote);
+  const selectedFolderId = useUIStore((state) => state.selectedFolderId);
+  const childrenMap = useNoteStore((state) => state.childrenMap);
+  const expandedPages = useNoteStore((state) => state.expandedPages);
+
   const { getColor, setColor, removeColor } = useNoteColors();
   const { stickyNotes, loadStickyNotes } = useStickyNotesStore();
   const [deleteModalNoteId, setDeleteModalNoteId] = useState<string | null>(
-    null
+    null,
   );
 
   useEffect(() => {
+    const { loadFolders, loadNotes } = useNoteStore.getState();
     loadFolders();
-    loadNotes(ui.selectedFolderId || undefined, null);
+    loadNotes(selectedFolderId || undefined, null);
     loadStickyNotes();
-  }, [loadFolders, loadNotes, loadStickyNotes, ui.selectedFolderId]);
+  }, [selectedFolderId, loadStickyNotes]);
 
-  const handleNewNote = async () => {
-    const note = await createNote("Untitled", ui.selectedFolderId || undefined);
-    if (note) {
-      loadNote(note.id);
+  const handleNewNote = useCallback(async () => {
+    try {
+      const { createNote, loadNote } = useNoteStore.getState();
+      const note = await createNote("Untitled", selectedFolderId || undefined);
+      if (note) {
+        await loadNote(note.id);
+      }
+    } catch (error) {
+      console.error("Failed to create note:", error);
+      toast.error(
+        `Failed to create note: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
-  };
+  }, [selectedFolderId]);
 
-  const handleColorSelect = (
-    noteId: string,
-    newColorId: NoteColorId,
-    e: React.MouseEvent
-  ) => {
-    e.stopPropagation();
-    setColor(noteId, newColorId);
-  };
+  const handleColorSelect = useCallback(
+    (noteId: string, newColorId: NoteColorId, e: React.MouseEvent) => {
+      e.stopPropagation();
+      setColor(noteId, newColorId);
+    },
+    [setColor],
+  );
 
-  const handleDeleteNote = async (noteId: string) => {
-    await deleteNote(noteId);
-    removeColor(noteId);
-    setDeleteModalNoteId(null);
-    if (currentNote?.id === noteId) {
-      useNoteStore.setState({ currentNote: null });
-    }
-  };
+  const handleDeleteNote = useCallback(
+    async (noteId: string) => {
+      try {
+        const { deleteNote } = useNoteStore.getState();
+        await deleteNote(noteId);
+        removeColor(noteId);
+        setDeleteModalNoteId(null);
+        if (currentNote?.id === noteId) {
+          useNoteStore.setState({ currentNote: null });
+        }
+      } catch (error) {
+        console.error("Failed to delete note:", error);
+        toast.error(
+          `Failed to delete note: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
+      }
+    },
+    [currentNote?.id, removeColor],
+  );
 
   // Filter and sort notes - memoized for performance
   // Only show top-level notes (parent_id is null) in the main list
@@ -72,26 +84,46 @@ export function Sidebar() {
     let filtered = notes.filter((note) => note.parent_id === null);
 
     // Filter by folder if a folder is selected
-    if (ui.selectedFolderId !== null) {
-      filtered = filtered.filter(
-        (note) => note.folder_id === ui.selectedFolderId
-      );
+    if (selectedFolderId !== null) {
+      filtered = filtered.filter((note) => note.folder_id === selectedFolderId);
     }
 
     // Sort by updated_at descending
     return [...filtered].sort((a, b) => b.updated_at - a.updated_at);
-  }, [notes, ui.selectedFolderId]);
+  }, [notes, selectedFolderId]);
 
-  const handleCreateSubpage = async (parentId: string) => {
-    const subpage = await createSubpage(parentId, "Untitled");
-    if (subpage) {
-      loadNote(subpage.id);
+  const handleCreateSubpage = useCallback(async (parentId: string) => {
+    try {
+      const { createSubpage, loadNote } = useNoteStore.getState();
+      const subpage = await createSubpage(parentId, "Untitled");
+      if (subpage) {
+        await loadNote(subpage.id);
+      }
+    } catch (error) {
+      console.error("Failed to create subpage:", error);
+      toast.error(
+        `Failed to create subpage: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
-  };
+  }, []);
+
+  const handleSearchClick = useCallback(() => {
+    useUIStore.getState().toggleCommandPalette();
+  }, []);
+
+  const handleNoteClick = useCallback((noteId: string) => {
+    useNoteStore.getState().loadNote(noteId);
+  }, []);
+
+  const handleToggleExpand = useCallback((pageId: string) => {
+    useNoteStore.getState().togglePageExpanded(pageId);
+  }, []);
+
+  const currentView = useUIStore((state) => state.currentView);
 
   return (
     <aside className="w-[280px] shrink-0 flex flex-col bg-sidebar border-r border-sidebar-border overflow-hidden">
-      <SidebarSearch onSearchClick={toggleCommandPalette} />
+      <SidebarSearch onSearchClick={handleSearchClick} />
 
       {/* New Note Button */}
       <div className="pt-3 px-3">
@@ -112,8 +144,8 @@ export function Sidebar() {
 
       <SidebarNavigation
         stickyNotesCount={stickyNotes.length}
-        currentView={ui.currentView}
-        onViewChange={setView}
+        currentView={currentView}
+        onViewChange={(view) => useUIStore.getState().setView(view)}
       />
 
       <HierarchicalNotesList
@@ -122,15 +154,15 @@ export function Sidebar() {
         expandedPages={expandedPages}
         currentNoteId={currentNote?.id || null}
         getColor={getColor}
-        onNoteClick={loadNote}
+        onNoteClick={handleNoteClick}
         onColorSelect={handleColorSelect}
         onDeleteClick={setDeleteModalNoteId}
-        onToggleExpand={togglePageExpanded}
+        onToggleExpand={handleToggleExpand}
         onCreateSubpage={handleCreateSubpage}
       />
 
       <SidebarSettings
-        onSettingsClick={() => useNoteStore.getState().setView(UIView.Settings)}
+        onSettingsClick={() => useUIStore.getState().setView(UIView.Settings)}
       />
 
       {/* Delete Note Modal */}

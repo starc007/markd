@@ -103,14 +103,37 @@ export async function listNotes(
   folderId?: string | null,
   parentId?: string | null
 ): Promise<NoteMetadata[]> {
-  return invoke<NoteMetadata[]>("list_notes", { folderId, parentId });
+  // Tauri needs explicit null values, not undefined
+  try {
+    console.log("[listNotes] Invoking with:", { folderId, parentId });
+    const result = await invoke<NoteMetadata[]>("list_notes", {
+      folderId: folderId ?? null,
+      parentId: parentId ?? null,
+    });
+    console.log("[listNotes] Received result:", result);
+    return result;
+  } catch (error) {
+    console.error("[listNotes] Error:", error);
+    throw error;
+  }
 }
 
 export async function saveNoteContent(
   id: string,
   content: string
 ): Promise<number> {
-  return invoke<number>("save_note_content", { id, content });
+  // Add timeout to prevent hanging
+  // Note: We removed re-indexing from save_note_content to prevent blocking,
+  // so saves should be much faster now. 5 seconds should be plenty.
+  return Promise.race([
+    invoke<number>("save_note_content", { id, content }),
+    new Promise<number>((_, reject) =>
+      setTimeout(
+        () => reject(new Error("saveNoteContent timeout after 5s")),
+        5000
+      )
+    ),
+  ]);
 }
 
 // Folder commands
