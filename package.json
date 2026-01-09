@@ -36,6 +36,7 @@
     "lodash.throttle": "^4.1.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-virtuoso": "^4.18.1",
     "tailwindcss": "^4.1.18",
     "zustand": "^5.0.9"
   },
