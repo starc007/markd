@@ -82,8 +82,14 @@ export const PageLinkExtension = Node.create<PageLinkOptions>({
       dom.setAttribute("data-page-id", node.attrs.pageId);
       dom.setAttribute("data-page-title", node.attrs.pageTitle);
       dom.className =
-        "page-link inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-accent text-accent-foreground text-sm font-medium cursor-pointer hover:bg-accent/80 transition-colors";
+        "page-link inline-flex items-center gap-1.5 px-2 py-1 text-primary underline transition-all cursor-pointer text-sm font-medium";
       dom.textContent = node.attrs.pageTitle || "Untitled";
+
+      // Add icon before text
+      const icon = document.createElement("span");
+      icon.innerHTML = "📄";
+      icon.className = "text-xs opacity-70";
+      dom.insertBefore(icon, dom.firstChild);
 
       // Make clickable to navigate to page
       dom.addEventListener("click", (e) => {

@@ -275,3 +275,10 @@ export async function syncPageLinks(
 ): Promise<void> {
   return invoke<void>("sync_page_links", { pageId, linkedPageIds });
 }
+
+export async function updatePageLinkTitles(
+  pageId: string,
+  newTitle: string
+): Promise<void> {
+  return invoke<void>("update_page_link_titles", { pageId, newTitle });
+}

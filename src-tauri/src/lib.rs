@@ -53,6 +53,7 @@ pub fn run() {
             get_linked_pages,
             get_backlinks,
             sync_page_links,
+            update_page_link_titles,
             // Sticky Notes commands
             create_sticky_note,
             get_sticky_note,

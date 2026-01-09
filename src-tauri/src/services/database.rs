@@ -7,6 +7,7 @@ use std::sync::Mutex;
 use crate::models::folder::Folder;
 use crate::models::note::NoteMetadata;
 use crate::models::sticky_note::StickyNote;
+use crate::utils::json_utils::generate_preview;
 
 // Helper macro to acquire database lock with proper error handling
 macro_rules! acquire_lock {
@@ -926,4 +927,91 @@ impl Database {
 
         Ok(())
     }
+
+    // Update page link titles in all notes that reference a specific page
+    pub fn update_page_link_titles(
+        &self,
+        target_page_id: &str,
+        new_title: &str,
+        now: i64,
+    ) -> Result<()> {
+        // Get all notes that link to this page (backlinks)
+        let backlinks = self.get_backlinks(target_page_id)?;
+        
+        if backlinks.is_empty() {
+            return Ok(());
+        }
+
+        // For each backlink, update the page link title in its content
+        for source_page_id in backlinks {
+            // Get the note content
+            let content = match self.get_note_content(&source_page_id)? {
+                Some(c) => c,
+                None => continue,
+            };
+
+            // Parse JSON and update page link titles
+            let updated_content = match serde_json::from_str::<serde_json::Value>(&content) {
+                Ok(mut json) => {
+                    let mut updated = false;
+                    // Recursively find and update pageLink nodes
+                    update_page_link_in_json(&mut json, target_page_id, new_title, &mut updated);
+                    if updated {
+                        serde_json::to_string(&json)
+                            .map_err(|e| rusqlite::Error::InvalidColumnType(0, format!("Failed to serialize JSON: {}", e), rusqlite::types::Type::Text))?
+                    } else {
+                        continue; // No changes needed
+                    }
+                }
+                Err(_) => continue, // Skip invalid JSON
+            };
+
+            // Update the note content
+            let preview = generate_preview(&updated_content, PREVIEW_MAX_LENGTH);
+            self.update_note_content(&source_page_id, &updated_content, preview.as_deref(), now)?;
+        }
+
+        Ok(())
+    }
 }
+
+// Helper function to recursively update page link titles in JSON
+fn update_page_link_in_json(
+    node: &mut serde_json::Value,
+    target_page_id: &str,
+    new_title: &str,
+    updated: &mut bool,
+) {
+    match node {
+        serde_json::Value::Object(obj) => {
+            // Check if this is a pageLink node
+            if let Some(serde_json::Value::String(node_type)) = obj.get("type") {
+                if node_type == "pageLink" {
+                    if let Some(serde_json::Value::Object(attrs)) = obj.get_mut("attrs") {
+                        if let Some(serde_json::Value::String(page_id)) = attrs.get("pageId") {
+                            if page_id == target_page_id {
+                                attrs.insert("pageTitle".to_string(), serde_json::Value::String(new_title.to_string()));
+                                *updated = true;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Recursively process content array
+            if let Some(serde_json::Value::Array(content)) = obj.get_mut("content") {
+                for item in content.iter_mut() {
+                    update_page_link_in_json(item, target_page_id, new_title, updated);
+                }
+            }
+        }
+        serde_json::Value::Array(arr) => {
+            for item in arr.iter_mut() {
+                update_page_link_in_json(item, target_page_id, new_title, updated);
+            }
+        }
+        _ => {}
+    }
+}
+
+const PREVIEW_MAX_LENGTH: usize = 150;

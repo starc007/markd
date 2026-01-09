@@ -98,3 +98,18 @@ pub async fn sync_page_links(
 
     Ok(())
 }
+
+#[tauri::command]
+pub async fn update_page_link_titles(
+    state: State<'_, AppState>,
+    page_id: String,
+    new_title: String,
+) -> Result<(), String> {
+    let now = Utc::now().timestamp_millis();
+    state
+        .db
+        .update_page_link_titles(&page_id, &new_title, now)
+        .map_err(|e| format!("Failed to update page link titles: {}", e))?;
+
+    Ok(())
+}

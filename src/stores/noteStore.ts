@@ -298,6 +298,16 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       const note = await commands.updateNote({ id, ...updates });
       const { notes, currentNote } = get();
 
+      // If title was updated, update all page links that reference this page
+      if (updates.title !== undefined && updates.title !== null) {
+        try {
+          await commands.updatePageLinkTitles(id, note.title);
+        } catch (error) {
+          console.error("Failed to update page link titles:", error);
+          // Don't fail the entire update if this fails
+        }
+      }
+
       // Update notes list
       const updatedNotes = notes.map((n) =>
         n.id === id
