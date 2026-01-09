@@ -233,11 +233,7 @@ pub async fn save_note_content(
     id: String,
     content: String,
 ) -> Result<i64, String> {
-    eprintln!(
-        "[save_note_content] Called for note: {}, content length: {}",
-        id,
-        content.len()
-    );
+    
 
     // Validate TipTap JSON structure
     validate_tiptap_json(&content).map_err(|e| {
@@ -249,18 +245,18 @@ pub async fn save_note_content(
 
     // Generate preview from JSON
     let preview = generate_preview(&content, PREVIEW_MAX_LENGTH);
-    eprintln!("[save_note_content] Generated preview: {:?}", preview);
+
 
     // Update content in database
     state
         .db
         .update_note_content(&id, &content, preview.as_deref(), now)
         .map_err(|e| {
-            eprintln!("[save_note_content] Database update failed: {}", e);
+
             format!("Failed to update note content: {}", e)
         })?;
 
-    eprintln!("[save_note_content] Successfully saved note content");
+
 
     Ok(now)
 }

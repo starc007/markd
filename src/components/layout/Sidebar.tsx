@@ -25,7 +25,7 @@ export function Sidebar() {
   const { getColor, setColor, removeColor } = useNoteColors();
   const { stickyNotes, loadStickyNotes } = useStickyNotesStore();
   const [deleteModalNoteId, setDeleteModalNoteId] = useState<string | null>(
-    null,
+    null
   );
 
   useEffect(() => {
@@ -45,7 +45,9 @@ export function Sidebar() {
     } catch (error) {
       console.error("Failed to create note:", error);
       toast.error(
-        `Failed to create note: ${error instanceof Error ? error.message : "Unknown error"}`,
+        `Failed to create note: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
       );
     }
   }, [selectedFolderId]);
@@ -55,7 +57,7 @@ export function Sidebar() {
       e.stopPropagation();
       setColor(noteId, newColorId);
     },
-    [setColor],
+    [setColor]
   );
 
   const handleDeleteNote = useCallback(
@@ -71,11 +73,13 @@ export function Sidebar() {
       } catch (error) {
         console.error("Failed to delete note:", error);
         toast.error(
-          `Failed to delete note: ${error instanceof Error ? error.message : "Unknown error"}`,
+          `Failed to delete note: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`
         );
       }
     },
-    [currentNote?.id, removeColor],
+    [currentNote?.id, removeColor]
   );
 
   // Filter and sort notes - memoized for performance
@@ -102,7 +106,9 @@ export function Sidebar() {
     } catch (error) {
       console.error("Failed to create subpage:", error);
       toast.error(
-        `Failed to create subpage: ${error instanceof Error ? error.message : "Unknown error"}`,
+        `Failed to create subpage: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
       );
     }
   }, []);
@@ -112,6 +118,7 @@ export function Sidebar() {
   }, []);
 
   const handleNoteClick = useCallback((noteId: string) => {
+    useUIStore.getState().setView(UIView.None);
     useNoteStore.getState().loadNote(noteId);
   }, []);
 

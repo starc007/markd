@@ -202,14 +202,20 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
       },
     });
 
-    // Update content when noteId changes (only when noteId actually changes, not when content updates)
+    // Track last content to detect changes
+    const lastContentRef = useRef<string>(content);
+
+    // Update content when noteId changes or when content changes
     useEffect(() => {
-      if (noteIdRef.current !== noteId && editor) {
-        // Set flag to prevent saves during note switch
+      const noteIdChanged = noteIdRef.current !== noteId;
+      const contentChanged = lastContentRef.current !== content;
 
-        isSwitchingNotesRef.current = true;
-
-        noteIdRef.current = noteId;
+      if ((noteIdChanged || contentChanged) && editor) {
+        // Set flag to prevent saves during note switch or content update
+        if (noteIdChanged) {
+          isSwitchingNotesRef.current = true;
+          noteIdRef.current = noteId;
+        }
 
         // Clear any pending saves
         if (saveTimeoutRef.current) {
@@ -218,26 +224,39 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
         }
 
         const json = parseContent(content);
+        const contentString = JSON.stringify(json);
 
-        // Use emitUpdate: false to prevent onUpdate event
-        editor.commands.setContent(json, {
-          emitUpdate: false,
-        });
+        // Only update if content actually changed (avoid unnecessary updates)
+        const currentEditorContent = JSON.stringify(editor.getJSON());
+        if (contentString !== currentEditorContent) {
+          // Use emitUpdate: false to prevent onUpdate event
+          editor.commands.setContent(json, {
+            emitUpdate: false,
+          });
 
-        // Reset last saved content when switching notes (use the content prop as-is since it's already JSON string)
-        lastSavedContentRef.current = content || JSON.stringify(json);
+          // Reset last saved content
+          lastSavedContentRef.current = content || contentString;
+        }
+
+        // Always update the ref to track the latest content
+        lastContentRef.current = content;
 
         // Reset flag after a short delay to allow any pending updates to complete
         if (switchingTimeoutRef.current) {
           window.clearTimeout(switchingTimeoutRef.current);
         }
 
-        switchingTimeoutRef.current = window.setTimeout(() => {
-          if (isMountedRef.current) {
-            isSwitchingNotesRef.current = false;
-          }
-          switchingTimeoutRef.current = null;
-        }, 100);
+        if (noteIdChanged) {
+          switchingTimeoutRef.current = window.setTimeout(() => {
+            if (isMountedRef.current) {
+              isSwitchingNotesRef.current = false;
+            }
+            switchingTimeoutRef.current = null;
+          }, 100);
+        } else if (contentChanged) {
+          // For content-only changes (like page link title updates), reset flag immediately
+          isSwitchingNotesRef.current = false;
+        }
       }
     }, [noteId, editor, content]); // Include content to update when note content changes
 

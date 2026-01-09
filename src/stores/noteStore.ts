@@ -301,7 +301,15 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       // If title was updated, update all page links that reference this page
       if (updates.title !== undefined && updates.title !== null) {
         try {
+          // Get backlinks before updating (to know which notes were affected)
+          const backlinks = await commands.getBacklinks(id);
           await commands.updatePageLinkTitles(id, note.title);
+
+          // If the current note is one of the notes that was updated, reload it
+          if (currentNote && backlinks.includes(currentNote.id)) {
+            // Reload the current note to get the updated content
+            await get().loadNote(currentNote.id);
+          }
         } catch (error) {
           console.error("Failed to update page link titles:", error);
           // Don't fail the entire update if this fails
