@@ -1,7 +1,6 @@
 import { HugeiconsIcon } from "@hugeicons/react";
 import { SettingsIcon } from "@hugeicons/core-free-icons";
 import { NavItem, SectionHeading } from "../ui";
-import { UIView } from "../../stores/noteStore";
 
 interface SidebarSettingsProps {
   onSettingsClick: () => void;

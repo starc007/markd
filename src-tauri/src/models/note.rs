@@ -7,6 +7,7 @@ pub struct Note {
     pub content: String,
     pub file_path: String,
     pub folder_id: Option<String>,
+    pub parent_id: Option<String>,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -17,7 +18,9 @@ pub struct NoteMetadata {
     pub title: String,
     pub preview: Option<String>,
     pub folder_id: Option<String>,
+    pub parent_id: Option<String>,
     pub pinned: bool,
+    pub children_count: u32,
     pub created_at: i64,
     pub updated_at: i64,
 }

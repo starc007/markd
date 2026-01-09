@@ -16,7 +16,7 @@ export function useNotes() {
 
   // Load notes on mount
   useEffect(() => {
-    loadNotes();
+    loadNotes(undefined, null);
   }, [loadNotes]);
 
   return {

@@ -7,6 +7,7 @@ pub mod utils;
 use commands::export::*;
 use commands::folders::*;
 use commands::notes::*;
+use commands::page_links::*;
 use commands::search::*;
 use commands::sticky_notes::*;
 use state::AppState;
@@ -30,6 +31,10 @@ pub fn run() {
             save_note_content,
             import_file,
             toggle_note_pinned,
+            // Page hierarchy commands
+            create_subpage,
+            get_page_children,
+            move_page,
             // Folder commands
             create_folder,
             get_folder,
@@ -42,6 +47,12 @@ pub fn run() {
             // Export commands
             export_note,
             get_note_content_for_export,
+            // Page linking commands
+            link_page,
+            unlink_page,
+            get_linked_pages,
+            get_backlinks,
+            sync_page_links,
             // Sticky Notes commands
             create_sticky_note,
             get_sticky_note,

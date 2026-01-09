@@ -13,6 +13,7 @@ pub struct CreateNoteParams {
     pub title: String,
     pub content: Option<String>,
     pub folder_id: Option<String>,
+    pub parent_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -53,6 +54,7 @@ pub async fn create_note(
             &content,
             preview.as_deref(),
             params.folder_id.as_deref(),
+            params.parent_id.as_deref(),
             now,
             now,
         )
@@ -71,6 +73,7 @@ pub async fn create_note(
         content,
         file_path: String::new(), // Deprecated, kept for compatibility
         folder_id: params.folder_id,
+        parent_id: params.parent_id,
         created_at: now,
         updated_at: now,
     })
@@ -99,6 +102,7 @@ pub async fn get_note(state: State<'_, AppState>, id: String) -> Result<Option<N
                 content,
                 file_path: String::new(), // Deprecated
                 folder_id: meta.folder_id,
+                parent_id: meta.parent_id,
                 created_at: meta.created_at,
                 updated_at: meta.updated_at,
             }))
@@ -174,6 +178,7 @@ pub async fn update_note(
         content,
         file_path: String::new(), // Deprecated
         folder_id,
+        parent_id: existing.parent_id,
         created_at: existing.created_at,
         updated_at: now,
     })
@@ -200,10 +205,11 @@ pub async fn delete_note(state: State<'_, AppState>, id: String) -> Result<(), S
 pub async fn list_notes(
     state: State<'_, AppState>,
     folder_id: Option<String>,
+    parent_id: Option<String>,
 ) -> Result<Vec<NoteMetadata>, String> {
     state
         .db
-        .list_notes(folder_id.as_deref())
+        .list_notes(folder_id.as_deref(), parent_id.as_deref())
         .map_err(|e| format!("Failed to list notes: {}", e))
 }
 
@@ -319,6 +325,7 @@ pub async fn import_file(
             &json_content,
             preview.as_deref(),
             folder_id.as_deref(),
+            None, // Imported files are top-level
             now,
             now,
         )
@@ -337,9 +344,102 @@ pub async fn import_file(
         content: json_content,
         file_path: String::new(),
         folder_id,
+        parent_id: None, // Imported files are top-level
         created_at: now,
         updated_at: now,
     })
+}
+
+// Page hierarchy commands
+#[tauri::command]
+pub async fn create_subpage(
+    state: State<'_, AppState>,
+    parent_id: String,
+    title: String,
+) -> Result<Note, String> {
+    // Verify parent exists
+    let parent = state
+        .db
+        .get_note_metadata(&parent_id)
+        .map_err(|e| format!("Failed to get parent: {}", e))?
+        .ok_or_else(|| "Parent page not found".to_string())?;
+
+    let id = Uuid::new_v4().to_string();
+    let now = Utc::now().timestamp_millis();
+    let content = DEFAULT_CONTENT.to_string();
+
+    // Generate preview
+    let preview = generate_preview(&content, PREVIEW_MAX_LENGTH);
+
+    // Insert subpage
+    state
+        .db
+        .insert_note(
+            &id,
+            &title,
+            &content,
+            preview.as_deref(),
+            parent.folder_id.as_deref(),
+            Some(&parent_id),
+            now,
+            now,
+        )
+        .map_err(|e| format!("Failed to create subpage: {}", e))?;
+
+    // Index for search
+    let plain_text = extract_plain_text(&content);
+    state
+        .db
+        .index_note(&id, &title, &plain_text, "")
+        .map_err(|e| format!("Failed to index subpage: {}", e))?;
+
+    Ok(Note {
+        id,
+        title,
+        content,
+        file_path: String::new(),
+        folder_id: parent.folder_id,
+        parent_id: Some(parent_id),
+        created_at: now,
+        updated_at: now,
+    })
+}
+
+#[tauri::command]
+pub async fn get_page_children(
+    state: State<'_, AppState>,
+    parent_id: String,
+) -> Result<Vec<NoteMetadata>, String> {
+    state
+        .db
+        .get_page_children(&parent_id)
+        .map_err(|e| format!("Failed to get page children: {}", e))
+}
+
+#[tauri::command]
+pub async fn move_page(
+    state: State<'_, AppState>,
+    page_id: String,
+    new_parent_id: Option<String>,
+) -> Result<(), String> {
+    // Check for circular reference
+    if let Some(ref parent_id) = new_parent_id {
+        if state
+            .db
+            .would_create_circular_reference(&page_id, parent_id)
+            .map_err(|e| format!("Failed to check circular reference: {}", e))?
+        {
+            return Err("Cannot move page: would create circular reference".to_string());
+        }
+    }
+
+    let now = Utc::now().timestamp_millis();
+    state
+        .db
+        .update_note_parent(&page_id, new_parent_id.as_deref(), now)
+        .map_err(|e| format!("Failed to move page: {}", e))?;
+
+    Ok(())
 }
 
 #[cfg(test)]

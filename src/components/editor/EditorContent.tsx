@@ -11,8 +11,12 @@ import { UiState } from "../../lib/tiptap-extension/ui-state-extension";
 import { NodeAlignment } from "../../lib/tiptap-extension/node-alignment-extension";
 import { NodeBackground } from "../../lib/tiptap-extension/node-background-extension";
 import { ListNormalizationExtension } from "../../lib/tiptap-extension/list-normalization-extension";
+import { PageLinkExtension } from "../../lib/tiptap-extension/page-link-extension";
 import { SlashDropdownMenu } from "./slash-dropdown-menu";
 import { FloatingToolbar } from "./floating-toolbar";
+import { PageLinkMenu } from "./PageLinkMenu";
+import { useNoteStore } from "../../stores/noteStore";
+import * as commands from "../../lib/tauri/commands";
 
 interface EditorContentProps {
   content: string;
@@ -27,12 +31,48 @@ export interface EditorContentRef {
 
 export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
   ({ content, noteId, onContentChange }, ref) => {
+    const noteIdForLinksRef = useRef<string>(noteId);
+
+    // Update noteId ref when it changes
+    useEffect(() => {
+      noteIdForLinksRef.current = noteId;
+    }, [noteId]);
     const editorRef = useRef<ReturnType<typeof useEditor> | null>(null);
     const saveTimeoutRef = useRef<number | null>(null);
     const noteIdRef = useRef<string | null>(null);
     const onContentChangeRef = useRef(onContentChange);
     const lastSavedContentRef = useRef<string>("");
     const isSwitchingNotesRef = useRef<boolean>(false);
+    const { loadNote } = useNoteStore();
+
+    // Extract page links from TipTap JSON and sync with backend
+    const extractAndSyncPageLinks = async (
+      currentNoteId: string,
+      json: any
+    ) => {
+      const pageIds = new Set<string>();
+
+      // Recursively find all pageLink nodes
+      const findPageLinks = (node: any) => {
+        if (node.type === "pageLink" && node.attrs?.pageId) {
+          pageIds.add(node.attrs.pageId);
+        }
+        if (node.content && Array.isArray(node.content)) {
+          node.content.forEach(findPageLinks);
+        }
+      };
+
+      findPageLinks(json);
+
+      // Sync page links (debounced - only sync after save)
+      if (pageIds.size > 0) {
+        try {
+          await commands.syncPageLinks(currentNoteId, Array.from(pageIds));
+        } catch (error) {
+          console.error("Failed to sync page links:", error);
+        }
+      }
+    };
 
     // Keep callback ref updated
     useEffect(() => {
@@ -79,6 +119,11 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
         NodeAlignment,
         NodeBackground,
         ListNormalizationExtension,
+        PageLinkExtension.configure({
+          HTMLAttributes: {
+            class: "page-link",
+          },
+        }),
       ],
       content: parseContent(content),
       editorProps: {
@@ -116,6 +161,9 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
             if (jsonString !== lastSavedContentRef.current) {
               lastSavedContentRef.current = jsonString;
               onContentChangeRef.current(jsonString);
+
+              // Extract page links from content and sync
+              extractAndSyncPageLinks(noteIdForLinksRef.current, json);
             }
           }
         }, 500);
@@ -206,6 +254,24 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
       return () => window.removeEventListener("blur", handleWindowBlur);
     }, [editor]);
 
+    // Handle page link navigation
+    useEffect(() => {
+      const handleNavigateToPage = (e: CustomEvent<{ pageId: string }>) => {
+        loadNote(e.detail.pageId);
+      };
+
+      window.addEventListener(
+        "navigate-to-page",
+        handleNavigateToPage as EventListener
+      );
+      return () => {
+        window.removeEventListener(
+          "navigate-to-page",
+          handleNavigateToPage as EventListener
+        );
+      };
+    }, [loadNote]);
+
     // Cleanup on unmount
     useEffect(() => {
       return () => {
@@ -234,6 +300,7 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
       <div className="relative">
         <TiptapEditorContent editor={editor}>
           <SlashDropdownMenu editor={editor} />
+          <PageLinkMenu />
           <FloatingToolbar editor={editor} />
         </TiptapEditorContent>
       </div>

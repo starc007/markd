@@ -7,6 +7,7 @@ export interface Note {
   content: string;
   file_path: string;
   folder_id: string | null;
+  parent_id: string | null;
   created_at: number;
   updated_at: number;
 }
@@ -16,7 +17,9 @@ export interface NoteMetadata {
   title: string;
   preview: string | null;
   folder_id: string | null;
+  parent_id: string | null;
   pinned: boolean;
+  children_count: number;
   created_at: number;
   updated_at: number;
 }
@@ -58,6 +61,7 @@ export interface CreateNoteParams {
   title: string;
   content?: string;
   folder_id?: string;
+  parent_id?: string;
 }
 
 export interface UpdateNoteParams {
@@ -97,20 +101,21 @@ export async function deleteNote(id: string): Promise<void> {
 
 export async function listNotes(
   folderId?: string | null,
+  parentId?: string | null
 ): Promise<NoteMetadata[]> {
-  return invoke<NoteMetadata[]>("list_notes", { folderId });
+  return invoke<NoteMetadata[]>("list_notes", { folderId, parentId });
 }
 
 export async function saveNoteContent(
   id: string,
-  content: string,
+  content: string
 ): Promise<number> {
   return invoke<number>("save_note_content", { id, content });
 }
 
 // Folder commands
 export async function createFolder(
-  params: CreateFolderParams,
+  params: CreateFolderParams
 ): Promise<Folder> {
   return invoke<Folder>("create_folder", { params });
 }
@@ -120,7 +125,7 @@ export async function getFolder(id: string): Promise<Folder | null> {
 }
 
 export async function updateFolder(
-  params: UpdateFolderParams,
+  params: UpdateFolderParams
 ): Promise<Folder> {
   return invoke<Folder>("update_folder", { params });
 }
@@ -135,7 +140,7 @@ export async function listFolders(): Promise<Folder[]> {
 
 export async function moveNoteToFolder(
   noteId: string,
-  folderId?: string | null,
+  folderId?: string | null
 ): Promise<void> {
   return invoke<void>("move_note_to_folder", { noteId, folderId });
 }
@@ -149,7 +154,7 @@ export async function searchNotes(query: string): Promise<SearchResult[]> {
 export async function exportNote(
   noteId: string,
   destination: string,
-  markdownContent: string,
+  markdownContent: string
 ): Promise<void> {
   return invoke<void>("export_note", { noteId, destination, markdownContent });
 }
@@ -160,21 +165,21 @@ export async function getNoteContentForExport(noteId: string): Promise<string> {
 
 export async function importFile(
   filePath: string,
-  folderId?: string | null,
+  folderId?: string | null
 ): Promise<Note> {
   return invoke<Note>("import_file", { filePath, folderId });
 }
 
 export async function toggleNotePinned(
   id: string,
-  pinned: boolean,
+  pinned: boolean
 ): Promise<void> {
   return invoke<void>("toggle_note_pinned", { id, pinned });
 }
 
 // Sticky Notes commands
 export async function createStickyNote(
-  params: CreateStickyNoteParams,
+  params: CreateStickyNoteParams
 ): Promise<StickyNote> {
   return invoke<StickyNote>("create_sticky_note", { params });
 }
@@ -184,7 +189,7 @@ export async function getStickyNote(id: string): Promise<StickyNote | null> {
 }
 
 export async function updateStickyNote(
-  params: UpdateStickyNoteParams,
+  params: UpdateStickyNoteParams
 ): Promise<StickyNote> {
   return invoke<StickyNote>("update_sticky_note", { params });
 }
@@ -195,4 +200,55 @@ export async function deleteStickyNote(id: string): Promise<void> {
 
 export async function listStickyNotes(): Promise<StickyNote[]> {
   return invoke<StickyNote[]>("list_sticky_notes");
+}
+
+// Page hierarchy commands
+export async function createSubpage(
+  parentId: string,
+  title: string
+): Promise<Note> {
+  return invoke<Note>("create_subpage", { parentId, title });
+}
+
+export async function getPageChildren(
+  parentId: string
+): Promise<NoteMetadata[]> {
+  return invoke<NoteMetadata[]>("get_page_children", { parentId });
+}
+
+export async function movePage(
+  pageId: string,
+  newParentId?: string | null
+): Promise<void> {
+  return invoke<void>("move_page", { pageId, newParentId });
+}
+
+// Page linking commands
+export async function linkPage(
+  sourcePageId: string,
+  targetPageId: string
+): Promise<void> {
+  return invoke<void>("link_page", { sourcePageId, targetPageId });
+}
+
+export async function unlinkPage(
+  sourcePageId: string,
+  targetPageId: string
+): Promise<void> {
+  return invoke<void>("unlink_page", { sourcePageId, targetPageId });
+}
+
+export async function getLinkedPages(pageId: string): Promise<string[]> {
+  return invoke<string[]>("get_linked_pages", { pageId });
+}
+
+export async function getBacklinks(pageId: string): Promise<string[]> {
+  return invoke<string[]>("get_backlinks", { pageId });
+}
+
+export async function syncPageLinks(
+  pageId: string,
+  linkedPageIds: string[]
+): Promise<void> {
+  return invoke<void>("sync_page_links", { pageId, linkedPageIds });
 }

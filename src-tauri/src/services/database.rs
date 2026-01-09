@@ -44,10 +44,12 @@ impl Database {
                 preview TEXT,
                 file_path TEXT,
                 folder_id TEXT,
+                parent_id TEXT,
                 pinned INTEGER NOT NULL DEFAULT 0,
                 created_at INTEGER NOT NULL,
                 updated_at INTEGER NOT NULL,
-                FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE SET NULL
+                FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE SET NULL,
+                FOREIGN KEY (parent_id) REFERENCES notes(id) ON DELETE SET NULL
             )",
             [],
         )?;
@@ -61,6 +63,8 @@ impl Database {
             "ALTER TABLE notes ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0",
             [],
         );
+        // Add parent_id column if it doesn't exist (migration for existing databases)
+        let _ = conn.execute("ALTER TABLE notes ADD COLUMN parent_id TEXT", []);
         // Make file_path nullable (migration for existing databases)
         // SQLite doesn't support ALTER COLUMN, so we handle this in migrations
 
@@ -109,6 +113,20 @@ impl Database {
             [],
         )?;
 
+        // Create page_links table for tracking page references
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS page_links (
+                id TEXT PRIMARY KEY,
+                source_page_id TEXT NOT NULL,
+                target_page_id TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                FOREIGN KEY (source_page_id) REFERENCES notes(id) ON DELETE CASCADE,
+                FOREIGN KEY (target_page_id) REFERENCES notes(id) ON DELETE CASCADE,
+                UNIQUE(source_page_id, target_page_id)
+            )",
+            [],
+        )?;
+
         // Create indexes for better performance
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_notes_folder ON notes(folder_id)",
@@ -119,7 +137,19 @@ impl Database {
             [],
         )?;
         conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_notes_parent ON notes(parent_id)",
+            [],
+        )?;
+        conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_folders_parent ON folders(parent_id)",
+            [],
+        )?;
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_page_links_source ON page_links(source_page_id)",
+            [],
+        )?;
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_page_links_target ON page_links(target_page_id)",
             [],
         )?;
 
@@ -134,14 +164,15 @@ impl Database {
         content: &str,
         preview: Option<&str>,
         folder_id: Option<&str>,
+        parent_id: Option<&str>,
         created_at: i64,
         updated_at: i64,
     ) -> Result<()> {
         let conn = self.conn.lock().unwrap();
         conn.execute(
-            "INSERT INTO notes (id, title, content, preview, file_path, folder_id, pinned, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, NULL, ?5, 0, ?6, ?7)",
-            params![id, title, content, preview, folder_id, created_at, updated_at],
+            "INSERT INTO notes (id, title, content, preview, file_path, folder_id, parent_id, pinned, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, NULL, ?5, ?6, 0, ?7, ?8)",
+            params![id, title, content, preview, folder_id, parent_id, created_at, updated_at],
         )?;
         Ok(())
     }
@@ -202,7 +233,10 @@ impl Database {
     pub fn get_note_metadata(&self, id: &str) -> Result<Option<NoteMetadata>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT id, title, preview, folder_id, pinned, created_at, updated_at FROM notes WHERE id = ?1"
+            "SELECT id, title, preview, folder_id, parent_id, pinned, 
+             (SELECT COUNT(*) FROM notes WHERE parent_id = notes.id) as children_count,
+             created_at, updated_at 
+             FROM notes WHERE id = ?1"
         )?;
 
         let mut rows = stmt.query(params![id])?;
@@ -213,9 +247,11 @@ impl Database {
                 title: row.get(1)?,
                 preview: row.get(2)?,
                 folder_id: row.get(3)?,
-                pinned: row.get::<_, i32>(4)? != 0,
-                created_at: row.get(5)?,
-                updated_at: row.get(6)?,
+                parent_id: row.get(4)?,
+                pinned: row.get::<_, i32>(5)? != 0,
+                children_count: row.get::<_, i32>(6)? as u32,
+                created_at: row.get(7)?,
+                updated_at: row.get(8)?,
             }))
         } else {
             Ok(None)
@@ -261,23 +297,48 @@ impl Database {
         }
     }
 
-    pub fn list_notes(&self, folder_id: Option<&str>) -> Result<Vec<NoteMetadata>> {
+    pub fn list_notes(&self, folder_id: Option<&str>, parent_id: Option<&str>) -> Result<Vec<NoteMetadata>> {
         let conn = self.conn.lock().unwrap();
 
         let mut notes = Vec::new();
 
-        let sql = if folder_id.is_some() {
-            "SELECT id, title, preview, folder_id, pinned, created_at, updated_at
-             FROM notes WHERE folder_id = ?1 ORDER BY pinned DESC, updated_at DESC"
-        } else {
-            "SELECT id, title, preview, folder_id, pinned, created_at, updated_at
-             FROM notes ORDER BY pinned DESC, updated_at DESC"
+        // Build query based on filters
+        let (sql, params_vec) = match (folder_id, parent_id) {
+            (Some(fid), Some(pid)) => (
+                "SELECT id, title, preview, folder_id, parent_id, pinned,
+                 (SELECT COUNT(*) FROM notes n WHERE n.parent_id = notes.id) as children_count,
+                 created_at, updated_at
+                 FROM notes WHERE folder_id = ?1 AND parent_id = ?2 ORDER BY pinned DESC, updated_at DESC",
+                vec![fid.to_string(), pid.to_string()],
+            ),
+            (Some(fid), None) => (
+                "SELECT id, title, preview, folder_id, parent_id, pinned,
+                 (SELECT COUNT(*) FROM notes n WHERE n.parent_id = notes.id) as children_count,
+                 created_at, updated_at
+                 FROM notes WHERE folder_id = ?1 AND parent_id IS NULL ORDER BY pinned DESC, updated_at DESC",
+                vec![fid.to_string()],
+            ),
+            (None, Some(pid)) => (
+                "SELECT id, title, preview, folder_id, parent_id, pinned,
+                 (SELECT COUNT(*) FROM notes n WHERE n.parent_id = notes.id) as children_count,
+                 created_at, updated_at
+                 FROM notes WHERE parent_id = ?1 ORDER BY pinned DESC, updated_at DESC",
+                vec![pid.to_string()],
+            ),
+            (None, None) => (
+                "SELECT id, title, preview, folder_id, parent_id, pinned,
+                 (SELECT COUNT(*) FROM notes n WHERE n.parent_id = notes.id) as children_count,
+                 created_at, updated_at
+                 FROM notes WHERE parent_id IS NULL ORDER BY pinned DESC, updated_at DESC",
+                vec![],
+            ),
         };
 
         let mut stmt = conn.prepare(sql)?;
 
-        let rows = if let Some(fid) = folder_id {
-            stmt.query(params![fid])?
+        let rows = if !params_vec.is_empty() {
+            let params: Vec<&dyn rusqlite::ToSql> = params_vec.iter().map(|s| s as &dyn rusqlite::ToSql).collect();
+            stmt.query(params.as_slice())?
         } else {
             stmt.query([])?
         };
@@ -288,9 +349,11 @@ impl Database {
                 title: row.get(1)?,
                 preview: row.get(2)?,
                 folder_id: row.get(3)?,
-                pinned: row.get::<_, i32>(4)? != 0,
-                created_at: row.get(5)?,
-                updated_at: row.get(6)?,
+                parent_id: row.get(4)?,
+                pinned: row.get::<_, i32>(5)? != 0,
+                children_count: row.get::<_, i32>(6)? as u32,
+                created_at: row.get(7)?,
+                updated_at: row.get(8)?,
             })
         });
 
@@ -299,6 +362,56 @@ impl Database {
         }
 
         Ok(notes)
+    }
+
+    // Get children of a specific page
+    pub fn get_page_children(&self, parent_id: &str) -> Result<Vec<NoteMetadata>> {
+        self.list_notes(None, Some(parent_id))
+    }
+
+    // Check if moving a page would create a circular reference
+    pub fn would_create_circular_reference(&self, page_id: &str, new_parent_id: &str) -> Result<bool> {
+        // If new parent is the page itself, it's circular
+        if page_id == new_parent_id {
+            return Ok(true);
+        }
+
+        // Check if new_parent_id is a descendant of page_id
+        let conn = self.conn.lock().unwrap();
+        let mut current_id = new_parent_id.to_string();
+        let mut depth = 0;
+        const MAX_DEPTH: i32 = 100; // Prevent infinite loops
+
+        while depth < MAX_DEPTH {
+            let mut stmt = conn.prepare("SELECT parent_id FROM notes WHERE id = ?1")?;
+            let mut rows = stmt.query(params![current_id])?;
+
+            if let Some(row) = rows.next()? {
+                if let Some(parent) = row.get::<_, Option<String>>(0)? {
+                    if parent == page_id {
+                        return Ok(true); // Circular reference detected
+                    }
+                    current_id = parent;
+                    depth += 1;
+                } else {
+                    break; // Reached top level
+                }
+            } else {
+                break; // Page not found
+            }
+        }
+
+        Ok(false)
+    }
+
+    // Update note's parent
+    pub fn update_note_parent(&self, id: &str, parent_id: Option<&str>, updated_at: i64) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "UPDATE notes SET parent_id = ?1, updated_at = ?2 WHERE id = ?3",
+            params![parent_id, updated_at, id],
+        )?;
+        Ok(())
     }
 
     pub fn toggle_note_pinned(&self, id: &str, pinned: bool, updated_at: i64) -> Result<()> {
@@ -549,5 +662,99 @@ impl Database {
         }
 
         Ok(results)
+    }
+
+    // Page linking operations
+    pub fn create_page_link(
+        &self,
+        id: &str,
+        source_page_id: &str,
+        target_page_id: &str,
+        created_at: i64,
+    ) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "INSERT OR IGNORE INTO page_links (id, source_page_id, target_page_id, created_at)
+             VALUES (?1, ?2, ?3, ?4)",
+            params![id, source_page_id, target_page_id, created_at],
+        )?;
+        Ok(())
+    }
+
+    pub fn delete_page_link(&self, source_page_id: &str, target_page_id: &str) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "DELETE FROM page_links WHERE source_page_id = ?1 AND target_page_id = ?2",
+            params![source_page_id, target_page_id],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_linked_pages(&self, page_id: &str) -> Result<Vec<String>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT target_page_id FROM page_links WHERE source_page_id = ?1"
+        )?;
+        
+        let mut linked = Vec::new();
+        let rows = stmt.query_map(params![page_id], |row| {
+            Ok(row.get::<_, String>(0)?)
+        })?;
+
+        for page_id in rows {
+            linked.push(page_id?);
+        }
+
+        Ok(linked)
+    }
+
+    pub fn get_backlinks(&self, page_id: &str) -> Result<Vec<String>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT source_page_id FROM page_links WHERE target_page_id = ?1"
+        )?;
+        
+        let mut backlinks = Vec::new();
+        let rows = stmt.query_map(params![page_id], |row| {
+            Ok(row.get::<_, String>(0)?)
+        })?;
+
+        for page_id in rows {
+            backlinks.push(page_id?);
+        }
+
+        Ok(backlinks)
+    }
+
+    // Extract and sync page links from content
+    pub fn sync_page_links(&self, page_id: &str, linked_page_ids: &[String], now: i64) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        
+        // Get current links
+        let mut stmt = conn.prepare(
+            "SELECT target_page_id FROM page_links WHERE source_page_id = ?1"
+        )?;
+        let current_links: std::collections::HashSet<String> = stmt
+            .query_map(params![page_id], |row| Ok(row.get::<_, String>(0)?))?
+            .collect::<Result<_, _>>()?;
+
+        let new_links: std::collections::HashSet<String> = linked_page_ids.iter().cloned().collect();
+
+        // Remove links that are no longer in content
+        for old_link in &current_links {
+            if !new_links.contains(old_link) {
+                self.delete_page_link(page_id, old_link)?;
+            }
+        }
+
+        // Add new links
+        for new_link in &new_links {
+            if !current_links.contains(new_link) {
+                let link_id = uuid::Uuid::new_v4().to_string();
+                self.create_page_link(&link_id, page_id, new_link, now)?;
+            }
+        }
+
+        Ok(())
     }
 }

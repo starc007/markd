@@ -36,8 +36,9 @@ export function Editor({ noteId, content }: EditorProps) {
 
   // Handle back navigation
   const handleBack = useCallback(() => {
+    const { ui } = useNoteStore.getState();
     useNoteStore.setState({ currentNote: null });
-    useNoteStore.getState().loadNotes();
+    useNoteStore.getState().loadNotes(ui.selectedFolderId || undefined, null);
   }, []);
 
   // Handle delete

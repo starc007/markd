@@ -9,7 +9,7 @@ import { Button } from "../ui";
 import { DeleteNoteModal } from "../notes/DeleteNoteModal";
 import { SidebarSearch } from "./SidebarSearch";
 import { SidebarNavigation } from "./SidebarNavigation";
-import { NotesList } from "./NotesList";
+import { HierarchicalNotesList } from "./HierarchicalNotesList";
 import { SidebarSettings } from "./SidebarSettings";
 
 export function Sidebar() {
@@ -20,10 +20,14 @@ export function Sidebar() {
     loadNotes,
     loadFolders,
     createNote,
+    createSubpage,
     loadNote,
     deleteNote,
     setView,
     toggleCommandPalette,
+    childrenMap,
+    expandedPages,
+    togglePageExpanded,
   } = useNoteStore();
   const { getColor, setColor, removeColor } = useNoteColors();
   const { stickyNotes, loadStickyNotes } = useStickyNotesStore();
@@ -33,9 +37,9 @@ export function Sidebar() {
 
   useEffect(() => {
     loadFolders();
-    loadNotes();
+    loadNotes(ui.selectedFolderId || undefined, null);
     loadStickyNotes();
-  }, [loadFolders, loadNotes, loadStickyNotes]);
+  }, [loadFolders, loadNotes, loadStickyNotes, ui.selectedFolderId]);
 
   const handleNewNote = async () => {
     const note = await createNote("Untitled", ui.selectedFolderId || undefined);
@@ -63,17 +67,27 @@ export function Sidebar() {
   };
 
   // Filter and sort notes - memoized for performance
+  // Only show top-level notes (parent_id is null) in the main list
   const filteredNotes = useMemo(() => {
-    let filtered = notes;
+    let filtered = notes.filter((note) => note.parent_id === null);
 
     // Filter by folder if a folder is selected
     if (ui.selectedFolderId !== null) {
-      filtered = notes.filter((note) => note.folder_id === ui.selectedFolderId);
+      filtered = filtered.filter(
+        (note) => note.folder_id === ui.selectedFolderId
+      );
     }
 
     // Sort by updated_at descending
     return [...filtered].sort((a, b) => b.updated_at - a.updated_at);
   }, [notes, ui.selectedFolderId]);
+
+  const handleCreateSubpage = async (parentId: string) => {
+    const subpage = await createSubpage(parentId, "Untitled");
+    if (subpage) {
+      loadNote(subpage.id);
+    }
+  };
 
   return (
     <aside className="w-[280px] shrink-0 flex flex-col bg-sidebar border-r border-sidebar-border overflow-hidden">
@@ -102,13 +116,17 @@ export function Sidebar() {
         onViewChange={setView}
       />
 
-      <NotesList
+      <HierarchicalNotesList
         notes={filteredNotes}
+        childrenMap={childrenMap}
+        expandedPages={expandedPages}
         currentNoteId={currentNote?.id || null}
         getColor={getColor}
         onNoteClick={loadNote}
         onColorSelect={handleColorSelect}
         onDeleteClick={setDeleteModalNoteId}
+        onToggleExpand={togglePageExpanded}
+        onCreateSubpage={handleCreateSubpage}
       />
 
       <SidebarSettings

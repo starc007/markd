@@ -34,17 +34,33 @@ interface NoteStore {
   searchResults: SearchResult[];
   searchQuery: string;
   ui: UIState;
+  // Hierarchy state
+  childrenMap: Map<string, NoteMetadata[]>; // parent_id -> children
+  expandedPages: Set<string>; // Set of expanded page IDs
+  loadedChildren: Set<string>; // Pages whose children have been loaded
 
   // Note actions
-  loadNotes: (folderId?: string | null) => Promise<void>;
+  loadNotes: (
+    folderId?: string | null,
+    parentId?: string | null
+  ) => Promise<void>;
   loadNote: (id: string) => Promise<void>;
-  createNote: (title: string, folderId?: string) => Promise<Note>;
+  createNote: (
+    title: string,
+    folderId?: string,
+    parentId?: string
+  ) => Promise<Note>;
+  createSubpage: (parentId: string, title: string) => Promise<Note>;
   updateNote: (
     id: string,
     updates: { title?: string; content?: string }
   ) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   saveCurrentNoteContent: (content: string) => Promise<void>;
+  // Hierarchy actions
+  loadPageChildren: (parentId: string) => Promise<void>;
+  togglePageExpanded: (pageId: string) => void;
+  movePage: (pageId: string, newParentId?: string | null) => Promise<void>;
 
   // Folder actions
   loadFolders: () => Promise<void>;
@@ -84,6 +100,9 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
   error: null,
   searchResults: [],
   searchQuery: "",
+  childrenMap: new Map(),
+  expandedPages: new Set(),
+  loadedChildren: new Set(),
   ui: {
     sidebarCollapsed: false,
     focusMode: false,
@@ -94,11 +113,24 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
   },
 
   // Note actions
-  loadNotes: async (folderId) => {
+  loadNotes: async (folderId, parentId) => {
     set({ isLoading: true, error: null });
     try {
-      const notes = await commands.listNotes(folderId);
-      set({ notes, isLoading: false });
+      const notes = await commands.listNotes(folderId, parentId);
+      if (parentId) {
+        // Loading children for a specific parent
+        const { childrenMap } = get();
+        const newMap = new Map(childrenMap);
+        newMap.set(parentId, notes);
+        set({
+          childrenMap: newMap,
+          loadedChildren: new Set([...get().loadedChildren, parentId]),
+          isLoading: false,
+        });
+      } else {
+        // Loading top-level notes
+        set({ notes, isLoading: false });
+      }
     } catch (error) {
       set({ error: String(error), isLoading: false });
     }
@@ -119,28 +151,104 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
     }
   },
 
-  createNote: async (title, folderId) => {
+  createNote: async (title, folderId, parentId) => {
     set({ isLoading: true, error: null });
     try {
       const note = await commands.createNote({
         title,
         content: "",
         folder_id: folderId,
+        parent_id: parentId,
       });
-      const { notes, ui } = get();
+      const { notes, ui, childrenMap } = get();
+      const metadata = {
+        id: note.id,
+        title: note.title,
+        preview: null,
+        folder_id: note.folder_id,
+        parent_id: note.parent_id,
+        pinned: false,
+        children_count: 0,
+        created_at: note.created_at,
+        updated_at: note.updated_at,
+      };
+
+      if (parentId) {
+        // Add to parent's children
+        const newMap = new Map(childrenMap);
+        const parentChildren = newMap.get(parentId) || [];
+        newMap.set(parentId, [metadata, ...parentChildren]);
+        set({
+          childrenMap: newMap,
+          currentNote: note,
+          isLoading: false,
+          ui: { ...ui, currentView: UIView.None },
+        });
+      } else {
+        // Add to top-level notes
+        set({
+          notes: [metadata, ...notes],
+          currentNote: note,
+          isLoading: false,
+          ui: { ...ui, currentView: UIView.None },
+        });
+      }
+      return note;
+    } catch (error) {
+      set({ error: String(error), isLoading: false });
+      throw error;
+    }
+  },
+
+  createSubpage: async (parentId, title) => {
+    set({ isLoading: true, error: null });
+    try {
+      const note = await commands.createSubpage(parentId, title);
+      const { childrenMap, ui, expandedPages, loadedChildren } = get();
+      const metadata = {
+        id: note.id,
+        title: note.title,
+        preview: null,
+        folder_id: note.folder_id,
+        parent_id: note.parent_id,
+        pinned: false,
+        children_count: 0,
+        created_at: note.created_at,
+        updated_at: note.updated_at,
+      };
+
+      // Add to parent's children
+      const newMap = new Map(childrenMap);
+      const parentChildren = newMap.get(parentId) || [];
+      newMap.set(parentId, [metadata, ...parentChildren]);
+
+      // Update parent's children_count in notes list if visible
+      const { notes } = get();
+      const updatedNotes = notes.map((n) =>
+        n.id === parentId ? { ...n, children_count: n.children_count + 1 } : n
+      );
+
+      // Update parent's children_count in childrenMap if it's a child itself
+      for (const [parentIdKey, children] of newMap.entries()) {
+        const updatedChildren = children.map((n) =>
+          n.id === parentId ? { ...n, children_count: n.children_count + 1 } : n
+        );
+        if (updatedChildren.some((n) => n.id === parentId)) {
+          newMap.set(parentIdKey, updatedChildren);
+        }
+      }
+
+      // Automatically expand parent and mark as loaded so subpage is visible
+      const newExpanded = new Set(expandedPages);
+      newExpanded.add(parentId);
+      const newLoaded = new Set(loadedChildren);
+      newLoaded.add(parentId);
+
       set({
-        notes: [
-          {
-            id: note.id,
-            title: note.title,
-            preview: null,
-            folder_id: note.folder_id,
-            pinned: false,
-            created_at: note.created_at,
-            updated_at: note.updated_at,
-          },
-          ...notes,
-        ],
+        childrenMap: newMap,
+        notes: updatedNotes,
+        expandedPages: newExpanded,
+        loadedChildren: newLoaded,
         currentNote: note,
         isLoading: false,
         ui: { ...ui, currentView: UIView.None },
@@ -161,9 +269,29 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       // Update notes list
       const updatedNotes = notes.map((n) =>
         n.id === id
-          ? { ...n, title: note.title, updated_at: note.updated_at }
+          ? {
+              ...n,
+              title: note.title,
+              updated_at: note.updated_at,
+              parent_id: note.parent_id,
+            }
           : n
       );
+
+      // Update in children map if it's a child
+      const { childrenMap } = get();
+      const newMap = new Map(childrenMap);
+      for (const [parentId, children] of newMap.entries()) {
+        const updatedChildren = children.map((n) =>
+          n.id === id
+            ? { ...n, title: note.title, updated_at: note.updated_at }
+            : n
+        );
+        if (updatedChildren.some((n) => n.id === id)) {
+          newMap.set(parentId, updatedChildren);
+        }
+      }
+      set({ childrenMap: newMap });
 
       // Sort by updated_at desc
       updatedNotes.sort((a, b) => b.updated_at - a.updated_at);
@@ -183,10 +311,43 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       await commands.deleteNote(id);
-      const { notes, currentNote } = get();
+      const { notes, currentNote, childrenMap, expandedPages, loadedChildren } =
+        get();
+
+      // Remove from top-level notes
       const updatedNotes = notes.filter((n) => n.id !== id);
+
+      // Remove from children map and update parent's children_count
+      const newMap = new Map(childrenMap);
+
+      for (const [parentIdKey, children] of newMap.entries()) {
+        const filtered = children.filter((n) => n.id !== id);
+        if (filtered.length !== children.length) {
+          newMap.set(parentIdKey, filtered);
+
+          // Update parent's children_count in notes list
+          const parentNote = updatedNotes.find((n) => n.id === parentIdKey);
+          if (parentNote) {
+            const parentIndex = updatedNotes.indexOf(parentNote);
+            updatedNotes[parentIndex] = {
+              ...parentNote,
+              children_count: Math.max(0, parentNote.children_count - 1),
+            };
+          }
+        }
+      }
+
+      // Clean up expandedPages and loadedChildren for the deleted note
+      const newExpanded = new Set(expandedPages);
+      newExpanded.delete(id);
+      const newLoaded = new Set(loadedChildren);
+      newLoaded.delete(id);
+
       set({
         notes: updatedNotes,
+        childrenMap: newMap,
+        expandedPages: newExpanded,
+        loadedChildren: newLoaded,
         currentNote: currentNote?.id === id ? null : currentNote,
         isLoading: false,
       });
@@ -274,7 +435,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
   selectFolder: (id) => {
     const { ui, loadNotes } = get();
     set({ ui: { ...ui, selectedFolderId: id } });
-    loadNotes(id);
+    loadNotes(id, null);
   },
 
   // Search actions
@@ -381,7 +542,9 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
             title: note.title,
             preview: null,
             folder_id: note.folder_id,
+            parent_id: note.parent_id,
             pinned: false,
+            children_count: 0,
             created_at: note.created_at,
             updated_at: note.updated_at,
           },
@@ -393,6 +556,86 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       return note;
     } catch (error) {
       set({ error: String(error), isLoading: false });
+      throw error;
+    }
+  },
+
+  // Hierarchy actions
+  loadPageChildren: async (parentId) => {
+    const { loadedChildren } = get();
+    if (loadedChildren.has(parentId)) {
+      return; // Already loaded
+    }
+
+    try {
+      const children = await commands.getPageChildren(parentId);
+      const { childrenMap } = get();
+      const newMap = new Map(childrenMap);
+      newMap.set(parentId, children);
+      set({
+        childrenMap: newMap,
+        loadedChildren: new Set([...loadedChildren, parentId]),
+      });
+    } catch (error) {
+      set({ error: String(error) });
+    }
+  },
+
+  togglePageExpanded: (pageId) => {
+    const { expandedPages, loadPageChildren } = get();
+    const newExpanded = new Set(expandedPages);
+
+    if (newExpanded.has(pageId)) {
+      newExpanded.delete(pageId);
+    } else {
+      newExpanded.add(pageId);
+      // Load children if not already loaded
+      loadPageChildren(pageId);
+    }
+
+    set({ expandedPages: newExpanded });
+  },
+
+  movePage: async (pageId, newParentId) => {
+    try {
+      await commands.movePage(pageId, newParentId);
+      // Reload affected pages
+      const { notes, childrenMap } = get();
+
+      // Find the page being moved
+      const page = [...notes, ...Array.from(childrenMap.values()).flat()].find(
+        (n) => n.id === pageId
+      );
+      if (!page) return;
+
+      const oldParentId = page.parent_id;
+
+      // Remove from old parent's children
+      if (oldParentId) {
+        const newMap = new Map(childrenMap);
+        const oldChildren = newMap.get(oldParentId) || [];
+        newMap.set(
+          oldParentId,
+          oldChildren.filter((n) => n.id !== pageId)
+        );
+        set({ childrenMap: newMap });
+      } else {
+        // Remove from top-level notes
+        set({ notes: notes.filter((n) => n.id !== pageId) });
+      }
+
+      // Reload the new parent's children if it was expanded
+      const { expandedPages } = get();
+      if (newParentId && expandedPages.has(newParentId)) {
+        get().loadPageChildren(newParentId);
+      }
+
+      // Reload old parent's children if it was expanded
+      if (oldParentId && expandedPages.has(oldParentId)) {
+        get().loadPageChildren(oldParentId);
+      }
+    } catch (error) {
+      set({ error: String(error) });
       throw error;
     }
   },
