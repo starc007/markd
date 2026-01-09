@@ -32,6 +32,7 @@ export function Editor({ noteId, content }: EditorProps) {
   const titleRef = useRef<EditorTitleRef>(null);
 
   const currentNote = useNoteStore((state) => state.currentNote);
+  const focusMode = useNoteStore((state) => state.ui.focusMode);
 
   // Handle back navigation
   const handleBack = useCallback(() => {
@@ -89,61 +90,63 @@ export function Editor({ noteId, content }: EditorProps) {
   return (
     <>
       <div className="flex-1 flex flex-col h-full overflow-hidden bg-background">
-        {/* Header with drag region */}
-        <div
-          className="h-[50px] shrink-0 flex items-center justify-between border-b border-sidebar-border px-4"
-          data-tauri-drag-region
-        >
-          <div className="flex items-center gap-3 [-webkit-app-region:no-drag]">
-            <span className="font-medium text-muted-foreground truncate text-xs italic">
-              updated {formatRelativeTime(currentNote?.updated_at || 0)}
-            </span>
+        {/* Header with drag region - hidden in focus mode */}
+        {!focusMode && (
+          <div
+            className="h-[50px] shrink-0 flex items-center justify-between border-b border-sidebar-border px-4"
+            data-tauri-drag-region
+          >
+            <div className="flex items-center gap-3 [-webkit-app-region:no-drag]">
+              <span className="font-medium text-muted-foreground truncate text-xs italic">
+                updated {formatRelativeTime(currentNote?.updated_at || 0)}
+              </span>
+            </div>
+
+            {/* Dropdown Menu */}
+            <div className="[-webkit-app-region:no-drag]">
+              <Dropdown>
+                <DropdownTrigger>
+                  <IconButton size="sm" title="More options">
+                    <HugeiconsIcon
+                      icon={MoreVerticalIcon}
+                      size={20}
+                      color="currentColor"
+                      strokeWidth={1.5}
+                    />
+                  </IconButton>
+                </DropdownTrigger>
+
+                <DropdownContent align="end" className="w-48">
+                  <DropdownItem onClick={handleExport}>
+                    <HugeiconsIcon
+                      icon={Download01Icon}
+                      size={16}
+                      color="currentColor"
+                      strokeWidth={1.5}
+                      className="text-muted-foreground"
+                    />
+                    Export as Markdown
+                  </DropdownItem>
+
+                  <DropdownSeparator />
+
+                  <DropdownItem
+                    onClick={() => setShowDeleteModal(true)}
+                    variant="destructive"
+                  >
+                    <HugeiconsIcon
+                      icon={DeleteIcon}
+                      size={16}
+                      color="currentColor"
+                      strokeWidth={1.5}
+                    />
+                    Delete note
+                  </DropdownItem>
+                </DropdownContent>
+              </Dropdown>
+            </div>
           </div>
-
-          {/* Dropdown Menu */}
-          <div className="[-webkit-app-region:no-drag]">
-            <Dropdown>
-              <DropdownTrigger>
-                <IconButton size="sm" title="More options">
-                  <HugeiconsIcon
-                    icon={MoreVerticalIcon}
-                    size={20}
-                    color="currentColor"
-                    strokeWidth={1.5}
-                  />
-                </IconButton>
-              </DropdownTrigger>
-
-              <DropdownContent align="end" className="w-48">
-                <DropdownItem onClick={handleExport}>
-                  <HugeiconsIcon
-                    icon={Download01Icon}
-                    size={16}
-                    color="currentColor"
-                    strokeWidth={1.5}
-                    className="text-muted-foreground"
-                  />
-                  Export as Markdown
-                </DropdownItem>
-
-                <DropdownSeparator />
-
-                <DropdownItem
-                  onClick={() => setShowDeleteModal(true)}
-                  variant="destructive"
-                >
-                  <HugeiconsIcon
-                    icon={DeleteIcon}
-                    size={16}
-                    color="currentColor"
-                    strokeWidth={1.5}
-                  />
-                  Delete note
-                </DropdownItem>
-              </DropdownContent>
-            </Dropdown>
-          </div>
-        </div>
+        )}
 
         {/* Editor Content - Notion style */}
         <div className="flex-1 overflow-y-auto">

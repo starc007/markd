@@ -302,10 +302,17 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
     set({ ui: { ...ui, sidebarCollapsed: !ui.sidebarCollapsed } });
   },
 
-  // Focus mode just toggles sidebar visibility
+  // Focus mode hides all UI chrome (sidebar, title bar, etc.) for distraction-free writing
   toggleFocusMode: () => {
     const { ui } = get();
-    set({ ui: { ...ui, sidebarCollapsed: !ui.sidebarCollapsed } });
+    set({
+      ui: {
+        ...ui,
+        focusMode: !ui.focusMode,
+        // In focus mode, also hide sidebar
+        sidebarCollapsed: !ui.focusMode ? true : ui.sidebarCollapsed,
+      },
+    });
   },
 
   toggleCommandPalette: () => {

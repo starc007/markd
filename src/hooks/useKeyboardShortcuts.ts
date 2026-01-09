@@ -54,6 +54,13 @@ export function useKeyboardShortcuts() {
         return;
       }
 
+      // Open sticky notes: Cmd+Shift+O - open sticky notes
+      if (isMod && e.key === "o" && e.shiftKey) {
+        e.preventDefault();
+        setView(UIView.StickyNotes);
+        return;
+      }
+
       // Save: Cmd+S (handled by editor, but prevent default)
       if (isMod && e.key === "s" && !e.shiftKey) {
         e.preventDefault();

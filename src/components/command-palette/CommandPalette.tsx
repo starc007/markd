@@ -182,7 +182,7 @@ export function CommandPalette() {
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
             >
               <HugeiconsIcon
-                icon={StickyNoteIcon}
+                icon={AddIcon}
                 size={18}
                 color="currentColor"
                 strokeWidth={1.5}
@@ -200,6 +200,32 @@ export function CommandPalette() {
                 <span>Shift</span>
                 <span>+</span>
                 <span>N</span>
+              </kbd>
+            </Command.Item>
+            <Command.Item
+              value="open sticky notes"
+              onSelect={() => handleSelect("open-sticky-notes")}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
+            >
+              <HugeiconsIcon
+                icon={StickyNoteIcon}
+                size={18}
+                color="currentColor"
+                strokeWidth={1.5}
+                className="opacity-50"
+              />
+              <span className="flex-1 font-medium">Open Sticky Notes</span>
+              <kbd className="flex items-center gap-1 text-sm font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
+                <HugeiconsIcon
+                  icon={CommandIcon}
+                  size={17}
+                  color="currentColor"
+                  strokeWidth={1.5}
+                />
+                <span>+</span>
+                <span>Shift</span>
+                <span>+</span>
+                <span>O</span>
               </kbd>
             </Command.Item>
 

@@ -6,6 +6,7 @@ use uuid::Uuid;
 use crate::models::note::{Note, NoteMetadata};
 use crate::state::AppState;
 use crate::utils::json_utils::{extract_plain_text, generate_preview};
+use crate::utils::validation::validate_tiptap_json;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateNoteParams {
@@ -35,6 +36,10 @@ pub async fn create_note(
     let content = params
         .content
         .unwrap_or_else(|| DEFAULT_CONTENT.to_string());
+
+    // Validate TipTap JSON structure
+    validate_tiptap_json(&content)
+        .map_err(|e| format!("Invalid note content: {}", e))?;
 
     // Generate preview from JSON
     let preview = generate_preview(&content, PREVIEW_MAX_LENGTH);
@@ -121,6 +126,10 @@ pub async fn update_note(
 
     // Update content if provided
     let content = if let Some(new_content) = &params.content {
+        // Validate TipTap JSON structure
+        validate_tiptap_json(new_content)
+            .map_err(|e| format!("Invalid note content: {}", e))?;
+
         // Generate preview
         let preview = generate_preview(new_content, PREVIEW_MAX_LENGTH);
 
@@ -218,6 +227,10 @@ pub async fn save_note_content(
     id: String,
     content: String,
 ) -> Result<i64, String> {
+    // Validate TipTap JSON structure
+    validate_tiptap_json(&content)
+        .map_err(|e| format!("Invalid note content: {}", e))?;
+
     let now = Utc::now().timestamp_millis();
 
     // Generate preview from JSON
@@ -236,12 +249,15 @@ pub async fn save_note_content(
         .map_err(|e| format!("Failed to get note metadata: {}", e))?
         .ok_or_else(|| "Note not found".to_string())?;
 
-    // Re-index for search with plain text
+    // Re-index for search with plain text (debounced by frontend, so this is already optimized)
+    // Only index if content has meaningful text (skip empty notes)
     let plain_text = extract_plain_text(&content);
-    state
-        .db
-        .index_note(&id, &meta.title, &plain_text, "")
-        .map_err(|e| format!("Failed to re-index note: {}", e))?;
+    if !plain_text.trim().is_empty() {
+        state
+            .db
+            .index_note(&id, &meta.title, &plain_text, "")
+            .map_err(|e| format!("Failed to re-index note: {}", e))?;
+    }
 
     Ok(now)
 }
@@ -324,4 +340,36 @@ pub async fn import_file(
         created_at: now,
         updated_at: now,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_validate_tiptap_json() {
+        // Valid TipTap JSON
+        let valid = r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Hello"}]}]}"#;
+        assert!(validate_tiptap_json(valid).is_ok());
+
+        // Valid - empty content
+        let valid_empty = r#"{"type":"doc","content":[]}"#;
+        assert!(validate_tiptap_json(valid_empty).is_ok());
+
+        // Invalid - missing type
+        let invalid1 = r#"{"content":[]}"#;
+        assert!(validate_tiptap_json(invalid1).is_err());
+
+        // Invalid - wrong root type
+        let invalid2 = r#"{"type":"paragraph","content":[]}"#;
+        assert!(validate_tiptap_json(invalid2).is_err());
+
+        // Invalid - not JSON
+        let invalid3 = "not json";
+        assert!(validate_tiptap_json(invalid3).is_err());
+
+        // Invalid - missing content
+        let invalid4 = r#"{"type":"doc"}"#;
+        assert!(validate_tiptap_json(invalid4).is_err());
+    }
 }

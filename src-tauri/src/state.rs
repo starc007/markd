@@ -1,23 +1,31 @@
 use std::sync::Arc;
-use tokio::sync::Mutex as TokioMutex;
 
 use crate::services::database::Database;
-use crate::services::file_service::FileService;
 
 pub struct AppState {
     pub db: Arc<Database>,
-    pub file_service: Arc<TokioMutex<FileService>>,
 }
 
 impl AppState {
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        let file_service = FileService::new()?;
-        let db_path = file_service.get_db_path();
+        // Get database path directly
+        let db_path = dirs::document_dir()
+            .ok_or_else(|| std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "Documents directory not found"
+            ))?
+            .join("Draft")
+            .join("draft.db");
+        
+        // Ensure parent directory exists
+        if let Some(parent) = db_path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        
         let db = Database::new(db_path)?;
         
         Ok(AppState {
             db: Arc::new(db),
-            file_service: Arc::new(TokioMutex::new(file_service)),
         })
     }
 }

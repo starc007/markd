@@ -39,11 +39,11 @@ export function AppShell() {
         ui.focusMode ? "focus-mode" : ""
       }`}
     >
-      {/* Title Bar with drag region */}
-      <TitleBar />
+      {/* Title Bar with drag region - hidden in focus mode */}
+      {!ui.focusMode && <TitleBar />}
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
+        {/* Sidebar - hidden in focus mode or when collapsed */}
         {!ui.sidebarCollapsed && !ui.focusMode && <Sidebar />}
 
         {/* Main Content */}
@@ -52,6 +52,7 @@ export function AppShell() {
         </main>
       </div>
 
+      {/* Command Palette - still accessible in focus mode */}
       <CommandPalette />
     </div>
   );

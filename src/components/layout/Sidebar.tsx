@@ -174,6 +174,7 @@ export function Sidebar() {
         <div className="px-3 pt-3 pb-2">
           <SectionHeading>Notes</SectionHeading>
         </div>
+        {/* Note: For large note lists (>100), consider virtualization with react-window or react-virtuoso */}
         <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-1">
           {(() => {
             let filteredNotes = notes;

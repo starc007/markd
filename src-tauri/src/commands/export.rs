@@ -6,8 +6,8 @@ use crate::state::AppState;
 
 #[tauri::command]
 pub async fn export_note(
-    state: State<'_, AppState>,
-    note_id: String,
+    _state: State<'_, AppState>,
+    _note_id: String,
     destination: String,
     markdown_content: String,
 ) -> Result<(), String> {
