@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { useNoteStore } from "./noteStore";
 
 export enum UIView {
   Notes = "notes",
@@ -68,6 +69,7 @@ export const useUIStore = create<UIStore>((set, get) => ({
 
   setView: (view: UIView | null) => {
     set({ currentView: view });
+    useNoteStore.setState({ currentNote: null });
   },
 
   setSelectedFolderId: (id: string | null) => {

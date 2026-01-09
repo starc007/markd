@@ -252,12 +252,126 @@ impl Database {
     }
 
     pub fn delete_note_metadata(&self, id: &str) -> Result<()> {
+        // Get backlinks first (before acquiring the main lock)
+        let backlinks = self.get_backlinks(id)?;
+        
         let conn = acquire_lock!(self.conn);
+        
+        // Remove page links from all notes that reference this page before deleting
+        // Pass the connection to avoid deadlocks
+        if !backlinks.is_empty() {
+            self.remove_page_links_from_content_with_conn(&conn, id, &backlinks)?;
+        }
+        
+        // Recursively delete all child notes first
+        self.delete_note_children(&conn, id)?;
+        
+        // Remove from search index (use same connection)
+        conn.execute("DELETE FROM notes_fts WHERE id = ?1", params![id])?;
+        
+        // Delete the note itself
         conn.execute("DELETE FROM notes WHERE id = ?1", params![id])?;
 
         // Invalidate cache entry
         if let Ok(mut cache) = self.metadata_cache.lock() {
             cache.pop(id);
+        }
+
+        Ok(())
+    }
+
+    // Remove page links from content of all notes that reference a deleted page
+    // Uses the provided connection to avoid deadlocks
+    fn remove_page_links_from_content_with_conn(&self, conn: &Connection, deleted_page_id: &str, backlinks: &[String]) -> Result<()> {
+        if backlinks.is_empty() {
+            return Ok(());
+        }
+
+        let now = chrono::Utc::now().timestamp_millis();
+
+        // For each backlink, remove the page link from its content
+        for source_page_id in backlinks {
+            // Get the note content using the same connection
+            let mut stmt = conn.prepare("SELECT content FROM notes WHERE id = ?1")?;
+            let mut rows = stmt.query(params![&source_page_id])?;
+            
+            let content = match rows.next()? {
+                Some(row) => row.get::<_, String>(0)?,
+                None => continue,
+            };
+
+            // Parse JSON and remove page link nodes
+            let updated_content = match serde_json::from_str::<serde_json::Value>(&content) {
+                Ok(mut json) => {
+                    let mut updated = false;
+                    // Recursively find and remove pageLink nodes
+                    remove_page_link_from_json(&mut json, deleted_page_id, &mut updated);
+                    if updated {
+                        serde_json::to_string(&json)
+                            .map_err(|e| rusqlite::Error::InvalidColumnType(0, format!("Failed to serialize JSON: {}", e), rusqlite::types::Type::Text))?
+                    } else {
+                        continue; // No changes needed
+                    }
+                }
+                Err(_) => continue, // Skip invalid JSON
+            };
+
+            // Update the note content using the same connection
+            let preview = generate_preview(&updated_content, PREVIEW_MAX_LENGTH);
+            conn.execute(
+                "UPDATE notes SET content = ?1, preview = ?2, updated_at = ?3 WHERE id = ?4",
+                params![&updated_content, preview.as_deref(), now, &source_page_id],
+            )?;
+
+            // Invalidate cache entry
+            if let Ok(mut cache) = self.metadata_cache.lock() {
+                cache.pop(source_page_id);
+            }
+        }
+
+        Ok(())
+    }
+
+    // Helper function to recursively delete all child notes
+    fn delete_note_children(&self, conn: &Connection, parent_id: &str) -> Result<()> {
+        // Use a single query with recursive CTE to get all descendant IDs
+        // This is more efficient than recursive function calls
+        let query = "
+            WITH RECURSIVE descendants(id) AS (
+                SELECT id FROM notes WHERE parent_id = ?1
+                UNION ALL
+                SELECT n.id FROM notes n
+                INNER JOIN descendants d ON n.parent_id = d.id
+            )
+            SELECT id FROM descendants
+        ";
+        
+        let mut stmt = conn.prepare(query)?;
+        let all_descendants: Vec<String> = stmt
+            .query_map(params![parent_id], |row| Ok(row.get::<_, String>(0)?))?
+            .collect::<Result<_, _>>()?;
+
+        // Delete all descendants in batch operations
+        if !all_descendants.is_empty() {
+            // Batch delete from search index
+            let placeholders = all_descendants.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+            let delete_fts_sql = format!("DELETE FROM notes_fts WHERE id IN ({})", placeholders);
+            let mut delete_fts_stmt = conn.prepare(&delete_fts_sql)?;
+            let fts_params: Vec<&dyn rusqlite::ToSql> = all_descendants.iter().map(|s| s as &dyn rusqlite::ToSql).collect();
+            delete_fts_stmt.execute(fts_params.as_slice())?;
+            
+            // Batch delete notes
+            let delete_notes_sql = format!("DELETE FROM notes WHERE id IN ({})", placeholders);
+            let mut delete_notes_stmt = conn.prepare(&delete_notes_sql)?;
+            let notes_params: Vec<&dyn rusqlite::ToSql> = all_descendants.iter().map(|s| s as &dyn rusqlite::ToSql).collect();
+            delete_notes_stmt.execute(notes_params.as_slice())?;
+            
+            // Invalidate cache entries
+            if let Ok(mut cache) = self.metadata_cache.lock() {
+                for child_id in &all_descendants {
+                    cache.pop(child_id);
+                }
+            }
         }
 
         Ok(())
@@ -325,20 +439,13 @@ impl Database {
         preview: Option<&str>,
         updated_at: i64,
     ) -> Result<()> {
-        eprintln!(
-            "[database::update_note_content] Updating note {} with content length: {}",
-            id,
-            content.len()
-        );
+
         let conn = acquire_lock!(self.conn);
         let rows_affected = conn.execute(
             "UPDATE notes SET content = ?1, preview = ?2, updated_at = ?3 WHERE id = ?4",
             params![content, preview, updated_at, id],
         )?;
-        eprintln!(
-            "[database::update_note_content] Rows affected: {}",
-            rows_affected
-        );
+       
 
         if rows_affected == 0 {
             return Err(rusqlite::Error::QueryReturnedNoRows);
@@ -1008,6 +1115,104 @@ fn update_page_link_in_json(
         serde_json::Value::Array(arr) => {
             for item in arr.iter_mut() {
                 update_page_link_in_json(item, target_page_id, new_title, updated);
+            }
+        }
+        _ => {}
+    }
+}
+
+// Helper function to recursively remove page link nodes from JSON
+fn remove_page_link_from_json(
+    node: &mut serde_json::Value,
+    deleted_page_id: &str,
+    updated: &mut bool,
+) {
+    match node {
+        serde_json::Value::Object(obj) => {
+            // Check if this is a pageLink node that should be removed
+            if let Some(serde_json::Value::String(node_type)) = obj.get("type") {
+                if node_type == "pageLink" {
+                    if let Some(serde_json::Value::Object(attrs)) = obj.get("attrs") {
+                        if let Some(serde_json::Value::String(page_id)) = attrs.get("pageId") {
+                            if page_id == deleted_page_id {
+                                // Mark for removal - we'll handle this at the parent level
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Recursively process content array
+            if let Some(serde_json::Value::Array(content)) = obj.get_mut("content") {
+                let mut i = 0;
+                while i < content.len() {
+                    // Check if this child should be removed
+                    let should_remove = {
+                        let item = &content[i];
+                        if let Some(serde_json::Value::String(node_type)) = item.get("type") {
+                            if node_type == "pageLink" {
+                                if let Some(serde_json::Value::Object(attrs)) = item.get("attrs") {
+                                    if let Some(serde_json::Value::String(page_id)) = attrs.get("pageId") {
+                                        page_id == deleted_page_id
+                                    } else {
+                                        false
+                                    }
+                                } else {
+                                    false
+                                }
+                            } else {
+                                false
+                            }
+                        } else {
+                            false
+                        }
+                    };
+                    
+                    if should_remove {
+                        content.remove(i);
+                        *updated = true;
+                    } else {
+                        // Recursively process children
+                        remove_page_link_from_json(&mut content[i], deleted_page_id, updated);
+                        i += 1;
+                    }
+                }
+            }
+        }
+        serde_json::Value::Array(arr) => {
+            let mut i = 0;
+            while i < arr.len() {
+                // Check if this item should be removed
+                let should_remove = {
+                    let item = &arr[i];
+                    if let Some(serde_json::Value::String(node_type)) = item.get("type") {
+                        if node_type == "pageLink" {
+                            if let Some(serde_json::Value::Object(attrs)) = item.get("attrs") {
+                                if let Some(serde_json::Value::String(page_id)) = attrs.get("pageId") {
+                                    page_id == deleted_page_id
+                                } else {
+                                    false
+                                }
+                            } else {
+                                false
+                            }
+                        } else {
+                            false
+                        }
+                    } else {
+                        false
+                    }
+                };
+                
+                if should_remove {
+                    arr.remove(i);
+                    *updated = true;
+                } else {
+                    // Recursively process children
+                    remove_page_link_from_json(&mut arr[i], deleted_page_id, updated);
+                    i += 1;
+                }
             }
         }
         _ => {}

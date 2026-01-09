@@ -160,18 +160,41 @@ export function StickyNote({
   return (
     <>
       <motion.div
-        className="group relative flex flex-col text-left rounded-xl overflow-hidden border border-border"
+        className="group relative flex flex-col rounded-xl text-left overflow-hidden border border-border"
         style={{ backgroundColor: color.bg }}
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        whileHover={{ scale: 1.01 }}
         transition={{ duration: 0.15 }}
         onClick={handleClick}
       >
         {/* Card Header */}
+
+        {/* Content - Textarea */}
+        <div className="flex-1 p-4">
+          <textarea
+            ref={textareaRef}
+            value={stickyNote.content}
+            onChange={(e) => {
+              handleContentChange(e.target.value);
+              adjustTextareaHeight();
+            }}
+            onInput={adjustTextareaHeight}
+            onBlur={handleBlur}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full bg-transparent text-black resize-none outline-none placeholder:text-muted-foreground/50"
+            placeholder="Write your note here..."
+            style={{
+              fontFamily: "inherit",
+              minHeight: "120px",
+              height: "auto",
+              overflow: "hidden",
+            }}
+            rows={1}
+          />
+        </div>
         <div
-          className="px-4 py-2 flex items-center justify-between"
+          className="px-4 py-1 flex items-center justify-between"
           style={{ backgroundColor: color.header }}
         >
           <span className="text-xs text-muted-foreground">
@@ -180,43 +203,6 @@ export function StickyNote({
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             {DropdownMenu}
           </div>
-        </div>
-
-        {/* Content - Textarea */}
-        <div className="flex-1 p-4">
-          {isEditing ? (
-            <textarea
-              ref={textareaRef}
-              value={stickyNote.content}
-              onChange={(e) => {
-                handleContentChange(e.target.value);
-                adjustTextareaHeight();
-              }}
-              onInput={adjustTextareaHeight}
-              onBlur={handleBlur}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full bg-transparent text-black resize-none outline-none placeholder:text-muted-foreground/50"
-              placeholder="Write your note here..."
-              style={{
-                fontFamily: "inherit",
-                minHeight: "120px",
-                height: "auto",
-                overflow: "hidden",
-              }}
-              rows={1}
-            />
-          ) : (
-            <div
-              className="w-full min-h-[120px] text-black whitespace-pre-wrap wrap-break-word"
-              onClick={handleClick}
-            >
-              {stickyNote.content || (
-                <span className="text-black/50 italic">
-                  Click to start writing...
-                </span>
-              )}
-            </div>
-          )}
         </div>
       </motion.div>
 

@@ -22,11 +22,6 @@ export function AppShell() {
   useTheme(); // Apply theme
   useWindowFocus(); // Refresh data on window focus
 
-  console.log("currentNote", currentNote);
-  console.log("currentView", currentView);
-  console.log("focusMode", focusMode);
-  console.log("sidebarCollapsed", sidebarCollapsed);
-
   const renderContent = () => {
     if (currentView === UIView.Settings) {
       return <Settings />;

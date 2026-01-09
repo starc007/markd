@@ -98,11 +98,9 @@ export function Sidebar() {
 
   const handleCreateSubpage = useCallback(async (parentId: string) => {
     try {
-      const { createSubpage, loadNote } = useNoteStore.getState();
-      const subpage = await createSubpage(parentId, "Untitled");
-      if (subpage) {
-        await loadNote(subpage.id);
-      }
+      const { createSubpage } = useNoteStore.getState();
+      // createSubpage already navigates to the newly created subpage
+      await createSubpage(parentId, "Untitled");
     } catch (error) {
       console.error("Failed to create subpage:", error);
       toast.error(

@@ -3,7 +3,6 @@ import { useNoteStore } from "../../stores/noteStore";
 export function TitleBar() {
   // Use selective subscriptions to prevent unnecessary re-renders
   const currentNote = useNoteStore((state) => state.currentNote);
-  const isSaving = useNoteStore((state) => state.isSaving);
 
   return (
     <header
@@ -23,11 +22,6 @@ export function TitleBar() {
             <span className="text-[13px] font-medium text-sidebar-foreground truncate">
               {currentNote.title || "Untitled"}
             </span>
-            {isSaving && (
-              <span className="text-[11px] font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
-                Saving
-              </span>
-            )}
           </div>
         ) : (
           <span className="text-[13px] font-semibold text-sidebar-foreground">

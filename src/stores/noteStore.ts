@@ -273,16 +273,13 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       const newLoaded = new Set(loadedChildren);
       newLoaded.add(parentId);
 
-      // When creating via /page command, don't switch to the sub-page - stay on parent
-      // The sub-page will be created and linked, but user stays on parent
-      const { currentNote } = get();
+      // Set the newly created subpage as the current note so user navigates to it
       set({
         childrenMap: newMap,
         notes: updatedNotes,
         expandedPages: newExpanded,
         loadedChildren: newLoaded,
-        // Don't change currentNote - keep user on parent page
-        currentNote: currentNote, // Keep current note unchanged
+        currentNote: fullNote, // Navigate to the newly created subpage
         isLoading: false,
       });
       return fullNote;

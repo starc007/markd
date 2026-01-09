@@ -107,7 +107,7 @@ export function usePageCommand(
             loadedChildren: newLoaded,
           });
 
-          // Insert page link
+          // Insert page link BEFORE navigating (so it's inserted into the current page's editor)
           try {
             const currentState = editor.state;
             if (!currentState?.doc) {
@@ -140,27 +140,28 @@ export function usePageCommand(
               ])
               .run();
 
-            // Sync page links after a delay
-            if (syncTimeoutRef.current) {
-              window.clearTimeout(syncTimeoutRef.current);
+            // Save the content with the page link before navigating
+            const json = editor.getJSON();
+            const jsonString = JSON.stringify(json);
+
+            // Save the parent page's content directly to ensure the link is persisted
+            // We do this before navigating so the link is saved to the parent page
+            try {
+              await commands.saveNoteContent(currentNoteId, jsonString);
+              // Sync page links
+              await extractAndSyncPageLinks(currentNoteId, json);
+            } catch (error) {
+              console.error("Failed to save page link to parent:", error);
             }
-            syncTimeoutRef.current = window.setTimeout(() => {
-              if (!isMountedRef.current || editor.isDestroyed) {
-                syncTimeoutRef.current = null;
-                return;
-              }
-              const json = editor.getJSON();
-              extractAndSyncPageLinks(currentNoteId, json).catch((error) => {
-                console.error(
-                  "[usePageCommand] Error syncing page links",
-                  error
-                );
-                useNoteStore.setState({ isSaving: false });
-              });
-              syncTimeoutRef.current = null;
-            }, 100);
+
+            // Now navigate to the newly created subpage
+            const { loadNote } = useNoteStore.getState();
+            await loadNote(fullNote.id);
           } catch (error) {
             console.error("Failed to insert page link:", error);
+            // Still navigate even if link insertion fails
+            const { loadNote } = useNoteStore.getState();
+            await loadNote(fullNote.id);
           }
         })
         .catch((error) => {
