@@ -5,6 +5,7 @@ import { useNoteStore } from "../../stores/noteStore";
 import { useUIStore, UIView } from "../../stores/uiStore";
 import { useNoteColors } from "../../hooks/useNoteColors";
 import { useStickyNotesStore } from "../../stores/stickyNotesStore";
+import { useBookmarkStore } from "../../stores/bookmarkStore";
 import type { NoteColorId } from "../../lib/config";
 import { Button } from "../ui";
 import { DeleteNoteModal } from "../notes/DeleteNoteModal";
@@ -23,8 +24,9 @@ export const Sidebar = memo(function Sidebar() {
 
   const { getColor, setColor, removeColor } = useNoteColors();
   const { stickyNotes, loadStickyNotes } = useStickyNotesStore();
+  const { bookmarks, loadBookmarks } = useBookmarkStore();
   const [deleteModalNoteId, setDeleteModalNoteId] = useState<string | null>(
-    null
+    null,
   );
 
   useEffect(() => {
@@ -32,7 +34,8 @@ export const Sidebar = memo(function Sidebar() {
     loadFolders();
     loadNotes(selectedFolderId || undefined, null);
     loadStickyNotes();
-  }, [selectedFolderId, loadStickyNotes]);
+    loadBookmarks(selectedFolderId || undefined);
+  }, [selectedFolderId, loadStickyNotes, loadBookmarks]);
 
   const handleNewNote = useCallback(async () => {
     try {
@@ -46,7 +49,7 @@ export const Sidebar = memo(function Sidebar() {
       toast.error(
         `Failed to create note: ${
           error instanceof Error ? error.message : "Unknown error"
-        }`
+        }`,
       );
     }
   }, [selectedFolderId]);
@@ -56,7 +59,7 @@ export const Sidebar = memo(function Sidebar() {
       e.stopPropagation();
       setColor(noteId, newColorId);
     },
-    [setColor]
+    [setColor],
   );
 
   const handleDeleteNote = useCallback(
@@ -74,11 +77,11 @@ export const Sidebar = memo(function Sidebar() {
         toast.error(
           `Failed to delete note: ${
             error instanceof Error ? error.message : "Unknown error"
-          }`
+          }`,
         );
       }
     },
-    [removeColor]
+    [removeColor],
   );
 
   // Filter and sort notes - memoized for performance
@@ -115,7 +118,7 @@ export const Sidebar = memo(function Sidebar() {
       toast.error(
         `Failed to create subpage: ${
           error instanceof Error ? error.message : "Unknown error"
-        }`
+        }`,
       );
     }
   }, []);
@@ -158,6 +161,7 @@ export const Sidebar = memo(function Sidebar() {
 
       <SidebarNavigation
         stickyNotesCount={stickyNotes.length}
+        bookmarksCount={bookmarks.length}
         currentView={currentView}
         onViewChange={(view) => useUIStore.getState().setView(view)}
       />

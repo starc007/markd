@@ -5,12 +5,14 @@ import { UIView } from "../../stores/uiStore";
 
 interface SidebarNavigationProps {
   stickyNotesCount: number;
+  bookmarksCount: number;
   currentView: UIView | null;
   onViewChange: (view: UIView) => void;
 }
 
 export function SidebarNavigation({
   stickyNotesCount,
+  bookmarksCount,
   currentView,
   onViewChange,
 }: SidebarNavigationProps) {
@@ -43,9 +45,9 @@ export function SidebarNavigation({
               />
             }
             label="Bookmarks"
-            count={0}
-            isActive={false}
-            onClick={() => {}}
+            count={bookmarksCount}
+            isActive={currentView === UIView.Bookmarks}
+            onClick={() => onViewChange(UIView.Bookmarks)}
           />
         </div>
       </div>

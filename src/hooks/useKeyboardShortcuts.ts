@@ -67,6 +67,13 @@ export function useKeyboardShortcuts() {
         return;
       }
 
+      // Bookmarks: Cmd+Shift+B - open bookmarks
+      if (isMod && e.key.toLowerCase() === "b" && e.shiftKey) {
+        e.preventDefault();
+        setView(UIView.Bookmarks);
+        return;
+      }
+
       // Settings: Cmd+Shift+T - open settings
       if (isMod && e.key.toLowerCase() === "t" && e.shiftKey) {
         e.preventDefault();

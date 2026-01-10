@@ -4,6 +4,7 @@ import { CommandPalette } from "../command-palette/CommandPalette";
 import { TitleBar } from "./TitleBar";
 import { NotesGrid } from "../notes/NotesGrid";
 import { Settings } from "../settings/Settings";
+import { Bookmarks } from "../bookmarks/Bookmarks";
 import { SectionErrorBoundary } from "../SectionErrorBoundary";
 import { useNoteStore } from "../../stores/noteStore";
 import { useUIStore, UIView } from "../../stores/uiStore";
@@ -30,6 +31,8 @@ export function AppShell() {
       return <Settings />;
     } else if (currentView === UIView.StickyNotes) {
       return <NotesGrid />;
+    } else if (currentView === UIView.Bookmarks) {
+      return <Bookmarks />;
     } else if (currentNote) {
       return (
         <Editor
@@ -67,8 +70,8 @@ export function AppShell() {
               currentView === UIView.Settings
                 ? "settings"
                 : currentView === UIView.StickyNotes
-                ? "notes-grid"
-                : "editor"
+                  ? "notes-grid"
+                  : "editor"
             }
           >
             {renderContent()}
