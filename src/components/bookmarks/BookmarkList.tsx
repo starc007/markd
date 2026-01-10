@@ -9,6 +9,26 @@ import {
 import type { BookmarkMetadata } from "../../lib/tauri/commands";
 import { useBookmarkStore } from "../../stores/bookmarkStore";
 import { toast } from "sonner";
+import { getUrlMetadata } from "../../lib/url-metadata";
+
+// Format timestamp to relative time (e.g., "2h ago", "3d ago")
+function formatTimestamp(timestamp: number): string {
+  const now = Date.now();
+  const diff = now - timestamp;
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  const months = Math.floor(days / 30);
+  const years = Math.floor(days / 365);
+
+  if (seconds < 60) return "now";
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 30) return `${days}d ago`;
+  if (months < 12) return `${months}mo ago`;
+  return `${years}y ago`;
+}
 
 interface BookmarkListProps {
   bookmarks: BookmarkMetadata[];
@@ -19,14 +39,44 @@ interface BookmarkListProps {
 
 export function BookmarkList({
   bookmarks,
-  selectedId,
   onBookmarkSelect,
   onEditBookmark,
 }: BookmarkListProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [focusedIndex, setFocusedIndex] = useState<number>(0);
+  const [faviconMap, setFaviconMap] = useState<Map<string, string | null>>(
+    new Map(),
+  );
   const listRef = useRef<HTMLDivElement>(null);
   const { openBookmark, copyBookmarkUrl, deleteBookmark } = useBookmarkStore();
+
+  // Fetch favicons for all bookmarks
+  useEffect(() => {
+    const fetchFavicons = async () => {
+      const newFaviconMap = new Map<string, string | null>();
+
+      for (const bookmark of bookmarks) {
+        // Skip if already fetched
+        if (faviconMap.has(bookmark.url)) {
+          newFaviconMap.set(bookmark.url, faviconMap.get(bookmark.url) || null);
+          continue;
+        }
+
+        try {
+          const metadata = await getUrlMetadata(bookmark.url);
+          newFaviconMap.set(bookmark.url, metadata.favicon);
+        } catch {
+          newFaviconMap.set(bookmark.url, null);
+        }
+      }
+
+      setFaviconMap(newFaviconMap);
+    };
+
+    if (bookmarks.length > 0) {
+      fetchFavicons();
+    }
+  }, [bookmarks]);
 
   const handleCopy = useCallback(
     (bookmark: BookmarkMetadata, e: React.MouseEvent) => {
@@ -155,7 +205,6 @@ export function BookmarkList({
     >
       <div className="space-y-2 p-4">
         {bookmarks.map((bookmark, index) => {
-          const isSelected = selectedId === bookmark.id;
           const isHovered = hoveredId === bookmark.id;
           const isFocused = focusedIndex === index;
 
@@ -180,15 +229,34 @@ export function BookmarkList({
               onMouseLeave={() => setHoveredId(null)}
             >
               <div className="flex items-start gap-3.5">
-                {/* Icon with background */}
-                <div className="shrink-0 mt-0.5 p-2 rounded-lg bg-primary/10">
-                  <HugeiconsIcon
-                    icon={LinkIcon}
-                    size={16}
-                    color="currentColor"
-                    strokeWidth={2}
-                    className="text-primary"
-                  />
+                {/* Favicon or fallback icon */}
+                <div className="shrink-0 mt-0.5 p-2 rounded-lg bg-primary/10 flex items-center justify-center w-8 h-8">
+                  {faviconMap.get(bookmark.url) ? (
+                    <img
+                      src={faviconMap.get(bookmark.url) || ""}
+                      alt=""
+                      className="w-4 h-4 object-contain"
+                      onError={(e) => {
+                        // Fallback to icon if favicon fails to load
+                        e.currentTarget.style.display = "none";
+                        const parent = e.currentTarget.parentElement;
+                        if (parent) {
+                          const icon = document.createElement("div");
+                          icon.innerHTML =
+                            parent.querySelector("svg")?.outerHTML || "";
+                          parent.appendChild(icon);
+                        }
+                      }}
+                    />
+                  ) : (
+                    <HugeiconsIcon
+                      icon={LinkIcon}
+                      size={16}
+                      color="currentColor"
+                      strokeWidth={2}
+                      className="text-primary"
+                    />
+                  )}
                 </div>
 
                 <div className="flex-1 min-w-0">
@@ -233,50 +301,60 @@ export function BookmarkList({
                   )}
                 </div>
 
-                {/* Action buttons */}
-                {(isHovered || isFocused) && (
-                  <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={(e) => handleEdit(bookmark, e)}
-                      className="p-2 hover:bg-accent/80 rounded-lg transition-colors"
-                      title="Edit (E)"
-                      aria-label="Edit bookmark"
-                    >
-                      <HugeiconsIcon
-                        icon={Edit02Icon}
-                        size={16}
-                        color="currentColor"
-                        strokeWidth={2}
-                      />
-                    </button>
-                    <button
-                      onClick={(e) => handleCopy(bookmark, e)}
-                      className="p-2 hover:bg-accent/80 rounded-lg transition-colors"
-                      title="Copy URL (Cmd+C)"
-                      aria-label="Copy URL"
-                    >
-                      <HugeiconsIcon
-                        icon={Copy01Icon}
-                        size={16}
-                        color="currentColor"
-                        strokeWidth={2}
-                      />
-                    </button>
-                    <button
-                      onClick={(e) => handleDelete(bookmark, e)}
-                      className="p-2 hover:bg-destructive/15 hover:text-destructive rounded-lg transition-colors"
-                      title="Delete (Backspace)"
-                      aria-label="Delete bookmark"
-                    >
-                      <HugeiconsIcon
-                        icon={Delete02Icon}
-                        size={16}
-                        color="currentColor"
-                        strokeWidth={2}
-                      />
-                    </button>
-                  </div>
-                )}
+                {/* Timestamp and Action buttons */}
+                <div className="flex items-center gap-1 shrink-0">
+                  {/* Timestamp - visible when not hovered/focused */}
+                  {!(isHovered || isFocused) && (
+                    <div className="text-[11px] text-muted-foreground/50 font-mono">
+                      {formatTimestamp(bookmark.created_at)}
+                    </div>
+                  )}
+
+                  {/* Action buttons - visible when hovered/focused */}
+                  {(isHovered || isFocused) && (
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => handleEdit(bookmark, e)}
+                        className="p-2 hover:bg-accent/80 rounded-lg transition-colors"
+                        title="Edit (E)"
+                        aria-label="Edit bookmark"
+                      >
+                        <HugeiconsIcon
+                          icon={Edit02Icon}
+                          size={16}
+                          color="currentColor"
+                          strokeWidth={2}
+                        />
+                      </button>
+                      <button
+                        onClick={(e) => handleCopy(bookmark, e)}
+                        className="p-2 hover:bg-accent/80 rounded-lg transition-colors"
+                        title="Copy URL (Cmd+C)"
+                        aria-label="Copy URL"
+                      >
+                        <HugeiconsIcon
+                          icon={Copy01Icon}
+                          size={16}
+                          color="currentColor"
+                          strokeWidth={2}
+                        />
+                      </button>
+                      <button
+                        onClick={(e) => handleDelete(bookmark, e)}
+                        className="p-2 hover:bg-destructive/15 hover:text-destructive rounded-lg transition-colors"
+                        title="Delete (Backspace)"
+                        aria-label="Delete bookmark"
+                      >
+                        <HugeiconsIcon
+                          icon={Delete02Icon}
+                          size={16}
+                          color="currentColor"
+                          strokeWidth={2}
+                        />
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           );

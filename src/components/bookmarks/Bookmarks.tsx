@@ -63,18 +63,6 @@ export function Bookmarks() {
           {/* Keyboard Shortcuts */}
           <div className="flex gap-3 text-xs text-muted-foreground">
             <div className="flex items-center gap-1">
-              <kbd className="flex items-center gap-0.5 px-2 py-1 bg-muted rounded border border-border">
-                <HugeiconsIcon
-                  icon={CommandIcon}
-                  size={12}
-                  color="currentColor"
-                  strokeWidth={2}
-                />
-                <span className="font-mono">F</span>
-              </kbd>
-              <span>Focus input</span>
-            </div>
-            <div className="flex items-center gap-1">
               <kbd className="px-2 py-1 bg-muted rounded border border-border font-mono">
                 ↵
               </kbd>
@@ -100,25 +88,7 @@ export function Bookmarks() {
             </div>
             <div className="flex items-center gap-1">
               <kbd className="px-2 py-1 bg-muted rounded border border-border font-mono">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  className="lucide lucide-trash2 lucide-trash-2 mr-2 h-4 w-4 text-destructive"
-                  aria-hidden="true"
-                >
-                  <path d="M10 11v6"></path>
-                  <path d="M14 11v6"></path>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
-                  <path d="M3 6h18"></path>
-                  <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                </svg>
+                ⌫
               </kbd>
               <span>Delete</span>
             </div>
