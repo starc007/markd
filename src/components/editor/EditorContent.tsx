@@ -404,7 +404,7 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
               customItems: customSlashItems,
             }}
           />
-          <PageLinkMenu />
+          <PageLinkMenu editor={editor} currentNoteId={noteId} />
           <FloatingToolbar editor={editor} />
         </TiptapEditorContent>
       </div>

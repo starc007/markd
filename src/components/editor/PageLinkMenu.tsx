@@ -5,11 +5,17 @@ import { File02Icon } from "@hugeicons/core-free-icons";
 import type { SuggestionItem } from "../tiptap-ui-utils/suggestion-menu/suggestion-menu-types";
 import type { Editor, Range } from "@tiptap/react";
 
-export function PageLinkMenu() {
-  const { getPageSuggestions } = usePageLinkSuggestion();
+interface PageLinkMenuProps {
+  editor?: Editor | null;
+  currentNoteId?: string | null;
+}
+
+export function PageLinkMenu({ editor, currentNoteId }: PageLinkMenuProps) {
+  const { getPageSuggestions } = usePageLinkSuggestion(currentNoteId);
 
   return (
     <SuggestionMenu
+      editor={editor}
       char="@"
       pluginKey="pageLinkSuggestion"
       decorationClass="tiptap-page-link-decoration"
@@ -65,7 +71,7 @@ export function PageLinkMenu() {
                   strokeWidth={1.5}
                   className="text-muted-foreground shrink-0"
                 />
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 flex items-center justify-between">
                   <div className="font-medium text-sm truncate">
                     {item.title}
                   </div>

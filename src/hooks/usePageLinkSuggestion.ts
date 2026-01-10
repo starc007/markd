@@ -6,27 +6,31 @@ export interface PageLinkSuggestionItem {
   pageTitle: string;
 }
 
-export function usePageLinkSuggestion() {
+export function usePageLinkSuggestion(currentNoteId?: string | null) {
   const { notes, childrenMap } = useNoteStore();
 
-  // Get all pages (top-level + children) for suggestions
+  // Get all pages (top-level + children) for suggestions, excluding current page
   const allPages = useMemo(() => {
     const all: Array<{ id: string; title: string }> = [];
 
-    // Add top-level notes
+    // Add top-level notes (excluding current page)
     for (const note of notes) {
-      all.push({ id: note.id, title: note.title || "Untitled" });
+      if (note.id !== currentNoteId) {
+        all.push({ id: note.id, title: note.title || "Untitled" });
+      }
     }
 
-    // Add children from all expanded pages
+    // Add children from all expanded pages (excluding current page)
     for (const children of childrenMap.values()) {
       for (const child of children) {
-        all.push({ id: child.id, title: child.title || "Untitled" });
+        if (child.id !== currentNoteId) {
+          all.push({ id: child.id, title: child.title || "Untitled" });
+        }
       }
     }
 
     return all;
-  }, [notes, childrenMap]);
+  }, [notes, childrenMap, currentNoteId]);
 
   const getPageSuggestions = (query: string): PageLinkSuggestionItem[] => {
     const lowerQuery = query.toLowerCase().trim();

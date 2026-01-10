@@ -162,14 +162,12 @@ export function StickyNote({
       <motion.div
         className="group relative flex flex-col rounded-xl text-left overflow-hidden border border-border"
         style={{ backgroundColor: color.bg }}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -10 }}
-        transition={{ duration: 0.15 }}
+        // initial={{ opacity: 0, y: 10 }}
+        // animate={{ opacity: 1, y: 0 }}
+        // exit={{ opacity: 0, y: -10 }}
+        // transition={{ duration: 0.15 }}
         onClick={handleClick}
       >
-        {/* Card Header */}
-
         {/* Content - Textarea */}
         <div className="flex-1 p-4">
           <textarea
