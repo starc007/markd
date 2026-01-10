@@ -9,7 +9,6 @@ pub async fn create_bookmark(
     state: State<'_, AppState>,
     url: String,
     title: String,
-    description: Option<String>,
     tags: Option<String>,
     folder_id: Option<String>,
 ) -> Result<Bookmark, String> {
@@ -22,7 +21,6 @@ pub async fn create_bookmark(
             &id,
             &url,
             &title,
-            description.as_deref(),
             tags.as_deref(),
             folder_id.as_deref(),
             now,
@@ -34,7 +32,6 @@ pub async fn create_bookmark(
         id,
         url,
         title,
-        description,
         tags,
         folder_id,
         created_at: now,
@@ -68,21 +65,15 @@ pub async fn list_bookmarks(
 pub async fn update_bookmark(
     state: State<'_, AppState>,
     id: String,
+    url: Option<String>,
     title: Option<String>,
-    description: Option<String>,
     tags: Option<String>,
 ) -> Result<(), String> {
     let now = chrono::Utc::now().timestamp_millis();
 
     state
         .db
-        .update_bookmark(
-            &id,
-            title.as_deref(),
-            description.as_deref(),
-            tags.as_deref(),
-            now,
-        )
+        .update_bookmark(&id, url.as_deref(), title.as_deref(), tags.as_deref(), now)
         .map_err(|e| format!("Failed to update bookmark: {}", e))
 }
 

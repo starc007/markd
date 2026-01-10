@@ -1,10 +1,10 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   LinkIcon,
   Delete02Icon,
   Copy01Icon,
-  MoreVerticalIcon,
+  Edit02Icon,
 } from "@hugeicons/core-free-icons";
 import type { BookmarkMetadata } from "../../lib/tauri/commands";
 import { useBookmarkStore } from "../../stores/bookmarkStore";
@@ -14,33 +14,27 @@ interface BookmarkListProps {
   bookmarks: BookmarkMetadata[];
   selectedId?: string | null;
   onBookmarkSelect?: (id: string) => void;
+  onEditBookmark?: (bookmark: BookmarkMetadata) => void;
 }
 
-export function BookmarkList({ bookmarks, selectedId, onBookmarkSelect }: BookmarkListProps) {
+export function BookmarkList({
+  bookmarks,
+  selectedId,
+  onBookmarkSelect,
+  onEditBookmark,
+}: BookmarkListProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
-  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [focusedIndex, setFocusedIndex] = useState<number>(0);
+  const listRef = useRef<HTMLDivElement>(null);
   const { openBookmark, copyBookmarkUrl, deleteBookmark } = useBookmarkStore();
-
-  const handleOpen = useCallback(
-    async (bookmark: BookmarkMetadata, e: React.MouseEvent) => {
-      e.stopPropagation();
-      try {
-        await openBookmark(bookmark.url);
-      } catch (error) {
-        console.error("Failed to open bookmark:", error);
-      }
-    },
-    [openBookmark]
-  );
 
   const handleCopy = useCallback(
     (bookmark: BookmarkMetadata, e: React.MouseEvent) => {
       e.stopPropagation();
       copyBookmarkUrl(bookmark.url);
       toast.success("URL copied to clipboard");
-      setMenuOpenId(null);
     },
-    [copyBookmarkUrl]
+    [copyBookmarkUrl],
   );
 
   const handleDelete = useCallback(
@@ -49,30 +43,89 @@ export function BookmarkList({ bookmarks, selectedId, onBookmarkSelect }: Bookma
       try {
         await deleteBookmark(bookmark.id);
         toast.success("Bookmark deleted");
-        setMenuOpenId(null);
       } catch (error) {
         console.error("Failed to delete bookmark:", error);
-        toast.error(`Failed to delete bookmark: ${error instanceof Error ? error.message : "Unknown error"}`);
+        toast.error(
+          `Failed to delete bookmark: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
+        );
       }
     },
-    [deleteBookmark]
+    [deleteBookmark],
   );
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent, bookmark: BookmarkMetadata) => {
-      if (e.key === "Enter") {
-        openBookmark(bookmark.url);
-      } else if (e.key === "c" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        copyBookmarkUrl(bookmark.url);
-        toast.success("URL copied to clipboard");
-      } else if (e.key === "Backspace" || e.key === "Delete") {
-        e.preventDefault();
-        deleteBookmark(bookmark.id);
-      }
+  const handleEdit = useCallback(
+    (bookmark: BookmarkMetadata, e: React.MouseEvent) => {
+      e.stopPropagation();
+      onEditBookmark?.(bookmark);
     },
-    [openBookmark, copyBookmarkUrl, deleteBookmark]
+    [onEditBookmark],
   );
+
+  // Handle keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (bookmarks.length === 0) return;
+
+      const currentBookmark = bookmarks[focusedIndex];
+
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          setFocusedIndex((prev) => Math.min(prev + 1, bookmarks.length - 1));
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          setFocusedIndex((prev) => Math.max(prev - 1, 0));
+          break;
+        case "Enter":
+          e.preventDefault();
+          if (currentBookmark) {
+            openBookmark(currentBookmark.url);
+          }
+          break;
+        case "e":
+        case "E":
+          e.preventDefault();
+          if (currentBookmark) {
+            onEditBookmark?.(currentBookmark);
+          }
+          break;
+        case "c":
+          if (e.metaKey || e.ctrlKey) {
+            e.preventDefault();
+            if (currentBookmark) {
+              copyBookmarkUrl(currentBookmark.url);
+              toast.success("URL copied to clipboard");
+            }
+          }
+          break;
+        case "Backspace":
+        case "Delete":
+          e.preventDefault();
+          if (currentBookmark) {
+            deleteBookmark(currentBookmark.id);
+          }
+          break;
+      }
+    };
+
+    listRef.current?.addEventListener("keydown", handleKeyDown);
+    return () => listRef.current?.removeEventListener("keydown", handleKeyDown);
+  }, [
+    bookmarks,
+    focusedIndex,
+    openBookmark,
+    copyBookmarkUrl,
+    deleteBookmark,
+    onEditBookmark,
+  ]);
+
+  // Auto-focus the list when mounted
+  useEffect(() => {
+    listRef.current?.focus();
+  }, []);
 
   if (bookmarks.length === 0) {
     return (
@@ -95,93 +148,131 @@ export function BookmarkList({ bookmarks, selectedId, onBookmarkSelect }: Bookma
   }
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="space-y-1 p-2">
-        {bookmarks.map((bookmark) => {
+    <div
+      ref={listRef}
+      className="flex-1 overflow-y-auto outline-none"
+      tabIndex={0}
+    >
+      <div className="space-y-2 p-4">
+        {bookmarks.map((bookmark, index) => {
           const isSelected = selectedId === bookmark.id;
           const isHovered = hoveredId === bookmark.id;
-          const isMenuOpen = menuOpenId === bookmark.id;
+          const isFocused = focusedIndex === index;
 
           return (
             <div
               key={bookmark.id}
               className={`
-                group relative px-3 py-2.5 rounded-lg cursor-pointer
-                transition-colors
-                ${isSelected ? "bg-accent" : "hover:bg-accent/50"}
+                group relative px-4 py-3.5 rounded-xl cursor-pointer
+                transition-all duration-200 border
+                ${
+                  isFocused
+                    ? "bg-accent/60 border-accent-foreground/10"
+                    : "bg-card/50 border-border/50 hover:bg-accent/30 hover:border-accent-foreground/10"
+                }
               `}
               onClick={(e) => {
                 e.stopPropagation();
+                setFocusedIndex(index);
                 onBookmarkSelect?.(bookmark.id);
               }}
               onMouseEnter={() => setHoveredId(bookmark.id)}
               onMouseLeave={() => setHoveredId(null)}
-              onKeyDown={(e) => handleKeyDown(e, bookmark)}
-              tabIndex={0}
-              role="button"
-              aria-label={`Bookmark: ${bookmark.title}`}
             >
-              <div className="flex items-start gap-3">
-                <HugeiconsIcon
-                  icon={LinkIcon}
-                  size={16}
-                  color="currentColor"
-                  strokeWidth={1.5}
-                  className="text-muted-foreground mt-0.5 shrink-0"
-                />
+              <div className="flex items-start gap-3.5">
+                {/* Icon with background */}
+                <div className="shrink-0 mt-0.5 p-2 rounded-lg bg-primary/10">
+                  <HugeiconsIcon
+                    icon={LinkIcon}
+                    size={16}
+                    color="currentColor"
+                    strokeWidth={2}
+                    className="text-primary"
+                  />
+                </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-sm text-foreground truncate">
-                    {bookmark.title}
-                  </div>
-                  <div className="text-xs text-muted-foreground truncate mt-0.5">
-                    {bookmark.url}
-                  </div>
-                  {bookmark.description && (
-                    <div className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                      {bookmark.description}
+                  <div className="flex items-baseline gap-2 mb-2">
+                    {/* Title */}
+                    <div className="font-semibold text-[15px] text-foreground truncate">
+                      {bookmark.title}
                     </div>
-                  )}
+
+                    {/* URL */}
+                    <div className="text-[12px] text-muted-foreground/60 truncate font-mono">
+                      {bookmark.url}
+                    </div>
+                  </div>
+
+                  {/* Tags */}
                   {bookmark.tags && (
-                    <div className="flex flex-wrap gap-1 mt-1.5">
-                      {bookmark.tags.split(",").map((tag, i) => (
-                        <span
-                          key={i}
-                          className="text-xs px-1.5 py-0.5 bg-secondary rounded text-secondary-foreground"
-                        >
-                          {tag.trim()}
-                        </span>
-                      ))}
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {bookmark.tags.split(",").map((tag, i) => {
+                        const colors = [
+                          "bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/20",
+                          "bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/20",
+                          "bg-green-500/15 text-green-600 dark:text-green-400 border border-green-500/20",
+                          "bg-orange-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/20",
+                          "bg-pink-500/15 text-pink-600 dark:text-pink-400 border border-pink-500/20",
+                          "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20",
+                          "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20",
+                          "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20",
+                        ];
+                        const colorClass = colors[i % colors.length];
+
+                        return (
+                          <span
+                            key={i}
+                            className={`inline-flex items-center text-[11px] font-medium px-2 py-1 rounded-full ${colorClass}`}
+                          >
+                            {tag.trim()}
+                          </span>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
 
-                {(isHovered || isMenuOpen) && (
-                  <div className="flex items-center gap-1 shrink-0">
+                {/* Action buttons */}
+                {(isHovered || isFocused) && (
+                  <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => handleEdit(bookmark, e)}
+                      className="p-2 hover:bg-accent/80 rounded-lg transition-colors"
+                      title="Edit (E)"
+                      aria-label="Edit bookmark"
+                    >
+                      <HugeiconsIcon
+                        icon={Edit02Icon}
+                        size={16}
+                        color="currentColor"
+                        strokeWidth={2}
+                      />
+                    </button>
                     <button
                       onClick={(e) => handleCopy(bookmark, e)}
-                      className="p-1 hover:bg-accent rounded"
+                      className="p-2 hover:bg-accent/80 rounded-lg transition-colors"
                       title="Copy URL (Cmd+C)"
                       aria-label="Copy URL"
                     >
                       <HugeiconsIcon
                         icon={Copy01Icon}
-                        size={14}
+                        size={16}
                         color="currentColor"
-                        strokeWidth={1.5}
+                        strokeWidth={2}
                       />
                     </button>
                     <button
                       onClick={(e) => handleDelete(bookmark, e)}
-                      className="p-1 hover:bg-destructive/10 hover:text-destructive rounded"
+                      className="p-2 hover:bg-destructive/15 hover:text-destructive rounded-lg transition-colors"
                       title="Delete (Backspace)"
                       aria-label="Delete bookmark"
                     >
                       <HugeiconsIcon
                         icon={Delete02Icon}
-                        size={14}
+                        size={16}
                         color="currentColor"
-                        strokeWidth={1.5}
+                        strokeWidth={2}
                       />
                     </button>
                   </div>

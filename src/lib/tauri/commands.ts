@@ -51,7 +51,6 @@ export interface Bookmark {
   id: string;
   url: string;
   title: string;
-  description: string | null;
   tags: string | null;
   folder_id: string | null;
   created_at: number;
@@ -62,7 +61,6 @@ export interface BookmarkMetadata {
   id: string;
   url: string;
   title: string;
-  description: string | null;
   tags: string | null;
   folder_id: string | null;
   created_at: number;
@@ -72,15 +70,14 @@ export interface BookmarkMetadata {
 export interface CreateBookmarkParams {
   url: string;
   title: string;
-  description?: string;
   tags?: string;
   folder_id?: string;
 }
 
 export interface UpdateBookmarkParams {
   id: string;
+  url?: string;
   title?: string;
-  description?: string;
   tags?: string;
 }
 
@@ -267,14 +264,12 @@ export async function listStickyNotes(): Promise<StickyNote[]> {
 export async function createBookmark(
   url: string,
   title: string,
-  description?: string,
   tags?: string,
   folder_id?: string,
 ): Promise<Bookmark> {
   return invoke<Bookmark>("create_bookmark", {
     url,
     title,
-    description: description || null,
     tags: tags || null,
     folderId: folder_id || null,
   });
@@ -294,14 +289,14 @@ export async function listBookmarks(
 
 export async function updateBookmark(
   id: string,
+  url?: string,
   title?: string,
-  description?: string,
   tags?: string,
 ): Promise<void> {
   return invoke<void>("update_bookmark", {
     id,
+    url: url || null,
     title: title || null,
-    description: description || null,
     tags: tags || null,
   });
 }

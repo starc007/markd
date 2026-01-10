@@ -64,14 +64,14 @@ export function AppShell() {
         )}
 
         {/* Main Content */}
-        <main className="flex-1 flex flex-col overflow-hidden">
+        <main className="flex-1 flex flex-col overflow-hidden w-full">
           <SectionErrorBoundary
             section={
               currentView === UIView.Settings
                 ? "settings"
                 : currentView === UIView.StickyNotes
-                  ? "notes-grid"
-                  : "editor"
+                ? "notes-grid"
+                : "editor"
             }
           >
             {renderContent()}

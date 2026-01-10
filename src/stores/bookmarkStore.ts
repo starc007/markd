@@ -15,13 +15,16 @@ interface BookmarkStore {
   createBookmark: (
     url: string,
     title: string,
-    description?: string,
     tags?: string,
-    folderId?: string
+    folderId?: string,
   ) => Promise<Bookmark>;
   updateBookmark: (
     id: string,
-    updates: { title?: string; description?: string; tags?: string }
+    updates: {
+      url?: string;
+      title?: string;
+      tags?: string;
+    },
   ) => Promise<void>;
   deleteBookmark: (id: string) => Promise<void>;
   openBookmark: (url: string) => Promise<void>;
@@ -60,7 +63,7 @@ export const useBookmarkStore = create<BookmarkStore>((set, get) => ({
     }
   },
 
-  createBookmark: async (url, title, description, tags, folderId) => {
+  createBookmark: async (url, title, tags, folderId) => {
     const { bookmarks } = get();
 
     set({ isLoading: true, error: null });
@@ -68,9 +71,8 @@ export const useBookmarkStore = create<BookmarkStore>((set, get) => ({
       const bookmark = await commands.createBookmark(
         url,
         title,
-        description,
         tags,
-        folderId
+        folderId,
       );
 
       // Add to bookmarks list
@@ -93,9 +95,9 @@ export const useBookmarkStore = create<BookmarkStore>((set, get) => ({
     try {
       await commands.updateBookmark(
         id,
+        updates.url,
         updates.title,
-        updates.description,
-        updates.tags
+        updates.tags,
       );
 
       // Update in bookmarks list
@@ -106,7 +108,7 @@ export const useBookmarkStore = create<BookmarkStore>((set, get) => ({
               ...updates,
               updated_at: Date.now(),
             }
-          : b
+          : b,
       );
 
       // Update current bookmark if it's the one being updated

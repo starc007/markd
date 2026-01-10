@@ -694,7 +694,6 @@ impl Database {
         id: &str,
         url: &str,
         title: &str,
-        description: Option<&str>,
         tags: Option<&str>,
         folder_id: Option<&str>,
         created_at: i64,
@@ -702,15 +701,15 @@ impl Database {
     ) -> Result<()> {
         let conn = acquire_lock!(self.conn);
         conn.execute(
-            "INSERT INTO bookmarks (id, url, title, description, tags, folder_id, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-            params![id, url, title, description, tags, folder_id, created_at, updated_at],
+            "INSERT INTO bookmarks (id, url, title, tags, folder_id, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![id, url, title, tags, folder_id, created_at, updated_at],
         )?;
 
         // Insert into FTS table
         conn.execute(
-            "INSERT INTO bookmarks_fts (id, url, title, description, tags) VALUES (?1, ?2, ?3, ?4, ?5)",
-            params![id, url, title, description.unwrap_or(""), tags.unwrap_or("")],
+            "INSERT INTO bookmarks_fts (id, url, title, tags) VALUES (?1, ?2, ?3, ?4)",
+            params![id, url, title, tags.unwrap_or("")],
         )?;
 
         Ok(())
@@ -719,12 +718,24 @@ impl Database {
     pub fn update_bookmark(
         &self,
         id: &str,
+        url: Option<&str>,
         title: Option<&str>,
-        description: Option<&str>,
         tags: Option<&str>,
         updated_at: i64,
     ) -> Result<()> {
         let conn = acquire_lock!(self.conn);
+
+        if let Some(u) = url {
+            conn.execute(
+                "UPDATE bookmarks SET url = ?1, updated_at = ?2 WHERE id = ?3",
+                params![u, updated_at, id],
+            )?;
+
+            conn.execute(
+                "UPDATE bookmarks_fts SET url = ?1 WHERE id = ?2",
+                params![u, id],
+            )?;
+        }
 
         if let Some(t) = title {
             conn.execute(
@@ -735,18 +746,6 @@ impl Database {
             conn.execute(
                 "UPDATE bookmarks_fts SET title = ?1 WHERE id = ?2",
                 params![t, id],
-            )?;
-        }
-
-        if let Some(d) = description {
-            conn.execute(
-                "UPDATE bookmarks SET description = ?1, updated_at = ?2 WHERE id = ?3",
-                params![d, updated_at, id],
-            )?;
-
-            conn.execute(
-                "UPDATE bookmarks_fts SET description = ?1 WHERE id = ?2",
-                params![d, id],
             )?;
         }
 
@@ -778,7 +777,7 @@ impl Database {
     pub fn get_bookmark(&self, id: &str) -> Result<Option<crate::models::bookmark::Bookmark>> {
         let conn = acquire_lock!(self.conn);
         let mut stmt = conn.prepare(
-            "SELECT id, url, title, description, tags, folder_id, created_at, updated_at FROM bookmarks WHERE id = ?1",
+            "SELECT id, url, title, tags, folder_id, created_at, updated_at FROM bookmarks WHERE id = ?1",
         )?;
 
         let mut rows = stmt.query(params![id])?;
@@ -788,11 +787,10 @@ impl Database {
                 id: row.get(0)?,
                 url: row.get(1)?,
                 title: row.get(2)?,
-                description: row.get(3)?,
-                tags: row.get(4)?,
-                folder_id: row.get(5)?,
-                created_at: row.get(6)?,
-                updated_at: row.get(7)?,
+                tags: row.get(3)?,
+                folder_id: row.get(4)?,
+                created_at: row.get(5)?,
+                updated_at: row.get(6)?,
             }))
         } else {
             Ok(None)
@@ -808,7 +806,7 @@ impl Database {
 
         if let Some(fid) = folder_id {
             let mut stmt = conn.prepare(
-                "SELECT id, url, title, description, tags, folder_id, created_at, updated_at
+                "SELECT id, url, title, tags, folder_id, created_at, updated_at
                  FROM bookmarks
                  WHERE folder_id = ?1
                  ORDER BY created_at DESC",
@@ -819,11 +817,10 @@ impl Database {
                     id: row.get(0)?,
                     url: row.get(1)?,
                     title: row.get(2)?,
-                    description: row.get(3)?,
-                    tags: row.get(4)?,
-                    folder_id: row.get(5)?,
-                    created_at: row.get(6)?,
-                    updated_at: row.get(7)?,
+                    tags: row.get(3)?,
+                    folder_id: row.get(4)?,
+                    created_at: row.get(5)?,
+                    updated_at: row.get(6)?,
                 })
             })?;
 
@@ -832,7 +829,7 @@ impl Database {
             }
         } else {
             let mut stmt = conn.prepare(
-                "SELECT id, url, title, description, tags, folder_id, created_at, updated_at
+                "SELECT id, url, title, tags, folder_id, created_at, updated_at
                  FROM bookmarks
                  WHERE folder_id IS NULL
                  ORDER BY created_at DESC",
@@ -843,11 +840,10 @@ impl Database {
                     id: row.get(0)?,
                     url: row.get(1)?,
                     title: row.get(2)?,
-                    description: row.get(3)?,
-                    tags: row.get(4)?,
-                    folder_id: row.get(5)?,
-                    created_at: row.get(6)?,
-                    updated_at: row.get(7)?,
+                    tags: row.get(3)?,
+                    folder_id: row.get(4)?,
+                    created_at: row.get(5)?,
+                    updated_at: row.get(6)?,
                 })
             })?;
 

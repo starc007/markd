@@ -45,12 +45,7 @@ export const useUIStore = create<UIStore>((set, get) => ({
   },
 
   toggleFocusMode: () => {
-    const { focusMode } = get();
-    set({
-      focusMode: !focusMode,
-      // In focus mode, hide sidebar; when exiting focus mode, show sidebar
-      sidebarCollapsed: !focusMode,
-    });
+    set({ focusMode: !get().focusMode });
   },
 
   toggleCommandPalette: () => {

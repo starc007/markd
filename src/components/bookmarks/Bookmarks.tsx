@@ -1,17 +1,42 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useBookmarkStore } from "../../stores/bookmarkStore";
 import { useUIStore } from "../../stores/uiStore";
-import { BookmarkInput } from "./BookmarkInput";
+import { BookmarkInput, BookmarkInputRef } from "./BookmarkInput";
 import { BookmarkList } from "./BookmarkList";
+import { BookmarkEditModal } from "./BookmarkEditModal";
+import type { BookmarkMetadata } from "../../lib/tauri/commands";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { CommandIcon } from "@hugeicons/core-free-icons";
 
 export function Bookmarks() {
   const selectedFolderId = useUIStore((state) => state.selectedFolderId);
   const { bookmarks, loadBookmarks, openBookmark } = useBookmarkStore();
-  const [selectedBookmarkId, setSelectedBookmarkId] = useState<string | null>(null);
+  const [selectedBookmarkId, setSelectedBookmarkId] = useState<string | null>(
+    null
+  );
+  const [editingBookmark, setEditingBookmark] =
+    useState<BookmarkMetadata | null>(null);
+  const inputRef = useRef<BookmarkInputRef>(null);
 
   useEffect(() => {
     loadBookmarks(selectedFolderId);
   }, [selectedFolderId, loadBookmarks]);
+
+  // Keyboard shortcut: Cmd+F to focus input
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMod = e.metaKey || e.ctrlKey;
+
+      // Cmd+F to focus input
+      if (isMod && e.key === "f") {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const handleBookmarkSelect = (id: string) => {
     setSelectedBookmarkId(id);
@@ -21,18 +46,87 @@ export function Bookmarks() {
     }
   };
 
-  const handleBookmarkCreated = () => {
-    // Bookmarks list will update automatically through store
+  const handleEditBookmark = (bookmark: BookmarkMetadata) => {
+    setEditingBookmark(bookmark);
+  };
+
+  const handleCloseEditModal = () => {
+    setEditingBookmark(null);
   };
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className="flex flex-col h-full bg-background px-28 py-10">
       {/* Header */}
-      <div className="shrink-0 px-6 py-4 border-b border-border">
-        <h1 className="text-xl font-semibold text-foreground mb-4">Bookmarks</h1>
+      <div className="shrink-0 px-6 py-4 border-b border-border w-full">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-xl font-semibold text-foreground">Bookmarks</h1>
+          {/* Keyboard Shortcuts */}
+          <div className="flex gap-3 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <kbd className="flex items-center gap-0.5 px-2 py-1 bg-muted rounded border border-border">
+                <HugeiconsIcon
+                  icon={CommandIcon}
+                  size={12}
+                  color="currentColor"
+                  strokeWidth={2}
+                />
+                <span className="font-mono">F</span>
+              </kbd>
+              <span>Focus input</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <kbd className="px-2 py-1 bg-muted rounded border border-border font-mono">
+                ↵
+              </kbd>
+              <span>Open</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <kbd className="flex items-center gap-0.5 px-2 py-1 bg-muted rounded border border-border">
+                <HugeiconsIcon
+                  icon={CommandIcon}
+                  size={12}
+                  color="currentColor"
+                  strokeWidth={2}
+                />
+                <span className="font-mono">C</span>
+              </kbd>
+              <span>Copy URL</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <kbd className="px-2 py-1 bg-muted rounded border border-border font-mono">
+                E
+              </kbd>
+              <span>Edit</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <kbd className="px-2 py-1 bg-muted rounded border border-border font-mono">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  className="lucide lucide-trash2 lucide-trash-2 mr-2 h-4 w-4 text-destructive"
+                  aria-hidden="true"
+                >
+                  <path d="M10 11v6"></path>
+                  <path d="M14 11v6"></path>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+                  <path d="M3 6h18"></path>
+                  <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </kbd>
+              <span>Delete</span>
+            </div>
+          </div>
+        </div>
         <BookmarkInput
+          ref={inputRef}
           folderId={selectedFolderId}
-          onBookmarkCreated={handleBookmarkCreated}
           autoFocus={true}
         />
       </div>
@@ -42,6 +136,14 @@ export function Bookmarks() {
         bookmarks={bookmarks}
         selectedId={selectedBookmarkId}
         onBookmarkSelect={handleBookmarkSelect}
+        onEditBookmark={handleEditBookmark}
+      />
+
+      {/* Edit Modal */}
+      <BookmarkEditModal
+        bookmark={editingBookmark}
+        isOpen={!!editingBookmark}
+        onClose={handleCloseEditModal}
       />
     </div>
   );
