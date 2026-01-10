@@ -233,32 +233,13 @@ pub async fn save_note_content(
     id: String,
     content: String,
 ) -> Result<i64, String> {
-    
+    // Queue the save operation - it will be processed in the background
+    // with deduplication and batching
+    state.save_queue.queue_save(id, content).await?;
 
-    // Validate TipTap JSON structure
-    validate_tiptap_json(&content).map_err(|e| {
-        eprintln!("[save_note_content] Validation failed: {}", e);
-        format!("Invalid note content: {}", e)
-    })?;
-
-    let now = Utc::now().timestamp_millis();
-
-    // Generate preview from JSON
-    let preview = generate_preview(&content, PREVIEW_MAX_LENGTH);
-
-
-    // Update content in database
-    state
-        .db
-        .update_note_content(&id, &content, preview.as_deref(), now)
-        .map_err(|e| {
-
-            format!("Failed to update note content: {}", e)
-        })?;
-
-
-
-    Ok(now)
+    // Return current timestamp immediately
+    // The actual save happens asynchronously in the queue
+    Ok(Utc::now().timestamp_millis())
 }
 
 #[tauri::command]

@@ -7,6 +7,7 @@ use std::sync::Mutex;
 use crate::models::folder::Folder;
 use crate::models::note::NoteMetadata;
 use crate::models::sticky_note::StickyNote;
+use crate::services::migrations;
 use crate::utils::json_utils::generate_preview;
 
 // Helper macro to acquire database lock with proper error handling
@@ -53,121 +54,8 @@ impl Database {
         conn.pragma_update(None, "temp_store", "MEMORY")?; // Use memory for temp tables
         conn.pragma_update(None, "mmap_size", 268435456)?; // 256MB memory-mapped I/O
 
-        // Create folders table
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS folders (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                parent_id TEXT,
-                created_at INTEGER NOT NULL,
-                FOREIGN KEY (parent_id) REFERENCES folders(id) ON DELETE SET NULL
-            )",
-            [],
-        )?;
-
-        // Create notes metadata table
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS notes (
-                id TEXT PRIMARY KEY,
-                title TEXT NOT NULL,
-                content TEXT NOT NULL,
-                preview TEXT,
-                file_path TEXT,
-                folder_id TEXT,
-                parent_id TEXT,
-                pinned INTEGER NOT NULL DEFAULT 0,
-                created_at INTEGER NOT NULL,
-                updated_at INTEGER NOT NULL,
-                FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE SET NULL,
-                FOREIGN KEY (parent_id) REFERENCES notes(id) ON DELETE SET NULL
-            )",
-            [],
-        )?;
-
-        // Create sticky_notes table
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS sticky_notes (
-                id TEXT PRIMARY KEY,
-                content TEXT NOT NULL,
-                color_id TEXT NOT NULL DEFAULT 'default',
-                created_at INTEGER NOT NULL,
-                updated_at INTEGER NOT NULL
-            )",
-            [],
-        )?;
-
-        // Create tags table
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS tags (
-                id TEXT PRIMARY KEY,
-                name TEXT UNIQUE NOT NULL
-            )",
-            [],
-        )?;
-
-        // Create note_tags junction table
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS note_tags (
-                note_id TEXT NOT NULL,
-                tag_id TEXT NOT NULL,
-                PRIMARY KEY (note_id, tag_id),
-                FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE,
-                FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
-            )",
-            [],
-        )?;
-
-        // Create FTS5 virtual table for full-text search
-        conn.execute(
-            "CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(
-                id UNINDEXED,
-                title,
-                content,
-                tags,
-                tokenize='porter unicode61'
-            )",
-            [],
-        )?;
-
-        // Create page_links table for tracking page references
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS page_links (
-                id TEXT PRIMARY KEY,
-                source_page_id TEXT NOT NULL,
-                target_page_id TEXT NOT NULL,
-                created_at INTEGER NOT NULL,
-                FOREIGN KEY (source_page_id) REFERENCES notes(id) ON DELETE CASCADE,
-                FOREIGN KEY (target_page_id) REFERENCES notes(id) ON DELETE CASCADE,
-                UNIQUE(source_page_id, target_page_id)
-            )",
-            [],
-        )?;
-
-        // Create indexes for better performance
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_notes_folder ON notes(folder_id)",
-            [],
-        )?;
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_notes_updated ON notes(updated_at DESC)",
-            [],
-        )?;
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_notes_parent ON notes(parent_id)",
-            [],
-        )?;
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_folders_parent ON folders(parent_id)",
-            [],
-        )?;
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_page_links_source ON page_links(source_page_id)",
-            [],
-        )?;
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_page_links_target ON page_links(target_page_id)",
-            [],
-        )?;
+        // Run database migrations
+        migrations::run_migrations(&conn)?;
 
         Ok(())
     }
@@ -254,21 +142,21 @@ impl Database {
     pub fn delete_note_metadata(&self, id: &str) -> Result<()> {
         // Get backlinks first (before acquiring the main lock)
         let backlinks = self.get_backlinks(id)?;
-        
+
         let conn = acquire_lock!(self.conn);
-        
+
         // Remove page links from all notes that reference this page before deleting
         // Pass the connection to avoid deadlocks
         if !backlinks.is_empty() {
             self.remove_page_links_from_content_with_conn(&conn, id, &backlinks)?;
         }
-        
+
         // Recursively delete all child notes first
         self.delete_note_children(&conn, id)?;
-        
+
         // Remove from search index (use same connection)
         conn.execute("DELETE FROM notes_fts WHERE id = ?1", params![id])?;
-        
+
         // Delete the note itself
         conn.execute("DELETE FROM notes WHERE id = ?1", params![id])?;
 
@@ -282,7 +170,12 @@ impl Database {
 
     // Remove page links from content of all notes that reference a deleted page
     // Uses the provided connection to avoid deadlocks
-    fn remove_page_links_from_content_with_conn(&self, conn: &Connection, deleted_page_id: &str, backlinks: &[String]) -> Result<()> {
+    fn remove_page_links_from_content_with_conn(
+        &self,
+        conn: &Connection,
+        deleted_page_id: &str,
+        backlinks: &[String],
+    ) -> Result<()> {
         if backlinks.is_empty() {
             return Ok(());
         }
@@ -294,7 +187,7 @@ impl Database {
             // Get the note content using the same connection
             let mut stmt = conn.prepare("SELECT content FROM notes WHERE id = ?1")?;
             let mut rows = stmt.query(params![&source_page_id])?;
-            
+
             let content = match rows.next()? {
                 Some(row) => row.get::<_, String>(0)?,
                 None => continue,
@@ -307,8 +200,13 @@ impl Database {
                     // Recursively find and remove pageLink nodes
                     remove_page_link_from_json(&mut json, deleted_page_id, &mut updated);
                     if updated {
-                        serde_json::to_string(&json)
-                            .map_err(|e| rusqlite::Error::InvalidColumnType(0, format!("Failed to serialize JSON: {}", e), rusqlite::types::Type::Text))?
+                        serde_json::to_string(&json).map_err(|e| {
+                            rusqlite::Error::InvalidColumnType(
+                                0,
+                                format!("Failed to serialize JSON: {}", e),
+                                rusqlite::types::Type::Text,
+                            )
+                        })?
                     } else {
                         continue; // No changes needed
                     }
@@ -345,7 +243,7 @@ impl Database {
             )
             SELECT id FROM descendants
         ";
-        
+
         let mut stmt = conn.prepare(query)?;
         let all_descendants: Vec<String> = stmt
             .query_map(params![parent_id], |row| Ok(row.get::<_, String>(0)?))?
@@ -354,18 +252,28 @@ impl Database {
         // Delete all descendants in batch operations
         if !all_descendants.is_empty() {
             // Batch delete from search index
-            let placeholders = all_descendants.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+            let placeholders = all_descendants
+                .iter()
+                .map(|_| "?")
+                .collect::<Vec<_>>()
+                .join(",");
             let delete_fts_sql = format!("DELETE FROM notes_fts WHERE id IN ({})", placeholders);
             let mut delete_fts_stmt = conn.prepare(&delete_fts_sql)?;
-            let fts_params: Vec<&dyn rusqlite::ToSql> = all_descendants.iter().map(|s| s as &dyn rusqlite::ToSql).collect();
+            let fts_params: Vec<&dyn rusqlite::ToSql> = all_descendants
+                .iter()
+                .map(|s| s as &dyn rusqlite::ToSql)
+                .collect();
             delete_fts_stmt.execute(fts_params.as_slice())?;
-            
+
             // Batch delete notes
             let delete_notes_sql = format!("DELETE FROM notes WHERE id IN ({})", placeholders);
             let mut delete_notes_stmt = conn.prepare(&delete_notes_sql)?;
-            let notes_params: Vec<&dyn rusqlite::ToSql> = all_descendants.iter().map(|s| s as &dyn rusqlite::ToSql).collect();
+            let notes_params: Vec<&dyn rusqlite::ToSql> = all_descendants
+                .iter()
+                .map(|s| s as &dyn rusqlite::ToSql)
+                .collect();
             delete_notes_stmt.execute(notes_params.as_slice())?;
-            
+
             // Invalidate cache entries
             if let Ok(mut cache) = self.metadata_cache.lock() {
                 for child_id in &all_descendants {
@@ -439,13 +347,11 @@ impl Database {
         preview: Option<&str>,
         updated_at: i64,
     ) -> Result<()> {
-
         let conn = acquire_lock!(self.conn);
         let rows_affected = conn.execute(
             "UPDATE notes SET content = ?1, preview = ?2, updated_at = ?3 WHERE id = ?4",
             params![content, preview, updated_at, id],
         )?;
-       
 
         if rows_affected == 0 {
             return Err(rusqlite::Error::QueryReturnedNoRows);
@@ -678,6 +584,13 @@ impl Database {
              VALUES (?1, ?2, ?3, ?4, ?5)",
             params![id, content, color_id, created_at, updated_at],
         )?;
+
+        // Insert into FTS table
+        conn.execute(
+            "INSERT INTO sticky_notes_fts (id, content) VALUES (?1, ?2)",
+            params![id, content],
+        )?;
+
         Ok(())
     }
 
@@ -694,6 +607,12 @@ impl Database {
             conn.execute(
                 "UPDATE sticky_notes SET content = ?1, updated_at = ?2 WHERE id = ?3",
                 params![c, updated_at, id],
+            )?;
+
+            // Update FTS table
+            conn.execute(
+                "UPDATE sticky_notes_fts SET content = ?1 WHERE id = ?2",
+                params![c, id],
             )?;
         }
 
@@ -717,6 +636,10 @@ impl Database {
     pub fn delete_sticky_note(&self, id: &str) -> Result<()> {
         let conn = acquire_lock!(self.conn);
         conn.execute("DELETE FROM sticky_notes WHERE id = ?1", params![id])?;
+
+        // Delete from FTS table
+        conn.execute("DELETE FROM sticky_notes_fts WHERE id = ?1", params![id])?;
+
         Ok(())
     }
 
@@ -877,23 +800,8 @@ impl Database {
         &self,
         query: &str,
     ) -> Result<Vec<crate::services::search_service::SearchResult>> {
-        let conn = acquire_lock!(self.conn);
-
-        let mut stmt = conn.prepare(
-            "SELECT id, title, snippet(notes_fts, 2, '<mark>', '</mark>', '...', 32), bm25(notes_fts)
-             FROM notes_fts
-             WHERE notes_fts MATCH ?1
-             ORDER BY bm25(notes_fts)
-             LIMIT 50"
-        )?;
-
-        let mut results = Vec::new();
-        let rows = stmt.query_map(params![query], |row| {
-            Ok(crate::services::search_service::SearchResult {
-                id: row.get(0)?,
-                title: row.get(1)?,
-                snippet: row.get(2)?,
-                rank: row.get(3)?,
+        use crate::services::search_service::SearchService;
+        SearchService::search(&self.conn, query)
             })
         })?;
 
@@ -1044,7 +952,7 @@ impl Database {
     ) -> Result<()> {
         // Get all notes that link to this page (backlinks)
         let backlinks = self.get_backlinks(target_page_id)?;
-        
+
         if backlinks.is_empty() {
             return Ok(());
         }
@@ -1064,8 +972,13 @@ impl Database {
                     // Recursively find and update pageLink nodes
                     update_page_link_in_json(&mut json, target_page_id, new_title, &mut updated);
                     if updated {
-                        serde_json::to_string(&json)
-                            .map_err(|e| rusqlite::Error::InvalidColumnType(0, format!("Failed to serialize JSON: {}", e), rusqlite::types::Type::Text))?
+                        serde_json::to_string(&json).map_err(|e| {
+                            rusqlite::Error::InvalidColumnType(
+                                0,
+                                format!("Failed to serialize JSON: {}", e),
+                                rusqlite::types::Type::Text,
+                            )
+                        })?
                     } else {
                         continue; // No changes needed
                     }
@@ -1097,14 +1010,17 @@ fn update_page_link_in_json(
                     if let Some(serde_json::Value::Object(attrs)) = obj.get_mut("attrs") {
                         if let Some(serde_json::Value::String(page_id)) = attrs.get("pageId") {
                             if page_id == target_page_id {
-                                attrs.insert("pageTitle".to_string(), serde_json::Value::String(new_title.to_string()));
+                                attrs.insert(
+                                    "pageTitle".to_string(),
+                                    serde_json::Value::String(new_title.to_string()),
+                                );
                                 *updated = true;
                             }
                         }
                     }
                 }
             }
-            
+
             // Recursively process content array
             if let Some(serde_json::Value::Array(content)) = obj.get_mut("content") {
                 for item in content.iter_mut() {
@@ -1142,7 +1058,7 @@ fn remove_page_link_from_json(
                     }
                 }
             }
-            
+
             // Recursively process content array
             if let Some(serde_json::Value::Array(content)) = obj.get_mut("content") {
                 let mut i = 0;
@@ -1153,7 +1069,9 @@ fn remove_page_link_from_json(
                         if let Some(serde_json::Value::String(node_type)) = item.get("type") {
                             if node_type == "pageLink" {
                                 if let Some(serde_json::Value::Object(attrs)) = item.get("attrs") {
-                                    if let Some(serde_json::Value::String(page_id)) = attrs.get("pageId") {
+                                    if let Some(serde_json::Value::String(page_id)) =
+                                        attrs.get("pageId")
+                                    {
                                         page_id == deleted_page_id
                                     } else {
                                         false
@@ -1168,7 +1086,7 @@ fn remove_page_link_from_json(
                             false
                         }
                     };
-                    
+
                     if should_remove {
                         content.remove(i);
                         *updated = true;
@@ -1189,7 +1107,9 @@ fn remove_page_link_from_json(
                     if let Some(serde_json::Value::String(node_type)) = item.get("type") {
                         if node_type == "pageLink" {
                             if let Some(serde_json::Value::Object(attrs)) = item.get("attrs") {
-                                if let Some(serde_json::Value::String(page_id)) = attrs.get("pageId") {
+                                if let Some(serde_json::Value::String(page_id)) =
+                                    attrs.get("pageId")
+                                {
                                     page_id == deleted_page_id
                                 } else {
                                     false
@@ -1204,7 +1124,7 @@ fn remove_page_link_from_json(
                         false
                     }
                 };
-                
+
                 if should_remove {
                     arr.remove(i);
                     *updated = true;

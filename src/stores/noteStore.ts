@@ -28,18 +28,18 @@ interface NoteStore {
   // Note actions
   loadNotes: (
     folderId?: string | null,
-    parentId?: string | null
+    parentId?: string | null,
   ) => Promise<void>;
   loadNote: (id: string) => Promise<void>;
   createNote: (
     title: string,
     folderId?: string,
-    parentId?: string
+    parentId?: string,
   ) => Promise<Note>;
   createSubpage: (parentId: string, title: string) => Promise<Note>;
   updateNote: (
     id: string,
-    updates: { title?: string; content?: string }
+    updates: { title?: string; content?: string },
   ) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   saveCurrentNoteContent: (content: string) => Promise<void>;
@@ -65,9 +65,18 @@ interface NoteStore {
   importFile: (filePath: string, folderId?: string | null) => Promise<Note>;
 }
 
-// Save operation tracker outside of Zustand store to prevent race conditions
-let activeSaveOperation: Promise<void> | null = null;
-let activeSafetyTimeout: ReturnType<typeof setTimeout> | null = null;
+// Helper function to refresh a note's metadata (including children_count)
+async function refreshNoteMetadata(
+  noteId: string,
+): Promise<NoteMetadata | null> {
+  try {
+    const notes = await commands.listNotes();
+    return notes.find((n) => n.id === noteId) || null;
+  } catch (error) {
+    console.error("[refreshNoteMetadata] Failed:", error);
+    return null;
+  }
+}
 
 export const useNoteStore = create<NoteStore>((set, get) => ({
   // Initial state
@@ -92,8 +101,8 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         new Promise<NoteMetadata[]>((_, reject) =>
           setTimeout(
             () => reject(new Error("listNotes timeout after 5s")),
-            5000
-          )
+            5000,
+          ),
         ),
       ]);
 
@@ -186,7 +195,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         const newMap = new Map(get().childrenMap);
         const parentChildren = newMap.get(parentId) || [];
         const updatedChildren = parentChildren.map((n) =>
-          n.id === tempId ? metadata : n
+          n.id === tempId ? metadata : n,
         );
         newMap.set(parentId, updatedChildren);
         set({
@@ -197,7 +206,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       } else {
         // Replace temp with real data in notes list
         const updatedNotes = get().notes.map((n) =>
-          n.id === tempId ? metadata : n
+          n.id === tempId ? metadata : n,
         );
         set({
           notes: updatedNotes,
@@ -233,7 +242,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         throw new Error("Failed to load created sub-page");
       }
 
-      const { childrenMap, expandedPages, loadedChildren } = get();
+      const { childrenMap, expandedPages, loadedChildren, notes } = get();
       const metadata = {
         id: fullNote.id,
         title: fullNote.title,
@@ -251,19 +260,22 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       const parentChildren = newMap.get(parentId) || [];
       newMap.set(parentId, [metadata, ...parentChildren]);
 
-      // Update parent's children_count in notes list if visible
-      const { notes } = get();
-      const updatedNotes = notes.map((n) =>
-        n.id === parentId ? { ...n, children_count: n.children_count + 1 } : n
-      );
-
-      // Update parent's children_count in childrenMap if it's a child itself
-      for (const [parentIdKey, children] of newMap.entries()) {
-        const updatedChildren = children.map((n) =>
-          n.id === parentId ? { ...n, children_count: n.children_count + 1 } : n
+      // Refresh parent's metadata from DB to get accurate children_count
+      const refreshedParent = await refreshNoteMetadata(parentId);
+      let updatedNotes = notes;
+      if (refreshedParent) {
+        updatedNotes = notes.map((n) =>
+          n.id === parentId ? refreshedParent : n,
         );
-        if (updatedChildren.some((n) => n.id === parentId)) {
-          newMap.set(parentIdKey, updatedChildren);
+
+        // Also update parent in childrenMap if it's a child itself
+        for (const [parentIdKey, children] of newMap.entries()) {
+          const updatedChildren = children.map((n) =>
+            n.id === parentId ? refreshedParent : n,
+          );
+          if (updatedChildren.some((n) => n.id === parentId)) {
+            newMap.set(parentIdKey, updatedChildren);
+          }
         }
       }
 
@@ -322,7 +334,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
               updated_at: note.updated_at,
               parent_id: note.parent_id,
             }
-          : n
+          : n,
       );
 
       // Update in children map if it's a child
@@ -337,7 +349,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
                 updated_at: note.updated_at,
                 parent_id: note.parent_id,
               }
-            : n
+            : n,
         );
         if (updatedChildren.some((n) => n.id === id)) {
           newMap.set(parentId, updatedChildren);
@@ -352,7 +364,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
           const oldParentChildren = newMap.get(oldNote.parent_id) || [];
           newMap.set(
             oldNote.parent_id,
-            oldParentChildren.filter((n) => n.id !== id)
+            oldParentChildren.filter((n) => n.id !== id),
           );
         }
         // Add to new parent
@@ -393,29 +405,62 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
   deleteNote: async (id) => {
     set({ isLoading: true, error: null });
     try {
+      // Find parent before deletion to refresh it later
+      const { notes, childrenMap } = get();
+      const deletedNote = notes.find((n) => n.id === id);
+      let parentId: string | null = null;
+
+      if (!deletedNote) {
+        // Check in childrenMap
+        for (const children of childrenMap.values()) {
+          const found = children.find((n) => n.id === id);
+          if (found) {
+            parentId = found.parent_id;
+            break;
+          }
+        }
+      } else {
+        parentId = deletedNote.parent_id;
+      }
+
       await commands.deleteNote(id);
-      const { notes, currentNote, childrenMap, expandedPages, loadedChildren } =
-        get();
+      const { currentNote, expandedPages, loadedChildren } = get();
 
       // Remove from top-level notes
-      const updatedNotes = notes.filter((n) => n.id !== id);
+      let updatedNotes = notes.filter((n) => n.id !== id);
 
-      // Remove from children map and update parent's children_count
+      // Remove from children map
       const newMap = new Map(childrenMap);
+      const parentIdsToRefresh: string[] = [];
 
       for (const [parentIdKey, children] of newMap.entries()) {
         const filtered = children.filter((n) => n.id !== id);
         if (filtered.length !== children.length) {
           newMap.set(parentIdKey, filtered);
+          parentIdsToRefresh.push(parentIdKey);
+        }
+      }
 
-          // Update parent's children_count in notes list
-          const parentNote = updatedNotes.find((n) => n.id === parentIdKey);
-          if (parentNote) {
-            const parentIndex = updatedNotes.indexOf(parentNote);
-            updatedNotes[parentIndex] = {
-              ...parentNote,
-              children_count: Math.max(0, parentNote.children_count - 1),
-            };
+      // Refresh parent's metadata from DB to get accurate children_count
+      if (parentId && !parentIdsToRefresh.includes(parentId)) {
+        parentIdsToRefresh.push(parentId);
+      }
+
+      for (const pid of parentIdsToRefresh) {
+        const refreshed = await refreshNoteMetadata(pid);
+        if (refreshed) {
+          updatedNotes = updatedNotes.map((n) =>
+            n.id === pid ? refreshed : n,
+          );
+
+          // Update in childrenMap
+          for (const [mapParentId, children] of newMap.entries()) {
+            const updatedChildren = children.map((n) =>
+              n.id === pid ? refreshed : n,
+            );
+            if (updatedChildren.some((n) => n.id === pid)) {
+              newMap.set(mapParentId, updatedChildren);
+            }
           }
         }
       }
@@ -443,127 +488,46 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
   saveCurrentNoteContent: async (content) => {
     const { currentNote, notes, childrenMap } = get();
     if (!currentNote) {
-      console.log("[saveCurrentNoteContent] No current note, returning early");
       return;
     }
 
-    // Prevent concurrent saves using module-level tracker
-    // If a save is already in progress, wait for it to complete first
-    if (activeSaveOperation) {
-      console.warn(
-        "[saveCurrentNoteContent] Save already in progress, waiting for completion",
-        {
-          noteId: currentNote.id,
-          timestamp: new Date().toISOString(),
-        }
-      );
-      try {
-        await activeSaveOperation;
-      } catch (error) {}
-    }
+    const noteId = currentNote.id;
 
-    // Check if another save started while we were waiting
-    const currentState = get();
-    if (currentState.isSaving) {
-      console.warn(
-        "[saveCurrentNoteContent] Save still in progress after waiting, aborting"
-      );
-      return;
-    }
-
-    // Set isSaving flag BEFORE creating the promise to ensure atomicity
+    // Set saving flag immediately for UI feedback
     set({ isSaving: true });
 
-    // Create the save operation promise
-    const saveOperation = (async () => {
-      // Log after setting the flag
-
-      // Safety timeout: ensure isSaving is reset even if save hangs
-      // Clear any previous safety timeout
-      if (activeSafetyTimeout) {
-        clearTimeout(activeSafetyTimeout);
-      }
-
-      activeSafetyTimeout = setTimeout(() => {
-        const currentState = get();
-        if (currentState.isSaving) {
-          console.warn(
-            "[saveCurrentNoteContent] SAFETY TIMEOUT: Save took too long, resetting isSaving",
-            {
-              noteId: currentNote.id,
-              elapsed: "5s",
-              timestamp: new Date().toISOString(),
-            }
-          );
-          set({ isSaving: false });
-        }
-        activeSafetyTimeout = null;
-      }, 5000); // 5 seconds should be more than enough for any save
-
-      try {
-        const updatedAt = await commands.saveNoteContent(
-          currentNote.id,
-          content
-        );
-
-        // Clear safety timeout since save completed
-        if (activeSafetyTimeout) {
-          clearTimeout(activeSafetyTimeout);
-          activeSafetyTimeout = null;
-        }
-
-        // Update current note
-        set({
-          currentNote: { ...currentNote, content, updated_at: updatedAt },
-          isSaving: false,
-        });
-
-        // Update notes list timestamp
-        const updatedNotes = notes.map((n) =>
-          n.id === currentNote.id ? { ...n, updated_at: updatedAt } : n
-        );
-        updatedNotes.sort((a, b) => b.updated_at - a.updated_at);
-
-        // Update childrenMap if this note is a child
-        const newMap = new Map(childrenMap);
-        for (const [parentId, children] of newMap.entries()) {
-          const updatedChildren = children.map((n) =>
-            n.id === currentNote.id ? { ...n, updated_at: updatedAt } : n
-          );
-          if (updatedChildren.some((n) => n.id === currentNote.id)) {
-            newMap.set(parentId, updatedChildren);
-          }
-        }
-
-        set({ notes: updatedNotes, childrenMap: newMap });
-      } catch (error) {
-        console.error("[saveCurrentNoteContent] Save failed with error", {
-          noteId: currentNote.id,
-          error: String(error),
-          errorStack: error instanceof Error ? error.stack : undefined,
-          timestamp: new Date().toISOString(),
-        });
-
-        // Clear safety timeout on error
-        if (activeSafetyTimeout) {
-          clearTimeout(activeSafetyTimeout);
-          activeSafetyTimeout = null;
-        }
-        set({ error: String(error), isSaving: false });
-        console.log(
-          "[saveCurrentNoteContent] Set isSaving: false (after error)"
-        );
-      }
-    })();
-
-    // Track the active save operation
-    activeSaveOperation = saveOperation;
-
-    // Execute and clear the tracker when done
     try {
-      await saveOperation;
-    } finally {
-      activeSaveOperation = null;
+      // Backend queue handles deduplication and batching
+      const updatedAt = await commands.saveNoteContent(noteId, content);
+
+      // Update local state optimistically
+      set({
+        currentNote: { ...currentNote, content, updated_at: updatedAt },
+        isSaving: false,
+      });
+
+      // Update notes list timestamp
+      const updatedNotes = notes.map((n) =>
+        n.id === noteId ? { ...n, updated_at: updatedAt } : n,
+      );
+      updatedNotes.sort((a, b) => b.updated_at - a.updated_at);
+
+      // Update childrenMap if this note is a child
+      const newMap = new Map(childrenMap);
+      for (const [parentId, children] of newMap.entries()) {
+        const updatedChildren = children.map((n) =>
+          n.id === noteId ? { ...n, updated_at: updatedAt } : n,
+        );
+        if (updatedChildren.some((n) => n.id === noteId)) {
+          newMap.set(parentId, updatedChildren);
+        }
+      }
+
+      set({ notes: updatedNotes, childrenMap: newMap });
+    } catch (error) {
+      console.error("[saveCurrentNoteContent] Save failed:", error);
+      set({ error: String(error), isSaving: false });
+      throw error;
     }
   },
 
@@ -730,7 +694,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 
       // Find the page being moved
       const page = [...notes, ...Array.from(childrenMap.values()).flat()].find(
-        (n) => n.id === pageId
+        (n) => n.id === pageId,
       );
       if (!page) return;
 
@@ -742,7 +706,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         const oldChildren = newMap.get(oldParentId) || [];
         newMap.set(
           oldParentId,
-          oldChildren.filter((n) => n.id !== pageId)
+          oldChildren.filter((n) => n.id !== pageId),
         );
         set({ childrenMap: newMap });
       } else {

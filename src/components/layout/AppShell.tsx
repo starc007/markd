@@ -4,6 +4,7 @@ import { CommandPalette } from "../command-palette/CommandPalette";
 import { TitleBar } from "./TitleBar";
 import { NotesGrid } from "../notes/NotesGrid";
 import { Settings } from "../settings/Settings";
+import { SectionErrorBoundary } from "../SectionErrorBoundary";
 import { useNoteStore } from "../../stores/noteStore";
 import { useUIStore, UIView } from "../../stores/uiStore";
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
@@ -51,16 +52,32 @@ export function AppShell() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar - hidden in focus mode or when collapsed */}
-        {!sidebarCollapsed && !focusMode && <Sidebar />}
+        {!sidebarCollapsed && !focusMode && (
+          <SectionErrorBoundary section="sidebar">
+            <Sidebar />
+          </SectionErrorBoundary>
+        )}
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col overflow-hidden">
-          {renderContent()}
+          <SectionErrorBoundary
+            section={
+              currentView === UIView.Settings
+                ? "settings"
+                : currentView === UIView.StickyNotes
+                  ? "notes-grid"
+                  : "editor"
+            }
+          >
+            {renderContent()}
+          </SectionErrorBoundary>
         </main>
       </div>
 
       {/* Command Palette - still accessible in focus mode */}
-      <CommandPalette />
+      <SectionErrorBoundary section="command-palette">
+        <CommandPalette />
+      </SectionErrorBoundary>
     </div>
   );
 }
