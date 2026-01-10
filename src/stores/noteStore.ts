@@ -131,6 +131,12 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
   },
 
   loadNote: async (id) => {
+    // Don't reload if it's already the current note
+    const { currentNote } = get();
+    if (currentNote?.id === id) {
+      return;
+    }
+
     set({ isLoading: true, error: null });
     try {
       const note = await commands.getNote(id);
@@ -138,27 +144,52 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         set({ error: "Note not found", isLoading: false });
         return;
       }
+
+      // Set the note immediately so content updates right away
       set({
         currentNote: note,
         isLoading: false,
       });
 
-      // Collect all parent IDs for this note (from root to direct parent)
-      const parentPath = await get().getParentPath(id);
-
-      // Expand all parent pages so the sub-page is visible in the sidebar
-      if (parentPath.length > 0) {
-        await get().expandParentPages(parentPath);
+      // Expand parent pages in the background (non-blocking)
+      // This ensures the note content is shown immediately
+      if (note.parent_id) {
+        get()
+          .getParentPath(id)
+          .then((parentPath) => {
+            if (parentPath.length > 0) {
+              get().expandParentPages(parentPath);
+            }
+            // Persist state after parent path is collected
+            const { currentView } = useUIStore.getState();
+            saveAppState({
+              currentNoteId: note.id,
+              currentView: currentView ? String(currentView) : null,
+              selectedFolderId: useUIStore.getState().selectedFolderId,
+              parentPath: parentPath,
+            });
+          })
+          .catch((error) => {
+            console.error("[loadNote] Failed to get parent path:", error);
+            // Still persist the note even if parent path fails
+            const { currentView } = useUIStore.getState();
+            saveAppState({
+              currentNoteId: note.id,
+              currentView: currentView ? String(currentView) : null,
+              selectedFolderId: useUIStore.getState().selectedFolderId,
+              parentPath: [],
+            });
+          });
+      } else {
+        // No parent, just persist the state
+        const { currentView } = useUIStore.getState();
+        saveAppState({
+          currentNoteId: note.id,
+          currentView: currentView ? String(currentView) : null,
+          selectedFolderId: useUIStore.getState().selectedFolderId,
+          parentPath: [],
+        });
       }
-
-      // Persist current note ID with parent path
-      const { currentView } = useUIStore.getState();
-      saveAppState({
-        currentNoteId: note.id,
-        currentView: currentView ? String(currentView) : null,
-        selectedFolderId: useUIStore.getState().selectedFolderId,
-        parentPath: parentPath,
-      });
     } catch (error) {
       set({ error: String(error), isLoading: false });
     }
@@ -823,6 +854,15 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
     if (parentIds.length === 0) return;
 
     const { expandedPages, loadedChildren, childrenMap } = get();
+
+    // Check if we actually need to do anything
+    const needsExpansion = parentIds.some((pid) => !expandedPages.has(pid));
+    const needsLoading = parentIds.some((pid) => !loadedChildren.has(pid));
+
+    if (!needsExpansion && !needsLoading) {
+      return; // Already expanded and loaded, no need to update state
+    }
+
     const newExpanded = new Set(expandedPages);
     const newLoaded = new Set(loadedChildren);
     const newMap = new Map(childrenMap);
@@ -847,10 +887,40 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       }
     }
 
-    set({
-      expandedPages: newExpanded,
-      loadedChildren: newLoaded,
-      childrenMap: newMap,
-    });
+    // Only update state if something actually changed
+    // This prevents unnecessary re-renders that cause scroll position to jump
+    const expandedChanged =
+      newExpanded.size !== expandedPages.size ||
+      Array.from(newExpanded).some((id) => !expandedPages.has(id));
+    const loadedChanged =
+      newLoaded.size !== loadedChildren.size ||
+      Array.from(newLoaded).some((id) => !loadedChildren.has(id));
+
+    // Check if childrenMap actually changed
+    let mapChanged = false;
+    if (newMap.size !== childrenMap.size) {
+      mapChanged = true;
+    } else {
+      for (const [key, newChildren] of newMap.entries()) {
+        const oldChildren = childrenMap.get(key);
+        if (!oldChildren || oldChildren.length !== newChildren.length) {
+          mapChanged = true;
+          break;
+        }
+        // Check if any child IDs changed
+        if (oldChildren.some((child, i) => child.id !== newChildren[i]?.id)) {
+          mapChanged = true;
+          break;
+        }
+      }
+    }
+
+    if (expandedChanged || loadedChanged || mapChanged) {
+      set({
+        expandedPages: newExpanded,
+        loadedChildren: newLoaded,
+        childrenMap: newMap,
+      });
+    }
   },
 }));

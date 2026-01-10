@@ -3,6 +3,7 @@ import { EditIcon, CommandIcon } from "@hugeicons/core-free-icons";
 import { useNoteStore } from "../stores/noteStore";
 import { useUIStore } from "../stores/uiStore";
 import { Button } from "./ui";
+import Logo from "./Logo";
 
 const Welcome = () => {
   const { createNote, loadNote } = useNoteStore();
@@ -28,9 +29,7 @@ const Welcome = () => {
         {/* Main Welcome Section */}
         <div className="text-center mb-12">
           <div className="mb-6 flex items-center justify-center">
-            <div className="w-12 h-12 bg-neutral-900 rounded-lg flex items-center justify-center shadow-sm">
-              <div className="w-5 h-5 bg-white rounded-[4px]"></div>
-            </div>
+            <Logo />
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-3">
             Welcome to Draft

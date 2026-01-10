@@ -149,7 +149,7 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
         },
       },
       onUpdate: ({ editor, transaction }) => {
-        // Ignore if we're switching notes
+        // Ignore if we're switching notes or updating content programmatically
         if (isSwitchingNotesRef.current) {
           return;
         }
@@ -157,6 +157,13 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
         // Ignore if this is not a user-initiated change
         if (!transaction.docChanged) {
           return;
+        }
+
+        // Double-check: compare with last saved content to prevent unnecessary saves
+        const json = editor.getJSON();
+        const jsonString = JSON.stringify(json);
+        if (jsonString === lastSavedContentRef.current) {
+          return; // Content hasn't actually changed, don't save
         }
 
         // Clear previous timeout
@@ -212,9 +219,13 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
 
       if ((noteIdChanged || contentChanged) && editor) {
         // Set flag to prevent saves during note switch or content update
+        // Set this BEFORE any operations to prevent race conditions
         if (noteIdChanged) {
           isSwitchingNotesRef.current = true;
           noteIdRef.current = noteId;
+        } else if (contentChanged) {
+          // Also set flag for content changes to prevent saves when content is updated programmatically
+          isSwitchingNotesRef.current = true;
         }
 
         // Clear any pending saves
@@ -230,33 +241,33 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
         const currentEditorContent = JSON.stringify(editor.getJSON());
         if (contentString !== currentEditorContent) {
           // Use emitUpdate: false to prevent onUpdate event
+          // But we still set isSwitchingNotesRef to be safe
           editor.commands.setContent(json, {
             emitUpdate: false,
           });
 
-          // Reset last saved content
-          lastSavedContentRef.current = content || contentString;
+          // Reset last saved content to match what we just set
+          lastSavedContentRef.current = contentString;
+        } else {
+          // Even if content didn't change, update lastSavedContentRef to match
+          lastSavedContentRef.current = contentString;
         }
 
         // Always update the ref to track the latest content
         lastContentRef.current = content;
 
-        // Reset flag after a short delay to allow any pending updates to complete
+        // Reset flag after a delay to allow any pending updates to complete
         if (switchingTimeoutRef.current) {
           window.clearTimeout(switchingTimeoutRef.current);
         }
 
-        if (noteIdChanged) {
-          switchingTimeoutRef.current = window.setTimeout(() => {
-            if (isMountedRef.current) {
-              isSwitchingNotesRef.current = false;
-            }
-            switchingTimeoutRef.current = null;
-          }, 100);
-        } else if (contentChanged) {
-          // For content-only changes (like page link title updates), reset flag immediately
-          isSwitchingNotesRef.current = false;
-        }
+        // Use a longer delay to ensure all TipTap internal updates complete
+        switchingTimeoutRef.current = window.setTimeout(() => {
+          if (isMountedRef.current) {
+            isSwitchingNotesRef.current = false;
+          }
+          switchingTimeoutRef.current = null;
+        }, 200); // Increased from 100ms to 200ms for safety
       }
     }, [noteId, editor, content]); // Include content to update when note content changes
 

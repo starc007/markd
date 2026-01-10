@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, memo } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { EditIcon } from "@hugeicons/core-free-icons";
 import { useNoteStore } from "../../stores/noteStore";
@@ -14,10 +14,9 @@ import { HierarchicalNotesList } from "./HierarchicalNotesList";
 import { SidebarSettings } from "./SidebarSettings";
 import { toast } from "sonner";
 
-export function Sidebar() {
-  // Use selective subscriptions to prevent unnecessary re-renders
+export const Sidebar = memo(function Sidebar() {
   const notes = useNoteStore((state) => state.notes);
-  const currentNote = useNoteStore((state) => state.currentNote);
+  const currentNoteId = useNoteStore((state) => state.currentNote?.id ?? null);
   const selectedFolderId = useUIStore((state) => state.selectedFolderId);
   const childrenMap = useNoteStore((state) => state.childrenMap);
   const expandedPages = useNoteStore((state) => state.expandedPages);
@@ -63,7 +62,7 @@ export function Sidebar() {
   const handleDeleteNote = useCallback(
     async (noteId: string) => {
       try {
-        const { deleteNote } = useNoteStore.getState();
+        const { deleteNote, currentNote } = useNoteStore.getState();
         await deleteNote(noteId);
         removeColor(noteId);
         setDeleteModalNoteId(null);
@@ -79,11 +78,12 @@ export function Sidebar() {
         );
       }
     },
-    [currentNote?.id, removeColor]
+    [removeColor]
   );
 
   // Filter and sort notes - memoized for performance
   // Only show top-level notes (parent_id is null) in the main list
+  // Use a stable sort key to prevent unnecessary re-sorting
   const filteredNotes = useMemo(() => {
     let filtered = notes.filter((note) => note.parent_id === null);
 
@@ -93,7 +93,16 @@ export function Sidebar() {
     }
 
     // Sort by updated_at descending
-    return [...filtered].sort((a, b) => b.updated_at - a.updated_at);
+    // Create a stable sorted array - only create new array if order actually changed
+    const sorted = [...filtered].sort((a, b) => {
+      // Primary sort: updated_at descending
+      const timeDiff = b.updated_at - a.updated_at;
+      if (timeDiff !== 0) return timeDiff;
+      // Secondary sort: id (for stability)
+      return a.id.localeCompare(b.id);
+    });
+
+    return sorted;
   }, [notes, selectedFolderId]);
 
   const handleCreateSubpage = useCallback(async (parentId: string) => {
@@ -157,7 +166,7 @@ export function Sidebar() {
         notes={filteredNotes}
         childrenMap={childrenMap}
         expandedPages={expandedPages}
-        currentNoteId={currentNote?.id || null}
+        currentNoteId={currentNoteId}
         getColor={getColor}
         onNoteClick={handleNoteClick}
         onColorSelect={handleColorSelect}
@@ -181,4 +190,4 @@ export function Sidebar() {
       )}
     </aside>
   );
-}
+});

@@ -22,7 +22,7 @@ interface HierarchicalNotesListProps {
   onColorSelect: (
     noteId: string,
     colorId: NoteColorId,
-    e: React.MouseEvent,
+    e: React.MouseEvent
   ) => void;
   onDeleteClick: (noteId: string) => void;
   onToggleExpand: (pageId: string) => void;
@@ -34,7 +34,7 @@ function flattenHierarchy(
   notes: NoteMetadata[],
   childrenMap: Map<string, NoteMetadata[]>,
   expandedPages: Set<string>,
-  depth: number = 0,
+  depth: number = 0
 ): HierarchicalNote[] {
   const result: HierarchicalNote[] = [];
 
@@ -53,7 +53,7 @@ function flattenHierarchy(
     // Recursively add children if expanded
     if (isExpanded && children.length > 0) {
       result.push(
-        ...flattenHierarchy(children, childrenMap, expandedPages, depth + 1),
+        ...flattenHierarchy(children, childrenMap, expandedPages, depth + 1)
       );
     }
   }
@@ -75,7 +75,7 @@ export const HierarchicalNotesList = memo(function HierarchicalNotesList({
 }: HierarchicalNotesListProps) {
   const flatNotes = useMemo(
     () => flattenHierarchy(notes, childrenMap, expandedPages),
-    [notes, childrenMap, expandedPages],
+    [notes, childrenMap, expandedPages]
   );
 
   const useVirtualization = flatNotes.length > 50;
@@ -133,11 +133,14 @@ export const HierarchicalNotesList = memo(function HierarchicalNotesList({
       <div className="flex-1 overflow-hidden">
         {useVirtualization ? (
           <Virtuoso
+            key="hierarchical-notes-list"
             data={flatNotes}
             itemContent={(_index, note) => {
               return <div className="px-3 pb-1">{renderNote(note)}</div>;
             }}
             style={{ height: "100%" }}
+            followOutput="smooth"
+            increaseViewportBy={200}
           />
         ) : (
           <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-1">

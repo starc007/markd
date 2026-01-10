@@ -67,9 +67,13 @@ export function Editor({ noteId, content }: EditorProps) {
   // Content save handler (already debounced in EditorContent)
   const handleContentChange = useCallback(
     (newContent: string) => {
-      useNoteStore.getState().saveCurrentNoteContent(newContent);
+      // Only save if content actually changed (EditorContent already checks this, but double-check here)
+      const currentNote = useNoteStore.getState().currentNote;
+      if (currentNote && currentNote.content !== newContent) {
+        useNoteStore.getState().saveCurrentNoteContent(newContent);
+      }
     },
-    [noteId],
+    [noteId]
   );
 
   // Title change handler
@@ -84,7 +88,7 @@ export function Editor({ noteId, content }: EditorProps) {
         useNoteStore.getState().updateNote(noteId, { title: displayTitle });
       }
     },
-    [noteId],
+    [noteId]
   );
 
   // Handle Enter in title to focus content editor

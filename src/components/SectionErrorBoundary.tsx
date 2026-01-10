@@ -1,9 +1,9 @@
-import React, { Component, ReactNode } from 'react';
-import { toast } from 'sonner';
+import React, { Component, ReactNode } from "react";
+import { toast } from "sonner";
 
 interface Props {
   children: ReactNode;
-  section: 'sidebar' | 'editor' | 'notes-grid' | 'command-palette' | 'settings';
+  section: "sidebar" | "editor" | "notes-grid" | "command-palette" | "settings";
   fallback?: ReactNode;
   onError?: (error: Error, errorInfo: React.ErrorInfo) => void;
 }
@@ -32,9 +32,9 @@ export class SectionErrorBoundary extends Component<Props, State> {
 
     // Show toast notification
     toast.error(`Error in ${this.getSectionName()}`, {
-      description: error.message || 'An unexpected error occurred',
+      description: error.message || "An unexpected error occurred",
       action: {
-        label: 'Reload',
+        label: "Reload",
         onClick: () => this.handleReset(),
       },
     });
@@ -45,18 +45,18 @@ export class SectionErrorBoundary extends Component<Props, State> {
 
   getSectionName(): string {
     switch (this.props.section) {
-      case 'sidebar':
-        return 'Sidebar';
-      case 'editor':
-        return 'Editor';
-      case 'notes-grid':
-        return 'Notes Grid';
-      case 'command-palette':
-        return 'Command Palette';
-      case 'settings':
-        return 'Settings';
+      case "sidebar":
+        return "Sidebar";
+      case "editor":
+        return "Editor";
+      case "notes-grid":
+        return "Notes Grid";
+      case "command-palette":
+        return "Command Palette";
+      case "settings":
+        return "Settings";
       default:
-        return 'this section';
+        return "this section";
     }
   }
 
@@ -75,7 +75,7 @@ export class SectionErrorBoundary extends Component<Props, State> {
           <div className="max-w-md text-center">
             <div className="mb-4">
               <svg
-                className="w-16 h-16 mx-auto text-destructive"
+                className="w-10 h-10 mx-auto text-destructive"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -88,11 +88,12 @@ export class SectionErrorBoundary extends Component<Props, State> {
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">
+            <h3 className=" font-semibold text-foreground mb-2">
               {this.getSectionName()} Error
             </h3>
             <p className="text-sm text-muted-foreground mb-4">
-              {this.state.error?.message || 'Something went wrong in this section'}
+              {this.state.error?.message ||
+                "Something went wrong in this section"}
             </p>
             <button
               onClick={this.handleReset}
