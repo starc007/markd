@@ -69,7 +69,11 @@ export const useUIStore = create<UIStore>((set, get) => ({
 
   setView: (view: UIView | null) => {
     set({ currentView: view });
-    useNoteStore.setState({ currentNote: null });
+    // Only clear currentNote when switching to Settings or StickyNotes view
+    // Don't clear when switching to None (editor view) to prevent flicker
+    if (view === UIView.Settings || view === UIView.StickyNotes) {
+      useNoteStore.setState({ currentNote: null });
+    }
   },
 
   setSelectedFolderId: (id: string | null) => {

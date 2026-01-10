@@ -21,23 +21,50 @@ impl BatchIndexer {
 
     /// Queue a note for re-indexing
     pub fn queue_reindex(&self, note_id: String) {
-        let mut pending = self.pending_ids.lock().unwrap();
+        // Use poison-resistant pattern: recover from poisoned locks
+        let mut pending = match self.pending_ids.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => {
+                eprintln!("[BatchIndexer] Lock poisoned in queue_reindex, recovering...");
+                poisoned.into_inner()
+            }
+        };
         pending.insert(note_id);
     }
 
     /// Check if it's time to process the batch
     pub fn should_process_batch(&self) -> bool {
-        let last_time = self.last_index_time.lock().unwrap();
+        // Use poison-resistant pattern: recover from poisoned locks
+        let last_time = match self.last_index_time.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => {
+                eprintln!("[BatchIndexer] Lock poisoned in should_process_batch, recovering...");
+                poisoned.into_inner()
+            }
+        };
         last_time.elapsed() >= self.batch_interval
     }
 
     /// Get pending IDs and clear the queue
     pub fn get_pending_and_clear(&self) -> Vec<String> {
-        let mut pending = self.pending_ids.lock().unwrap();
+        // Use poison-resistant pattern: recover from poisoned locks
+        let mut pending = match self.pending_ids.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => {
+                eprintln!("[BatchIndexer] Lock poisoned in get_pending_and_clear, recovering...");
+                poisoned.into_inner()
+            }
+        };
         let ids = pending.iter().cloned().collect();
         pending.clear();
 
-        let mut last_time = self.last_index_time.lock().unwrap();
+        let mut last_time = match self.last_index_time.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => {
+                eprintln!("[BatchIndexer] Lock poisoned in get_pending_and_clear (last_time), recovering...");
+                poisoned.into_inner()
+            }
+        };
         *last_time = Instant::now();
 
         ids
@@ -45,7 +72,14 @@ impl BatchIndexer {
 
     /// Get the number of pending items
     pub fn pending_count(&self) -> usize {
-        self.pending_ids.lock().unwrap().len()
+        // Use poison-resistant pattern: recover from poisoned locks
+        match self.pending_ids.lock() {
+            Ok(guard) => guard.len(),
+            Err(poisoned) => {
+                eprintln!("[BatchIndexer] Lock poisoned in pending_count, recovering...");
+                poisoned.into_inner().len()
+            }
+        }
     }
 }
 
@@ -74,7 +108,6 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Arc;
     use std::thread;
 
     #[test]

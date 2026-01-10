@@ -2,6 +2,18 @@ use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 
+// Helper macro to acquire database lock with proper error handling
+macro_rules! acquire_lock {
+    ($mutex:expr) => {
+        $mutex.lock().map_err(|e| {
+            rusqlite::Error::ToSqlConversionFailure(Box::new(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("Database lock poisoned: {}", e),
+            )))
+        })?
+    };
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SearchResult {
     pub id: String,
@@ -19,7 +31,7 @@ impl SearchService {
         conn: &Mutex<Connection>,
         query: &str,
     ) -> Result<Vec<SearchResult>, rusqlite::Error> {
-        let conn = conn.lock().unwrap();
+        let conn = acquire_lock!(conn);
         let mut results = Vec::new();
 
         // Search in notes
@@ -96,7 +108,7 @@ impl SearchService {
         conn: &Mutex<Connection>,
         query: &str,
     ) -> Result<Vec<SearchResult>, rusqlite::Error> {
-        let conn = conn.lock().unwrap();
+        let conn = acquire_lock!(conn);
 
         let mut stmt = conn.prepare(
             "SELECT id, title, '', 0.0

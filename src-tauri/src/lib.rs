@@ -14,7 +14,17 @@ use state::AppState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let app_state = AppState::new().expect("Failed to initialize app state");
+    let app_state = match AppState::new() {
+        Ok(state) => state,
+        Err(e) => {
+            eprintln!("Failed to initialize app state: {}", e);
+            eprintln!("This is usually caused by:");
+            eprintln!("  - Missing Documents directory");
+            eprintln!("  - Database file corruption");
+            eprintln!("  - Insufficient permissions");
+            std::process::exit(1);
+        }
+    };
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())

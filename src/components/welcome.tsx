@@ -31,21 +31,19 @@ const Welcome = () => {
       <div className="max-w-2xl w-full px-8 py-12">
         {/* Main Welcome Section */}
         <div className="text-center mb-12">
-          <div className="mb-6">
-            <HugeiconsIcon
-              icon={FileEditIcon}
-              size={64}
-              color="currentColor"
-              strokeWidth={1.5}
-              className="text-muted-foreground/40 mx-auto"
-            />
+          <div className="mb-6 flex items-center justify-center">
+            <div className="w-12 h-12 bg-neutral-900 rounded-lg flex items-center justify-center shadow-sm">
+              <div className="w-5 h-5 bg-white rounded-[4px]"></div>
+            </div>
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-3">
             Welcome to Draft
           </h1>
-          <p className="text-muted-foreground mb-8">
-            Start writing your thoughts, ideas, and notes. Everything is saved
-            automatically.
+          <p className="text-muted-foreground mb-2">
+            Not a workspace. Not a second brain.
+          </p>
+          <p className="text-muted-foreground mb-8 font-bold text-lg">
+            Just a fast, private place to write.
           </p>
           <Button onClick={handleNewNote}>
             <HugeiconsIcon
