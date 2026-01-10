@@ -1,7 +1,7 @@
 use rusqlite::{Connection, Result};
 
 /// Database schema version
-const CURRENT_VERSION: i32 = 3;
+const CURRENT_VERSION: i32 = 4;
 
 /// Migration represents a single database migration
 struct Migration {
@@ -27,6 +27,11 @@ fn get_migrations() -> Vec<Migration> {
             version: 3,
             description: "Add sticky notes FTS for search",
             up: migration_v3_sticky_notes_fts,
+        },
+        Migration {
+            version: 4,
+            description: "Add bookmarks feature",
+            up: migration_v4_bookmarks,
         },
     ]
 }
@@ -257,6 +262,51 @@ fn migration_v3_sticky_notes_fts(conn: &Connection) -> Result<()> {
     conn.execute(
         "INSERT INTO sticky_notes_fts (id, content)
          SELECT id, content FROM sticky_notes",
+        [],
+    )?;
+
+    Ok(())
+}
+
+/// Migration v4: Add bookmarks feature
+fn migration_v4_bookmarks(conn: &Connection) -> Result<()> {
+    // Create bookmarks table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS bookmarks (
+            id TEXT PRIMARY KEY,
+            url TEXT NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT,
+            tags TEXT,
+            folder_id TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE SET NULL
+        )",
+        [],
+    )?;
+
+    // Create FTS5 virtual table for bookmarks
+    conn.execute(
+        "CREATE VIRTUAL TABLE IF NOT EXISTS bookmarks_fts USING fts5(
+            id UNINDEXED,
+            url,
+            title,
+            description,
+            tags,
+            tokenize='porter unicode61'
+        )",
+        [],
+    )?;
+
+    // Create indexes for faster sorting and filtering
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_bookmarks_created ON bookmarks(created_at DESC)",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_bookmarks_folder ON bookmarks(folder_id)",
         [],
     )?;
 

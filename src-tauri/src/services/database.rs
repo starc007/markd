@@ -688,6 +688,177 @@ impl Database {
         Ok(sticky_notes)
     }
 
+    // Bookmark operations
+    pub fn insert_bookmark(
+        &self,
+        id: &str,
+        url: &str,
+        title: &str,
+        description: Option<&str>,
+        tags: Option<&str>,
+        folder_id: Option<&str>,
+        created_at: i64,
+        updated_at: i64,
+    ) -> Result<()> {
+        let conn = acquire_lock!(self.conn);
+        conn.execute(
+            "INSERT INTO bookmarks (id, url, title, description, tags, folder_id, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![id, url, title, description, tags, folder_id, created_at, updated_at],
+        )?;
+
+        // Insert into FTS table
+        conn.execute(
+            "INSERT INTO bookmarks_fts (id, url, title, description, tags) VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![id, url, title, description.unwrap_or(""), tags.unwrap_or("")],
+        )?;
+
+        Ok(())
+    }
+
+    pub fn update_bookmark(
+        &self,
+        id: &str,
+        title: Option<&str>,
+        description: Option<&str>,
+        tags: Option<&str>,
+        updated_at: i64,
+    ) -> Result<()> {
+        let conn = acquire_lock!(self.conn);
+
+        if let Some(t) = title {
+            conn.execute(
+                "UPDATE bookmarks SET title = ?1, updated_at = ?2 WHERE id = ?3",
+                params![t, updated_at, id],
+            )?;
+
+            conn.execute(
+                "UPDATE bookmarks_fts SET title = ?1 WHERE id = ?2",
+                params![t, id],
+            )?;
+        }
+
+        if let Some(d) = description {
+            conn.execute(
+                "UPDATE bookmarks SET description = ?1, updated_at = ?2 WHERE id = ?3",
+                params![d, updated_at, id],
+            )?;
+
+            conn.execute(
+                "UPDATE bookmarks_fts SET description = ?1 WHERE id = ?2",
+                params![d, id],
+            )?;
+        }
+
+        if let Some(t) = tags {
+            conn.execute(
+                "UPDATE bookmarks SET tags = ?1, updated_at = ?2 WHERE id = ?3",
+                params![t, updated_at, id],
+            )?;
+
+            conn.execute(
+                "UPDATE bookmarks_fts SET tags = ?1 WHERE id = ?2",
+                params![t, id],
+            )?;
+        }
+
+        Ok(())
+    }
+
+    pub fn delete_bookmark(&self, id: &str) -> Result<()> {
+        let conn = acquire_lock!(self.conn);
+        conn.execute("DELETE FROM bookmarks WHERE id = ?1", params![id])?;
+
+        // Delete from FTS table
+        conn.execute("DELETE FROM bookmarks_fts WHERE id = ?1", params![id])?;
+
+        Ok(())
+    }
+
+    pub fn get_bookmark(&self, id: &str) -> Result<Option<crate::models::bookmark::Bookmark>> {
+        let conn = acquire_lock!(self.conn);
+        let mut stmt = conn.prepare(
+            "SELECT id, url, title, description, tags, folder_id, created_at, updated_at FROM bookmarks WHERE id = ?1",
+        )?;
+
+        let mut rows = stmt.query(params![id])?;
+
+        if let Some(row) = rows.next()? {
+            Ok(Some(crate::models::bookmark::Bookmark {
+                id: row.get(0)?,
+                url: row.get(1)?,
+                title: row.get(2)?,
+                description: row.get(3)?,
+                tags: row.get(4)?,
+                folder_id: row.get(5)?,
+                created_at: row.get(6)?,
+                updated_at: row.get(7)?,
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn list_bookmarks(
+        &self,
+        folder_id: Option<&str>,
+    ) -> Result<Vec<crate::models::bookmark::BookmarkMetadata>> {
+        let conn = acquire_lock!(self.conn);
+        let mut bookmarks = Vec::new();
+
+        if let Some(fid) = folder_id {
+            let mut stmt = conn.prepare(
+                "SELECT id, url, title, description, tags, folder_id, created_at, updated_at
+                 FROM bookmarks
+                 WHERE folder_id = ?1
+                 ORDER BY created_at DESC",
+            )?;
+
+            let rows = stmt.query_map([fid], |row| {
+                Ok(crate::models::bookmark::BookmarkMetadata {
+                    id: row.get(0)?,
+                    url: row.get(1)?,
+                    title: row.get(2)?,
+                    description: row.get(3)?,
+                    tags: row.get(4)?,
+                    folder_id: row.get(5)?,
+                    created_at: row.get(6)?,
+                    updated_at: row.get(7)?,
+                })
+            })?;
+
+            for bookmark in rows {
+                bookmarks.push(bookmark?);
+            }
+        } else {
+            let mut stmt = conn.prepare(
+                "SELECT id, url, title, description, tags, folder_id, created_at, updated_at
+                 FROM bookmarks
+                 WHERE folder_id IS NULL
+                 ORDER BY created_at DESC",
+            )?;
+
+            let rows = stmt.query_map([], |row| {
+                Ok(crate::models::bookmark::BookmarkMetadata {
+                    id: row.get(0)?,
+                    url: row.get(1)?,
+                    title: row.get(2)?,
+                    description: row.get(3)?,
+                    tags: row.get(4)?,
+                    folder_id: row.get(5)?,
+                    created_at: row.get(6)?,
+                    updated_at: row.get(7)?,
+                })
+            })?;
+
+            for bookmark in rows {
+                bookmarks.push(bookmark?);
+            }
+        }
+
+        Ok(bookmarks)
+    }
+
     // Folder operations
     pub fn insert_folder(
         &self,

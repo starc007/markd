@@ -21,7 +21,7 @@ pub struct SearchResult {
     pub snippet: String,
     pub rank: f64,
     #[serde(rename = "type")]
-    pub result_type: String, // "note" or "sticky_note"
+    pub result_type: String, // "note", "sticky_note", or "bookmark"
 }
 
 pub struct SearchService;
@@ -88,6 +88,35 @@ impl SearchService {
         })?;
 
         for result in sticky_rows {
+            results.push(result?);
+        }
+
+        // Search in bookmarks
+        let mut stmt = conn.prepare(
+            "SELECT id, url, title, bm25(bookmarks_fts)
+             FROM bookmarks_fts
+             WHERE bookmarks_fts MATCH ?1
+             ORDER BY bm25(bookmarks_fts)
+             LIMIT 50",
+        )?;
+
+        let bookmark_rows = stmt.query_map(params![query], |row| {
+            let url: String = row.get(1)?;
+            let title: String = row.get(2)?;
+
+            // Use URL as snippet for bookmarks
+            let snippet = format!("<mark>{}</mark>", url);
+
+            Ok(SearchResult {
+                id: row.get(0)?,
+                title,
+                snippet,
+                rank: row.get(3)?,
+                result_type: "bookmark".to_string(),
+            })
+        })?;
+
+        for result in bookmark_rows {
             results.push(result?);
         }
 

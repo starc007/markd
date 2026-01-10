@@ -4,6 +4,7 @@ pub mod services;
 pub mod state;
 pub mod utils;
 
+use commands::bookmarks::*;
 use commands::export::*;
 use commands::folders::*;
 use commands::notes::*;
@@ -70,6 +71,12 @@ pub fn run() {
             update_sticky_note,
             delete_sticky_note,
             list_sticky_notes,
+            // Bookmark commands
+            create_bookmark,
+            get_bookmark,
+            update_bookmark,
+            delete_bookmark,
+            list_bookmarks,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
