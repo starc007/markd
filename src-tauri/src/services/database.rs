@@ -802,14 +802,6 @@ impl Database {
     ) -> Result<Vec<crate::services::search_service::SearchResult>> {
         use crate::services::search_service::SearchService;
         SearchService::search(&self.conn, query)
-            })
-        })?;
-
-        for result in rows {
-            results.push(result?);
-        }
-
-        Ok(results)
     }
 
     // Page linking operations

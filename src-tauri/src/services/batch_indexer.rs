@@ -1,7 +1,6 @@
 use std::collections::HashSet;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
-use tauri::async_runtime;
 
 /// BatchIndexer queues note IDs for re-indexing and processes them in batches
 /// This prevents excessive re-indexing operations during rapid content changes
@@ -55,10 +54,10 @@ pub fn start_batch_indexer_task<F>(indexer: std::sync::Arc<BatchIndexer>, proces
 where
     F: Fn(Vec<String>) + Send + 'static,
 {
-    async_runtime::spawn(async move {
+    tauri::async_runtime::spawn(async move {
         loop {
             // Sleep for 1 second
-            async_runtime::time::sleep(Duration::from_secs(1)).await;
+            tokio::time::sleep(Duration::from_secs(1)).await;
 
             // Check if we should process
             if indexer.should_process_batch() && indexer.pending_count() > 0 {

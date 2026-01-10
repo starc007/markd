@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::{mpsc, Mutex};
+use tokio::sync::mpsc;
 use tokio::time::{sleep, Duration};
 
 use crate::services::database::Database;
-use crate::utils::json_utils::{extract_plain_text, generate_preview};
+use crate::utils::json_utils::generate_preview;
 use crate::utils::validation::validate_tiptap_json;
 
 const PREVIEW_MAX_LENGTH: usize = 150;
@@ -27,7 +27,7 @@ impl SaveQueue {
         let (tx, rx) = mpsc::channel::<SaveOperation>(1000);
 
         // Spawn background task to process saves
-        tokio::spawn(async move {
+        tauri::async_runtime::spawn(async move {
             process_saves(rx, db, batch_indexer).await;
         });
 

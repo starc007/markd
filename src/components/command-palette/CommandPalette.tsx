@@ -104,10 +104,16 @@ export function CommandPalette() {
               await loadNote(noteId);
               setCommandPaletteOpen(false);
             }
-            if (action.startsWith("search:")) {
-              const noteId = action.replace("search:", "");
+            if (action.startsWith("search-note:")) {
+              const noteId = action.replace("search-note:", "");
               await loadNote(noteId);
               setCommandPaletteOpen(false);
+            }
+            if (action.startsWith("search-sticky:")) {
+              const stickyId = action.replace("search-sticky:", "");
+              setView(UIView.StickyNotes);
+              setCommandPaletteOpen(false);
+              // Sticky notes view will show all sticky notes
             }
             break;
         }
@@ -309,31 +315,45 @@ export function CommandPalette() {
           {/* Search Results - shown when there are results */}
           {inputValue.trim() && searchResults.length > 0 && (
             <Command.Group heading="Search Results">
-              {searchResults.map((result) => (
-                <Command.Item
-                  key={result.id}
-                  value={`search:${result.id} ${result.title}`}
-                  onSelect={() => handleSelect(`search:${result.id}`)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
-                >
-                  <HugeiconsIcon
-                    icon={FileEditIcon}
-                    size={18}
-                    color="currentColor"
-                    strokeWidth={1.5}
-                    className="opacity-50 shrink-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{result.title}</div>
-                    {result.snippet && (
-                      <div
-                        className="text-[12px] text-muted-foreground truncate mt-0.5"
-                        dangerouslySetInnerHTML={{ __html: result.snippet }}
-                      />
-                    )}
-                  </div>
-                </Command.Item>
-              ))}
+              {searchResults.map((result) => {
+                const isSticky = result.type === "sticky_note";
+                const actionPrefix = isSticky
+                  ? "search-sticky:"
+                  : "search-note:";
+
+                return (
+                  <Command.Item
+                    key={result.id}
+                    value={`${actionPrefix}${result.id} ${result.title}`}
+                    onSelect={() => handleSelect(`${actionPrefix}${result.id}`)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
+                  >
+                    <HugeiconsIcon
+                      icon={isSticky ? StickyNoteIcon : FileEditIcon}
+                      size={18}
+                      color="currentColor"
+                      strokeWidth={1.5}
+                      className="opacity-50 shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">
+                        {result.title}
+                        {isSticky && (
+                          <span className="ml-2 text-[11px] text-muted-foreground">
+                            Sticky Note
+                          </span>
+                        )}
+                      </div>
+                      {result.snippet && (
+                        <div
+                          className="text-[12px] text-muted-foreground truncate mt-0.5"
+                          dangerouslySetInnerHTML={{ __html: result.snippet }}
+                        />
+                      )}
+                    </div>
+                  </Command.Item>
+                );
+              })}
             </Command.Group>
           )}
         </Command.List>
