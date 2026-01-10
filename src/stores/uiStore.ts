@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { useNoteStore } from "./noteStore";
+import { saveAppState, loadAppState } from "../lib/app-state-persistence";
 
 export enum UIView {
   Notes = "notes",
@@ -74,9 +75,27 @@ export const useUIStore = create<UIStore>((set, get) => ({
     if (view === UIView.Settings || view === UIView.StickyNotes) {
       useNoteStore.setState({ currentNote: null });
     }
+    // Persist view change (preserve existing parentPath)
+    const { currentNote } = useNoteStore.getState();
+    const savedState = loadAppState();
+    saveAppState({
+      currentNoteId: currentNote?.id || null,
+      currentView: view ? String(view) : null,
+      selectedFolderId: get().selectedFolderId,
+      parentPath: savedState.parentPath || [],
+    });
   },
 
   setSelectedFolderId: (id: string | null) => {
     set({ selectedFolderId: id });
+    // Persist folder selection (preserve existing parentPath)
+    const { currentNote } = useNoteStore.getState();
+    const savedState = loadAppState();
+    saveAppState({
+      currentNoteId: currentNote?.id || null,
+      currentView: get().currentView ? String(get().currentView) : null,
+      selectedFolderId: id,
+      parentPath: savedState.parentPath || [],
+    });
   },
 }));

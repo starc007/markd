@@ -1,9 +1,5 @@
 import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  EditIcon,
-  CommandIcon,
-  FileEditIcon,
-} from "@hugeicons/core-free-icons";
+import { EditIcon, CommandIcon } from "@hugeicons/core-free-icons";
 import { useNoteStore } from "../stores/noteStore";
 import { useUIStore } from "../stores/uiStore";
 import { Button } from "./ui";

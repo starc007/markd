@@ -110,7 +110,8 @@ export function CommandPalette() {
               setCommandPaletteOpen(false);
             }
             if (action.startsWith("search-sticky:")) {
-              const stickyId = action.replace("search-sticky:", "");
+              // Navigate to sticky notes view
+              // Note: stickyId could be extracted here for future use (e.g., scrolling to specific note)
               setView(UIView.StickyNotes);
               setCommandPaletteOpen(false);
               // Sticky notes view will show all sticky notes
@@ -120,7 +121,9 @@ export function CommandPalette() {
       } catch (error) {
         console.error("Command failed:", error);
         toast.error(
-          `Operation failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+          `Operation failed: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`
         );
         // Don't close palette on error so user can retry
       }
@@ -136,7 +139,7 @@ export function CommandPalette() {
       inputValue,
       createStickyNote,
       setView,
-    ],
+    ]
   );
 
   if (!commandPaletteOpen) return null;

@@ -10,6 +10,7 @@ import { useUIStore, UIView } from "../../stores/uiStore";
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
 import { useTheme } from "../../hooks/useTheme";
 import { useWindowFocus } from "../../hooks/useWindowFocus";
+import { useAppStateRestore } from "../../hooks/useAppStateRestore";
 import Welcome from "../welcome";
 
 export function AppShell() {
@@ -22,6 +23,7 @@ export function AppShell() {
   useKeyboardShortcuts();
   useTheme(); // Apply theme
   useWindowFocus(); // Refresh data on window focus
+  useAppStateRestore(); // Restore app state (current note, view, etc.) on startup
 
   const renderContent = () => {
     if (currentView === UIView.Settings) {
@@ -65,8 +67,8 @@ export function AppShell() {
               currentView === UIView.Settings
                 ? "settings"
                 : currentView === UIView.StickyNotes
-                  ? "notes-grid"
-                  : "editor"
+                ? "notes-grid"
+                : "editor"
             }
           >
             {renderContent()}

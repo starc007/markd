@@ -6,6 +6,8 @@ import type {
   SearchResult,
 } from "../lib/tauri/commands";
 import * as commands from "../lib/tauri/commands";
+import { saveAppState, loadAppState } from "../lib/app-state-persistence";
+import { useUIStore } from "./uiStore";
 
 // Re-export UIView from UI store for backward compatibility
 export { UIView } from "./uiStore";
@@ -28,18 +30,18 @@ interface NoteStore {
   // Note actions
   loadNotes: (
     folderId?: string | null,
-    parentId?: string | null,
+    parentId?: string | null
   ) => Promise<void>;
   loadNote: (id: string) => Promise<void>;
   createNote: (
     title: string,
     folderId?: string,
-    parentId?: string,
+    parentId?: string
   ) => Promise<Note>;
   createSubpage: (parentId: string, title: string) => Promise<Note>;
   updateNote: (
     id: string,
-    updates: { title?: string; content?: string },
+    updates: { title?: string; content?: string }
   ) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   saveCurrentNoteContent: (content: string) => Promise<void>;
@@ -47,6 +49,8 @@ interface NoteStore {
   loadPageChildren: (parentId: string) => Promise<void>;
   togglePageExpanded: (pageId: string) => void;
   movePage: (pageId: string, newParentId?: string | null) => Promise<void>;
+  expandParentPages: (parentIds: string[]) => Promise<void>;
+  getParentPath: (noteId: string) => Promise<string[]>;
 
   // Folder actions
   loadFolders: () => Promise<void>;
@@ -67,7 +71,7 @@ interface NoteStore {
 
 // Helper function to refresh a note's metadata (including children_count)
 async function refreshNoteMetadata(
-  noteId: string,
+  noteId: string
 ): Promise<NoteMetadata | null> {
   try {
     const notes = await commands.listNotes();
@@ -101,8 +105,8 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         new Promise<NoteMetadata[]>((_, reject) =>
           setTimeout(
             () => reject(new Error("listNotes timeout after 5s")),
-            5000,
-          ),
+            5000
+          )
         ),
       ]);
 
@@ -137,6 +141,23 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       set({
         currentNote: note,
         isLoading: false,
+      });
+
+      // Collect all parent IDs for this note (from root to direct parent)
+      const parentPath = await get().getParentPath(id);
+
+      // Expand all parent pages so the sub-page is visible in the sidebar
+      if (parentPath.length > 0) {
+        await get().expandParentPages(parentPath);
+      }
+
+      // Persist current note ID with parent path
+      const { currentView } = useUIStore.getState();
+      saveAppState({
+        currentNoteId: note.id,
+        currentView: currentView ? String(currentView) : null,
+        selectedFolderId: useUIStore.getState().selectedFolderId,
+        parentPath: parentPath,
       });
     } catch (error) {
       set({ error: String(error), isLoading: false });
@@ -195,7 +216,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         const newMap = new Map(get().childrenMap);
         const parentChildren = newMap.get(parentId) || [];
         const updatedChildren = parentChildren.map((n) =>
-          n.id === tempId ? metadata : n,
+          n.id === tempId ? metadata : n
         );
         newMap.set(parentId, updatedChildren);
         set({
@@ -206,7 +227,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       } else {
         // Replace temp with real data in notes list
         const updatedNotes = get().notes.map((n) =>
-          n.id === tempId ? metadata : n,
+          n.id === tempId ? metadata : n
         );
         set({
           notes: updatedNotes,
@@ -265,13 +286,13 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       let updatedNotes = notes;
       if (refreshedParent) {
         updatedNotes = notes.map((n) =>
-          n.id === parentId ? refreshedParent : n,
+          n.id === parentId ? refreshedParent : n
         );
 
         // Also update parent in childrenMap if it's a child itself
         for (const [parentIdKey, children] of newMap.entries()) {
           const updatedChildren = children.map((n) =>
-            n.id === parentId ? refreshedParent : n,
+            n.id === parentId ? refreshedParent : n
           );
           if (updatedChildren.some((n) => n.id === parentId)) {
             newMap.set(parentIdKey, updatedChildren);
@@ -334,7 +355,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
               updated_at: note.updated_at,
               parent_id: note.parent_id,
             }
-          : n,
+          : n
       );
 
       // Update in children map if it's a child
@@ -349,7 +370,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
                 updated_at: note.updated_at,
                 parent_id: note.parent_id,
               }
-            : n,
+            : n
         );
         if (updatedChildren.some((n) => n.id === id)) {
           newMap.set(parentId, updatedChildren);
@@ -364,7 +385,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
           const oldParentChildren = newMap.get(oldNote.parent_id) || [];
           newMap.set(
             oldNote.parent_id,
-            oldParentChildren.filter((n) => n.id !== id),
+            oldParentChildren.filter((n) => n.id !== id)
           );
         }
         // Add to new parent
@@ -450,13 +471,13 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         const refreshed = await refreshNoteMetadata(pid);
         if (refreshed) {
           updatedNotes = updatedNotes.map((n) =>
-            n.id === pid ? refreshed : n,
+            n.id === pid ? refreshed : n
           );
 
           // Update in childrenMap
           for (const [mapParentId, children] of newMap.entries()) {
             const updatedChildren = children.map((n) =>
-              n.id === pid ? refreshed : n,
+              n.id === pid ? refreshed : n
             );
             if (updatedChildren.some((n) => n.id === pid)) {
               newMap.set(mapParentId, updatedChildren);
@@ -471,13 +492,23 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       const newLoaded = new Set(loadedChildren);
       newLoaded.delete(id);
 
+      const newCurrentNote = currentNote?.id === id ? null : currentNote;
       set({
         notes: updatedNotes,
         childrenMap: newMap,
         expandedPages: newExpanded,
         loadedChildren: newLoaded,
-        currentNote: currentNote?.id === id ? null : currentNote,
+        currentNote: newCurrentNote,
         isLoading: false,
+      });
+      // Persist state update (note cleared if deleted)
+      const { currentView } = useUIStore.getState();
+      const savedState = loadAppState();
+      saveAppState({
+        currentNoteId: newCurrentNote?.id || null,
+        currentView: currentView ? String(currentView) : null,
+        selectedFolderId: useUIStore.getState().selectedFolderId,
+        parentPath: newCurrentNote ? savedState.parentPath || [] : [],
       });
     } catch (error) {
       set({ error: String(error), isLoading: false });
@@ -508,7 +539,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 
       // Update notes list timestamp
       const updatedNotes = notes.map((n) =>
-        n.id === noteId ? { ...n, updated_at: updatedAt } : n,
+        n.id === noteId ? { ...n, updated_at: updatedAt } : n
       );
       updatedNotes.sort((a, b) => b.updated_at - a.updated_at);
 
@@ -516,7 +547,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       const newMap = new Map(childrenMap);
       for (const [parentId, children] of newMap.entries()) {
         const updatedChildren = children.map((n) =>
-          n.id === noteId ? { ...n, updated_at: updatedAt } : n,
+          n.id === noteId ? { ...n, updated_at: updatedAt } : n
         );
         if (updatedChildren.some((n) => n.id === noteId)) {
           newMap.set(parentId, updatedChildren);
@@ -694,7 +725,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 
       // Find the page being moved
       const page = [...notes, ...Array.from(childrenMap.values()).flat()].find(
-        (n) => n.id === pageId,
+        (n) => n.id === pageId
       );
       if (!page) return;
 
@@ -706,7 +737,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         const oldChildren = newMap.get(oldParentId) || [];
         newMap.set(
           oldParentId,
-          oldChildren.filter((n) => n.id !== pageId),
+          oldChildren.filter((n) => n.id !== pageId)
         );
         set({ childrenMap: newMap });
       } else {
@@ -728,5 +759,98 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       set({ error: String(error) });
       throw error;
     }
+  },
+
+  // Get all parent IDs for a note (from root to direct parent)
+  getParentPath: async (noteId) => {
+    const { notes, childrenMap } = get();
+    const parentPath: string[] = [];
+    const visited = new Set<string>(); // Prevent infinite loops
+
+    // Helper to find a note by ID in notes list or childrenMap
+    const findNote = (id: string): NoteMetadata | null => {
+      const topLevelNote = notes.find((n) => n.id === id);
+      if (topLevelNote) return topLevelNote;
+
+      for (const children of childrenMap.values()) {
+        const childNote = children.find((n) => n.id === id);
+        if (childNote) return childNote;
+      }
+      return null;
+    };
+
+    // Start with the note itself to get its parent_id
+    let currentNoteId: string | null = noteId;
+
+    while (currentNoteId && !visited.has(currentNoteId)) {
+      visited.add(currentNoteId);
+
+      // Try to find note in local state first
+      const note = findNote(currentNoteId);
+      if (note) {
+        if (note.parent_id) {
+          parentPath.push(note.parent_id);
+          currentNoteId = note.parent_id;
+        } else {
+          break; // Reached root
+        }
+      } else {
+        // If not in local state, load from backend
+        try {
+          const loadedNote = await commands.getNote(currentNoteId);
+          if (loadedNote?.parent_id) {
+            parentPath.push(loadedNote.parent_id);
+            currentNoteId = loadedNote.parent_id;
+          } else {
+            break; // Reached root or note doesn't exist
+          }
+        } catch (error) {
+          console.error(
+            `[getParentPath] Failed to load note ${currentNoteId}:`,
+            error
+          );
+          break;
+        }
+      }
+    }
+
+    // Return path from root to direct parent (reverse the array)
+    return parentPath.reverse();
+  },
+
+  // Expand all parent pages given an array of parent IDs (from root to direct parent)
+  expandParentPages: async (parentIds: string[]) => {
+    if (parentIds.length === 0) return;
+
+    const { expandedPages, loadedChildren, childrenMap } = get();
+    const newExpanded = new Set(expandedPages);
+    const newLoaded = new Set(loadedChildren);
+    const newMap = new Map(childrenMap);
+
+    // Process from root to leaf (parentIds is already in root-to-leaf order)
+    for (const pid of parentIds) {
+      // Expand this parent
+      newExpanded.add(pid);
+
+      // Load children if not already loaded
+      if (!newLoaded.has(pid)) {
+        try {
+          const children = await commands.getPageChildren(pid);
+          newMap.set(pid, children);
+          newLoaded.add(pid);
+        } catch (error) {
+          console.error(
+            `[expandParentPages] Failed to load children for ${pid}:`,
+            error
+          );
+        }
+      }
+    }
+
+    set({
+      expandedPages: newExpanded,
+      loadedChildren: newLoaded,
+      childrenMap: newMap,
+    });
   },
 }));
