@@ -1,31 +1,16 @@
 import { Command } from "cmdk";
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
-import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  AddIcon,
-  MaximizeIcon,
-  Download01Icon,
-  FileEditIcon,
-  CommandIcon,
-  SettingsIcon,
-  StickyNoteIcon,
-  LinkIcon,
-  Bookmark01Icon,
-} from "@hugeicons/core-free-icons";
-import { useNoteStore } from "../../stores/noteStore";
-import { useUIStore, UIView } from "../../stores/uiStore";
-import { useStickyNotesStore } from "../../stores/stickyNotesStore";
-import { useBookmarkStore } from "../../stores/bookmarkStore";
+import { useNoteStore } from "@/stores/noteStore";
+import { useUIStore, UIView } from "@/stores/uiStore";
+import { useStickyNotesStore } from "@/stores/stickyNotesStore";
+import { useBookmarkStore } from "@/stores/bookmarkStore";
 import { save } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
-
-const searchResultColors = {
-  note: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/20",
-  sticky_note:
-    "bg-green-500/15 text-green-600 dark:text-green-400 border border-green-500/20",
-  bookmark:
-    "bg-orange-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/20",
-};
+import { RecentItems } from "./RecentItems";
+import { CommandGroups } from "./CommandGroups";
+import { SearchResults } from "./SearchResults";
+import { EmptyStates } from "./EmptyStates";
+import type { SearchResult } from "@/lib/tauri/commands";
 
 const SEARCH_THRESHOLD = 2; // Only search after 2+ characters
 
@@ -103,15 +88,19 @@ export function CommandPalette() {
 
   // Group search results by type
   const groupedSearchResults = useMemo(() => {
-    const groups: Record<string, typeof searchResults> = {
+    const groups: {
+      note: SearchResult[];
+      sticky_note: SearchResult[];
+      bookmark: SearchResult[];
+    } = {
       note: [],
       sticky_note: [],
       bookmark: [],
     };
 
     searchResults.forEach((result) => {
-      if (groups[result.type]) {
-        groups[result.type].push(result);
+      if (groups[result.type as keyof typeof groups]) {
+        groups[result.type as keyof typeof groups].push(result);
       }
     });
 
@@ -339,420 +328,38 @@ export function CommandPalette() {
           autoFocus
         />
         <Command.List className="max-h-[360px] overflow-y-auto p-2">
-          {/* Empty State - No search results */}
-          {shouldSearch &&
-            !hasSearchResults &&
-            searchQuery.length >= SEARCH_THRESHOLD && (
-              <Command.Empty className="py-8 text-center">
-                <p className="text-[13px] text-muted-foreground mb-2">
-                  No results found for "{searchQuery}"
-                </p>
-                <p className="text-[11px] text-muted-foreground/60">
-                  Try a different search term or type{" "}
-                  <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">
-                    {">"}
-                  </kbd>{" "}
-                  for commands
-                </p>
-              </Command.Empty>
-            )}
+          <EmptyStates
+            shouldSearch={shouldSearch}
+            hasSearchResults={hasSearchResults}
+            searchQuery={searchQuery}
+            isCommandMode={isCommandMode}
+            shouldShowCommands={shouldShowCommands}
+            searchThreshold={SEARCH_THRESHOLD}
+          />
 
-          {/* Empty State - Command mode with no matches */}
-          {isCommandMode &&
-            searchQuery.length > 0 &&
-            shouldShowCommands &&
-            !hasSearchResults && (
-              <Command.Empty className="py-8 text-center">
-                <p className="text-[13px] text-muted-foreground mb-2">
-                  No commands match "{searchQuery}"
-                </p>
-                <p className="text-[11px] text-muted-foreground/60">
-                  Remove{" "}
-                  <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">
-                    {">"}
-                  </kbd>{" "}
-                  to search content
-                </p>
-              </Command.Empty>
-            )}
-
-          {/* Recent Items - shown when input is empty or very short */}
           {hasRecentItems && !hasSearchResults && (
-            <Command.Group heading="Recent">
-              {recentItems.map((item) => {
-                const isBookmark = item.type === "bookmark";
-                const icon = isBookmark ? Bookmark01Icon : FileEditIcon;
-                const actionPrefix = isBookmark
-                  ? "recent-bookmark:"
-                  : "recent-note:";
-
-                return (
-                  <Command.Item
-                    key={`${item.type}-${item.id}`}
-                    value={`${actionPrefix}${item.id} ${item.title}`}
-                    onSelect={() => handleSelect(`${actionPrefix}${item.id}`)}
-                    onMouseEnter={() =>
-                      setHoveredItem(`${actionPrefix}${item.id}`)
-                    }
-                    onMouseLeave={() => setHoveredItem(null)}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent group"
-                  >
-                    <HugeiconsIcon
-                      icon={icon}
-                      size={18}
-                      color="currentColor"
-                      strokeWidth={1.5}
-                      className="opacity-50 shrink-0"
-                    />
-                    <span className="flex-1 font-medium truncate">
-                      {item.title}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground/50 shrink-0">
-                      Recent
-                    </span>
-                  </Command.Item>
-                );
-              })}
-            </Command.Group>
+            <RecentItems
+              items={recentItems}
+              onSelect={handleSelect}
+              onHover={setHoveredItem}
+              hoveredItem={hoveredItem}
+            />
           )}
 
-          {/* Commands - shown when in command mode or when input is empty/short */}
           {shouldShowCommands && !hasSearchResults && (
-            <>
-              {/* Create Category */}
-              <Command.Group heading="Create">
-                <Command.Item
-                  value="new note"
-                  onSelect={() => handleSelect("new-note")}
-                  onMouseEnter={() => setHoveredItem("new-note")}
-                  onMouseLeave={() => setHoveredItem(null)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent group"
-                >
-                  <HugeiconsIcon
-                    icon={AddIcon}
-                    size={18}
-                    color="currentColor"
-                    strokeWidth={1.5}
-                    className="opacity-50"
-                  />
-                  <span className="flex-1 font-medium">New Note</span>
-                  {hoveredItem === "new-note" && (
-                    <kbd className="flex items-center gap-1 text-xs font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
-                      <HugeiconsIcon
-                        icon={CommandIcon}
-                        size={14}
-                        color="currentColor"
-                        strokeWidth={1.5}
-                      />
-                      <span>N</span>
-                    </kbd>
-                  )}
-                </Command.Item>
-                <Command.Item
-                  value="new sticky note"
-                  onSelect={() => handleSelect("new-sticky-note")}
-                  onMouseEnter={() => setHoveredItem("new-sticky-note")}
-                  onMouseLeave={() => setHoveredItem(null)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent group"
-                >
-                  <HugeiconsIcon
-                    icon={AddIcon}
-                    size={18}
-                    color="currentColor"
-                    strokeWidth={1.5}
-                    className="opacity-50"
-                  />
-                  <span className="flex-1 font-medium">New Sticky Note</span>
-                  {hoveredItem === "new-sticky-note" && (
-                    <kbd className="flex items-center gap-1 text-xs font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
-                      <HugeiconsIcon
-                        icon={CommandIcon}
-                        size={14}
-                        color="currentColor"
-                        strokeWidth={1.5}
-                      />
-                      <span>+</span>
-                      <span>Shift</span>
-                      <span>+</span>
-                      <span>N</span>
-                    </kbd>
-                  )}
-                </Command.Item>
-              </Command.Group>
-
-              {/* Navigate Category */}
-              <Command.Group heading="Navigate">
-                <Command.Item
-                  value="open sticky notes"
-                  onSelect={() => handleSelect("open-sticky-notes")}
-                  onMouseEnter={() => setHoveredItem("open-sticky-notes")}
-                  onMouseLeave={() => setHoveredItem(null)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent group"
-                >
-                  <HugeiconsIcon
-                    icon={StickyNoteIcon}
-                    size={18}
-                    color="currentColor"
-                    strokeWidth={1.5}
-                    className="opacity-50"
-                  />
-                  <span className="flex-1 font-medium">Open Sticky Notes</span>
-                  {hoveredItem === "open-sticky-notes" && (
-                    <kbd className="flex items-center gap-1 text-xs font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
-                      <HugeiconsIcon
-                        icon={CommandIcon}
-                        size={14}
-                        color="currentColor"
-                        strokeWidth={1.5}
-                      />
-                      <span>+</span>
-                      <span>Shift</span>
-                      <span>+</span>
-                      <span>O</span>
-                    </kbd>
-                  )}
-                </Command.Item>
-                <Command.Item
-                  value="open bookmarks"
-                  onSelect={() => handleSelect("open-bookmarks")}
-                  onMouseEnter={() => setHoveredItem("open-bookmarks")}
-                  onMouseLeave={() => setHoveredItem(null)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent group"
-                >
-                  <HugeiconsIcon
-                    icon={Bookmark01Icon}
-                    size={18}
-                    color="currentColor"
-                    strokeWidth={1.5}
-                    className="opacity-50"
-                  />
-                  <span className="flex-1 font-medium">Open Bookmarks</span>
-                  {hoveredItem === "open-bookmarks" && (
-                    <kbd className="flex items-center gap-1 text-xs font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
-                      <HugeiconsIcon
-                        icon={CommandIcon}
-                        size={14}
-                        color="currentColor"
-                        strokeWidth={1.5}
-                      />
-                      <span>+</span>
-                      <span>Shift</span>
-                      <span>+</span>
-                      <span>B</span>
-                    </kbd>
-                  )}
-                </Command.Item>
-              </Command.Group>
-
-              {/* Actions Category */}
-              <Command.Group heading="Actions">
-                <Command.Item
-                  value="toggle sidebar"
-                  onSelect={() => handleSelect("focus-mode")}
-                  onMouseEnter={() => setHoveredItem("focus-mode")}
-                  onMouseLeave={() => setHoveredItem(null)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent group"
-                >
-                  <HugeiconsIcon
-                    icon={MaximizeIcon}
-                    size={18}
-                    color="currentColor"
-                    strokeWidth={1.5}
-                    className="opacity-50"
-                  />
-                  <span className="flex-1 font-medium">Toggle Sidebar</span>
-                  {hoveredItem === "focus-mode" && (
-                    <kbd className="flex items-center gap-1 text-xs font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
-                      <HugeiconsIcon
-                        icon={CommandIcon}
-                        size={14}
-                        color="currentColor"
-                        strokeWidth={1.5}
-                      />
-                      <span>\</span>
-                    </kbd>
-                  )}
-                </Command.Item>
-                {currentNote && (
-                  <Command.Item
-                    value="export note"
-                    onSelect={() => handleSelect("export")}
-                    onMouseEnter={() => setHoveredItem("export")}
-                    onMouseLeave={() => setHoveredItem(null)}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent group"
-                  >
-                    <HugeiconsIcon
-                      icon={Download01Icon}
-                      size={18}
-                      color="currentColor"
-                      strokeWidth={1.5}
-                      className="opacity-50"
-                    />
-                    <span className="flex-1 font-medium">Export Note</span>
-                  </Command.Item>
-                )}
-              </Command.Group>
-
-              {/* Settings Category */}
-              <Command.Group heading="Settings">
-                <Command.Item
-                  value="settings"
-                  onSelect={() => handleSelect("settings")}
-                  onMouseEnter={() => setHoveredItem("settings")}
-                  onMouseLeave={() => setHoveredItem(null)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent group"
-                >
-                  <HugeiconsIcon
-                    icon={SettingsIcon}
-                    size={18}
-                    color="currentColor"
-                    strokeWidth={1.5}
-                    className="opacity-50"
-                  />
-                  <span className="flex-1 font-medium">Settings</span>
-                  {hoveredItem === "settings" && (
-                    <kbd className="flex items-center gap-1 text-xs font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
-                      <HugeiconsIcon
-                        icon={CommandIcon}
-                        size={14}
-                        color="currentColor"
-                        strokeWidth={1.5}
-                      />
-                      <span>+</span>
-                      <span>Shift</span>
-                      <span>+</span>
-                      <span>T</span>
-                    </kbd>
-                  )}
-                </Command.Item>
-              </Command.Group>
-            </>
+            <CommandGroups
+              currentNote={currentNote}
+              onSelect={handleSelect}
+              onHover={setHoveredItem}
+              hoveredItem={hoveredItem}
+            />
           )}
 
-          {/* Search Results - grouped by type with counts */}
           {hasSearchResults && (
-            <>
-              {groupedSearchResults.note.length > 0 && (
-                <Command.Group
-                  heading={`Notes (${groupedSearchResults.note.length})`}
-                >
-                  {groupedSearchResults.note.map((result) => (
-                    <Command.Item
-                      key={result.id}
-                      value={`search-note:${result.id} ${result.title}`}
-                      onSelect={() => handleSelect(`search-note:${result.id}`)}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
-                    >
-                      <HugeiconsIcon
-                        icon={FileEditIcon}
-                        size={18}
-                        color="currentColor"
-                        strokeWidth={1.5}
-                        className="opacity-50 shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate flex items-center justify-between">
-                          {result.title}
-                          <span
-                            className={`ml-2 text-[11px] font-mono px-1.5 py-0.5 rounded ${searchResultColors.note}`}
-                          >
-                            Note
-                          </span>
-                        </div>
-                        {result.snippet && (
-                          <div
-                            className="text-[12px] text-muted-foreground truncate mt-0.5"
-                            dangerouslySetInnerHTML={{ __html: result.snippet }}
-                          />
-                        )}
-                      </div>
-                    </Command.Item>
-                  ))}
-                </Command.Group>
-              )}
-
-              {groupedSearchResults.sticky_note.length > 0 && (
-                <Command.Group
-                  heading={`Sticky Notes (${groupedSearchResults.sticky_note.length})`}
-                >
-                  {groupedSearchResults.sticky_note.map((result) => (
-                    <Command.Item
-                      key={result.id}
-                      value={`search-sticky:${result.id} ${result.title}`}
-                      onSelect={() =>
-                        handleSelect(`search-sticky:${result.id}`)
-                      }
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
-                    >
-                      <HugeiconsIcon
-                        icon={StickyNoteIcon}
-                        size={18}
-                        color="currentColor"
-                        strokeWidth={1.5}
-                        className="opacity-50 shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate flex items-center justify-between">
-                          {result.title}
-                          <span
-                            className={`ml-2 text-[11px] font-mono px-1.5 py-0.5 rounded ${searchResultColors.sticky_note}`}
-                          >
-                            Sticky
-                          </span>
-                        </div>
-                        {result.snippet && (
-                          <div
-                            className="text-[12px] text-muted-foreground truncate mt-0.5"
-                            dangerouslySetInnerHTML={{ __html: result.snippet }}
-                          />
-                        )}
-                      </div>
-                    </Command.Item>
-                  ))}
-                </Command.Group>
-              )}
-
-              {groupedSearchResults.bookmark.length > 0 && (
-                <Command.Group
-                  heading={`Bookmarks (${groupedSearchResults.bookmark.length})`}
-                >
-                  {groupedSearchResults.bookmark.map((result) => (
-                    <Command.Item
-                      key={result.id}
-                      value={`search-bookmark:${result.id} ${result.title}`}
-                      onSelect={() =>
-                        handleSelect(`search-bookmark:${result.id}`)
-                      }
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
-                    >
-                      <HugeiconsIcon
-                        icon={LinkIcon}
-                        size={18}
-                        color="currentColor"
-                        strokeWidth={1.5}
-                        className="opacity-50 shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate flex items-center justify-between">
-                          {result.title}
-                          <span
-                            className={`ml-2 text-[11px] font-mono px-1.5 py-0.5 rounded ${searchResultColors.bookmark}`}
-                          >
-                            Bookmark
-                          </span>
-                        </div>
-                        {result.snippet && (
-                          <div
-                            className="text-[12px] text-muted-foreground truncate mt-0.5"
-                            dangerouslySetInnerHTML={{ __html: result.snippet }}
-                          />
-                        )}
-                      </div>
-                    </Command.Item>
-                  ))}
-                </Command.Group>
-              )}
-            </>
+            <SearchResults
+              groupedResults={groupedSearchResults}
+              onSelect={handleSelect}
+            />
           )}
         </Command.List>
       </Command>
