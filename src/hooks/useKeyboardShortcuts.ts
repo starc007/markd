@@ -6,7 +6,7 @@ import { useStickyNotesStore } from "../stores/stickyNotesStore";
 export function useKeyboardShortcuts() {
   const { createNote, loadNote } = useNoteStore();
   const {
-    toggleFocusMode,
+    toggleSidebar,
     toggleCommandPalette,
     setCommandPaletteOpen,
     setView,
@@ -67,6 +67,13 @@ export function useKeyboardShortcuts() {
         return;
       }
 
+      // Bookmarks: Cmd+Shift+B - open bookmarks
+      if (isMod && e.key.toLowerCase() === "b" && e.shiftKey) {
+        e.preventDefault();
+        setView(UIView.Bookmarks);
+        return;
+      }
+
       // Settings: Cmd+Shift+T - open settings
       if (isMod && e.key.toLowerCase() === "t" && e.shiftKey) {
         e.preventDefault();
@@ -77,7 +84,7 @@ export function useKeyboardShortcuts() {
       // Toggle sidebar: Cmd+\
       if (isMod && e.key === "\\") {
         e.preventDefault();
-        toggleFocusMode();
+        toggleSidebar();
         return;
       }
 
@@ -91,7 +98,7 @@ export function useKeyboardShortcuts() {
     window.addEventListener("keydown", handleKeyDown, true);
     return () => window.removeEventListener("keydown", handleKeyDown, true);
   }, [
-    toggleFocusMode,
+    toggleSidebar,
     toggleCommandPalette,
     setCommandPaletteOpen,
     createNote,

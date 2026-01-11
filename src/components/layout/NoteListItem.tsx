@@ -6,8 +6,6 @@ import {
   DeleteIcon,
   Tick02Icon,
   Add01Icon,
-  ArrowDown01Icon,
-  ArrowRight01Icon,
 } from "@hugeicons/core-free-icons";
 import type { NoteMetadata } from "../../lib/tauri/commands";
 import { getNoteColor, NOTE_COLORS } from "../../lib/config";
@@ -21,6 +19,8 @@ import {
   DropdownSeparator,
   DropdownLabel,
 } from "../ui";
+import { ChevronDownIcon } from "../tiptap-icons/chevron-down-icon";
+import { ChevronRightIcon } from "../tiptap-icons/chevron-right-icon";
 
 interface NoteListItemProps {
   note: NoteMetadata;
@@ -30,7 +30,7 @@ interface NoteListItemProps {
   onColorSelect: (
     noteId: string,
     colorId: NoteColorId,
-    e: React.MouseEvent,
+    e: React.MouseEvent
   ) => void;
   onDeleteClick: (noteId: string) => void;
   className?: string;
@@ -78,12 +78,11 @@ export const NoteListItem = memo(function NoteListItem({
                 title={isExpanded ? "Collapse" : "Expand"}
                 className="rounded-sm !p-1 ml-1"
               >
-                <HugeiconsIcon
-                  icon={isExpanded ? ArrowDown01Icon : ArrowRight01Icon}
-                  size={15}
-                  color="currentColor"
-                  strokeWidth={1.5}
-                />
+                {isExpanded ? (
+                  <ChevronDownIcon className="w-4 h-4" />
+                ) : (
+                  <ChevronRightIcon className="w-4 h-4" />
+                )}
               </IconButton>
             </div>
             {/* Color indicator - hidden on hover */}

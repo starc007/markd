@@ -5,6 +5,7 @@ import { saveAppState, loadAppState } from "../lib/app-state-persistence";
 export enum UIView {
   Notes = "notes",
   StickyNotes = "sticky_notes",
+  Bookmarks = "bookmarks",
   Settings = "settings",
   None = "idle",
 }
@@ -44,12 +45,7 @@ export const useUIStore = create<UIStore>((set, get) => ({
   },
 
   toggleFocusMode: () => {
-    const { focusMode, sidebarCollapsed } = get();
-    set({
-      focusMode: !focusMode,
-      // In focus mode, also hide sidebar
-      sidebarCollapsed: !focusMode ? true : sidebarCollapsed,
-    });
+    set({ focusMode: !get().focusMode });
   },
 
   toggleCommandPalette: () => {
@@ -70,9 +66,13 @@ export const useUIStore = create<UIStore>((set, get) => ({
 
   setView: (view: UIView | null) => {
     set({ currentView: view });
-    // Only clear currentNote when switching to Settings or StickyNotes view
+    // Only clear currentNote when switching to Settings, StickyNotes, or Bookmarks view
     // Don't clear when switching to None (editor view) to prevent flicker
-    if (view === UIView.Settings || view === UIView.StickyNotes) {
+    if (
+      view === UIView.Settings ||
+      view === UIView.StickyNotes ||
+      view === UIView.Bookmarks
+    ) {
       useNoteStore.setState({ currentNote: null });
     }
     // Persist view change (preserve existing parentPath)

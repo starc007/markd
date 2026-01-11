@@ -9,6 +9,8 @@ import {
   CommandIcon,
   SettingsIcon,
   StickyNoteIcon,
+  LinkIcon,
+  Bookmark01Icon,
 } from "@hugeicons/core-free-icons";
 import { useNoteStore } from "../../stores/noteStore";
 import { useUIStore, UIView } from "../../stores/uiStore";
@@ -98,6 +100,10 @@ export function CommandPalette() {
             setView(UIView.Settings);
             setCommandPaletteOpen(false);
             break;
+          case "open-bookmarks":
+            setView(UIView.Bookmarks);
+            setCommandPaletteOpen(false);
+            break;
           default:
             if (action.startsWith("note:")) {
               const noteId = action.replace("note:", "");
@@ -111,10 +117,18 @@ export function CommandPalette() {
             }
             if (action.startsWith("search-sticky:")) {
               // Navigate to sticky notes view
-              // Note: stickyId could be extracted here for future use (e.g., scrolling to specific note)
               setView(UIView.StickyNotes);
               setCommandPaletteOpen(false);
-              // Sticky notes view will show all sticky notes
+            }
+            if (action.startsWith("search-bookmark:")) {
+              const bookmarkId = action.replace("search-bookmark:", "");
+              const bookmark = searchResults.find((r) => r.id === bookmarkId);
+              if (bookmark) {
+                // Open bookmark URL in browser
+                const { openUrl } = await import("@tauri-apps/plugin-opener");
+                await openUrl(bookmark.snippet.replace(/<\/?mark>/g, ""));
+              }
+              setCommandPaletteOpen(false);
             }
             break;
         }
@@ -123,7 +137,7 @@ export function CommandPalette() {
         toast.error(
           `Operation failed: ${
             error instanceof Error ? error.message : "Unknown error"
-          }`
+          }`,
         );
         // Don't close palette on error so user can retry
       }
@@ -139,7 +153,7 @@ export function CommandPalette() {
       inputValue,
       createStickyNote,
       setView,
-    ]
+    ],
   );
 
   if (!commandPaletteOpen) return null;
@@ -247,6 +261,32 @@ export function CommandPalette() {
                 <span>O</span>
               </kbd>
             </Command.Item>
+            <Command.Item
+              value="open bookmarks"
+              onSelect={() => handleSelect("open-bookmarks")}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
+            >
+              <HugeiconsIcon
+                icon={Bookmark01Icon}
+                size={18}
+                color="currentColor"
+                strokeWidth={1.5}
+                className="opacity-50"
+              />
+              <span className="flex-1 font-medium">Open Bookmarks</span>
+              <kbd className="flex items-center gap-1 text-sm font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
+                <HugeiconsIcon
+                  icon={CommandIcon}
+                  size={17}
+                  color="currentColor"
+                  strokeWidth={1.5}
+                />
+                <span>+</span>
+                <span>Shift</span>
+                <span>+</span>
+                <span>B</span>
+              </kbd>
+            </Command.Item>
 
             <Command.Item
               value="toggle sidebar"
@@ -320,9 +360,24 @@ export function CommandPalette() {
             <Command.Group heading="Search Results">
               {searchResults.map((result) => {
                 const isSticky = result.type === "sticky_note";
-                const actionPrefix = isSticky
-                  ? "search-sticky:"
-                  : "search-note:";
+                const isBookmark = result.type === "bookmark";
+                const actionPrefix = isBookmark
+                  ? "search-bookmark:"
+                  : isSticky
+                    ? "search-sticky:"
+                    : "search-note:";
+
+                const icon = isBookmark
+                  ? LinkIcon
+                  : isSticky
+                    ? StickyNoteIcon
+                    : FileEditIcon;
+
+                const label = isBookmark
+                  ? "Bookmark"
+                  : isSticky
+                    ? "Sticky Note"
+                    : null;
 
                 return (
                   <Command.Item
@@ -332,7 +387,7 @@ export function CommandPalette() {
                     className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
                   >
                     <HugeiconsIcon
-                      icon={isSticky ? StickyNoteIcon : FileEditIcon}
+                      icon={icon}
                       size={18}
                       color="currentColor"
                       strokeWidth={1.5}
@@ -341,9 +396,9 @@ export function CommandPalette() {
                     <div className="flex-1 min-w-0">
                       <div className="font-medium truncate">
                         {result.title}
-                        {isSticky && (
+                        {label && (
                           <span className="ml-2 text-[11px] text-muted-foreground">
-                            Sticky Note
+                            {label}
                           </span>
                         )}
                       </div>

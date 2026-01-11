@@ -36,7 +36,7 @@ export interface SearchResult {
   title: string;
   snippet: string;
   rank: number;
-  type: "note" | "sticky_note";
+  type: "note" | "sticky_note" | "bookmark";
 }
 
 export interface StickyNote {
@@ -45,6 +45,40 @@ export interface StickyNote {
   color_id: string;
   created_at: number;
   updated_at: number;
+}
+
+export interface Bookmark {
+  id: string;
+  url: string;
+  title: string;
+  tags: string | null;
+  folder_id: string | null;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface BookmarkMetadata {
+  id: string;
+  url: string;
+  title: string;
+  tags: string | null;
+  folder_id: string | null;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface CreateBookmarkParams {
+  url: string;
+  title: string;
+  tags?: string;
+  folder_id?: string;
+}
+
+export interface UpdateBookmarkParams {
+  id: string;
+  url?: string;
+  title?: string;
+  tags?: string;
 }
 
 export interface CreateStickyNoteParams {
@@ -224,6 +258,51 @@ export async function deleteStickyNote(id: string): Promise<void> {
 
 export async function listStickyNotes(): Promise<StickyNote[]> {
   return invoke<StickyNote[]>("list_sticky_notes");
+}
+
+// Bookmark commands
+export async function createBookmark(
+  url: string,
+  title: string,
+  tags?: string,
+  folder_id?: string,
+): Promise<Bookmark> {
+  return invoke<Bookmark>("create_bookmark", {
+    url,
+    title,
+    tags: tags || null,
+    folderId: folder_id || null,
+  });
+}
+
+export async function getBookmark(id: string): Promise<Bookmark | null> {
+  return invoke<Bookmark | null>("get_bookmark", { id });
+}
+
+export async function listBookmarks(
+  folderId?: string,
+): Promise<BookmarkMetadata[]> {
+  return invoke<BookmarkMetadata[]>("list_bookmarks", {
+    folderId: folderId || null,
+  });
+}
+
+export async function updateBookmark(
+  id: string,
+  url?: string,
+  title?: string,
+  tags?: string,
+): Promise<void> {
+  return invoke<void>("update_bookmark", {
+    id,
+    url: url || null,
+    title: title || null,
+    tags: tags || null,
+  });
+}
+
+export async function deleteBookmark(id: string): Promise<void> {
+  return invoke<void>("delete_bookmark", { id });
 }
 
 // Page hierarchy commands
