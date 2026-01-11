@@ -39,16 +39,6 @@ export const BookmarkInput = forwardRef<BookmarkInputRef, BookmarkInputProps>(
       },
     }));
 
-    const extractTitleFromUrl = (url: string): string => {
-      try {
-        const urlObj = new URL(url);
-        // Use hostname as default title
-        return urlObj.hostname.replace("www.", "");
-      } catch {
-        return "Bookmark";
-      }
-    };
-
     const handleSubmit = useCallback(
       async (e: React.FormEvent) => {
         e.preventDefault();
@@ -62,7 +52,7 @@ export const BookmarkInput = forwardRef<BookmarkInputRef, BookmarkInputProps>(
           !trimmedUrl.startsWith("https://")
         ) {
           toast.error(
-            "Please enter a valid URL starting with http:// or https://"
+            "Please enter a valid URL starting with http:// or https://",
           );
           return;
         }
@@ -70,12 +60,12 @@ export const BookmarkInput = forwardRef<BookmarkInputRef, BookmarkInputProps>(
         setIsSubmitting(true);
 
         try {
-          const title = extractTitleFromUrl(trimmedUrl);
+          // Don't send title - let backend fetch it from metadata
           await createBookmark(
             trimmedUrl,
-            title,
+            undefined, // title will be fetched from URL metadata in backend
             undefined,
-            folderId || undefined
+            folderId || undefined,
           );
 
           // Clear input immediately for fast workflow
@@ -88,13 +78,13 @@ export const BookmarkInput = forwardRef<BookmarkInputRef, BookmarkInputProps>(
           toast.error(
             `Failed to save bookmark: ${
               error instanceof Error ? error.message : "Unknown error"
-            }`
+            }`,
           );
         } finally {
           setIsSubmitting(false);
         }
       },
-      [url, folderId, createBookmark]
+      [url, folderId, createBookmark],
     );
 
     const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -134,7 +124,7 @@ export const BookmarkInput = forwardRef<BookmarkInputRef, BookmarkInputProps>(
         </div>
       </form>
     );
-  }
+  },
 );
 
 BookmarkInput.displayName = "BookmarkInput";

@@ -9,7 +9,6 @@ import {
 import type { BookmarkMetadata } from "../../lib/tauri/commands";
 import { useBookmarkStore } from "../../stores/bookmarkStore";
 import { toast } from "sonner";
-import { getUrlMetadata } from "../../lib/url-metadata";
 
 // Format timestamp to relative time (e.g., "2h ago", "3d ago")
 function formatTimestamp(timestamp: number): string {
@@ -44,39 +43,8 @@ export function BookmarkList({
 }: BookmarkListProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [focusedIndex, setFocusedIndex] = useState<number>(0);
-  const [faviconMap, setFaviconMap] = useState<Map<string, string | null>>(
-    new Map(),
-  );
   const listRef = useRef<HTMLDivElement>(null);
   const { openBookmark, copyBookmarkUrl, deleteBookmark } = useBookmarkStore();
-
-  // Fetch favicons for all bookmarks
-  useEffect(() => {
-    const fetchFavicons = async () => {
-      const newFaviconMap = new Map<string, string | null>();
-
-      for (const bookmark of bookmarks) {
-        // Skip if already fetched
-        if (faviconMap.has(bookmark.url)) {
-          newFaviconMap.set(bookmark.url, faviconMap.get(bookmark.url) || null);
-          continue;
-        }
-
-        try {
-          const metadata = await getUrlMetadata(bookmark.url);
-          newFaviconMap.set(bookmark.url, metadata.favicon);
-        } catch {
-          newFaviconMap.set(bookmark.url, null);
-        }
-      }
-
-      setFaviconMap(newFaviconMap);
-    };
-
-    if (bookmarks.length > 0) {
-      fetchFavicons();
-    }
-  }, [bookmarks]);
 
   const handleCopy = useCallback(
     (bookmark: BookmarkMetadata, e: React.MouseEvent) => {
@@ -231,9 +199,9 @@ export function BookmarkList({
               <div className="flex items-start gap-3.5">
                 {/* Favicon or fallback icon */}
                 <div className="shrink-0 mt-0.5 p-2 rounded-lg bg-primary/10 flex items-center justify-center w-8 h-8">
-                  {faviconMap.get(bookmark.url) ? (
+                  {bookmark.favicon ? (
                     <img
-                      src={faviconMap.get(bookmark.url) || ""}
+                      src={bookmark.favicon}
                       alt=""
                       className="w-4 h-4 object-contain"
                       onError={(e) => {

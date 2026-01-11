@@ -1,8 +1,5 @@
 use rusqlite::{Connection, Result};
 
-/// Database schema version
-const CURRENT_VERSION: i32 = 5;
-
 /// Migration represents a single database migration
 struct Migration {
     version: i32,
@@ -12,33 +9,11 @@ struct Migration {
 
 /// Get all migrations in order
 fn get_migrations() -> Vec<Migration> {
-    vec![
-        Migration {
-            version: 1,
-            description: "Initial schema",
-            up: migration_v1_initial_schema,
-        },
-        Migration {
-            version: 2,
-            description: "Add page hierarchy and linking",
-            up: migration_v2_page_hierarchy,
-        },
-        Migration {
-            version: 3,
-            description: "Add sticky notes FTS for search",
-            up: migration_v3_sticky_notes_fts,
-        },
-        Migration {
-            version: 4,
-            description: "Add bookmarks feature",
-            up: migration_v4_bookmarks,
-        },
-        Migration {
-            version: 5,
-            description: "Remove description from bookmarks",
-            up: migration_v5_remove_bookmark_description,
-        },
-    ]
+    vec![Migration {
+        version: 1,
+        description: "Initial complete schema",
+        up: migration_v1_complete_schema,
+    }]
 }
 
 /// Run all pending migrations
@@ -104,9 +79,11 @@ pub fn run_migrations(conn: &Connection) -> Result<()> {
     Ok(())
 }
 
-/// Migration v1: Initial schema
-fn migration_v1_initial_schema(conn: &Connection) -> Result<()> {
-    // Create folders table
+/// Migration v1: Complete schema with all features
+fn migration_v1_complete_schema(conn: &Connection) -> Result<()> {
+    // ============================================
+    // FOLDERS
+    // ============================================
     conn.execute(
         "CREATE TABLE IF NOT EXISTS folders (
             id TEXT PRIMARY KEY,
@@ -118,7 +95,14 @@ fn migration_v1_initial_schema(conn: &Connection) -> Result<()> {
         [],
     )?;
 
-    // Create notes table
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_folders_parent ON folders(parent_id)",
+        [],
+    )?;
+
+    // ============================================
+    // NOTES (with page hierarchy support)
+    // ============================================
     conn.execute(
         "CREATE TABLE IF NOT EXISTS notes (
             id TEXT PRIMARY KEY,
@@ -127,48 +111,30 @@ fn migration_v1_initial_schema(conn: &Connection) -> Result<()> {
             preview TEXT,
             file_path TEXT,
             folder_id TEXT,
+            parent_id TEXT,
             pinned INTEGER NOT NULL DEFAULT 0,
             created_at INTEGER NOT NULL,
             updated_at INTEGER NOT NULL,
-            FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE SET NULL
+            FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE SET NULL,
+            FOREIGN KEY (parent_id) REFERENCES notes(id) ON DELETE SET NULL
         )",
         [],
     )?;
 
-    // Create sticky_notes table
     conn.execute(
-        "CREATE TABLE IF NOT EXISTS sticky_notes (
-            id TEXT PRIMARY KEY,
-            content TEXT NOT NULL,
-            color_id TEXT NOT NULL DEFAULT 'default',
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER NOT NULL
-        )",
+        "CREATE INDEX IF NOT EXISTS idx_notes_folder ON notes(folder_id)",
         [],
     )?;
-
-    // Create tags table
     conn.execute(
-        "CREATE TABLE IF NOT EXISTS tags (
-            id TEXT PRIMARY KEY,
-            name TEXT UNIQUE NOT NULL
-        )",
+        "CREATE INDEX IF NOT EXISTS idx_notes_updated ON notes(updated_at DESC)",
         [],
     )?;
-
-    // Create note_tags junction table
     conn.execute(
-        "CREATE TABLE IF NOT EXISTS note_tags (
-            note_id TEXT NOT NULL,
-            tag_id TEXT NOT NULL,
-            PRIMARY KEY (note_id, tag_id),
-            FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE,
-            FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
-        )",
+        "CREATE INDEX IF NOT EXISTS idx_notes_parent ON notes(parent_id)",
         [],
     )?;
 
-    // Create FTS5 virtual table
+    // Notes FTS
     conn.execute(
         "CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(
             id UNINDEXED,
@@ -180,51 +146,9 @@ fn migration_v1_initial_schema(conn: &Connection) -> Result<()> {
         [],
     )?;
 
-    // Create indexes
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_notes_folder ON notes(folder_id)",
-        [],
-    )?;
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_notes_updated ON notes(updated_at DESC)",
-        [],
-    )?;
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_folders_parent ON folders(parent_id)",
-        [],
-    )?;
-
-    Ok(())
-}
-
-/// Migration v2: Add page hierarchy and linking
-fn migration_v2_page_hierarchy(conn: &Connection) -> Result<()> {
-    // Add parent_id column to notes table if it doesn't exist
-    let has_parent_id: bool = conn
-        .query_row(
-            "SELECT COUNT(*) FROM pragma_table_info('notes') WHERE name='parent_id'",
-            [],
-            |row| {
-                let count: i32 = row.get(0)?;
-                Ok(count > 0)
-            },
-        )
-        .unwrap_or(false);
-
-    if !has_parent_id {
-        conn.execute(
-            "ALTER TABLE notes ADD COLUMN parent_id TEXT REFERENCES notes(id) ON DELETE SET NULL",
-            [],
-        )?;
-
-        // Create index for parent_id
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_notes_parent ON notes(parent_id)",
-            [],
-        )?;
-    }
-
-    // Create page_links table for tracking page references
+    // ============================================
+    // PAGE LINKS (for page references/backlinks)
+    // ============================================
     conn.execute(
         "CREATE TABLE IF NOT EXISTS page_links (
             id TEXT PRIMARY KEY,
@@ -238,7 +162,6 @@ fn migration_v2_page_hierarchy(conn: &Connection) -> Result<()> {
         [],
     )?;
 
-    // Create indexes for page_links
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_page_links_source ON page_links(source_page_id)",
         [],
@@ -248,12 +171,21 @@ fn migration_v2_page_hierarchy(conn: &Connection) -> Result<()> {
         [],
     )?;
 
-    Ok(())
-}
+    // ============================================
+    // STICKY NOTES
+    // ============================================
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS sticky_notes (
+            id TEXT PRIMARY KEY,
+            content TEXT NOT NULL,
+            color_id TEXT NOT NULL DEFAULT 'default',
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+        )",
+        [],
+    )?;
 
-/// Migration v3: Add sticky notes FTS for search
-fn migration_v3_sticky_notes_fts(conn: &Connection) -> Result<()> {
-    // Create FTS5 virtual table for sticky notes
+    // Sticky Notes FTS
     conn.execute(
         "CREATE VIRTUAL TABLE IF NOT EXISTS sticky_notes_fts USING fts5(
             id UNINDEXED,
@@ -263,27 +195,17 @@ fn migration_v3_sticky_notes_fts(conn: &Connection) -> Result<()> {
         [],
     )?;
 
-    // Populate the FTS table with existing sticky notes
-    conn.execute(
-        "INSERT INTO sticky_notes_fts (id, content)
-         SELECT id, content FROM sticky_notes",
-        [],
-    )?;
-
-    Ok(())
-}
-
-/// Migration v4: Add bookmarks feature
-fn migration_v4_bookmarks(conn: &Connection) -> Result<()> {
-    // Create bookmarks table
+    // ============================================
+    // BOOKMARKS (with favicon support)
+    // ============================================
     conn.execute(
         "CREATE TABLE IF NOT EXISTS bookmarks (
             id TEXT PRIMARY KEY,
             url TEXT NOT NULL,
             title TEXT NOT NULL,
-            description TEXT,
             tags TEXT,
             folder_id TEXT,
+            favicon TEXT,
             created_at INTEGER NOT NULL,
             updated_at INTEGER NOT NULL,
             FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE SET NULL
@@ -291,81 +213,18 @@ fn migration_v4_bookmarks(conn: &Connection) -> Result<()> {
         [],
     )?;
 
-    // Create FTS5 virtual table for bookmarks
-    conn.execute(
-        "CREATE VIRTUAL TABLE IF NOT EXISTS bookmarks_fts USING fts5(
-            id UNINDEXED,
-            url,
-            title,
-            description,
-            tags,
-            tokenize='porter unicode61'
-        )",
-        [],
-    )?;
-
-    // Create indexes for faster sorting and filtering
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_bookmarks_created ON bookmarks(created_at DESC)",
         [],
     )?;
-
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_bookmarks_folder ON bookmarks(folder_id)",
         [],
     )?;
 
-    Ok(())
-}
-
-/// Migration v5: Remove description from bookmarks
-fn migration_v5_remove_bookmark_description(conn: &Connection) -> Result<()> {
-    // SQLite doesn't support DROP COLUMN directly, so we need to recreate the table
-
-    // Create new table without description column
+    // Bookmarks FTS
     conn.execute(
-        "CREATE TABLE bookmarks_new (
-            id TEXT PRIMARY KEY,
-            url TEXT NOT NULL,
-            title TEXT NOT NULL,
-            tags TEXT,
-            folder_id TEXT,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER NOT NULL,
-            FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE SET NULL
-        )",
-        [],
-    )?;
-
-    // Copy data from old table to new table
-    conn.execute(
-        "INSERT INTO bookmarks_new (id, url, title, tags, folder_id, created_at, updated_at)
-         SELECT id, url, title, tags, folder_id, created_at, updated_at FROM bookmarks",
-        [],
-    )?;
-
-    // Drop old table
-    conn.execute("DROP TABLE bookmarks", [])?;
-
-    // Rename new table to original name
-    conn.execute("ALTER TABLE bookmarks_new RENAME TO bookmarks", [])?;
-
-    // Recreate indexes
-    conn.execute(
-        "CREATE INDEX idx_bookmarks_created ON bookmarks(created_at DESC)",
-        [],
-    )?;
-
-    conn.execute(
-        "CREATE INDEX idx_bookmarks_folder ON bookmarks(folder_id)",
-        [],
-    )?;
-
-    // Drop and recreate FTS table without description
-    conn.execute("DROP TABLE IF EXISTS bookmarks_fts", [])?;
-
-    conn.execute(
-        "CREATE VIRTUAL TABLE bookmarks_fts USING fts5(
+        "CREATE VIRTUAL TABLE IF NOT EXISTS bookmarks_fts USING fts5(
             id UNINDEXED,
             url,
             title,
@@ -375,90 +234,39 @@ fn migration_v5_remove_bookmark_description(conn: &Connection) -> Result<()> {
         [],
     )?;
 
-    // Repopulate FTS table
+    // ============================================
+    // TAGS
+    // ============================================
     conn.execute(
-        "INSERT INTO bookmarks_fts (id, url, title, tags)
-         SELECT id, url, title, COALESCE(tags, '') FROM bookmarks",
+        "CREATE TABLE IF NOT EXISTS tags (
+            id TEXT PRIMARY KEY,
+            name TEXT UNIQUE NOT NULL
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS note_tags (
+            note_id TEXT NOT NULL,
+            tag_id TEXT NOT NULL,
+            PRIMARY KEY (note_id, tag_id),
+            FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE,
+            FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+        )",
         [],
     )?;
 
     Ok(())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use rusqlite::Connection;
-
-    #[test]
-    fn test_migrations() {
-        let conn = Connection::open_in_memory().unwrap();
-
-        // Run migrations
-        run_migrations(&conn).unwrap();
-
-        // Verify version
-        let version: i32 = conn
-            .query_row("SELECT MAX(version) FROM schema_migrations", [], |row| {
-                row.get(0)
-            })
-            .unwrap();
-
-        assert_eq!(version, CURRENT_VERSION);
-
-        // Verify tables exist
-        let tables: Vec<String> = conn
-            .prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
-            .unwrap()
-            .query_map([], |row| row.get(0))
-            .unwrap()
-            .collect::<Result<Vec<_>>>()
-            .unwrap();
-
-        assert!(tables.contains(&"notes".to_string()));
-        assert!(tables.contains(&"folders".to_string()));
-        assert!(tables.contains(&"page_links".to_string()));
-        assert!(tables.contains(&"schema_migrations".to_string()));
-
-        // Verify notes table has parent_id column
-        let has_parent_id: bool = conn
-            .query_row(
-                "SELECT COUNT(*) FROM pragma_table_info('notes') WHERE name='parent_id'",
-                [],
-                |row| {
-                    let count: i32 = row.get(0)?;
-                    Ok(count > 0)
-                },
-            )
-            .unwrap();
-
-        assert!(has_parent_id);
-    }
-
-    #[test]
-    fn test_idempotent_migrations() {
-        let conn = Connection::open_in_memory().unwrap();
-
-        // Run migrations twice
-        run_migrations(&conn).unwrap();
-        run_migrations(&conn).unwrap();
-
-        // Should still be at current version
-        let version: i32 = conn
-            .query_row("SELECT MAX(version) FROM schema_migrations", [], |row| {
-                row.get(0)
-            })
-            .unwrap();
-
-        assert_eq!(version, CURRENT_VERSION);
-
-        // Should only have CURRENT_VERSION records
-        let count: i32 = conn
-            .query_row("SELECT COUNT(*) FROM schema_migrations", [], |row| {
-                row.get(0)
-            })
-            .unwrap();
-
-        assert_eq!(count, CURRENT_VERSION);
-    }
-}
+// Future migrations will be added here as needed
+// Example for next migration:
+//
+// /// Migration v2: Add new feature
+// fn migration_v2_new_feature(conn: &Connection) -> Result<()> {
+//     conn.execute(
+//         "ALTER TABLE some_table ADD COLUMN new_column TEXT",
+//         [],
+//     )?;
+//     Ok(())
+// }

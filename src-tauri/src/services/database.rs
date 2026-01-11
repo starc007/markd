@@ -696,14 +696,15 @@ impl Database {
         title: &str,
         tags: Option<&str>,
         folder_id: Option<&str>,
+        favicon: Option<&str>,
         created_at: i64,
         updated_at: i64,
     ) -> Result<()> {
         let conn = acquire_lock!(self.conn);
         conn.execute(
-            "INSERT INTO bookmarks (id, url, title, tags, folder_id, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            params![id, url, title, tags, folder_id, created_at, updated_at],
+            "INSERT INTO bookmarks (id, url, title, tags, folder_id, favicon, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![id, url, title, tags, folder_id, favicon, created_at, updated_at],
         )?;
 
         // Insert into FTS table
@@ -777,7 +778,7 @@ impl Database {
     pub fn get_bookmark(&self, id: &str) -> Result<Option<crate::models::bookmark::Bookmark>> {
         let conn = acquire_lock!(self.conn);
         let mut stmt = conn.prepare(
-            "SELECT id, url, title, tags, folder_id, created_at, updated_at FROM bookmarks WHERE id = ?1",
+            "SELECT id, url, title, tags, folder_id, favicon, created_at, updated_at FROM bookmarks WHERE id = ?1",
         )?;
 
         let mut rows = stmt.query(params![id])?;
@@ -789,8 +790,9 @@ impl Database {
                 title: row.get(2)?,
                 tags: row.get(3)?,
                 folder_id: row.get(4)?,
-                created_at: row.get(5)?,
-                updated_at: row.get(6)?,
+                favicon: row.get(5)?,
+                created_at: row.get(6)?,
+                updated_at: row.get(7)?,
             }))
         } else {
             Ok(None)
@@ -806,7 +808,7 @@ impl Database {
 
         if let Some(fid) = folder_id {
             let mut stmt = conn.prepare(
-                "SELECT id, url, title, tags, folder_id, created_at, updated_at
+                "SELECT id, url, title, tags, folder_id, favicon, created_at, updated_at
                  FROM bookmarks
                  WHERE folder_id = ?1
                  ORDER BY created_at DESC",
@@ -819,8 +821,9 @@ impl Database {
                     title: row.get(2)?,
                     tags: row.get(3)?,
                     folder_id: row.get(4)?,
-                    created_at: row.get(5)?,
-                    updated_at: row.get(6)?,
+                    favicon: row.get(5)?,
+                    created_at: row.get(6)?,
+                    updated_at: row.get(7)?,
                 })
             })?;
 
@@ -829,7 +832,7 @@ impl Database {
             }
         } else {
             let mut stmt = conn.prepare(
-                "SELECT id, url, title, tags, folder_id, created_at, updated_at
+                "SELECT id, url, title, tags, folder_id, favicon, created_at, updated_at
                  FROM bookmarks
                  WHERE folder_id IS NULL
                  ORDER BY created_at DESC",
@@ -842,8 +845,9 @@ impl Database {
                     title: row.get(2)?,
                     tags: row.get(3)?,
                     folder_id: row.get(4)?,
-                    created_at: row.get(5)?,
-                    updated_at: row.get(6)?,
+                    favicon: row.get(5)?,
+                    created_at: row.get(6)?,
+                    updated_at: row.get(7)?,
                 })
             })?;
 

@@ -14,7 +14,7 @@ interface BookmarkStore {
   loadBookmark: (id: string) => Promise<void>;
   createBookmark: (
     url: string,
-    title: string,
+    title?: string,
     tags?: string,
     folderId?: string,
   ) => Promise<Bookmark>;

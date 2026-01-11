@@ -53,6 +53,7 @@ export interface Bookmark {
   title: string;
   tags: string | null;
   folder_id: string | null;
+  favicon: string | null;
   created_at: number;
   updated_at: number;
 }
@@ -63,6 +64,7 @@ export interface BookmarkMetadata {
   title: string;
   tags: string | null;
   folder_id: string | null;
+  favicon: string | null;
   created_at: number;
   updated_at: number;
 }
@@ -263,13 +265,13 @@ export async function listStickyNotes(): Promise<StickyNote[]> {
 // Bookmark commands
 export async function createBookmark(
   url: string,
-  title: string,
+  title?: string,
   tags?: string,
   folder_id?: string,
 ): Promise<Bookmark> {
   return invoke<Bookmark>("create_bookmark", {
     url,
-    title,
+    title: title || null,
     tags: tags || null,
     folderId: folder_id || null,
   });
