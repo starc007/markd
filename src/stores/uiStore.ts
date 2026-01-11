@@ -18,6 +18,7 @@ interface UIStore {
   searchOpen: boolean;
   selectedFolderId: string | null;
   currentView: UIView | null;
+  previousNoteId: string | null; // Track note we came from when navigating to bookmarks
 
   // Actions
   toggleSidebar: () => void;
@@ -28,6 +29,7 @@ interface UIStore {
   setSearchOpen: (open: boolean) => void;
   setView: (view: UIView | null) => void;
   setSelectedFolderId: (id: string | null) => void;
+  setPreviousNoteId: (id: string | null) => void;
 }
 
 export const useUIStore = create<UIStore>((set, get) => ({
@@ -38,6 +40,7 @@ export const useUIStore = create<UIStore>((set, get) => ({
   searchOpen: false,
   selectedFolderId: null,
   currentView: UIView.None,
+  previousNoteId: null,
 
   // Actions
   toggleSidebar: () => {
@@ -65,6 +68,16 @@ export const useUIStore = create<UIStore>((set, get) => ({
   },
 
   setView: (view: UIView | null) => {
+    const { currentNote } = useNoteStore.getState();
+
+    // Track previous note when navigating to bookmarks
+    if (view === UIView.Bookmarks && currentNote) {
+      set({ previousNoteId: currentNote.id });
+    } else if (view === UIView.None && get().previousNoteId) {
+      // Clear previous note when going back to editor
+      set({ previousNoteId: null });
+    }
+
     set({ currentView: view });
     // Only clear currentNote when switching to Settings, StickyNotes, or Bookmarks view
     // Don't clear when switching to None (editor view) to prevent flicker
@@ -76,7 +89,6 @@ export const useUIStore = create<UIStore>((set, get) => ({
       useNoteStore.setState({ currentNote: null });
     }
     // Persist view change (preserve existing parentPath)
-    const { currentNote } = useNoteStore.getState();
     const savedState = loadAppState();
     saveAppState({
       currentNoteId: currentNote?.id || null,
@@ -84,6 +96,10 @@ export const useUIStore = create<UIStore>((set, get) => ({
       selectedFolderId: get().selectedFolderId,
       parentPath: savedState.parentPath || [],
     });
+  },
+
+  setPreviousNoteId: (id: string | null) => {
+    set({ previousNoteId: id });
   },
 
   setSelectedFolderId: (id: string | null) => {

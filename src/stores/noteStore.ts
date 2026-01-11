@@ -523,7 +523,76 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       const newLoaded = new Set(loadedChildren);
       newLoaded.delete(id);
 
-      const newCurrentNote = currentNote?.id === id ? null : currentNote;
+      // Determine which note to navigate to after deletion
+      let noteToNavigate: string | null = null;
+
+      if (currentNote?.id === id) {
+        // We're deleting the currently open note
+        if (parentId) {
+          // It's a subnote - navigate to parent
+          noteToNavigate = parentId;
+        } else {
+          // It's a root note - find next adjacent note
+          // Get selected folder to filter notes correctly
+          const selectedFolderId = useUIStore.getState().selectedFolderId;
+
+          // Filter and sort notes by updated_at descending (same as sidebar)
+          const filterNotes = (notesList: typeof notes) => {
+            let filtered = notesList.filter((n) => n.parent_id === null);
+            if (selectedFolderId !== null) {
+              filtered = filtered.filter(
+                (n) => n.folder_id === selectedFolderId
+              );
+            }
+            return filtered.sort((a, b) => {
+              const timeDiff = b.updated_at - a.updated_at;
+              if (timeDiff !== 0) return timeDiff;
+              return a.id.localeCompare(b.id);
+            });
+          };
+
+          const sortedRootNotes = filterNotes(updatedNotes);
+          const originalSorted = filterNotes(notes);
+
+          const deletedIndex = originalSorted.findIndex((n) => n.id === id);
+
+          if (deletedIndex >= 0 && sortedRootNotes.length > 0) {
+            // Try to get the note at the same index, or the one before it
+            if (deletedIndex < sortedRootNotes.length) {
+              noteToNavigate = sortedRootNotes[deletedIndex].id;
+            } else if (sortedRootNotes.length > 0) {
+              // Use the last note if we were at the end
+              noteToNavigate = sortedRootNotes[sortedRootNotes.length - 1].id;
+            }
+          }
+          // If no notes left, noteToNavigate stays null (will show welcome screen)
+        }
+      }
+
+      // Load the note to navigate to, or clear current note
+      let newCurrentNote = currentNote?.id === id ? null : currentNote;
+
+      if (noteToNavigate) {
+        try {
+          // Load the note directly using commands
+          const noteToLoad = await commands.getNote(noteToNavigate);
+          if (noteToLoad) {
+            newCurrentNote = noteToLoad;
+            // Also expand parent pages if it's a subnote
+            if (noteToLoad.parent_id) {
+              const parentPath = await get().getParentPath(noteToNavigate);
+              if (parentPath.length > 0) {
+                get().expandParentPages(parentPath);
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Failed to load note after deletion:", error);
+          // If loading fails, just clear the current note
+          newCurrentNote = null;
+        }
+      }
+
       set({
         notes: updatedNotes,
         childrenMap: newMap,
@@ -532,7 +601,8 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         currentNote: newCurrentNote,
         isLoading: false,
       });
-      // Persist state update (note cleared if deleted)
+
+      // Persist state update
       const { currentView } = useUIStore.getState();
       const savedState = loadAppState();
       saveAppState({

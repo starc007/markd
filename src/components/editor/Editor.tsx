@@ -1,4 +1,4 @@
-import { useCallback, useState, useRef } from "react";
+import { useCallback, useState, useRef, useEffect } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   MoreVerticalIcon,
@@ -95,6 +95,41 @@ export function Editor({ noteId, content }: EditorProps) {
   const handleTitleEnter = useCallback(() => {
     editorRef.current?.focus();
   }, []);
+
+  // Keyboard shortcuts: Cmd+Shift+D to open delete modal, Cmd+Enter to confirm when modal is open
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMod = e.metaKey || e.ctrlKey;
+      const target = e.target as HTMLElement;
+
+      // Don't handle shortcuts when typing in inputs/textarea (except for modifier combinations)
+      if (
+        !isMod &&
+        (target?.tagName === "INPUT" ||
+          target?.tagName === "TEXTAREA" ||
+          (target?.isContentEditable && !target.closest(".tiptap-editor")))
+      ) {
+        return;
+      }
+
+      // Cmd+Shift+D: Open delete modal
+      if (isMod && e.shiftKey && e.key.toLowerCase() === "d") {
+        e.preventDefault();
+        setShowDeleteModal(true);
+        return;
+      }
+
+      // Cmd+Enter: Confirm deletion when modal is open
+      if (isMod && e.key === "Enter" && showDeleteModal) {
+        e.preventDefault();
+        handleDelete();
+        return;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showDeleteModal, handleDelete]);
 
   return (
     <>
