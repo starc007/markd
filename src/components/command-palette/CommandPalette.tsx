@@ -1,5 +1,5 @@
 import { Command } from "cmdk";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   AddIcon,
@@ -43,22 +43,47 @@ export function CommandPalette() {
   const { createStickyNote } = useStickyNotesStore();
 
   const [inputValue, setInputValue] = useState("");
+  const searchTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!commandPaletteOpen) {
       setInputValue("");
       clearSearch();
+      // Clear any pending search when palette closes
+      if (searchTimeoutRef.current) {
+        window.clearTimeout(searchTimeoutRef.current);
+        searchTimeoutRef.current = null;
+      }
     }
   }, [commandPaletteOpen, clearSearch]);
 
   // Unified search: show both filtered commands and search results (like Spotlight)
+  // Debounced to avoid excessive searches while typing
   useEffect(() => {
+    // Clear any pending search
+    if (searchTimeoutRef.current) {
+      window.clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = null;
+    }
+
     if (inputValue.trim()) {
-      // Always search notes when typing
-      search(inputValue);
+      // Debounce search - wait 300ms after user stops typing
+      searchTimeoutRef.current = window.setTimeout(() => {
+        search(inputValue);
+        searchTimeoutRef.current = null;
+      }, 300);
     } else {
+      // Clear search immediately if input is empty
       clearSearch();
     }
+
+    // Cleanup timeout on unmount or when input changes
+    return () => {
+      if (searchTimeoutRef.current) {
+        window.clearTimeout(searchTimeoutRef.current);
+        searchTimeoutRef.current = null;
+      }
+    };
   }, [inputValue, search, clearSearch]);
 
   // Create a new note and open it immediately

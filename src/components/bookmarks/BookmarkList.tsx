@@ -31,16 +31,10 @@ function formatTimestamp(timestamp: number): string {
 
 interface BookmarkListProps {
   bookmarks: BookmarkMetadata[];
-  selectedId?: string | null;
-  onBookmarkSelect?: (id: string) => void;
   onEditBookmark?: (bookmark: BookmarkMetadata) => void;
 }
 
-export function BookmarkList({
-  bookmarks,
-  onBookmarkSelect,
-  onEditBookmark,
-}: BookmarkListProps) {
+export function BookmarkList({ bookmarks, onEditBookmark }: BookmarkListProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [focusedIndex, setFocusedIndex] = useState<number>(0);
   const listRef = useRef<HTMLDivElement>(null);
@@ -180,25 +174,25 @@ export function BookmarkList({
             <div
               key={bookmark.id}
               className={`
-                group relative px-4 py-2 cursor-pointer
-                transition-all duration-200 border
+                group relative px-2 py-1 cursor-pointer rounded-lg
+                transition-all duration-200
                 ${
                   isFocused
                     ? "bg-accent/70 border-accent-foreground/10"
-                    : "bg-card/50 border-border/50 hover:bg-accent/30 hover:border-accent-foreground/10"
+                    : "bg-card/50 hover:bg-accent/30 hover:border-accent-foreground/10"
                 }
               `}
               onClick={(e) => {
                 e.stopPropagation();
                 setFocusedIndex(index);
-                onBookmarkSelect?.(bookmark.id);
+                openBookmark(bookmark.url);
               }}
               onMouseEnter={() => setHoveredId(bookmark.id)}
               onMouseLeave={() => setHoveredId(null)}
             >
               <div className="flex items-center gap-1">
                 {/* Favicon or fallback icon */}
-                <div className="shrink-0 p-2 rounded-lg flex items-center justify-center w-12 h-12">
+                <div className="shrink-0 py-2 rounded-lg flex items-center justify-center w-10 h-10">
                   {bookmark.favicon ? (
                     <img
                       src={bookmark.favicon}

@@ -7,13 +7,15 @@ import { BookmarkEditModal } from "./BookmarkEditModal";
 import type { BookmarkMetadata } from "../../lib/tauri/commands";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CommandIcon } from "@hugeicons/core-free-icons";
+import { BackspaceIcon } from "../tiptap-icons/backspace-icon";
+import { EnterKeyIcon } from "../tiptap-icons/enter-key-icon";
+import { ArrowUpIcon } from "../tiptap-icons/arrow-up-icon";
+import { ArrowDownIcon } from "../tiptap-icons/arrow-down-icon";
 
 export function Bookmarks() {
   const selectedFolderId = useUIStore((state) => state.selectedFolderId);
-  const { bookmarks, loadBookmarks, openBookmark } = useBookmarkStore();
-  const [selectedBookmarkId, setSelectedBookmarkId] = useState<string | null>(
-    null
-  );
+  const { bookmarks, loadBookmarks } = useBookmarkStore();
+
   const [editingBookmark, setEditingBookmark] =
     useState<BookmarkMetadata | null>(null);
   const inputRef = useRef<BookmarkInputRef>(null);
@@ -38,14 +40,6 @@ export function Bookmarks() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const handleBookmarkSelect = (id: string) => {
-    setSelectedBookmarkId(id);
-    const bookmark = bookmarks.find((b) => b.id === id);
-    if (bookmark) {
-      openBookmark(bookmark.url);
-    }
-  };
-
   const handleEditBookmark = (bookmark: BookmarkMetadata) => {
     setEditingBookmark(bookmark);
   };
@@ -59,17 +53,28 @@ export function Bookmarks() {
       {/* Header */}
       <div className="shrink-0 px-6 py-4 w-full">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-xl font-semibold text-foreground">Bookmarks</h1>
+          <h1 className="text-xl font-semibold text-foreground">
+            All Bookmarks
+          </h1>
           {/* Keyboard Shortcuts */}
           <div className="flex gap-3 text-xs text-muted-foreground">
             <div className="flex items-center gap-1">
-              <kbd className="px-2 py-1 bg-muted rounded-full border border-border font-mono">
-                Enter
+              <kbd className="p-1 bg-muted rounded border border-border font-mono">
+                <ArrowUpIcon className="w-4 h-4" />
+              </kbd>
+              <kbd className="p-1 bg-muted rounded border border-border font-mono">
+                <ArrowDownIcon className="w-4 h-4" />
+              </kbd>
+              <span>Navigate</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <kbd className="p-1 bg-muted rounded border border-border font-mono">
+                <EnterKeyIcon className="w-4 h-4" />
               </kbd>
               <span>Open</span>
             </div>
             <div className="flex items-center gap-1">
-              <kbd className="flex items-center gap-0.5 px-2 py-1 bg-muted rounded-full border border-border">
+              <kbd className="flex items-center gap-0.5 p-1 bg-muted rounded border border-border">
                 <HugeiconsIcon
                   icon={CommandIcon}
                   size={12}
@@ -81,14 +86,14 @@ export function Bookmarks() {
               <span>Copy URL</span>
             </div>
             <div className="flex items-center gap-1">
-              <kbd className="px-2 py-1 bg-muted rounded-full border border-border font-mono">
+              <kbd className="p-1 bg-muted rounded border border-border font-mono">
                 E
               </kbd>
               <span>Edit</span>
             </div>
             <div className="flex items-center gap-1">
-              <kbd className="px-2 py-1 bg-muted rounded-full border border-border font-mono">
-                Backspace
+              <kbd className="p-1 bg-muted rounded border border-border font-mono">
+                <BackspaceIcon className="w-4 h-4" />
               </kbd>
               <span>Delete</span>
             </div>
@@ -102,12 +107,7 @@ export function Bookmarks() {
       </div>
 
       {/* Bookmarks List */}
-      <BookmarkList
-        bookmarks={bookmarks}
-        selectedId={selectedBookmarkId}
-        onBookmarkSelect={handleBookmarkSelect}
-        onEditBookmark={handleEditBookmark}
-      />
+      <BookmarkList bookmarks={bookmarks} onEditBookmark={handleEditBookmark} />
 
       {/* Edit Modal */}
       <BookmarkEditModal

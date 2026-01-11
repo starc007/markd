@@ -104,7 +104,7 @@ export const BookmarkInput = forwardRef<BookmarkInputRef, BookmarkInputProps>(
           onKeyDown={handleKeyDown}
           placeholder="Paste URL and press Enter..."
           disabled={isSubmitting}
-          className="w-full px-4 py-3 pr-20 text-sm bg-background border border-border
+          className="w-full px-4 py-3 pr-20 text-sm rounded-lg bg-background border border-border
                    focus:outline-none focus:ring-1 focus:ring-ring focus:border-transparent
                    placeholder:text-muted-foreground disabled:opacity-50 disabled:cursor-not-allowed
                    transition-all"
@@ -112,7 +112,7 @@ export const BookmarkInput = forwardRef<BookmarkInputRef, BookmarkInputProps>(
           spellCheck={false}
         />
         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs text-muted-foreground pointer-events-none">
-          <kbd className="flex items-center gap-1 px-1.5 py-0.5 bg-muted rounded-full border border-border">
+          <kbd className="flex items-center gap-1 px-1.5 py-0.5 bg-muted border border-border">
             <HugeiconsIcon
               icon={CommandIcon}
               size={12}
