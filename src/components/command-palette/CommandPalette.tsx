@@ -137,14 +137,20 @@ export function CommandPalette() {
             setView(UIView.Bookmarks);
             setCommandPaletteOpen(false);
             break;
+          case "open-sticky-notes":
+            setView(UIView.StickyNotes);
+            setCommandPaletteOpen(false);
+            break;
           default:
             if (action.startsWith("note:")) {
               const noteId = action.replace("note:", "");
+              setView(UIView.None);
               await loadNote(noteId);
               setCommandPaletteOpen(false);
             }
             if (action.startsWith("search-note:")) {
               const noteId = action.replace("search-note:", "");
+              setView(UIView.None);
               await loadNote(noteId);
               setCommandPaletteOpen(false);
             }

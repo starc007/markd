@@ -9,7 +9,7 @@ import {
 import { useBookmarkStore } from "../../stores/bookmarkStore";
 import { toast } from "sonner";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { CommandIcon } from "@hugeicons/core-free-icons";
+import { AddIcon, CommandIcon } from "@hugeicons/core-free-icons";
 
 interface BookmarkInputProps {
   folderId?: string | null;
@@ -119,6 +119,14 @@ export const BookmarkInput = forwardRef<BookmarkInputRef, BookmarkInputProps>(
 
     return (
       <form onSubmit={handleSubmit} className="w-full relative">
+        <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs text-muted-foreground pointer-events-none">
+          <HugeiconsIcon
+            icon={AddIcon}
+            size={20}
+            color="currentColor"
+            strokeWidth={2}
+          />
+        </div>
         <input
           ref={inputRef}
           type="url"
@@ -127,7 +135,7 @@ export const BookmarkInput = forwardRef<BookmarkInputRef, BookmarkInputProps>(
           onKeyDown={handleKeyDown}
           placeholder="Paste URL and press Enter..."
           disabled={isSubmitting}
-          className="w-full px-4 py-3 pr-20 text-sm rounded-lg bg-background border border-border
+          className="w-full pl-8 py-3 pr-20 text-sm rounded-lg bg-background border border-border
                    focus:outline-none focus:ring-1 focus:ring-ring/50 focus:border-transparent
                    placeholder:text-muted-foreground disabled:opacity-50 disabled:cursor-not-allowed
                    transition-all"
