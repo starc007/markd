@@ -1,7 +1,6 @@
 import {
   useState,
   useCallback,
-  useEffect,
   useRef,
   forwardRef,
   useImperativeHandle,
@@ -88,11 +87,46 @@ export const BookmarkList = forwardRef<BookmarkListRef, BookmarkListProps>(
     );
 
     const handleDelete = useCallback(
-      async (bookmark: BookmarkMetadata, e: React.MouseEvent) => {
-        e.stopPropagation();
+      async (
+        bookmark: BookmarkMetadata,
+        e: React.MouseEvent | KeyboardEvent
+      ) => {
+        if (e instanceof MouseEvent) {
+          e.stopPropagation();
+        }
+
+        // Find the index of the bookmark being deleted
+        const deletedIndex = bookmarks.findIndex((b) => b.id === bookmark.id);
+        if (deletedIndex === -1) return;
+
         try {
           await deleteBookmark(bookmark.id);
           toast.success("Bookmark deleted");
+
+          // Adjust focusedIndex after deletion
+          // After deletion, the array will be one item shorter
+          if (bookmarks.length > 1) {
+            // If deleted item was at or after focused index, adjust
+            if (deletedIndex <= focusedIndex) {
+              // If we're deleting the focused item or one before it,
+              // move to the item that takes its place (or previous if it was last)
+              if (deletedIndex === bookmarks.length - 1) {
+                // Deleted last item, move to previous
+                setFocusedIndex(Math.max(0, focusedIndex - 1));
+              } else if (deletedIndex === focusedIndex) {
+                // Deleted focused item, stay at same index (next item moves up)
+                setFocusedIndex(Math.min(focusedIndex, bookmarks.length - 2));
+              } else {
+                // Deleted item before focused, focused index decreases by 1
+                setFocusedIndex(focusedIndex - 1);
+              }
+            }
+            // If deleted item was after focused index, no adjustment needed
+          } else {
+            // No bookmarks left, return focus to input
+            setFocusedIndex(0);
+            onReturnFocusToInput?.();
+          }
         } catch (error) {
           console.error("Failed to delete bookmark:", error);
           toast.error(
@@ -102,7 +136,13 @@ export const BookmarkList = forwardRef<BookmarkListRef, BookmarkListProps>(
           );
         }
       },
-      [deleteBookmark]
+      [
+        deleteBookmark,
+        focusedIndex,
+        bookmarks,
+        setFocusedIndex,
+        onReturnFocusToInput,
+      ]
     );
 
     const handleEdit = useCallback(
@@ -112,79 +152,6 @@ export const BookmarkList = forwardRef<BookmarkListRef, BookmarkListProps>(
       },
       [onEditBookmark]
     );
-
-    // Handle keyboard navigation
-    useEffect(() => {
-      const handleKeyDown = (e: KeyboardEvent) => {
-        if (bookmarks.length === 0) return;
-
-        const currentBookmark = bookmarks[focusedIndex];
-
-        switch (e.key) {
-          case "ArrowDown":
-            e.preventDefault();
-            setFocusedIndex(Math.min(focusedIndex + 1, bookmarks.length - 1));
-            break;
-          case "ArrowUp":
-            e.preventDefault();
-            if (focusedIndex === 0) {
-              // If at top, return focus to input
-              onReturnFocusToInput?.();
-            } else {
-              setFocusedIndex(Math.max(focusedIndex - 1, 0));
-            }
-            break;
-          case "Enter":
-            e.preventDefault();
-            if (currentBookmark) {
-              openBookmark(currentBookmark.url);
-            }
-            break;
-          case "e":
-          case "E":
-            e.preventDefault();
-            if (currentBookmark) {
-              onEditBookmark?.(currentBookmark);
-            }
-            break;
-          case "c":
-            if (e.metaKey || e.ctrlKey) {
-              e.preventDefault();
-              if (currentBookmark) {
-                copyBookmarkUrl(currentBookmark.url);
-                toast.success("URL copied to clipboard");
-              }
-            }
-            break;
-          case "Backspace":
-          case "Delete":
-            e.preventDefault();
-            if (currentBookmark) {
-              deleteBookmark(currentBookmark.id);
-            }
-            break;
-        }
-      };
-
-      listRef.current?.addEventListener("keydown", handleKeyDown);
-      return () =>
-        listRef.current?.removeEventListener("keydown", handleKeyDown);
-    }, [
-      bookmarks,
-      focusedIndex,
-      openBookmark,
-      copyBookmarkUrl,
-      deleteBookmark,
-      onEditBookmark,
-      onReturnFocusToInput,
-    ]);
-
-    // Auto-focus the list when mounted (only if not using controlled focus)
-    useEffect(() => {
-      if (controlledFocusedIndex === undefined) {
-        listRef.current?.focus();
-      }
-    }, [controlledFocusedIndex]);
 
     if (bookmarks.length === 0) {
       return (
@@ -225,8 +192,8 @@ export const BookmarkList = forwardRef<BookmarkListRef, BookmarkListProps>(
                 transition-all duration-200
                 ${
                   isFocused
-                    ? "bg-accent/70 border-accent-foreground/10"
-                    : "bg-card/50 hover:bg-accent/30 hover:border-accent-foreground/10"
+                    ? "bg-accent/80 border-accent-foreground/10"
+                    : "hover:bg-accent/30 hover:border-accent-foreground/10"
                 }
               `}
                 onClick={(e) => {
@@ -248,16 +215,10 @@ export const BookmarkList = forwardRef<BookmarkListRef, BookmarkListProps>(
                         onError={(e) => {
                           // Fallback to icon if favicon fails to load
                           e.currentTarget.style.display = "none";
-                          const parent = e.currentTarget.parentElement;
-                          if (parent) {
-                            const icon = document.createElement("div");
-                            icon.innerHTML =
-                              parent.querySelector("svg")?.outerHTML || "";
-                            parent.appendChild(icon);
-                          }
                         }}
                       />
-                    ) : (
+                    ) : null}
+                    {!bookmark.favicon && (
                       <HugeiconsIcon
                         icon={LinkIcon}
                         size={16}
@@ -280,34 +241,6 @@ export const BookmarkList = forwardRef<BookmarkListRef, BookmarkListProps>(
                         {bookmark.url}
                       </div>
                     </div>
-
-                    {/* Tags */}
-                    {bookmark.tags && (
-                      <div className="flex flex-wrap gap-1.5 mt-2">
-                        {bookmark.tags.split(",").map((tag, i) => {
-                          const colors = [
-                            "bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/20",
-                            "bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/20",
-                            "bg-green-500/15 text-green-600 dark:text-green-400 border border-green-500/20",
-                            "bg-orange-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/20",
-                            "bg-pink-500/15 text-pink-600 dark:text-pink-400 border border-pink-500/20",
-                            "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20",
-                            "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20",
-                            "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20",
-                          ];
-                          const colorClass = colors[i % colors.length];
-
-                          return (
-                            <span
-                              key={i}
-                              className={`inline-flex items-center text-[11px] font-medium px-2 py-1 rounded-full ${colorClass}`}
-                            >
-                              {tag.trim()}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    )}
                   </div>
 
                   {/* Timestamp and Action buttons */}
@@ -321,7 +254,7 @@ export const BookmarkList = forwardRef<BookmarkListRef, BookmarkListProps>(
 
                     {/* Action buttons - visible when hovered/focused */}
                     {isHovered && (
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-1 transition-opacity">
                         <button
                           onClick={(e) => handleEdit(bookmark, e)}
                           className="p-2 hover:bg-accent/80 rounded-lg transition-colors"

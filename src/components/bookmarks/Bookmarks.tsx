@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useBookmarkStore } from "../../stores/bookmarkStore";
 import { useUIStore } from "../../stores/uiStore";
 import { BookmarkInput, BookmarkInputRef } from "./BookmarkInput";
@@ -11,6 +11,7 @@ import { BackspaceIcon } from "../tiptap-icons/backspace-icon";
 import { EnterKeyIcon } from "../tiptap-icons/enter-key-icon";
 import { ArrowUpIcon } from "../tiptap-icons/arrow-up-icon";
 import { ArrowDownIcon } from "../tiptap-icons/arrow-down-icon";
+import { toast } from "sonner";
 
 export function Bookmarks() {
   const selectedFolderId = useUIStore((state) => state.selectedFolderId);
@@ -26,29 +27,96 @@ export function Bookmarks() {
     loadBookmarks(selectedFolderId);
   }, [selectedFolderId, loadBookmarks]);
 
-  // Keyboard shortcut: Cmd+F to focus input
+  const handleEditBookmark = useCallback((bookmark: BookmarkMetadata) => {
+    setEditingBookmark(bookmark);
+  }, []);
+
+  const handleCloseEditModal = useCallback(() => {
+    setEditingBookmark(null);
+  }, []);
+
+  // Keyboard shortcuts: Cmd+F to focus input, Arrow keys for navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isMod = e.metaKey || e.ctrlKey;
+      const target = e.target as HTMLElement;
+      const isInputFocused =
+        target.tagName === "INPUT" || target.tagName === "TEXTAREA";
 
       // Cmd+F to focus input
       if (isMod && e.key === "f") {
         e.preventDefault();
         inputRef.current?.focus();
+        return;
+      }
+
+      // Arrow key navigation - only if not typing in an input
+      if (!isInputFocused && bookmarks.length > 0) {
+        const currentBookmark = bookmarks[focusedIndex];
+
+        switch (e.key) {
+          case "ArrowDown":
+            e.preventDefault();
+            const nextIndex = Math.min(focusedIndex + 1, bookmarks.length - 1);
+            setFocusedIndex(nextIndex);
+            // Focus the list to enable further keyboard navigation
+            setTimeout(() => {
+              listRef.current?.focus();
+            }, 0);
+            break;
+          case "ArrowUp":
+            e.preventDefault();
+            if (focusedIndex === 0) {
+              // If at top, return focus to input
+              inputRef.current?.focus();
+            } else {
+              const prevIndex = Math.max(focusedIndex - 1, 0);
+              setFocusedIndex(prevIndex);
+              // Focus the list to enable further keyboard navigation
+              setTimeout(() => {
+                listRef.current?.focus();
+              }, 0);
+            }
+            break;
+          case "Enter":
+            e.preventDefault();
+            if (currentBookmark) {
+              const { openBookmark } = useBookmarkStore.getState();
+              openBookmark(currentBookmark.url);
+            }
+            break;
+          case "e":
+          case "E":
+            e.preventDefault();
+            if (currentBookmark) {
+              handleEditBookmark(currentBookmark);
+            }
+            break;
+          case "c":
+            if (e.metaKey || e.ctrlKey) {
+              e.preventDefault();
+              if (currentBookmark) {
+                const { copyBookmarkUrl } = useBookmarkStore.getState();
+                copyBookmarkUrl(currentBookmark.url);
+                toast.success("URL copied to clipboard");
+              }
+            }
+            break;
+          case "Backspace":
+          case "Delete":
+            e.preventDefault();
+            if (currentBookmark) {
+              const { deleteBookmark } = useBookmarkStore.getState();
+              deleteBookmark(currentBookmark.id);
+            }
+            break;
+        }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
-
-  const handleEditBookmark = (bookmark: BookmarkMetadata) => {
-    setEditingBookmark(bookmark);
-  };
-
-  const handleCloseEditModal = () => {
-    setEditingBookmark(null);
-  };
+  }, [bookmarks, focusedIndex, handleEditBookmark]);
 
   return (
     <div className="flex flex-col h-full bg-background px-28 py-10">
@@ -107,15 +175,22 @@ export function Bookmarks() {
           autoFocus={true}
           onArrowKey={(direction) => {
             if (bookmarks.length === 0) return;
-            // Blur input and focus list when arrow keys are pressed
-            // inputRef.current?.blur();
-            listRef.current?.focus();
+            // Focus list when arrow keys are pressed (input will lose focus naturally)
 
             if (direction === "down") {
-              setFocusedIndex(0); // Start from first item when going down
+              // Start from first item when going down
+              setFocusedIndex(0);
+              // Focus list after state update
+              setTimeout(() => {
+                listRef.current?.focus();
+              }, 0);
             } else if (direction === "up") {
               // When going up from input, go to last item
               setFocusedIndex(bookmarks.length - 1);
+              // Focus list after state update
+              setTimeout(() => {
+                listRef.current?.focus();
+              }, 0);
             }
           }}
         />

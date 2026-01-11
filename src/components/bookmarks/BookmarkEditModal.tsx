@@ -19,7 +19,7 @@ export function BookmarkEditModal({
 }: BookmarkEditModalProps) {
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
-  const [tags, setTags] = useState("");
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { updateBookmark } = useBookmarkStore();
 
@@ -27,9 +27,22 @@ export function BookmarkEditModal({
     if (bookmark) {
       setUrl(bookmark.url);
       setTitle(bookmark.title);
-      setTags(bookmark.tags || "");
     }
   }, [bookmark]);
+
+  const normalizeUrl = (inputUrl: string): string => {
+    let normalized = inputUrl.trim();
+
+    // Remove trailing slashes (except for root URLs)
+    normalized = normalized.replace(/\/+$/, "");
+
+    // Add https:// if no protocol is specified
+    if (!normalized.match(/^https?:\/\//i)) {
+      normalized = `https://${normalized}`;
+    }
+
+    return normalized;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,11 +57,14 @@ export function BookmarkEditModal({
       return;
     }
 
-    if (
-      !trimmedUrl.startsWith("http://") &&
-      !trimmedUrl.startsWith("https://")
-    ) {
-      toast.error("Please enter a valid URL starting with http:// or https://");
+    // Normalize URL
+    const normalizedUrl = normalizeUrl(trimmedUrl);
+
+    // Validate URL after normalization
+    try {
+      new URL(normalizedUrl);
+    } catch {
+      toast.error("Please enter a valid URL");
       return;
     }
 
@@ -56,9 +72,8 @@ export function BookmarkEditModal({
 
     try {
       await updateBookmark(bookmark.id, {
-        url: trimmedUrl,
+        url: normalizedUrl,
         title: trimmedTitle,
-        tags: tags.trim() || undefined,
       });
 
       toast.success("Bookmark updated");
@@ -68,7 +83,7 @@ export function BookmarkEditModal({
       toast.error(
         `Failed to update bookmark: ${
           error instanceof Error ? error.message : "Unknown error"
-        }`,
+        }`
       );
     } finally {
       setIsSubmitting(false);
@@ -118,24 +133,6 @@ export function BookmarkEditModal({
             onChange={(e) => setTitle(e.target.value)}
             disabled={isSubmitting}
             required
-          />
-        </div>
-
-        {/* Tags */}
-        <div>
-          <label
-            htmlFor="tags"
-            className="block text-sm font-medium text-foreground mb-2"
-          >
-            Tags (comma-separated)
-          </label>
-          <Input
-            id="tags"
-            type="text"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-            disabled={isSubmitting}
-            placeholder="tag1, tag2, tag3"
           />
         </div>
 

@@ -16,7 +16,7 @@ interface BookmarkStore {
     url: string,
     title?: string,
     tags?: string,
-    folderId?: string,
+    folderId?: string
   ) => Promise<Bookmark>;
   updateBookmark: (
     id: string,
@@ -24,7 +24,7 @@ interface BookmarkStore {
       url?: string;
       title?: string;
       tags?: string;
-    },
+    }
   ) => Promise<void>;
   deleteBookmark: (id: string) => Promise<void>;
   openBookmark: (url: string) => Promise<void>;
@@ -64,7 +64,7 @@ export const useBookmarkStore = create<BookmarkStore>((set, get) => ({
   },
 
   createBookmark: async (url, title, tags, folderId) => {
-    const { bookmarks } = get();
+    const { loadBookmarks } = get();
 
     set({ isLoading: true, error: null });
     try {
@@ -72,14 +72,12 @@ export const useBookmarkStore = create<BookmarkStore>((set, get) => ({
         url,
         title,
         tags,
-        folderId,
+        folderId
       );
 
-      // Add to bookmarks list
-      set({
-        bookmarks: [bookmark, ...bookmarks],
-        isLoading: false,
-      });
+      // Reload bookmarks to get fresh metadata (favicon, etc) from backend
+      // This ensures we have the latest data including any metadata fetched from URL
+      await loadBookmarks(folderId ?? null);
 
       return bookmark;
     } catch (error) {
@@ -89,7 +87,9 @@ export const useBookmarkStore = create<BookmarkStore>((set, get) => ({
   },
 
   updateBookmark: async (id, updates) => {
-    const { bookmarks, currentBookmark } = get();
+    const { bookmarks, currentBookmark, loadBookmarks } = get();
+    const bookmarkToUpdate = bookmarks.find((b) => b.id === id);
+    const folderId = bookmarkToUpdate?.folder_id ?? null;
 
     set({ isLoading: true, error: null });
     try {
@@ -97,35 +97,41 @@ export const useBookmarkStore = create<BookmarkStore>((set, get) => ({
         id,
         updates.url,
         updates.title,
-        updates.tags,
+        updates.tags
       );
 
-      // Update in bookmarks list
-      const updatedBookmarks = bookmarks.map((b) =>
-        b.id === id
-          ? {
-              ...b,
-              ...updates,
-              updated_at: Date.now(),
-            }
-          : b,
-      );
+      // If URL was updated, reload bookmarks to get fresh metadata (favicon, etc)
+      // Otherwise, just update optimistically
+      if (updates.url) {
+        await loadBookmarks(folderId);
+      } else {
+        // Update in bookmarks list
+        const updatedBookmarks = bookmarks.map((b) =>
+          b.id === id
+            ? {
+                ...b,
+                ...updates,
+                updated_at: Date.now(),
+              }
+            : b
+        );
 
-      // Update current bookmark if it's the one being updated
-      const updatedCurrentBookmark =
-        currentBookmark?.id === id
-          ? {
-              ...currentBookmark,
-              ...updates,
-              updated_at: Date.now(),
-            }
-          : currentBookmark;
+        // Update current bookmark if it's the one being updated
+        const updatedCurrentBookmark =
+          currentBookmark?.id === id
+            ? {
+                ...currentBookmark,
+                ...updates,
+                updated_at: Date.now(),
+              }
+            : currentBookmark;
 
-      set({
-        bookmarks: updatedBookmarks,
-        currentBookmark: updatedCurrentBookmark,
-        isLoading: false,
-      });
+        set({
+          bookmarks: updatedBookmarks,
+          currentBookmark: updatedCurrentBookmark,
+          isLoading: false,
+        });
+      }
     } catch (error) {
       set({ error: String(error), isLoading: false });
       throw error;

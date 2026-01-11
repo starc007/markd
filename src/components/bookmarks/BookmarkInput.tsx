@@ -40,6 +40,21 @@ export const BookmarkInput = forwardRef<BookmarkInputRef, BookmarkInputProps>(
       },
     }));
 
+    // Normalize URL: add https:// if missing, trim whitespace
+    const normalizeUrl = useCallback((inputUrl: string): string => {
+      let normalized = inputUrl.trim();
+
+      // Remove trailing slashes (except for root URLs)
+      normalized = normalized.replace(/\/+$/, "");
+
+      // Add https:// if no protocol is specified
+      if (!normalized.match(/^https?:\/\//i)) {
+        normalized = `https://${normalized}`;
+      }
+
+      return normalized;
+    }, []);
+
     const handleSubmit = useCallback(
       async (e: React.FormEvent) => {
         e.preventDefault();
@@ -47,14 +62,14 @@ export const BookmarkInput = forwardRef<BookmarkInputRef, BookmarkInputProps>(
         const trimmedUrl = url.trim();
         if (!trimmedUrl) return;
 
-        // Basic URL validation
-        if (
-          !trimmedUrl.startsWith("http://") &&
-          !trimmedUrl.startsWith("https://")
-        ) {
-          toast.error(
-            "Please enter a valid URL starting with http:// or https://"
-          );
+        // Normalize URL
+        const normalizedUrl = normalizeUrl(trimmedUrl);
+
+        // Basic URL validation after normalization
+        try {
+          new URL(normalizedUrl);
+        } catch {
+          toast.error("Please enter a valid URL");
           return;
         }
 
@@ -63,7 +78,7 @@ export const BookmarkInput = forwardRef<BookmarkInputRef, BookmarkInputProps>(
         try {
           // Don't send title - let backend fetch it from metadata
           await createBookmark(
-            trimmedUrl,
+            normalizedUrl,
             undefined, // title will be fetched from URL metadata in backend
             undefined,
             folderId || undefined
@@ -85,7 +100,7 @@ export const BookmarkInput = forwardRef<BookmarkInputRef, BookmarkInputProps>(
           setIsSubmitting(false);
         }
       },
-      [url, folderId, createBookmark]
+      [url, folderId, createBookmark, normalizeUrl]
     );
 
     const handleKeyDown = useCallback(
@@ -113,14 +128,14 @@ export const BookmarkInput = forwardRef<BookmarkInputRef, BookmarkInputProps>(
           placeholder="Paste URL and press Enter..."
           disabled={isSubmitting}
           className="w-full px-4 py-3 pr-20 text-sm rounded-lg bg-background border border-border
-                   focus:outline-none focus:ring-1 focus:ring-ring focus:border-transparent
+                   focus:outline-none focus:ring-1 focus:ring-ring/50 focus:border-transparent
                    placeholder:text-muted-foreground disabled:opacity-50 disabled:cursor-not-allowed
                    transition-all"
           autoComplete="off"
           spellCheck={false}
         />
         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs text-muted-foreground pointer-events-none">
-          <kbd className="flex items-center gap-1 px-1.5 py-0.5 bg-muted border border-border">
+          <kbd className="flex items-center gap-1 px-1.5 py-0.5 bg-muted rounded border border-border">
             <HugeiconsIcon
               icon={CommandIcon}
               size={12}
