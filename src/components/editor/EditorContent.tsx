@@ -1,33 +1,15 @@
-import {
-  useEffect,
-  useRef,
-  useImperativeHandle,
-  forwardRef,
-  useCallback,
-} from "react";
+import { useEffect, useRef, useImperativeHandle, forwardRef } from "react";
 import { useEditor, EditorContent as TiptapEditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import TaskList from "@tiptap/extension-task-list";
-import TaskItem from "@tiptap/extension-task-item";
-import Highlight from "@tiptap/extension-highlight";
-import Placeholder from "@tiptap/extension-placeholder";
-import Underline from "@tiptap/extension-underline";
-import Link from "@tiptap/extension-link";
-import { UiState } from "../../lib/tiptap-extension/ui-state-extension";
-import { NodeAlignment } from "../../lib/tiptap-extension/node-alignment-extension";
-import { NodeBackground } from "../../lib/tiptap-extension/node-background-extension";
-import { ListNormalizationExtension } from "../../lib/tiptap-extension/list-normalization-extension";
-import { PageLinkExtension } from "../../lib/tiptap-extension/page-link-extension";
 import { SlashDropdownMenu } from "./slash-dropdown-menu";
 import { FloatingToolbar } from "./floating-toolbar";
 import { PageLinkMenu } from "./PageLinkMenu";
-import { useNoteStore } from "../../stores/noteStore";
-import * as commands from "../../lib/tauri/commands";
 import type { SuggestionItem } from "../tiptap-ui-utils/suggestion-menu/suggestion-menu-types";
 import type { Editor, Range } from "@tiptap/react";
 import { FileIcon } from "../tiptap-icons/file-icon";
 import { usePageCommand } from "../../hooks/usePageCommand";
-import { BookmarkLinkExtension } from "@/lib/tiptap-extension/bookmark-link-extension";
+import { useEditorConfig, parseContent } from "./hooks/useEditorConfig";
+import { useEditorContentSync } from "./hooks/useEditorContentSync";
+import { useEditorEventHandlers } from "./hooks/useEditorEventHandlers";
 
 interface EditorContentProps {
   content: string;
@@ -42,112 +24,24 @@ export interface EditorContentRef {
 
 export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
   ({ content, noteId, onContentChange }, ref) => {
-    const noteIdForLinksRef = useRef<string>(noteId);
     const editorRef = useRef<ReturnType<typeof useEditor> | null>(null);
-    const saveTimeoutRef = useRef<number | null>(null);
-    const switchingTimeoutRef = useRef<number | null>(null);
-    const noteIdRef = useRef<string | null>(noteId);
-    const onContentChangeRef = useRef(onContentChange);
-    const lastSavedContentRef = useRef<string>("");
     const isSwitchingNotesRef = useRef<boolean>(false);
     const isMountedRef = useRef<boolean>(true);
-    const { loadNote } = useNoteStore();
 
-    // Update noteId ref when it changes
-    useEffect(() => {
-      noteIdForLinksRef.current = noteId;
-    }, [noteId]);
+    // Get editor extensions configuration
+    const extensions = useEditorConfig();
 
-    // Extract page links from TipTap JSON and sync with backend
-    const extractAndSyncPageLinks = useCallback(
-      async (currentNoteId: string, json: any) => {
-        const pageIds = new Set<string>();
+    // Create refs to store handlers (will be set after hooks initialize)
+    const handleContentUpdateRef = useRef<
+      ((editor: Editor, transaction: any) => void) | null
+    >(null);
+    const extractAndSyncPageLinksRef = useRef<
+      ((noteId: string, json: any) => Promise<void>) | null
+    >(null);
 
-        // Recursively find all pageLink nodes
-        const findPageLinks = (node: any) => {
-          if (node.type === "pageLink" && node.attrs?.pageId) {
-            pageIds.add(node.attrs.pageId);
-          }
-          if (node.content && Array.isArray(node.content)) {
-            node.content.forEach(findPageLinks);
-          }
-        };
-
-        findPageLinks(json);
-
-        // Sync page links (debounced - only sync after save)
-        if (pageIds.size > 0) {
-          try {
-            await commands.syncPageLinks(currentNoteId, Array.from(pageIds));
-          } catch (error) {
-            console.error("Failed to sync page links:", error);
-          }
-        }
-      },
-      []
-    );
-
-    const { handlePageCommand } = usePageCommand(
-      noteId,
-      extractAndSyncPageLinks
-    );
-
-    // Keep callback ref updated
-    useEffect(() => {
-      onContentChangeRef.current = onContentChange;
-    }, [onContentChange]);
-
-    // Parse content safely
-    const parseContent = (content: string) => {
-      if (!content || content.trim() === "") {
-        return { type: "doc", content: [{ type: "paragraph" }] };
-      }
-      try {
-        return JSON.parse(content);
-      } catch (e) {
-        console.error("Failed to parse note content:", e);
-        return { type: "doc", content: [{ type: "paragraph" }] };
-      }
-    };
-
-    // Initialize editor
+    // Initialize editor - onUpdate will be set via ref after hook initializes
     const editor = useEditor({
-      extensions: [
-        StarterKit.configure({
-          heading: {
-            levels: [1, 2, 3],
-          },
-        }),
-        TaskList,
-        TaskItem.configure({
-          nested: true,
-        }),
-        Highlight,
-        Underline,
-        Link.configure({
-          openOnClick: false,
-          HTMLAttributes: {
-            class: "text-primary underline",
-          },
-        }),
-        Placeholder.configure({
-          placeholder: "Type '/' for commands...",
-        }),
-        UiState,
-        NodeAlignment,
-        NodeBackground,
-        ListNormalizationExtension,
-        PageLinkExtension.configure({
-          HTMLAttributes: {
-            class: "page-link",
-          },
-        }),
-        BookmarkLinkExtension.configure({
-          HTMLAttributes: {
-            class: "bookmark-link",
-          },
-        }),
-      ],
+      extensions,
       content: parseContent(content),
       editorProps: {
         attributes: {
@@ -155,127 +49,44 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
         },
       },
       onUpdate: ({ editor, transaction }) => {
-        // Ignore if we're switching notes or updating content programmatically
-        if (isSwitchingNotesRef.current) {
-          return;
+        // Call handler via ref to avoid circular dependency
+        if (handleContentUpdateRef.current) {
+          handleContentUpdateRef.current(editor, transaction);
         }
-
-        // Ignore if this is not a user-initiated change
-        if (!transaction.docChanged) {
-          return;
-        }
-
-        // Double-check: compare with last saved content to prevent unnecessary saves
-        const json = editor.getJSON();
-        const jsonString = JSON.stringify(json);
-        if (jsonString === lastSavedContentRef.current) {
-          return; // Content hasn't actually changed, don't save
-        }
-
-        // Clear previous timeout
-        if (saveTimeoutRef.current) {
-          window.clearTimeout(saveTimeoutRef.current);
-        }
-
-        // Debounce saves - save after 500ms of no changes
-        saveTimeoutRef.current = window.setTimeout(() => {
-          // Prevent execution if component has unmounted
-          if (!isMountedRef.current) {
-            return;
-          }
-
-          if (
-            editor &&
-            onContentChangeRef.current &&
-            !isSwitchingNotesRef.current
-          ) {
-            const json = editor.getJSON();
-            const jsonString = JSON.stringify(json);
-
-            // Only save if content actually changed
-            if (jsonString !== lastSavedContentRef.current) {
-              lastSavedContentRef.current = jsonString;
-              onContentChangeRef.current(jsonString);
-
-              // Extract page links from content and sync
-              extractAndSyncPageLinks(noteIdForLinksRef.current, json);
-            } else {
-            }
-          }
-        }, 500);
       },
       onCreate: ({ editor }) => {
         editorRef.current = editor;
-        // Initialize lastSavedContentRef with current content
-        const json = editor.getJSON();
-        lastSavedContentRef.current = JSON.stringify(json);
       },
       onDestroy: () => {
         editorRef.current = null;
       },
     });
 
-    // Track last content to detect changes
-    const lastContentRef = useRef<string>(content);
+    // Setup content syncing and saving
+    const { handleContentUpdate, extractAndSyncPageLinks } =
+      useEditorContentSync({
+        noteId,
+        content,
+        onContentChange,
+        editor,
+        isSwitchingNotesRef,
+        isMountedRef,
+      });
 
-    // Update content when noteId changes or when content changes
+    // Store handlers in refs so onUpdate can access them
     useEffect(() => {
-      const noteIdChanged = noteIdRef.current !== noteId;
-      const contentChanged = lastContentRef.current !== content;
+      handleContentUpdateRef.current = handleContentUpdate;
+      extractAndSyncPageLinksRef.current = extractAndSyncPageLinks;
+    }, [handleContentUpdate, extractAndSyncPageLinks]);
 
-      if ((noteIdChanged || contentChanged) && editor) {
-        // Set flag to prevent saves during note switch or content update
-        // Set this BEFORE any operations to prevent race conditions
-        if (noteIdChanged) {
-          isSwitchingNotesRef.current = true;
-          noteIdRef.current = noteId;
-        } else if (contentChanged) {
-          // Also set flag for content changes to prevent saves when content is updated programmatically
-          isSwitchingNotesRef.current = true;
-        }
+    // Setup page command handler
+    const { handlePageCommand } = usePageCommand(
+      noteId,
+      extractAndSyncPageLinks
+    );
 
-        // Clear any pending saves
-        if (saveTimeoutRef.current) {
-          window.clearTimeout(saveTimeoutRef.current);
-          saveTimeoutRef.current = null;
-        }
-
-        const json = parseContent(content);
-        const contentString = JSON.stringify(json);
-
-        // Only update if content actually changed (avoid unnecessary updates)
-        const currentEditorContent = JSON.stringify(editor.getJSON());
-        if (contentString !== currentEditorContent) {
-          // Use emitUpdate: false to prevent onUpdate event
-          // But we still set isSwitchingNotesRef to be safe
-          editor.commands.setContent(json, {
-            emitUpdate: false,
-          });
-
-          // Reset last saved content to match what we just set
-          lastSavedContentRef.current = contentString;
-        } else {
-          // Even if content didn't change, update lastSavedContentRef to match
-          lastSavedContentRef.current = contentString;
-        }
-
-        // Always update the ref to track the latest content
-        lastContentRef.current = content;
-
-        // Reset flag after a delay to allow any pending updates to complete
-        if (switchingTimeoutRef.current) {
-          window.clearTimeout(switchingTimeoutRef.current);
-        }
-
-        // Use a longer delay to ensure all TipTap internal updates complete
-        switchingTimeoutRef.current = window.setTimeout(() => {
-          if (isMountedRef.current) {
-            isSwitchingNotesRef.current = false;
-          }
-          switchingTimeoutRef.current = null;
-        }, 200); // Increased from 100ms to 200ms for safety
-      }
-    }, [noteId, editor, content]); // Include content to update when note content changes
+    // Setup event handlers (page navigation, bookmark opening)
+    useEditorEventHandlers();
 
     // Expose methods to parent
     useImperativeHandle(ref, () => ({
@@ -292,119 +103,6 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
       },
       getEditor: () => editor,
     }));
-
-    // Save on window blur
-    useEffect(() => {
-      const handleWindowBlur = () => {
-        // Don't save if component unmounted or switching notes
-        if (!isMountedRef.current || isSwitchingNotesRef.current) {
-          return;
-        }
-
-        if (editor && saveTimeoutRef.current) {
-          window.clearTimeout(saveTimeoutRef.current);
-          saveTimeoutRef.current = null;
-        }
-        if (editor) {
-          const json = editor.getJSON();
-          const jsonString = JSON.stringify(json);
-
-          // Only save if content actually changed
-          if (jsonString !== lastSavedContentRef.current) {
-            lastSavedContentRef.current = jsonString;
-            onContentChangeRef.current(jsonString);
-          }
-        }
-      };
-
-      window.addEventListener("blur", handleWindowBlur);
-      return () => window.removeEventListener("blur", handleWindowBlur);
-    }, [editor]);
-
-    // Handle page link navigation
-    useEffect(() => {
-      const handleNavigateToPage = async (
-        e: CustomEvent<{ pageId: string }>
-      ) => {
-        try {
-          await loadNote(e.detail.pageId);
-        } catch (error) {
-          console.error("Failed to navigate to page:", error);
-          useNoteStore.setState({
-            error: `Failed to load page: ${
-              error instanceof Error ? error.message : "Unknown error"
-            }`,
-          });
-        }
-      };
-
-      window.addEventListener(
-        "navigate-to-page",
-        handleNavigateToPage as unknown as EventListener
-      );
-      return () => {
-        window.removeEventListener(
-          "navigate-to-page",
-          handleNavigateToPage as unknown as EventListener
-        );
-      };
-    }, [loadNote]);
-
-    // Handle bookmark URL opening
-    useEffect(() => {
-      const handleOpenBookmarkUrl = async (e: CustomEvent<{ url: string }>) => {
-        try {
-          const { openUrl } = await import("@tauri-apps/plugin-opener");
-          await openUrl(e.detail.url);
-        } catch (error) {
-          console.error("Failed to open bookmark URL:", error);
-        }
-      };
-
-      window.addEventListener(
-        "open-bookmark-url",
-        handleOpenBookmarkUrl as unknown as EventListener
-      );
-      return () => {
-        window.removeEventListener(
-          "open-bookmark-url",
-          handleOpenBookmarkUrl as unknown as EventListener
-        );
-      };
-    }, []);
-
-    // Cleanup on unmount
-    useEffect(() => {
-      // Set mounted flag on mount
-      isMountedRef.current = true;
-
-      return () => {
-        // Mark component as unmounted FIRST to prevent any pending callbacks from executing
-        isMountedRef.current = false;
-
-        // Clear all pending timeouts
-        if (saveTimeoutRef.current) {
-          window.clearTimeout(saveTimeoutRef.current);
-          saveTimeoutRef.current = null;
-        }
-        if (switchingTimeoutRef.current) {
-          window.clearTimeout(switchingTimeoutRef.current);
-          switchingTimeoutRef.current = null;
-        }
-
-        // Don't save on unmount if we're switching notes
-        if (editor && !isSwitchingNotesRef.current) {
-          const json = editor.getJSON();
-          const jsonString = JSON.stringify(json);
-
-          // Only save if content actually changed
-          if (jsonString !== lastSavedContentRef.current) {
-            lastSavedContentRef.current = jsonString;
-            onContentChangeRef.current(jsonString);
-          }
-        }
-      };
-    }, [editor]);
 
     if (!editor) {
       return null;
