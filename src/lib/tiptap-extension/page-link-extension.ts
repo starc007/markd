@@ -87,7 +87,7 @@ export const PageLinkExtension = Node.create<PageLinkOptions>({
       dom.setAttribute("data-page-title", node.attrs.pageTitle);
       dom.href = "#"; // Placeholder href for accessibility
       dom.className =
-        "page-link inline-flex items-center gap-1 hover:bg-primary/5 pr-10 py-0.5 rounded text-primary hover:text-primary/80 transition-colors cursor-pointer font-medium";
+        "page-link inline-flex items-center gap-1 hover:bg-primary/5 pr-2 py-0.5 rounded text-primary hover:text-primary/80 transition-colors cursor-pointer font-medium";
 
       // Create SVG icon
       const iconSvg = document.createElementNS(

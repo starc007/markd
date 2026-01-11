@@ -569,6 +569,8 @@ impl Database {
         Ok(())
     }
 
+    
+
     // Sticky Notes operations
     pub fn insert_sticky_note(
         &self,
@@ -724,6 +726,24 @@ impl Database {
         tags: Option<&str>,
         updated_at: i64,
     ) -> Result<()> {
+        // Get current bookmark to get favicon if title is being updated
+        let favicon = if title.is_some() {
+            let conn = acquire_lock!(self.conn);
+            let mut stmt = conn.prepare("SELECT favicon FROM bookmarks WHERE id = ?1")?;
+            let mut rows = stmt.query(params![id])?;
+            let result = if let Some(row) = rows.next()? {
+                row.get::<_, Option<String>>(0)?
+            } else {
+                None
+            };
+            drop(rows);
+            drop(stmt);
+            drop(conn);
+            result
+        } else {
+            None
+        };
+
         let conn = acquire_lock!(self.conn);
 
         if let Some(u) = url {
@@ -762,6 +782,81 @@ impl Database {
             )?;
         }
 
+        drop(conn); // Release lock before calling update_bookmark_links_in_notes
+
+        // Update bookmark links in all notes that reference this bookmark
+        if let Some(t) = title {
+            self.update_bookmark_links_in_notes(id, t, favicon.as_deref())?;
+        }
+
+        Ok(())
+    }
+
+    /// Update bookmark link titles and favicons in all notes that reference this bookmark
+    pub fn update_bookmark_links_in_notes(
+        &self,
+        bookmark_id: &str,
+        new_title: &str,
+        new_favicon: Option<&str>,
+    ) -> Result<()> {
+        self.update_all_notes_with_bookmark(bookmark_id, Some(new_title), new_favicon)
+    }
+
+    /// Helper function to update or remove bookmark links in all notes
+    fn update_all_notes_with_bookmark(
+        &self,
+        bookmark_id: &str,
+        new_title: Option<&str>,
+        new_favicon: Option<&str>,
+    ) -> Result<()> {
+        let conn = acquire_lock!(self.conn);
+
+        // Get all notes
+        let mut stmt = conn.prepare("SELECT id, content FROM notes")?;
+        let notes: Vec<(String, String)> = stmt
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+
+        drop(stmt);
+
+        // Update each note's content
+        for (note_id, content) in notes {
+            if let Ok(mut json) = serde_json::from_str::<serde_json::Value>(&content) {
+                let mut updated = false;
+
+                if let Some(title) = new_title {
+                    // Update bookmark link
+                    update_bookmark_link_in_json(
+                        &mut json,
+                        bookmark_id,
+                        title,
+                        new_favicon,
+                        &mut updated,
+                    );
+                } else {
+                    // Remove bookmark link
+                    remove_bookmark_link_from_json(&mut json, bookmark_id, &mut updated);
+                }
+
+                if updated {
+                    let updated_content = serde_json::to_string(&json)
+                        .map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(e)))?;
+                    let now = chrono::Utc::now().timestamp_millis();
+
+                    conn.execute(
+                        "UPDATE notes SET content = ?1, updated_at = ?2 WHERE id = ?3",
+                        params![updated_content, now, note_id],
+                    )?;
+
+                    // Update FTS
+                    conn.execute(
+                        "UPDATE notes_fts SET content = ?1 WHERE id = ?2",
+                        params![updated_content, note_id],
+                    )?;
+                }
+            }
+        }
+
         Ok(())
     }
 
@@ -771,6 +866,11 @@ impl Database {
 
         // Delete from FTS table
         conn.execute("DELETE FROM bookmarks_fts WHERE id = ?1", params![id])?;
+
+        drop(conn); // Release lock before calling update_all_notes_with_bookmark
+
+        // Remove bookmark links from all notes
+        self.update_all_notes_with_bookmark(id, None, None)?;
 
         Ok(())
     }
@@ -858,6 +958,8 @@ impl Database {
 
         Ok(bookmarks)
     }
+
+    
 
     // Folder operations
     pub fn insert_folder(
@@ -1294,6 +1396,150 @@ fn remove_page_link_from_json(
                 } else {
                     // Recursively process children
                     remove_page_link_from_json(&mut arr[i], deleted_page_id, updated);
+                    i += 1;
+                }
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Update bookmark link titles and favicons in all notes
+fn update_bookmark_link_in_json(
+    value: &mut serde_json::Value,
+    bookmark_id: &str,
+    new_title: &str,
+    new_favicon: Option<&str>,
+    updated: &mut bool,
+) {
+    match value {
+        serde_json::Value::Object(obj) => {
+            // Check if this is a bookmarkLink node with matching bookmarkId
+            if let Some(serde_json::Value::String(node_type)) = obj.get("type") {
+                if node_type == "bookmarkLink" {
+                    if let Some(serde_json::Value::Object(attrs)) = obj.get_mut("attrs") {
+                        if let Some(serde_json::Value::String(id)) = attrs.get("bookmarkId") {
+                            if id == bookmark_id {
+                                // Update title
+                                attrs.insert(
+                                    "title".to_string(),
+                                    serde_json::Value::String(new_title.to_string()),
+                                );
+
+                                // Update favicon
+                                if let Some(favicon) = new_favicon {
+                                    attrs.insert(
+                                        "favicon".to_string(),
+                                        serde_json::Value::String(favicon.to_string()),
+                                    );
+                                } else {
+                                    attrs.insert("favicon".to_string(), serde_json::Value::Null);
+                                }
+
+                                *updated = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Recursively process all object values
+            for (_key, val) in obj.iter_mut() {
+                update_bookmark_link_in_json(val, bookmark_id, new_title, new_favicon, updated);
+            }
+        }
+        serde_json::Value::Array(arr) => {
+            for item in arr.iter_mut() {
+                update_bookmark_link_in_json(item, bookmark_id, new_title, new_favicon, updated);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Remove bookmark links from JSON content
+fn remove_bookmark_link_from_json(
+    value: &mut serde_json::Value,
+    deleted_bookmark_id: &str,
+    updated: &mut bool,
+) {
+    match value {
+        serde_json::Value::Object(obj) => {
+            if let Some(content) = obj.get_mut("content") {
+                if let serde_json::Value::Array(content) = content {
+                    let mut i = 0;
+                    while i < content.len() {
+                        let should_remove = {
+                            let item = &content[i];
+                            if let Some(serde_json::Value::String(node_type)) = item.get("type") {
+                                if node_type == "bookmarkLink" {
+                                    if let Some(serde_json::Value::Object(attrs)) =
+                                        item.get("attrs")
+                                    {
+                                        if let Some(serde_json::Value::String(bookmark_id)) =
+                                            attrs.get("bookmarkId")
+                                        {
+                                            bookmark_id == deleted_bookmark_id
+                                        } else {
+                                            false
+                                        }
+                                    } else {
+                                        false
+                                    }
+                                } else {
+                                    false
+                                }
+                            } else {
+                                false
+                            }
+                        };
+
+                        if should_remove {
+                            content.remove(i);
+                            *updated = true;
+                        } else {
+                            remove_bookmark_link_from_json(
+                                &mut content[i],
+                                deleted_bookmark_id,
+                                updated,
+                            );
+                            i += 1;
+                        }
+                    }
+                }
+            }
+        }
+        serde_json::Value::Array(arr) => {
+            let mut i = 0;
+            while i < arr.len() {
+                let should_remove = {
+                    let item = &arr[i];
+                    if let Some(serde_json::Value::String(node_type)) = item.get("type") {
+                        if node_type == "bookmarkLink" {
+                            if let Some(serde_json::Value::Object(attrs)) = item.get("attrs") {
+                                if let Some(serde_json::Value::String(bookmark_id)) =
+                                    attrs.get("bookmarkId")
+                                {
+                                    bookmark_id == deleted_bookmark_id
+                                } else {
+                                    false
+                                }
+                            } else {
+                                false
+                            }
+                        } else {
+                            false
+                        }
+                    } else {
+                        false
+                    }
+                };
+
+                if should_remove {
+                    arr.remove(i);
+                    *updated = true;
+                } else {
+                    remove_bookmark_link_from_json(&mut arr[i], deleted_bookmark_id, updated);
                     i += 1;
                 }
             }

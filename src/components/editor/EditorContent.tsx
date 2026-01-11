@@ -27,6 +27,7 @@ import type { SuggestionItem } from "../tiptap-ui-utils/suggestion-menu/suggesti
 import type { Editor, Range } from "@tiptap/react";
 import { FileIcon } from "../tiptap-icons/file-icon";
 import { usePageCommand } from "../../hooks/usePageCommand";
+import { BookmarkLinkExtension } from "@/lib/tiptap-extension/bookmark-link-extension";
 
 interface EditorContentProps {
   content: string;
@@ -139,6 +140,11 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
         PageLinkExtension.configure({
           HTMLAttributes: {
             class: "page-link",
+          },
+        }),
+        BookmarkLinkExtension.configure({
+          HTMLAttributes: {
+            class: "bookmark-link",
           },
         }),
       ],
@@ -343,6 +349,29 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
         );
       };
     }, [loadNote]);
+
+    // Handle bookmark URL opening
+    useEffect(() => {
+      const handleOpenBookmarkUrl = async (e: CustomEvent<{ url: string }>) => {
+        try {
+          const { openUrl } = await import("@tauri-apps/plugin-opener");
+          await openUrl(e.detail.url);
+        } catch (error) {
+          console.error("Failed to open bookmark URL:", error);
+        }
+      };
+
+      window.addEventListener(
+        "open-bookmark-url",
+        handleOpenBookmarkUrl as unknown as EventListener
+      );
+      return () => {
+        window.removeEventListener(
+          "open-bookmark-url",
+          handleOpenBookmarkUrl as unknown as EventListener
+        );
+      };
+    }, []);
 
     // Cleanup on unmount
     useEffect(() => {

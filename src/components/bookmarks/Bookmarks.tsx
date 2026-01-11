@@ -57,19 +57,19 @@ export function Bookmarks() {
   return (
     <div className="flex flex-col h-full bg-background px-28 py-10">
       {/* Header */}
-      <div className="shrink-0 px-6 py-4 border-b border-border w-full">
+      <div className="shrink-0 px-6 py-4 w-full">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-semibold text-foreground">Bookmarks</h1>
           {/* Keyboard Shortcuts */}
           <div className="flex gap-3 text-xs text-muted-foreground">
             <div className="flex items-center gap-1">
-              <kbd className="px-2 py-1 bg-muted rounded border border-border font-mono">
-                ↵
+              <kbd className="px-2 py-1 bg-muted rounded-full border border-border font-mono">
+                Enter
               </kbd>
               <span>Open</span>
             </div>
             <div className="flex items-center gap-1">
-              <kbd className="flex items-center gap-0.5 px-2 py-1 bg-muted rounded border border-border">
+              <kbd className="flex items-center gap-0.5 px-2 py-1 bg-muted rounded-full border border-border">
                 <HugeiconsIcon
                   icon={CommandIcon}
                   size={12}
@@ -81,14 +81,14 @@ export function Bookmarks() {
               <span>Copy URL</span>
             </div>
             <div className="flex items-center gap-1">
-              <kbd className="px-2 py-1 bg-muted rounded border border-border font-mono">
+              <kbd className="px-2 py-1 bg-muted rounded-full border border-border font-mono">
                 E
               </kbd>
               <span>Edit</span>
             </div>
             <div className="flex items-center gap-1">
-              <kbd className="px-2 py-1 bg-muted rounded border border-border font-mono">
-                ⌫
+              <kbd className="px-2 py-1 bg-muted rounded-full border border-border font-mono">
+                Backspace
               </kbd>
               <span>Delete</span>
             </div>

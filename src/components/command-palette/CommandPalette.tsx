@@ -18,6 +18,14 @@ import { useStickyNotesStore } from "../../stores/stickyNotesStore";
 import { save } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
 
+const searchResultColors = {
+  note: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/20",
+  sticky_note:
+    "bg-green-500/15 text-green-600 dark:text-green-400 border border-green-500/20",
+  bookmark:
+    "bg-orange-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/20",
+};
+
 export function CommandPalette() {
   const currentNote = useNoteStore((state) => state.currentNote);
   const searchResults = useNoteStore((state) => state.searchResults);
@@ -137,7 +145,7 @@ export function CommandPalette() {
         toast.error(
           `Operation failed: ${
             error instanceof Error ? error.message : "Unknown error"
-          }`,
+          }`
         );
         // Don't close palette on error so user can retry
       }
@@ -153,7 +161,7 @@ export function CommandPalette() {
       inputValue,
       createStickyNote,
       setView,
-    ],
+    ]
   );
 
   if (!commandPaletteOpen) return null;
@@ -361,23 +369,32 @@ export function CommandPalette() {
               {searchResults.map((result) => {
                 const isSticky = result.type === "sticky_note";
                 const isBookmark = result.type === "bookmark";
+                const isNote = result.type === "note";
                 const actionPrefix = isBookmark
                   ? "search-bookmark:"
                   : isSticky
-                    ? "search-sticky:"
-                    : "search-note:";
+                  ? "search-sticky:"
+                  : isNote
+                  ? "search-note:"
+                  : null;
 
                 const icon = isBookmark
                   ? LinkIcon
                   : isSticky
-                    ? StickyNoteIcon
-                    : FileEditIcon;
+                  ? StickyNoteIcon
+                  : isNote
+                  ? FileEditIcon
+                  : null;
 
                 const label = isBookmark
                   ? "Bookmark"
                   : isSticky
-                    ? "Sticky Note"
-                    : null;
+                  ? "Sticky Note"
+                  : isNote
+                  ? "Note"
+                  : null;
+
+                if (!icon || !actionPrefix) return null;
 
                 return (
                   <Command.Item
@@ -394,10 +411,14 @@ export function CommandPalette() {
                       className="opacity-50 shrink-0"
                     />
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">
+                      <div className="font-medium truncate flex items-center justify-between">
                         {result.title}
                         {label && (
-                          <span className="ml-2 text-[11px] text-muted-foreground">
+                          <span
+                            className={`ml-2 text-[11px] font-mono px-1 ${
+                              searchResultColors[result.type]
+                            }`}
+                          >
                             {label}
                           </span>
                         )}

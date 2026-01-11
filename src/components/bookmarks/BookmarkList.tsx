@@ -52,7 +52,7 @@ export function BookmarkList({
       copyBookmarkUrl(bookmark.url);
       toast.success("URL copied to clipboard");
     },
-    [copyBookmarkUrl],
+    [copyBookmarkUrl]
   );
 
   const handleDelete = useCallback(
@@ -66,11 +66,11 @@ export function BookmarkList({
         toast.error(
           `Failed to delete bookmark: ${
             error instanceof Error ? error.message : "Unknown error"
-          }`,
+          }`
         );
       }
     },
-    [deleteBookmark],
+    [deleteBookmark]
   );
 
   const handleEdit = useCallback(
@@ -78,7 +78,7 @@ export function BookmarkList({
       e.stopPropagation();
       onEditBookmark?.(bookmark);
     },
-    [onEditBookmark],
+    [onEditBookmark]
   );
 
   // Handle keyboard navigation
@@ -171,7 +171,7 @@ export function BookmarkList({
       className="flex-1 overflow-y-auto outline-none"
       tabIndex={0}
     >
-      <div className="space-y-2 p-4">
+      <div className="space-y-2 p-6">
         {bookmarks.map((bookmark, index) => {
           const isHovered = hoveredId === bookmark.id;
           const isFocused = focusedIndex === index;
@@ -180,11 +180,11 @@ export function BookmarkList({
             <div
               key={bookmark.id}
               className={`
-                group relative px-4 py-3.5 rounded-xl cursor-pointer
+                group relative px-4 py-2 cursor-pointer
                 transition-all duration-200 border
                 ${
                   isFocused
-                    ? "bg-accent/60 border-accent-foreground/10"
+                    ? "bg-accent/70 border-accent-foreground/10"
                     : "bg-card/50 border-border/50 hover:bg-accent/30 hover:border-accent-foreground/10"
                 }
               `}
@@ -196,14 +196,14 @@ export function BookmarkList({
               onMouseEnter={() => setHoveredId(bookmark.id)}
               onMouseLeave={() => setHoveredId(null)}
             >
-              <div className="flex items-start gap-3.5">
+              <div className="flex items-center gap-1">
                 {/* Favicon or fallback icon */}
-                <div className="shrink-0 mt-0.5 p-2 rounded-lg bg-primary/10 flex items-center justify-center w-8 h-8">
+                <div className="shrink-0 p-2 rounded-lg flex items-center justify-center w-12 h-12">
                   {bookmark.favicon ? (
                     <img
                       src={bookmark.favicon}
                       alt=""
-                      className="w-4 h-4 object-contain"
+                      className="w-full h-full object-contain"
                       onError={(e) => {
                         // Fallback to icon if favicon fails to load
                         e.currentTarget.style.display = "none";
@@ -228,7 +228,7 @@ export function BookmarkList({
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline gap-2 mb-2">
+                  <div className="flex items-baseline gap-2">
                     {/* Title */}
                     <div className="font-semibold text-[15px] text-foreground truncate">
                       {bookmark.title}
@@ -272,14 +272,14 @@ export function BookmarkList({
                 {/* Timestamp and Action buttons */}
                 <div className="flex items-center gap-1 shrink-0">
                   {/* Timestamp - visible when not hovered/focused */}
-                  {!(isHovered || isFocused) && (
+                  {!isHovered && (
                     <div className="text-[11px] text-muted-foreground/50 font-mono">
                       {formatTimestamp(bookmark.created_at)}
                     </div>
                   )}
 
                   {/* Action buttons - visible when hovered/focused */}
-                  {(isHovered || isFocused) && (
+                  {isHovered && (
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={(e) => handleEdit(bookmark, e)}
