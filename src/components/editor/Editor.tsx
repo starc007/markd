@@ -61,6 +61,18 @@ export function Editor({ noteId, content }: EditorProps) {
     }
   }, [newlyCreatedNoteId, noteId]);
 
+  // Auto-focus editor content when opening an existing note (not newly created)
+  useEffect(() => {
+    if (noteId && newlyCreatedNoteId !== noteId && editorRef.current) {
+      // Small delay to ensure the editor is fully initialized
+      const timeoutId = setTimeout(() => {
+        editorRef.current?.focus();
+      }, 100);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [noteId, newlyCreatedNoteId]);
+
   // Handle back navigation
   const handleBack = useCallback(() => {
     const selectedFolderId = useUIStore.getState().selectedFolderId;
