@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useBookmarkStore } from "../../stores/bookmarkStore";
 import { useUIStore } from "../../stores/uiStore";
 import { BookmarkInput, BookmarkInputRef } from "./BookmarkInput";
-import { BookmarkList } from "./BookmarkList";
+import { BookmarkList, BookmarkListRef } from "./BookmarkList";
 import { BookmarkEditModal } from "./BookmarkEditModal";
 import type { BookmarkMetadata } from "../../lib/tauri/commands";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -18,7 +18,9 @@ export function Bookmarks() {
 
   const [editingBookmark, setEditingBookmark] =
     useState<BookmarkMetadata | null>(null);
+  const [focusedIndex, setFocusedIndex] = useState<number>(0);
   const inputRef = useRef<BookmarkInputRef>(null);
+  const listRef = useRef<BookmarkListRef>(null);
 
   useEffect(() => {
     loadBookmarks(selectedFolderId);
@@ -103,11 +105,33 @@ export function Bookmarks() {
           ref={inputRef}
           folderId={selectedFolderId}
           autoFocus={true}
+          onArrowKey={(direction) => {
+            if (bookmarks.length === 0) return;
+            // Blur input and focus list when arrow keys are pressed
+            // inputRef.current?.blur();
+            listRef.current?.focus();
+
+            if (direction === "down") {
+              setFocusedIndex(0); // Start from first item when going down
+            } else if (direction === "up") {
+              // When going up from input, go to last item
+              setFocusedIndex(bookmarks.length - 1);
+            }
+          }}
         />
       </div>
 
       {/* Bookmarks List */}
-      <BookmarkList bookmarks={bookmarks} onEditBookmark={handleEditBookmark} />
+      <BookmarkList
+        ref={listRef}
+        bookmarks={bookmarks}
+        onEditBookmark={handleEditBookmark}
+        focusedIndex={focusedIndex}
+        onFocusedIndexChange={setFocusedIndex}
+        onReturnFocusToInput={() => {
+          inputRef.current?.focus();
+        }}
+      />
 
       {/* Edit Modal */}
       <BookmarkEditModal

@@ -32,6 +32,7 @@ export function useAppStateRestore() {
             sticky_notes: UIView.StickyNotes,
             settings: UIView.Settings,
             idle: UIView.None,
+            bookmarks: UIView.Bookmarks,
           };
           const view = viewMap[savedState.currentView];
           if (view !== undefined) {

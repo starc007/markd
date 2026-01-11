@@ -141,7 +141,6 @@ export function PageLinkMenu({ editor, currentNoteId }: PageLinkMenuProps) {
       {({ items, selectedIndex, onSelect }) => (
         <div className="bg-popover border border-border rounded-lg shadow-lg p-1 min-w-[280px] max-w-[320px] max-h-[300px] overflow-y-auto">
           {items.map((item, index) => {
-            console.log("item", item);
             const isSelected = index === selectedIndex;
             const IconComponent = item.icon || File02Icon;
 

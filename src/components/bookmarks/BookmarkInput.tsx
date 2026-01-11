@@ -14,6 +14,7 @@ import { CommandIcon } from "@hugeicons/core-free-icons";
 interface BookmarkInputProps {
   folderId?: string | null;
   autoFocus?: boolean;
+  onArrowKey?: (direction: "up" | "down") => void;
 }
 
 export interface BookmarkInputRef {
@@ -21,7 +22,7 @@ export interface BookmarkInputRef {
 }
 
 export const BookmarkInput = forwardRef<BookmarkInputRef, BookmarkInputProps>(
-  ({ folderId, autoFocus = false }, ref) => {
+  ({ folderId, autoFocus = false, onArrowKey }, ref) => {
     const [url, setUrl] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -87,12 +88,19 @@ export const BookmarkInput = forwardRef<BookmarkInputRef, BookmarkInputProps>(
       [url, folderId, createBookmark]
     );
 
-    const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setUrl("");
-        inputRef.current?.blur();
-      }
-    }, []);
+    const handleKeyDown = useCallback(
+      (e: React.KeyboardEvent) => {
+        if (e.key === "Escape") {
+          setUrl("");
+          inputRef.current?.blur();
+        } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+          // Allow arrow keys to navigate the bookmark list even when input is focused
+          e.preventDefault();
+          onArrowKey?.(e.key === "ArrowDown" ? "down" : "up");
+        }
+      },
+      [onArrowKey]
+    );
 
     return (
       <form onSubmit={handleSubmit} className="w-full relative">
