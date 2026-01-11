@@ -91,9 +91,7 @@ export const BookmarkList = forwardRef<BookmarkListRef, BookmarkListProps>(
         bookmark: BookmarkMetadata,
         e: React.MouseEvent | KeyboardEvent
       ) => {
-        if (e instanceof MouseEvent) {
-          e.stopPropagation();
-        }
+        e.stopPropagation();
 
         // Find the index of the bookmark being deleted
         const deletedIndex = bookmarks.findIndex((b) => b.id === bookmark.id);
