@@ -13,16 +13,9 @@ import {
 interface CommandGroupsProps {
   currentNote: { id: string; title: string } | null;
   onSelect: (action: string) => void;
-  onHover: (id: string | null) => void;
-  hoveredItem: string | null;
 }
 
-export function CommandGroups({
-  currentNote,
-  onSelect,
-  onHover,
-  hoveredItem,
-}: CommandGroupsProps) {
+export function CommandGroups({ currentNote, onSelect }: CommandGroupsProps) {
   return (
     <>
       {/* Create Category */}
@@ -30,8 +23,6 @@ export function CommandGroups({
         <Command.Item
           value="new note"
           onSelect={() => onSelect("new-note")}
-          onMouseEnter={() => onHover("new-note")}
-          onMouseLeave={() => onHover(null)}
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent group"
         >
           <HugeiconsIcon
@@ -42,23 +33,20 @@ export function CommandGroups({
             className="opacity-50"
           />
           <span className="flex-1 font-medium">New Note</span>
-          {hoveredItem === "new-note" && (
-            <kbd className="flex items-center gap-1 text-xs font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
-              <HugeiconsIcon
-                icon={CommandIcon}
-                size={14}
-                color="currentColor"
-                strokeWidth={1.5}
-              />
-              <span>N</span>
-            </kbd>
-          )}
+
+          <kbd className="flex items-center gap-1 text-xs font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
+            <HugeiconsIcon
+              icon={CommandIcon}
+              size={14}
+              color="currentColor"
+              strokeWidth={1.5}
+            />
+            <span>N</span>
+          </kbd>
         </Command.Item>
         <Command.Item
           value="new sticky note"
           onSelect={() => onSelect("new-sticky-note")}
-          onMouseEnter={() => onHover("new-sticky-note")}
-          onMouseLeave={() => onHover(null)}
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent group"
         >
           <HugeiconsIcon
@@ -69,20 +57,18 @@ export function CommandGroups({
             className="opacity-50"
           />
           <span className="flex-1 font-medium">New Sticky Note</span>
-          {hoveredItem === "new-sticky-note" && (
-            <kbd className="flex items-center gap-1 text-xs font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
-              <HugeiconsIcon
-                icon={CommandIcon}
-                size={14}
-                color="currentColor"
-                strokeWidth={1.5}
-              />
-              <span>+</span>
-              <span>Shift</span>
-              <span>+</span>
-              <span>N</span>
-            </kbd>
-          )}
+          <kbd className="flex items-center gap-1 text-xs font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
+            <HugeiconsIcon
+              icon={CommandIcon}
+              size={14}
+              color="currentColor"
+              strokeWidth={1.5}
+            />
+            <span>+</span>
+            <span>Shift</span>
+            <span>+</span>
+            <span>N</span>
+          </kbd>
         </Command.Item>
       </Command.Group>
 
@@ -91,8 +77,6 @@ export function CommandGroups({
         <Command.Item
           value="open sticky notes"
           onSelect={() => onSelect("open-sticky-notes")}
-          onMouseEnter={() => onHover("open-sticky-notes")}
-          onMouseLeave={() => onHover(null)}
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent group"
         >
           <HugeiconsIcon
@@ -103,26 +87,22 @@ export function CommandGroups({
             className="opacity-50"
           />
           <span className="flex-1 font-medium">Open Sticky Notes</span>
-          {hoveredItem === "open-sticky-notes" && (
-            <kbd className="flex items-center gap-1 text-xs font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
-              <HugeiconsIcon
-                icon={CommandIcon}
-                size={14}
-                color="currentColor"
-                strokeWidth={1.5}
-              />
-              <span>+</span>
-              <span>Shift</span>
-              <span>+</span>
-              <span>O</span>
-            </kbd>
-          )}
+          <kbd className="flex items-center gap-1 text-xs font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
+            <HugeiconsIcon
+              icon={CommandIcon}
+              size={14}
+              color="currentColor"
+              strokeWidth={1.5}
+            />
+            <span>+</span>
+            <span>Shift</span>
+            <span>+</span>
+            <span>O</span>
+          </kbd>
         </Command.Item>
         <Command.Item
           value="open bookmarks"
           onSelect={() => onSelect("open-bookmarks")}
-          onMouseEnter={() => onHover("open-bookmarks")}
-          onMouseLeave={() => onHover(null)}
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent group"
         >
           <HugeiconsIcon
@@ -133,20 +113,18 @@ export function CommandGroups({
             className="opacity-50"
           />
           <span className="flex-1 font-medium">Open Bookmarks</span>
-          {hoveredItem === "open-bookmarks" && (
-            <kbd className="flex items-center gap-1 text-xs font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
-              <HugeiconsIcon
-                icon={CommandIcon}
-                size={14}
-                color="currentColor"
-                strokeWidth={1.5}
-              />
-              <span>+</span>
-              <span>Shift</span>
-              <span>+</span>
-              <span>B</span>
-            </kbd>
-          )}
+          <kbd className="flex items-center gap-1 text-xs font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
+            <HugeiconsIcon
+              icon={CommandIcon}
+              size={14}
+              color="currentColor"
+              strokeWidth={1.5}
+            />
+            <span>+</span>
+            <span>Shift</span>
+            <span>+</span>
+            <span>B</span>
+          </kbd>
         </Command.Item>
       </Command.Group>
 
@@ -155,8 +133,6 @@ export function CommandGroups({
         <Command.Item
           value="toggle sidebar"
           onSelect={() => onSelect("focus-mode")}
-          onMouseEnter={() => onHover("focus-mode")}
-          onMouseLeave={() => onHover(null)}
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent group"
         >
           <HugeiconsIcon
@@ -167,24 +143,20 @@ export function CommandGroups({
             className="opacity-50"
           />
           <span className="flex-1 font-medium">Toggle Sidebar</span>
-          {hoveredItem === "focus-mode" && (
-            <kbd className="flex items-center gap-1 text-xs font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
-              <HugeiconsIcon
-                icon={CommandIcon}
-                size={14}
-                color="currentColor"
-                strokeWidth={1.5}
-              />
-              <span>\</span>
-            </kbd>
-          )}
+          <kbd className="flex items-center gap-1 text-xs font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
+            <HugeiconsIcon
+              icon={CommandIcon}
+              size={14}
+              color="currentColor"
+              strokeWidth={1.5}
+            />
+            <span>\</span>
+          </kbd>
         </Command.Item>
         {currentNote && (
           <Command.Item
             value="export note"
             onSelect={() => onSelect("export")}
-            onMouseEnter={() => onHover("export")}
-            onMouseLeave={() => onHover(null)}
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent group"
           >
             <HugeiconsIcon
@@ -204,8 +176,6 @@ export function CommandGroups({
         <Command.Item
           value="settings"
           onSelect={() => onSelect("settings")}
-          onMouseEnter={() => onHover("settings")}
-          onMouseLeave={() => onHover(null)}
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent group"
         >
           <HugeiconsIcon
@@ -216,20 +186,19 @@ export function CommandGroups({
             className="opacity-50"
           />
           <span className="flex-1 font-medium">Settings</span>
-          {hoveredItem === "settings" && (
-            <kbd className="flex items-center gap-1 text-xs font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
-              <HugeiconsIcon
-                icon={CommandIcon}
-                size={14}
-                color="currentColor"
-                strokeWidth={1.5}
-              />
-              <span>+</span>
-              <span>Shift</span>
-              <span>+</span>
-              <span>T</span>
-            </kbd>
-          )}
+
+          <kbd className="flex items-center gap-1 text-xs font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
+            <HugeiconsIcon
+              icon={CommandIcon}
+              size={14}
+              color="currentColor"
+              strokeWidth={1.5}
+            />
+            <span>+</span>
+            <span>Shift</span>
+            <span>+</span>
+            <span>T</span>
+          </kbd>
         </Command.Item>
       </Command.Group>
     </>

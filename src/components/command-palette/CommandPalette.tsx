@@ -34,7 +34,6 @@ export function CommandPalette() {
   const { createStickyNote } = useStickyNotesStore();
 
   const [inputValue, setInputValue] = useState("");
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const searchTimeoutRef = useRef<number | null>(null);
 
   // Detect mode: '>' prefix = command mode, otherwise = search mode
@@ -111,7 +110,6 @@ export function CommandPalette() {
     if (!commandPaletteOpen) {
       setInputValue("");
       clearSearch();
-      setHoveredItem(null);
       // Clear any pending search when palette closes
       if (searchTimeoutRef.current) {
         window.clearTimeout(searchTimeoutRef.current);
@@ -338,21 +336,11 @@ export function CommandPalette() {
           />
 
           {hasRecentItems && !hasSearchResults && (
-            <RecentItems
-              items={recentItems}
-              onSelect={handleSelect}
-              onHover={setHoveredItem}
-              hoveredItem={hoveredItem}
-            />
+            <RecentItems items={recentItems} onSelect={handleSelect} />
           )}
 
           {shouldShowCommands && !hasSearchResults && (
-            <CommandGroups
-              currentNote={currentNote}
-              onSelect={handleSelect}
-              onHover={setHoveredItem}
-              hoveredItem={hoveredItem}
-            />
+            <CommandGroups currentNote={currentNote} onSelect={handleSelect} />
           )}
 
           {hasSearchResults && (

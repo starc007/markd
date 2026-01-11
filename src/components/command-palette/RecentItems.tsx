@@ -18,16 +18,9 @@ interface RecentItem {
 interface RecentItemsProps {
   items: RecentItem[];
   onSelect: (action: string) => void;
-  onHover: (id: string | null) => void;
-  hoveredItem: string | null;
 }
 
-export function RecentItems({
-  items,
-  onSelect,
-  onHover,
-  hoveredItem,
-}: RecentItemsProps) {
+export function RecentItems({ items, onSelect }: RecentItemsProps) {
   if (items.length === 0) return null;
 
   return (
@@ -46,8 +39,6 @@ export function RecentItems({
             key={`${item.type}-${item.id}`}
             value={`${actionPrefix}${item.id} ${item.title}`}
             onSelect={() => onSelect(`${actionPrefix}${item.id}`)}
-            onMouseEnter={() => onHover(`${actionPrefix}${item.id}`)}
-            onMouseLeave={() => onHover(null)}
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent group"
           >
             <HugeiconsIcon
