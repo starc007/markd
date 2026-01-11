@@ -33,7 +33,33 @@ export function Editor({ noteId, content }: EditorProps) {
   const titleRef = useRef<EditorTitleRef>(null);
 
   const currentNote = useNoteStore((state) => state.currentNote);
+  const newlyCreatedNoteId = useNoteStore((state) => state.newlyCreatedNoteId);
   const focusMode = useUIStore((state) => state.focusMode);
+
+  // Auto-focus title when a new note is created
+  useEffect(() => {
+    if (newlyCreatedNoteId === noteId && titleRef.current) {
+      // Small delay to ensure the component is fully rendered
+      const timeoutId = setTimeout(() => {
+        titleRef.current?.focus();
+        // Select all text if it's "Untitled" so user can immediately type
+        // Access the textarea element directly via DOM query
+        const textarea = document.querySelector(
+          `textarea[placeholder="Untitled"]`
+        ) as HTMLTextAreaElement;
+        if (
+          textarea &&
+          (textarea.value === "Untitled" || textarea.value === "")
+        ) {
+          textarea.select();
+        }
+        // Clear the flag after focusing
+        useNoteStore.setState({ newlyCreatedNoteId: null });
+      }, 150);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [newlyCreatedNoteId, noteId]);
 
   // Handle back navigation
   const handleBack = useCallback(() => {

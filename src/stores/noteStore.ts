@@ -26,6 +26,8 @@ interface NoteStore {
   childrenMap: Map<string, NoteMetadata[]>; // parent_id -> children
   expandedPages: Set<string>; // Set of expanded page IDs
   loadedChildren: Set<string>; // Pages whose children have been loaded
+  // Track newly created notes for auto-focus
+  newlyCreatedNoteId: string | null;
 
   // Note actions
   loadNotes: (
@@ -95,6 +97,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
   childrenMap: new Map(),
   expandedPages: new Set(),
   loadedChildren: new Set(),
+  newlyCreatedNoteId: null,
 
   // Note actions
   loadNotes: async (folderId, parentId) => {
@@ -146,9 +149,14 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       }
 
       // Set the note immediately so content updates right away
+      // Clear newlyCreatedNoteId if we're loading a different note
+      const { newlyCreatedNoteId } = get();
       set({
         currentNote: note,
         isLoading: false,
+        // Only keep newlyCreatedNoteId if it matches the loaded note
+        newlyCreatedNoteId:
+          newlyCreatedNoteId === note.id ? newlyCreatedNoteId : null,
       });
 
       // Expand parent pages in the background (non-blocking)
@@ -254,6 +262,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
           childrenMap: newMap,
           currentNote: note,
           isLoading: false,
+          newlyCreatedNoteId: note.id, // Mark as newly created for auto-focus
         });
       } else {
         // Replace temp with real data in notes list
@@ -264,6 +273,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
           notes: updatedNotes,
           currentNote: note,
           isLoading: false,
+          newlyCreatedNoteId: note.id, // Mark as newly created for auto-focus
         });
       }
       return note;
@@ -345,6 +355,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         loadedChildren: newLoaded,
         currentNote: fullNote, // Navigate to the newly created subpage
         isLoading: false,
+        newlyCreatedNoteId: fullNote.id, // Mark as newly created for auto-focus
       });
       return fullNote;
     } catch (error) {
