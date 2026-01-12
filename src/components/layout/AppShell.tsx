@@ -12,6 +12,7 @@ import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
 import { useTheme } from "../../hooks/useTheme";
 import { useWindowFocus } from "../../hooks/useWindowFocus";
 import { useAppStateRestore } from "../../hooks/useAppStateRestore";
+import { useUpdateCheck } from "../../hooks/useUpdateCheck";
 import Welcome from "../welcome";
 
 export function AppShell() {
@@ -28,6 +29,7 @@ export function AppShell() {
   useKeyboardShortcuts();
   useTheme(); // Apply theme
   useWindowFocus(); // Refresh data on window focus
+  useUpdateCheck(); // Check for updates on app startup and periodically
   useAppStateRestore(); // Restore app state (current note, view, etc.) on startup
 
   const renderContent = () => {

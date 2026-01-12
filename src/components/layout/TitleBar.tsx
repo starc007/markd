@@ -1,4 +1,5 @@
 import { useNoteStore } from "../../stores/noteStore";
+import { UpdateIndicator } from "../update/UpdateIndicator";
 
 export function TitleBar() {
   // Use selective subscriptions to prevent unnecessary re-renders
@@ -6,9 +7,12 @@ export function TitleBar() {
 
   return (
     <header
-      className="flex items-center h-[40px] px-5 bg-sidebar border-b border-sidebar-border"
+      className="relative flex items-center h-[40px] px-5 bg-sidebar border-b border-sidebar-border"
       data-tauri-drag-region
     >
+      {/* Update Indicator - positioned in top-left */}
+      <UpdateIndicator />
+
       {/* Traffic lights spacer (macOS) - draggable area */}
       <div className="w-[78px] shrink-0" data-tauri-drag-region />
 
