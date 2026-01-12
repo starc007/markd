@@ -42,7 +42,6 @@
     "longDescription": "Draft is a macOS-first, local-only, ultra high-performance notes app designed for developers and content creators who care deeply about speed, privacy, and data ownership.",
     "macOS": {
       "dmg": {
-        "background": "dmg-background.png",
         "windowSize": {
           "width": 660,
           "height": 400

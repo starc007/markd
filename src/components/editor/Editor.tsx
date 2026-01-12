@@ -139,9 +139,14 @@ export function Editor({ noteId, content }: EditorProps) {
       if (useNoteStore.getState().newlyCreatedNoteId === noteId) {
         useNoteStore.setState({ newlyCreatedNoteId: null });
       }
-      // Only save if content actually changed (EditorContent already checks this, but double-check here)
+      // CRITICAL: Verify we're still on the same note before saving
+      // This prevents saving content to the wrong note when switching quickly
       const currentNote = useNoteStore.getState().currentNote;
-      if (currentNote && currentNote.content !== newContent) {
+      if (
+        currentNote &&
+        currentNote.id === noteId &&
+        currentNote.content !== newContent
+      ) {
         useNoteStore.getState().saveCurrentNoteContent(newContent);
       }
     },

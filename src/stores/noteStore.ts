@@ -140,11 +140,25 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       return;
     }
 
+    // Store the original note ID to detect if user switched notes during load
+    const originalNoteId = currentNote?.id;
+
     set({ isLoading: true, error: null });
     try {
       const note = await commands.getNote(id);
       if (!note) {
         set({ error: "Note not found", isLoading: false });
+        return;
+      }
+
+      // CRITICAL: Double-check we're still loading the same note (prevent race conditions)
+      // If user switched notes again while this was loading, don't update state
+      const { currentNote: checkNote } = get();
+      // Only skip if currentNote exists, is different from what we're loading,
+      // AND is different from the original note (meaning user switched to a third note)
+      if (checkNote && checkNote.id !== id && checkNote.id !== originalNoteId) {
+        // Note was switched again while loading, don't update
+        set({ isLoading: false });
         return;
       }
 
@@ -643,9 +657,22 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       // Backend queue handles deduplication and batching
       const updatedAt = await commands.saveNoteContent(noteId, content);
 
+      // CRITICAL: Verify we're still on the same note before updating state
+      // This prevents race conditions when switching notes quickly
+      const { currentNote: currentNoteAfterSave } = get();
+      if (!currentNoteAfterSave || currentNoteAfterSave.id !== noteId) {
+        // Note was switched during save, don't update state
+        set({ isSaving: false });
+        return;
+      }
+
       // Update local state optimistically
       set({
-        currentNote: { ...currentNote, content, updated_at: updatedAt },
+        currentNote: {
+          ...currentNoteAfterSave,
+          content,
+          updated_at: updatedAt,
+        },
         isSaving: false,
       });
 
