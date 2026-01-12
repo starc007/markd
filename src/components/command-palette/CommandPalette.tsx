@@ -245,7 +245,12 @@ export function CommandPalette() {
               const bookmarkId = action.replace("recent-bookmark:", "");
               const bookmark = bookmarks.find((b) => b.id === bookmarkId);
               if (bookmark) {
-                const { openBookmark } = useBookmarkStore.getState();
+                const { openBookmark, updateBookmark, loadBookmarks } =
+                  useBookmarkStore.getState();
+                // Update bookmark timestamp by updating title to itself (no-op update that updates timestamp)
+                await updateBookmark(bookmarkId, { title: bookmark.title });
+                // Reload bookmarks to get fresh timestamp
+                await loadBookmarks(bookmark.folder_id ?? null);
                 await openBookmark(bookmark.url);
               }
               setCommandPaletteOpen(false);

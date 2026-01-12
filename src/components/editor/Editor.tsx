@@ -62,8 +62,14 @@ export function Editor({ noteId, content }: EditorProps) {
   }, [newlyCreatedNoteId, noteId]);
 
   // Auto-focus editor content when opening an existing note (not newly created)
+  // Only focus if newlyCreatedNoteId is null (not a new note) or if it's a different note
   useEffect(() => {
-    if (noteId && newlyCreatedNoteId !== noteId && editorRef.current) {
+    // Don't focus editor if this is a newly created note (should stay in title)
+    if (newlyCreatedNoteId === noteId) {
+      return;
+    }
+
+    if (noteId && editorRef.current) {
       // Small delay to ensure the editor is fully initialized
       const timeoutId = setTimeout(() => {
         editorRef.current?.focus();
