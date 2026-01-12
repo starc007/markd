@@ -72,27 +72,27 @@ export function Editor({ noteId, content }: EditorProps) {
     }
   }, [newlyCreatedNoteId, noteId]);
 
-  // Helper function to check if content has actual text (not just empty/default structure)
-  const hasContent = useCallback((contentStr: string): boolean => {
-    try {
-      const parsed = JSON.parse(contentStr);
-      // Default content is: {"type":"doc","content":[{"type":"paragraph"}]}
-      // Check if there's actual text content
-      const hasText = (node: any): boolean => {
-        if (node.type === "text" && node.text && node.text.trim().length > 0) {
-          return true;
-        }
-        if (node.content && Array.isArray(node.content)) {
-          return node.content.some(hasText);
-        }
-        return false;
-      };
-      return hasText(parsed);
-    } catch {
-      // If parsing fails, assume it has content (better safe than sorry)
-      return true;
-    }
-  }, []);
+  // // Helper function to check if content has actual text (not just empty/default structure)
+  // const hasContent = useCallback((contentStr: string): boolean => {
+  //   try {
+  //     const parsed = JSON.parse(contentStr);
+  //     // Default content is: {"type":"doc","content":[{"type":"paragraph"}]}
+  //     // Check if there's actual text content
+  //     const hasText = (node: any): boolean => {
+  //       if (node.type === "text" && node.text && node.text.trim().length > 0) {
+  //         return true;
+  //       }
+  //       if (node.content && Array.isArray(node.content)) {
+  //         return node.content.some(hasText);
+  //       }
+  //       return false;
+  //     };
+  //     return hasText(parsed);
+  //   } catch {
+  //     // If parsing fails, assume it has content (better safe than sorry)
+  //     return true;
+  //   }
+  // }, []);
 
   // Clear newlyCreatedNoteId when user starts typing in title or when note changes
   useEffect(() => {
