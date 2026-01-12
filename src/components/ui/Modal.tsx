@@ -49,16 +49,23 @@ export function Modal({
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ duration: 0.15 }}
               className={cn(
-                "bg-card border border-border rounded-2xl p-6 w-full max-w-md",
+                "bg-card border border-border rounded-2xl w-full max-w-md flex flex-col",
+                title ? "p-6" : "p-0",
                 className
               )}
             >
               {title && (
-                <DialogTitle className="text-lg font-semibold mb-4">
+                <DialogTitle className="text-lg font-semibold mb-4 px-6 pt-6 shrink-0">
                   {title}
                 </DialogTitle>
               )}
-              {children}
+              <div
+                className={cn(
+                  title ? "flex-1 min-h-0" : "flex-1 min-h-0 h-full"
+                )}
+              >
+                {children}
+              </div>
             </MotionPanel>
           </div>
         </Dialog>

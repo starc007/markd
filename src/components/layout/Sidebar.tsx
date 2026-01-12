@@ -26,7 +26,7 @@ export const Sidebar = memo(function Sidebar() {
   const { stickyNotes, loadStickyNotes } = useStickyNotesStore();
   const { bookmarks, loadBookmarks } = useBookmarkStore();
   const [deleteModalNoteId, setDeleteModalNoteId] = useState<string | null>(
-    null,
+    null
   );
 
   useEffect(() => {
@@ -49,7 +49,7 @@ export const Sidebar = memo(function Sidebar() {
       toast.error(
         `Failed to create note: ${
           error instanceof Error ? error.message : "Unknown error"
-        }`,
+        }`
       );
     }
   }, [selectedFolderId]);
@@ -59,7 +59,7 @@ export const Sidebar = memo(function Sidebar() {
       e.stopPropagation();
       setColor(noteId, newColorId);
     },
-    [setColor],
+    [setColor]
   );
 
   const handleDeleteNote = useCallback(
@@ -77,11 +77,11 @@ export const Sidebar = memo(function Sidebar() {
         toast.error(
           `Failed to delete note: ${
             error instanceof Error ? error.message : "Unknown error"
-          }`,
+          }`
         );
       }
     },
-    [removeColor],
+    [removeColor]
   );
 
   // Filter and sort notes - memoized for performance
@@ -118,7 +118,7 @@ export const Sidebar = memo(function Sidebar() {
       toast.error(
         `Failed to create subpage: ${
           error instanceof Error ? error.message : "Unknown error"
-        }`,
+        }`
       );
     }
   }, []);
@@ -179,9 +179,7 @@ export const Sidebar = memo(function Sidebar() {
         onCreateSubpage={handleCreateSubpage}
       />
 
-      <SidebarSettings
-        onSettingsClick={() => useUIStore.getState().setView(UIView.Settings)}
-      />
+      <SidebarSettings />
 
       {/* Delete Note Modal */}
       {deleteModalNoteId && (

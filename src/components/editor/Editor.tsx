@@ -37,45 +37,97 @@ export function Editor({ noteId, content }: EditorProps) {
   const focusMode = useUIStore((state) => state.focusMode);
 
   // Auto-focus title when a new note is created
+  // This effect has priority and should run first
   useEffect(() => {
-    if (newlyCreatedNoteId === noteId && titleRef.current) {
-      // Small delay to ensure the component is fully rendered
-      const timeoutId = setTimeout(() => {
-        titleRef.current?.focus();
-        // Select all text if it's "Untitled" so user can immediately type
-        // Access the textarea element directly via DOM query
-        const textarea = document.querySelector(
-          `textarea[placeholder="Untitled"]`
-        ) as HTMLTextAreaElement;
-        if (
-          textarea &&
-          (textarea.value === "Untitled" || textarea.value === "")
-        ) {
-          textarea.select();
+    if (newlyCreatedNoteId === noteId) {
+      // Try to focus immediately, then retry with delays to ensure it works
+      const focusTitle = () => {
+        // Check flag again before focusing (in case it was cleared)
+        const currentFlag = useNoteStore.getState().newlyCreatedNoteId;
+        if (currentFlag === noteId && titleRef.current) {
+          titleRef.current.focus();
+          // Select all text if it's "Untitled" so user can immediately type
+          // Access the textarea element directly via DOM query
+          const textarea = document.querySelector(
+            `textarea[placeholder="Untitled"]`
+          ) as HTMLTextAreaElement;
+          if (
+            textarea &&
+            (textarea.value === "Untitled" || textarea.value === "")
+          ) {
+            textarea.select();
+          }
         }
-        // Clear the flag after focusing
-        useNoteStore.setState({ newlyCreatedNoteId: null });
-      }, 150);
+      };
 
-      return () => clearTimeout(timeoutId);
+      // Try immediately
+      focusTitle();
+
+      // Retry with delays to ensure it works even if component isn't fully ready
+      const timeout1 = setTimeout(focusTitle, 50);
+
+      return () => {
+        clearTimeout(timeout1);
+      };
     }
   }, [newlyCreatedNoteId, noteId]);
 
+  // Helper function to check if content has actual text (not just empty/default structure)
+  const hasContent = useCallback((contentStr: string): boolean => {
+    try {
+      const parsed = JSON.parse(contentStr);
+      // Default content is: {"type":"doc","content":[{"type":"paragraph"}]}
+      // Check if there's actual text content
+      const hasText = (node: any): boolean => {
+        if (node.type === "text" && node.text && node.text.trim().length > 0) {
+          return true;
+        }
+        if (node.content && Array.isArray(node.content)) {
+          return node.content.some(hasText);
+        }
+        return false;
+      };
+      return hasText(parsed);
+    } catch {
+      // If parsing fails, assume it has content (better safe than sorry)
+      return true;
+    }
+  }, []);
+
   // Auto-focus editor content when opening an existing note (not newly created)
   // Only focus if newlyCreatedNoteId is null (not a new note) or if it's a different note
+  // AND only if the note has actual content
   useEffect(() => {
     // Don't focus editor if this is a newly created note (should stay in title)
+    // Check the flag at the time the effect runs
     if (newlyCreatedNoteId === noteId) {
       return;
     }
 
+    // Only focus editor if note has actual content
+    if (!hasContent(content)) {
+      return;
+    }
+
     if (noteId && editorRef.current) {
-      // Small delay to ensure the editor is fully initialized
+      // Use a longer delay to ensure title has had time to focus first for new notes
       const timeoutId = setTimeout(() => {
-        editorRef.current?.focus();
-      }, 100);
+        // Double-check the flag before focusing (in case it was set after effect ran)
+        const flagCheck = useNoteStore.getState().newlyCreatedNoteId;
+        if (flagCheck !== noteId && editorRef.current) {
+          editorRef.current.focus();
+        }
+      }, 400);
 
       return () => clearTimeout(timeoutId);
+    }
+  }, [noteId, newlyCreatedNoteId, content, hasContent]);
+
+  // Clear newlyCreatedNoteId when user starts typing in title or when note changes
+  useEffect(() => {
+    // Clear the flag when navigating to a different note
+    if (newlyCreatedNoteId && newlyCreatedNoteId !== noteId) {
+      useNoteStore.setState({ newlyCreatedNoteId: null });
     }
   }, [noteId, newlyCreatedNoteId]);
 
@@ -111,6 +163,11 @@ export function Editor({ noteId, content }: EditorProps) {
   // Content save handler (already debounced in EditorContent)
   const handleContentChange = useCallback(
     (newContent: string) => {
+      // Clear the newlyCreatedNoteId flag when user starts typing in editor
+      // This allows normal editor focus behavior after user explicitly moves to editor
+      if (useNoteStore.getState().newlyCreatedNoteId === noteId) {
+        useNoteStore.setState({ newlyCreatedNoteId: null });
+      }
       // Only save if content actually changed (EditorContent already checks this, but double-check here)
       const currentNote = useNoteStore.getState().currentNote;
       if (currentNote && currentNote.content !== newContent) {
@@ -124,6 +181,8 @@ export function Editor({ noteId, content }: EditorProps) {
   const handleTitleChange = useCallback(
     (title: string) => {
       const note = useNoteStore.getState().currentNote;
+      // Don't clear newlyCreatedNoteId here - let user type freely in title
+      // The flag will be cleared when they press Enter or start typing in editor
       // Use "Untitled" only for saving/display, but allow empty during editing
       const displayTitle = title.trim() || "Untitled";
       // Only update if the display title (with "Untitled" fallback) is different
@@ -137,8 +196,12 @@ export function Editor({ noteId, content }: EditorProps) {
 
   // Handle Enter in title to focus content editor
   const handleTitleEnter = useCallback(() => {
+    // Clear the newlyCreatedNoteId flag when user explicitly moves to editor
+    if (useNoteStore.getState().newlyCreatedNoteId === noteId) {
+      useNoteStore.setState({ newlyCreatedNoteId: null });
+    }
     editorRef.current?.focus();
-  }, []);
+  }, [noteId]);
 
   // Keyboard shortcuts: Cmd+Shift+D to open delete modal, Cmd+Enter to confirm when modal is open
   useEffect(() => {

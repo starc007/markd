@@ -3,7 +3,7 @@ import { Editor } from "../editor/Editor";
 import { CommandPalette } from "../command-palette/CommandPalette";
 import { TitleBar } from "./TitleBar";
 import { NotesGrid } from "../notes/NotesGrid";
-import { Settings } from "../settings/Settings";
+import { SettingsModal } from "../settings/SettingsModal";
 import { Bookmarks } from "../bookmarks/Bookmarks";
 import { SectionErrorBoundary } from "../SectionErrorBoundary";
 import { useNoteStore } from "../../stores/noteStore";
@@ -20,6 +20,10 @@ export function AppShell() {
   const currentView = useUIStore((state) => state.currentView);
   const focusMode = useUIStore((state) => state.focusMode);
   const sidebarCollapsed = useUIStore((state) => state.sidebarCollapsed);
+  const settingsModalOpen = useUIStore((state) => state.settingsModalOpen);
+  const setSettingsModalOpen = useUIStore(
+    (state) => state.setSettingsModalOpen
+  );
 
   useKeyboardShortcuts();
   useTheme(); // Apply theme
@@ -27,9 +31,7 @@ export function AppShell() {
   useAppStateRestore(); // Restore app state (current note, view, etc.) on startup
 
   const renderContent = () => {
-    if (currentView === UIView.Settings) {
-      return <Settings />;
-    } else if (currentView === UIView.StickyNotes) {
+    if (currentView === UIView.StickyNotes) {
       return <NotesGrid />;
     } else if (currentView === UIView.Bookmarks) {
       return <Bookmarks />;
@@ -67,11 +69,7 @@ export function AppShell() {
         <main className="flex-1 flex flex-col overflow-hidden w-full">
           <SectionErrorBoundary
             section={
-              currentView === UIView.Settings
-                ? "settings"
-                : currentView === UIView.StickyNotes
-                ? "notes-grid"
-                : "editor"
+              currentView === UIView.StickyNotes ? "notes-grid" : "editor"
             }
           >
             {renderContent()}
@@ -83,6 +81,12 @@ export function AppShell() {
       <SectionErrorBoundary section="command-palette">
         <CommandPalette />
       </SectionErrorBoundary>
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={settingsModalOpen}
+        onClose={() => setSettingsModalOpen(false)}
+      />
     </div>
   );
 }

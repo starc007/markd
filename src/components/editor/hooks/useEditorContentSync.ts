@@ -30,6 +30,8 @@ export function useEditorContentSync({
   const onContentChangeRef = useRef(onContentChange);
   const lastSavedContentRef = useRef<string>("");
   const lastContentRef = useRef<string>(content);
+  // Store the noteId when a save is scheduled to prevent saving to wrong note
+  const pendingSaveNoteIdRef = useRef<string | null>(null);
 
   // Update noteId ref when it changes
   useEffect(() => {
@@ -95,10 +97,23 @@ export function useEditorContentSync({
         window.clearTimeout(saveTimeoutRef.current);
       }
 
-      // Debounce saves - save after 500ms of no changes
+      // Store the noteId when scheduling the save
+      const saveNoteId = noteIdForLinksRef.current;
+      pendingSaveNoteIdRef.current = saveNoteId;
+
+      // Debounce saves - save after 150ms of no changes
       saveTimeoutRef.current = window.setTimeout(() => {
         // Prevent execution if component has unmounted
         if (!isMountedRef.current) {
+          pendingSaveNoteIdRef.current = null;
+          return;
+        }
+
+        // Critical: Only save if we're still on the same note
+        // This prevents saving content from one note to another when switching quickly
+        if (noteIdForLinksRef.current !== saveNoteId) {
+          // Note has changed, don't save
+          pendingSaveNoteIdRef.current = null;
           return;
         }
 
@@ -116,10 +131,11 @@ export function useEditorContentSync({
             onContentChangeRef.current(jsonString);
 
             // Extract page links from content and sync
-            extractAndSyncPageLinks(noteIdForLinksRef.current, json);
+            extractAndSyncPageLinks(saveNoteId, json);
           }
         }
-      }, 500);
+        pendingSaveNoteIdRef.current = null;
+      }, 150);
     },
     [extractAndSyncPageLinks, isSwitchingNotesRef, isMountedRef]
   );
@@ -134,6 +150,33 @@ export function useEditorContentSync({
     if (noteIdChanged || contentChanged) {
       // Set flag to prevent saves during note switch or content update
       if (noteIdChanged) {
+        // CRITICAL: Before switching notes, save any pending content from the previous note
+        // This ensures no content is lost when switching notes
+        if (saveTimeoutRef.current && editor) {
+          // Cancel the timeout
+          window.clearTimeout(saveTimeoutRef.current);
+          saveTimeoutRef.current = null;
+
+          // Get the noteId that the pending save was for
+          const previousNoteId = pendingSaveNoteIdRef.current;
+          pendingSaveNoteIdRef.current = null;
+
+          // If we have a pending save and we're still on that note, save immediately
+          if (previousNoteId && previousNoteId === noteIdRef.current) {
+            const json = editor.getJSON();
+            const jsonString = JSON.stringify(json);
+
+            // Only save if content actually changed
+            if (jsonString !== lastSavedContentRef.current) {
+              lastSavedContentRef.current = jsonString;
+              // Save immediately for the previous note
+              onContentChangeRef.current(jsonString);
+              // Extract page links from content and sync
+              extractAndSyncPageLinks(previousNoteId, json);
+            }
+          }
+        }
+
         isSwitchingNotesRef.current = true;
         noteIdRef.current = noteId;
       } else if (contentChanged) {
@@ -141,10 +184,11 @@ export function useEditorContentSync({
         isSwitchingNotesRef.current = true;
       }
 
-      // Clear any pending saves
-      if (saveTimeoutRef.current) {
+      // Clear any pending saves (for content changes)
+      if (saveTimeoutRef.current && !noteIdChanged) {
         window.clearTimeout(saveTimeoutRef.current);
         saveTimeoutRef.current = null;
+        pendingSaveNoteIdRef.current = null;
       }
 
       const json = parseContent(content);
@@ -193,16 +237,23 @@ export function useEditorContentSync({
         return;
       }
 
+      // Store current noteId to ensure we're saving to the correct note
+      const currentNoteId = noteIdForLinksRef.current;
+
       if (saveTimeoutRef.current) {
         window.clearTimeout(saveTimeoutRef.current);
         saveTimeoutRef.current = null;
+        pendingSaveNoteIdRef.current = null;
       }
 
       const json = editor.getJSON();
       const jsonString = JSON.stringify(json);
 
-      // Only save if content actually changed
-      if (jsonString !== lastSavedContentRef.current) {
+      // Only save if content actually changed and we're still on the same note
+      if (
+        jsonString !== lastSavedContentRef.current &&
+        noteIdForLinksRef.current === currentNoteId
+      ) {
         lastSavedContentRef.current = jsonString;
         onContentChangeRef.current(jsonString);
       }
@@ -224,6 +275,7 @@ export function useEditorContentSync({
       if (saveTimeoutRef.current) {
         window.clearTimeout(saveTimeoutRef.current);
         saveTimeoutRef.current = null;
+        pendingSaveNoteIdRef.current = null;
       }
       if (switchingTimeoutRef.current) {
         window.clearTimeout(switchingTimeoutRef.current);

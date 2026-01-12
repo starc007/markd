@@ -1,12 +1,17 @@
 import { HugeiconsIcon } from "@hugeicons/react";
 import { SettingsIcon } from "@hugeicons/core-free-icons";
 import { NavItem, SectionHeading } from "../ui";
+import { useUIStore } from "@/stores/uiStore";
 
-interface SidebarSettingsProps {
-  onSettingsClick: () => void;
-}
+export function SidebarSettings() {
+  const setSettingsModalOpen = useUIStore(
+    (state) => state.setSettingsModalOpen
+  );
 
-export function SidebarSettings({ onSettingsClick }: SidebarSettingsProps) {
+  const handleSettingsClick = () => {
+    setSettingsModalOpen(true);
+  };
+
   return (
     <div className="p-3 border-t border-sidebar-border">
       <SectionHeading>Settings</SectionHeading>
@@ -21,7 +26,7 @@ export function SidebarSettings({ onSettingsClick }: SidebarSettingsProps) {
             />
           }
           label="Settings"
-          onClick={onSettingsClick}
+          onClick={handleSettingsClick}
         />
       </div>
     </div>

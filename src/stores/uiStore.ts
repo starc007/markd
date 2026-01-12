@@ -19,6 +19,7 @@ interface UIStore {
   selectedFolderId: string | null;
   currentView: UIView | null;
   previousNoteId: string | null; // Track note we came from when navigating to bookmarks
+  settingsModalOpen: boolean;
 
   // Actions
   toggleSidebar: () => void;
@@ -30,6 +31,7 @@ interface UIStore {
   setView: (view: UIView | null) => void;
   setSelectedFolderId: (id: string | null) => void;
   setPreviousNoteId: (id: string | null) => void;
+  setSettingsModalOpen: (open: boolean) => void;
 }
 
 export const useUIStore = create<UIStore>((set, get) => ({
@@ -41,6 +43,7 @@ export const useUIStore = create<UIStore>((set, get) => ({
   selectedFolderId: null,
   currentView: UIView.None,
   previousNoteId: null,
+  settingsModalOpen: false,
 
   // Actions
   toggleSidebar: () => {
@@ -79,13 +82,10 @@ export const useUIStore = create<UIStore>((set, get) => ({
     }
 
     set({ currentView: view });
-    // Only clear currentNote when switching to Settings, StickyNotes, or Bookmarks view
+    // Only clear currentNote when switching to StickyNotes or Bookmarks view
     // Don't clear when switching to None (editor view) to prevent flicker
-    if (
-      view === UIView.Settings ||
-      view === UIView.StickyNotes ||
-      view === UIView.Bookmarks
-    ) {
+    // Settings is now a modal, so don't clear note when opening it
+    if (view === UIView.StickyNotes || view === UIView.Bookmarks) {
       useNoteStore.setState({ currentNote: null });
     }
     // Persist view change (preserve existing parentPath)
@@ -113,5 +113,9 @@ export const useUIStore = create<UIStore>((set, get) => ({
       selectedFolderId: id,
       parentPath: savedState.parentPath || [],
     });
+  },
+
+  setSettingsModalOpen: (open: boolean) => {
+    set({ settingsModalOpen: open });
   },
 }));

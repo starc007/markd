@@ -30,7 +30,12 @@ export function CommandPalette() {
   const bookmarks = useBookmarkStore((state) => state.bookmarks);
 
   const commandPaletteOpen = useUIStore((state) => state.commandPaletteOpen);
-  const { setCommandPaletteOpen, toggleFocusMode, setView } = useUIStore();
+  const {
+    setCommandPaletteOpen,
+    toggleFocusMode,
+    setView,
+    setSettingsModalOpen,
+  } = useUIStore();
   const { createStickyNote } = useStickyNotesStore();
 
   const [inputValue, setInputValue] = useState("");
@@ -196,7 +201,7 @@ export function CommandPalette() {
             }
             break;
           case "settings":
-            setView(UIView.Settings);
+            setSettingsModalOpen(true);
             setCommandPaletteOpen(false);
             break;
           case "open-bookmarks":

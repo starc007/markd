@@ -2,6 +2,56 @@ import { useEffect } from "react";
 import { useNoteStore } from "../stores/noteStore";
 import { useUIStore, UIView } from "../stores/uiStore";
 import { useStickyNotesStore } from "../stores/stickyNotesStore";
+import { useSettingsStore } from "../stores/settingsStore";
+
+// Helper function to check if a keyboard event matches a shortcut
+function matchesShortcut(
+  e: KeyboardEvent,
+  shortcut: {
+    key: string;
+    meta?: boolean;
+    ctrl?: boolean;
+    alt?: boolean;
+    shift?: boolean;
+  }
+): boolean {
+  const key = e.key.toLowerCase();
+  const shortcutKey = shortcut.key.toLowerCase();
+
+  // Handle special keys
+  if (shortcutKey === "space" && key !== " ") return false;
+  if (shortcutKey === "\\" && key !== "\\") return false;
+  if (shortcutKey !== "space" && shortcutKey !== "\\" && key !== shortcutKey)
+    return false;
+
+  // Check modifiers - meta/ctrl are interchangeable (meta on Mac, ctrl on Windows/Linux)
+  // If shortcut requires meta, accept either metaKey or ctrlKey
+  // If shortcut doesn't require meta, reject if either is pressed (unless ctrl is specifically required)
+  const hasMetaOrCtrl = e.metaKey || e.ctrlKey;
+  if (shortcut.meta) {
+    if (!hasMetaOrCtrl) return false;
+  } else {
+    // If meta is not required, we need to check if ctrl is required
+    if (shortcut.ctrl) {
+      // Ctrl is required, so meta/ctrl is allowed
+      if (!hasMetaOrCtrl) return false;
+    } else {
+      // Neither meta nor ctrl should be pressed
+      if (hasMetaOrCtrl) return false;
+    }
+  }
+
+  // Check ctrl specifically (for cases where ctrl is required but not meta)
+  if (shortcut.ctrl && !e.ctrlKey && !e.metaKey) return false;
+
+  if (shortcut.alt && !e.altKey) return false;
+  if (!shortcut.alt && e.altKey) return false;
+
+  if (shortcut.shift && !e.shiftKey) return false;
+  if (!shortcut.shift && e.shiftKey) return false;
+
+  return true;
+}
 
 export function useKeyboardShortcuts() {
   const { createNote, loadNote } = useNoteStore();
@@ -12,6 +62,10 @@ export function useKeyboardShortcuts() {
     setView,
   } = useUIStore();
   const { createStickyNote } = useStickyNotesStore();
+  const { keyboardShortcuts } = useSettingsStore();
+  const setSettingsModalOpen = useUIStore(
+    (state) => state.setSettingsModalOpen
+  );
 
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
@@ -29,15 +83,14 @@ export function useKeyboardShortcuts() {
         return;
       }
 
-      // Unified search/command palette: Cmd+K or Cmd+P
-      if (isMod && (e.key === "k" || e.key === "p")) {
+      // Check customizable shortcuts
+      if (matchesShortcut(e, keyboardShortcuts.commandPalette)) {
         e.preventDefault();
         toggleCommandPalette();
         return;
       }
 
-      // New note: Cmd+N - create Untitled note and open it
-      if (isMod && e.key === "n" && !e.shiftKey) {
+      if (matchesShortcut(e, keyboardShortcuts.newNote)) {
         e.preventDefault();
         const note = await createNote("Untitled");
         if (note) {
@@ -46,51 +99,45 @@ export function useKeyboardShortcuts() {
         return;
       }
 
-      // New sticky note: Cmd+Shift+N - create sticky note and navigate to sticky notes
-      if (isMod && e.key === "n" && e.shiftKey) {
+      if (matchesShortcut(e, keyboardShortcuts.newStickyNote)) {
         e.preventDefault();
         await createStickyNote();
         setView(UIView.StickyNotes);
         return;
       }
 
-      // Open sticky notes: Cmd+Shift+O - open sticky notes
-      if (isMod && e.key === "o" && e.shiftKey) {
+      if (matchesShortcut(e, keyboardShortcuts.openStickyNotes)) {
         e.preventDefault();
         setView(UIView.StickyNotes);
         return;
       }
 
-      // Save: Cmd+S (handled by editor, but prevent default)
-      if (isMod && e.key === "s" && !e.shiftKey) {
-        e.preventDefault();
-        return;
-      }
-
-      // Bookmarks: Cmd+Shift+B - open bookmarks
-      if (isMod && e.key.toLowerCase() === "b" && e.shiftKey) {
+      if (matchesShortcut(e, keyboardShortcuts.openBookmarks)) {
         e.preventDefault();
         setView(UIView.Bookmarks);
         return;
       }
 
-      // Settings: Cmd+Shift+T - open settings
-      if (isMod && e.key.toLowerCase() === "t" && e.shiftKey) {
+      if (matchesShortcut(e, keyboardShortcuts.openSettings)) {
         e.preventDefault();
-        setView(UIView.Settings);
+        setSettingsModalOpen(true);
         return;
       }
 
-      // Toggle sidebar: Cmd+\
-      if (isMod && e.key === "\\") {
+      if (matchesShortcut(e, keyboardShortcuts.toggleSidebar)) {
         e.preventDefault();
         toggleSidebar();
         return;
       }
 
-      // Escape: Close command palette
+      // Escape: Close command palette or settings modal (not customizable)
       if (e.key === "Escape") {
-        setCommandPaletteOpen(false);
+        const { settingsModalOpen } = useUIStore.getState();
+        if (settingsModalOpen) {
+          setSettingsModalOpen(false);
+        } else {
+          setCommandPaletteOpen(false);
+        }
         return;
       }
     };
@@ -105,5 +152,7 @@ export function useKeyboardShortcuts() {
     loadNote,
     createStickyNote,
     setView,
+    keyboardShortcuts,
+    setSettingsModalOpen,
   ]);
 }
