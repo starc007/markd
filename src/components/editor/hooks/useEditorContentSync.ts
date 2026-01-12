@@ -32,6 +32,12 @@ export function useEditorContentSync({
   const lastContentRef = useRef<string>(content);
   // Store the noteId when a save is scheduled to prevent saving to wrong note
   const pendingSaveNoteIdRef = useRef<string | null>(null);
+  // Store cursor positions per note
+  const cursorPositionsRef = useRef<Map<string, { from: number; to: number }>>(
+    new Map()
+  );
+  // Track if user has made any edits to the current note (to prevent content updates from props)
+  const hasUserEditedRef = useRef<boolean>(false);
 
   // Update noteId ref when it changes
   useEffect(() => {
@@ -84,6 +90,13 @@ export function useEditorContentSync({
       if (!transaction.docChanged) {
         return;
       }
+
+      // Mark that user has edited this note
+      hasUserEditedRef.current = true;
+
+      // Store cursor position for current note
+      const { from, to } = editor.state.selection;
+      cursorPositionsRef.current.set(noteIdForLinksRef.current, { from, to });
 
       // Double-check: compare with last saved content to prevent unnecessary saves
       const json = editor.getJSON();
@@ -147,60 +160,131 @@ export function useEditorContentSync({
     const noteIdChanged = noteIdRef.current !== noteId;
     const contentChanged = lastContentRef.current !== content;
 
-    if (noteIdChanged || contentChanged) {
-      // Set flag to prevent saves during note switch or content update
-      if (noteIdChanged) {
-        // CRITICAL: Before switching notes, save any pending content from the previous note
-        // This ensures no content is lost when switching notes
-        if (saveTimeoutRef.current && editor) {
-          // Cancel the timeout
-          window.clearTimeout(saveTimeoutRef.current);
-          saveTimeoutRef.current = null;
-
-          // Get the noteId that the pending save was for
-          const previousNoteId = pendingSaveNoteIdRef.current;
-          pendingSaveNoteIdRef.current = null;
-
-          // If we have a pending save and we're still on that note, save immediately
-          if (previousNoteId && previousNoteId === noteIdRef.current) {
-            const json = editor.getJSON();
-            const jsonString = JSON.stringify(json);
-
-            // Only save if content actually changed
-            if (jsonString !== lastSavedContentRef.current) {
-              lastSavedContentRef.current = jsonString;
-              // Save immediately for the previous note
-              onContentChangeRef.current(jsonString);
-              // Extract page links from content and sync
-              extractAndSyncPageLinks(previousNoteId, json);
-            }
-          }
-        }
-
-        isSwitchingNotesRef.current = true;
-        noteIdRef.current = noteId;
-      } else if (contentChanged) {
-        // Also set flag for content changes to prevent saves when content is updated programmatically
-        isSwitchingNotesRef.current = true;
-      }
-
-      // Clear any pending saves (for content changes)
-      if (saveTimeoutRef.current && !noteIdChanged) {
+    if (noteIdChanged) {
+      // CRITICAL: Before switching notes, save any pending content from the previous note
+      // This ensures no content is lost when switching notes
+      if (saveTimeoutRef.current && editor) {
+        // Cancel the timeout
         window.clearTimeout(saveTimeoutRef.current);
         saveTimeoutRef.current = null;
+
+        // Get the noteId that the pending save was for
+        const previousNoteId = pendingSaveNoteIdRef.current;
         pendingSaveNoteIdRef.current = null;
+
+        // If we have a pending save and we're still on that note, save immediately
+        if (previousNoteId && previousNoteId === noteIdRef.current) {
+          const json = editor.getJSON();
+          const jsonString = JSON.stringify(json);
+
+          // Only save if content actually changed
+          if (jsonString !== lastSavedContentRef.current) {
+            lastSavedContentRef.current = jsonString;
+            // Save immediately for the previous note
+            onContentChangeRef.current(jsonString);
+            // Extract page links from content and sync
+            extractAndSyncPageLinks(previousNoteId, json);
+          }
+        }
       }
 
+      // Store cursor position for the previous note before switching
+      if (noteIdRef.current) {
+        const { from, to } = editor.state.selection;
+        cursorPositionsRef.current.set(noteIdRef.current, { from, to });
+      }
+
+      isSwitchingNotesRef.current = true;
+      noteIdRef.current = noteId;
+      hasUserEditedRef.current = false; // Reset for new note
+
+      // Update content for the new note
       const json = parseContent(content);
       const contentString = JSON.stringify(json);
 
+      // Use emitUpdate: false to prevent onUpdate event
+      editor.commands.setContent(json, {
+        emitUpdate: false,
+      });
+
+      // Reset last saved content to match what we just set
+      lastSavedContentRef.current = contentString;
+      lastContentRef.current = content;
+
+      // Restore cursor position for this note if we have one stored
+      const savedCursor = cursorPositionsRef.current.get(noteId);
+      if (savedCursor) {
+        // Use setTimeout to ensure content is fully set before restoring selection
+        setTimeout(() => {
+          if (editor && isMountedRef.current && noteIdRef.current === noteId) {
+            try {
+              const docSize = editor.state.doc.content.size;
+              // Only restore if the saved position is still within document bounds
+              if (savedCursor.from <= docSize && savedCursor.to <= docSize) {
+                editor.commands.setTextSelection({
+                  from: Math.min(savedCursor.from, docSize),
+                  to: Math.min(savedCursor.to, docSize),
+                });
+              }
+            } catch (e) {
+              // If restoring selection fails, silently continue
+            }
+          }
+        }, 50);
+      }
+
+      // Reset flag after a delay to allow all TipTap internal updates to complete
+      if (switchingTimeoutRef.current) {
+        window.clearTimeout(switchingTimeoutRef.current);
+      }
+
+      switchingTimeoutRef.current = window.setTimeout(() => {
+        if (isMountedRef.current) {
+          isSwitchingNotesRef.current = false;
+        }
+        switchingTimeoutRef.current = null;
+      }, 200);
+    } else if (contentChanged) {
+      // Content changed for the same note - this should only happen from external sources
+      // If user has edited, don't update from props (user's edits take precedence)
+      if (hasUserEditedRef.current) {
+        // User has edited this note - don't update content from props
+        // Just update the ref to track the latest content
+        lastContentRef.current = content;
+        return;
+      }
+
       // Only update if content actually changed (avoid unnecessary updates)
+      const json = parseContent(content);
+      const contentString = JSON.stringify(json);
       const currentEditorContent = JSON.stringify(editor.getJSON());
+
       if (contentString !== currentEditorContent) {
+        // Store current cursor position before updating
+        const { from, to } = editor.state.selection;
+        cursorPositionsRef.current.set(noteId, { from, to });
+
         // Use emitUpdate: false to prevent onUpdate event
         editor.commands.setContent(json, {
           emitUpdate: false,
         });
+
+        // Try to restore cursor position
+        setTimeout(() => {
+          if (editor && isMountedRef.current && noteIdRef.current === noteId) {
+            try {
+              const docSize = editor.state.doc.content.size;
+              if (from <= docSize && to <= docSize) {
+                editor.commands.setTextSelection({
+                  from: Math.min(from, docSize),
+                  to: Math.min(to, docSize),
+                });
+              }
+            } catch (e) {
+              // If restoring selection fails, silently continue
+            }
+          }
+        }, 0);
 
         // Reset last saved content to match what we just set
         lastSavedContentRef.current = contentString;
@@ -211,21 +295,15 @@ export function useEditorContentSync({
 
       // Always update the ref to track the latest content
       lastContentRef.current = content;
-
-      // Reset flag after a delay to allow any pending updates to complete
-      if (switchingTimeoutRef.current) {
-        window.clearTimeout(switchingTimeoutRef.current);
-      }
-
-      // Use a longer delay to ensure all TipTap internal updates complete
-      switchingTimeoutRef.current = window.setTimeout(() => {
-        if (isMountedRef.current) {
-          isSwitchingNotesRef.current = false;
-        }
-        switchingTimeoutRef.current = null;
-      }, 200);
     }
-  }, [noteId, editor, content, isSwitchingNotesRef, isMountedRef]);
+  }, [
+    noteId,
+    editor,
+    content,
+    isSwitchingNotesRef,
+    isMountedRef,
+    extractAndSyncPageLinks,
+  ]);
 
   // Save on window blur
   useEffect(() => {

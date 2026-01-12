@@ -94,35 +94,6 @@ export function Editor({ noteId, content }: EditorProps) {
     }
   }, []);
 
-  // Auto-focus editor content when opening an existing note (not newly created)
-  // Only focus if newlyCreatedNoteId is null (not a new note) or if it's a different note
-  // AND only if the note has actual content
-  useEffect(() => {
-    // Don't focus editor if this is a newly created note (should stay in title)
-    // Check the flag at the time the effect runs
-    if (newlyCreatedNoteId === noteId) {
-      return;
-    }
-
-    // Only focus editor if note has actual content
-    if (!hasContent(content)) {
-      return;
-    }
-
-    if (noteId && editorRef.current) {
-      // Use a longer delay to ensure title has had time to focus first for new notes
-      const timeoutId = setTimeout(() => {
-        // Double-check the flag before focusing (in case it was set after effect ran)
-        const flagCheck = useNoteStore.getState().newlyCreatedNoteId;
-        if (flagCheck !== noteId && editorRef.current) {
-          editorRef.current.focus();
-        }
-      }, 400);
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [noteId, newlyCreatedNoteId, content, hasContent]);
-
   // Clear newlyCreatedNoteId when user starts typing in title or when note changes
   useEffect(() => {
     // Clear the flag when navigating to a different note
