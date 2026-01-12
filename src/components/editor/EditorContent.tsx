@@ -6,10 +6,10 @@ import { PageLinkMenu } from "./PageLinkMenu";
 import type { SuggestionItem } from "../tiptap-ui-utils/suggestion-menu/suggestion-menu-types";
 import type { Editor, Range } from "@tiptap/react";
 import { FileIcon } from "../tiptap-icons/file-icon";
-import { usePageCommand } from "../../hooks/usePageCommand";
-import { useEditorConfig, parseContent } from "./hooks/useEditorConfig";
-import { useEditorContentSync } from "./hooks/useEditorContentSync";
-import { useEditorEventHandlers } from "./hooks/useEditorEventHandlers";
+import { usePageCommand } from "@/hooks/usePageCommand";
+import { useEditorConfig, parseContent } from "@/hooks/useEditorConfig";
+import { useEditorContentSync } from "@/hooks/useEditorContentSync";
+import { useEditorEventHandlers } from "@/hooks/useEditorEventHandlers";
 
 interface EditorContentProps {
   content: string;

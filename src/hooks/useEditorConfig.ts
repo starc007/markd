@@ -6,12 +6,14 @@ import Highlight from "@tiptap/extension-highlight";
 import Placeholder from "@tiptap/extension-placeholder";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
-import { UiState } from "../../../lib/tiptap-extension/ui-state-extension";
-import { NodeAlignment } from "../../../lib/tiptap-extension/node-alignment-extension";
-import { NodeBackground } from "../../../lib/tiptap-extension/node-background-extension";
-import { ListNormalizationExtension } from "../../../lib/tiptap-extension/list-normalization-extension";
-import { PageLinkExtension } from "../../../lib/tiptap-extension/page-link-extension";
+import { Markdown } from "@tiptap/markdown";
+import { UiState } from "@/lib/tiptap-extension/ui-state-extension";
+import { NodeAlignment } from "@/lib/tiptap-extension/node-alignment-extension";
+import { NodeBackground } from "@/lib/tiptap-extension/node-background-extension";
+import { ListNormalizationExtension } from "@/lib/tiptap-extension/list-normalization-extension";
+import { PageLinkExtension } from "@/lib/tiptap-extension/page-link-extension";
 import { BookmarkLinkExtension } from "@/lib/tiptap-extension/bookmark-link-extension";
+import { PasteMarkdownExtension } from "@/lib/tiptap-extension/pasted-markdown-extension";
 
 /**
  * Parse content safely, returning default doc if invalid
@@ -68,6 +70,8 @@ export function useEditorConfig() {
           class: "bookmark-link",
         },
       }),
+      Markdown,
+      PasteMarkdownExtension,
     ],
     []
   );

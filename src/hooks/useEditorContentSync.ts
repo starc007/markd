@@ -1,6 +1,6 @@
 import { useRef, useCallback, useEffect } from "react";
 import type { Editor } from "@tiptap/react";
-import * as commands from "../../../lib/tauri/commands";
+import * as commands from "@/lib/tauri/commands";
 import { parseContent } from "./useEditorConfig";
 
 interface UseEditorContentSyncOptions {

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useNoteStore } from "../../../stores/noteStore";
+import { useNoteStore } from "@/stores/noteStore";
 
 /**
  * Hook to handle editor-related event handlers (page navigation, bookmark opening)
