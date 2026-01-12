@@ -34,11 +34,33 @@
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/256x256.png",
+      "icons/icon.icns",
       "icons/icon.png"
     ],
     "category": "Productivity",
     "shortDescription": "A fast, local-first notes app for developers and content creators",
-    "longDescription": "Draft is a macOS-first, local-only, ultra high-performance notes app designed for developers and content creators who care deeply about speed, privacy, and data ownership."
+    "longDescription": "Draft is a macOS-first, local-only, ultra high-performance notes app designed for developers and content creators who care deeply about speed, privacy, and data ownership.",
+    "macOS": {
+      "dmg": {
+        "background": "dmg-background.png",
+        "windowSize": {
+          "width": 660,
+          "height": 400
+        },
+        "windowPosition": {
+          "x": 400,
+          "y": 400
+        },
+        "appPosition": {
+          "x": 180,
+          "y": 220
+        },
+        "applicationFolderPosition": {
+          "x": 480,
+          "y": 220
+        }
+      }
+    }
   },
   "plugins": {
     "updater": {

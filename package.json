@@ -11,7 +11,8 @@
     "version:sync": "bun scripts/sync-version.js",
     "prebuild": "bun run version:sync",
     "pretauri:build": "bun run version:sync",
-    "update:generate": "bun scripts/generate-latest-json.js"
+    "update:generate": "bun scripts/generate-latest-json.js",
+    "icon:generate": "bash scripts/generate-icns.sh"
   },
   "dependencies": {
     "@floating-ui/react": "^0.27.16",
