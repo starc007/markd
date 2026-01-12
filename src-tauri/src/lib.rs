@@ -4,6 +4,7 @@ pub mod services;
 pub mod state;
 pub mod utils;
 
+use commands::app::*;
 use commands::bookmarks::*;
 use commands::export::*;
 use commands::folders::*;
@@ -33,6 +34,8 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .manage(app_state)
         .invoke_handler(tauri::generate_handler![
+            // App commands
+            get_app_version,
             // Note commands
             create_note,
             get_note,

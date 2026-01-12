@@ -1,3 +1,4 @@
+pub mod app;
 pub mod bookmarks;
 pub mod export;
 pub mod folders;

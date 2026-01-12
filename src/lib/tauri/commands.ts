@@ -364,3 +364,22 @@ export async function updatePageLinkTitles(
 ): Promise<void> {
   return invoke<void>("update_page_link_titles", { pageId, newTitle });
 }
+
+// App version commands
+export interface AppVersion {
+  version: string;
+  product_name: string;
+  identifier: string;
+}
+
+/**
+ * Get the current application version information
+ *
+ * Returns the version, product name, and identifier from the Tauri configuration.
+ * This version is synchronized across package.json, Cargo.toml, and tauri.conf.json.
+ *
+ * @returns Promise resolving to AppVersion object with version info
+ */
+export async function getAppVersion(): Promise<AppVersion> {
+  return invoke<AppVersion>("get_app_version");
+}
