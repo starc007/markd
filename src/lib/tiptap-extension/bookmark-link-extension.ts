@@ -96,10 +96,9 @@ export const BookmarkLinkExtension = Node.create<BookmarkLinkOptions>({
 
   renderHTML({ node, HTMLAttributes }) {
     const title = node.attrs.title || "Bookmark";
-    const favicon = node.attrs.favicon;
 
     // If we have a favicon, we'll use it in the custom node view
-    // For SSR/export, just show title
+    // For SSR/export, just show title (icon will be added in node view)
     return [
       "span",
       mergeAttributes(
@@ -110,7 +109,7 @@ export const BookmarkLinkExtension = Node.create<BookmarkLinkOptions>({
         this.options.HTMLAttributes,
         HTMLAttributes
       ),
-      favicon ? title : `🔖 ${title}`,
+      title,
     ];
   },
 
@@ -174,6 +173,35 @@ export const BookmarkLinkExtension = Node.create<BookmarkLinkOptions>({
 
   addNodeView() {
     return ({ node }) => {
+      // Helper function to create bookmark icon SVG
+      const createBookmarkIcon = () => {
+        const svg = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "svg"
+        );
+        svg.setAttribute("width", "14");
+        svg.setAttribute("height", "14");
+        svg.setAttribute("viewBox", "0 0 24 24");
+        svg.setAttribute("fill", "none");
+        svg.style.flexShrink = "0";
+        svg.style.marginRight = "4px";
+
+        const path = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "path"
+        );
+        path.setAttribute(
+          "d",
+          "M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"
+        );
+        path.setAttribute("stroke", "currentColor");
+        path.setAttribute("stroke-width", "2");
+        path.setAttribute("stroke-linecap", "round");
+        path.setAttribute("stroke-linejoin", "round");
+        svg.appendChild(path);
+
+        return svg;
+      };
       const dom = document.createElement("span");
       dom.setAttribute("data-type", "bookmark-link");
       dom.setAttribute("data-bookmark-id", node.attrs.bookmarkId);
@@ -198,17 +226,18 @@ export const BookmarkLinkExtension = Node.create<BookmarkLinkOptions>({
         img.style.flexShrink = "0";
 
         img.onerror = () => {
-          // If favicon fails to load, replace with emoji
+          // If favicon fails to load, replace with bookmark icon
           img.style.display = "none";
-          const emojiSpan = document.createElement("span");
-          emojiSpan.textContent = "🔖 ";
-          dom.insertBefore(emojiSpan, dom.firstChild);
+          const iconSvg = createBookmarkIcon();
+          dom.insertBefore(iconSvg, dom.firstChild);
         };
 
         dom.appendChild(img);
         dom.appendChild(document.createTextNode(title));
       } else {
-        dom.textContent = `🔖 ${title}`;
+        const iconSvg = createBookmarkIcon();
+        dom.appendChild(iconSvg);
+        dom.appendChild(document.createTextNode(title));
       }
 
       // Apply styles
@@ -292,15 +321,16 @@ export const BookmarkLinkExtension = Node.create<BookmarkLinkOptions>({
 
             img.onerror = () => {
               img.style.display = "none";
-              const emojiSpan = document.createElement("span");
-              emojiSpan.textContent = "🔖 ";
-              dom.insertBefore(emojiSpan, dom.firstChild);
+              const iconSvg = createBookmarkIcon();
+              dom.insertBefore(iconSvg, dom.firstChild);
             };
 
             dom.appendChild(img);
             dom.appendChild(document.createTextNode(newTitle));
           } else {
-            dom.textContent = `🔖 ${newTitle}`;
+            const iconSvg = createBookmarkIcon();
+            dom.appendChild(iconSvg);
+            dom.appendChild(document.createTextNode(newTitle));
           }
 
           // Update data attributes

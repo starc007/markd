@@ -18,9 +18,7 @@ export function PageLinkMenu({ editor, currentNoteId }: PageLinkMenuProps) {
 
   // Load bookmarks when component mounts
   useEffect(() => {
-    if (bookmarks.length === 0) {
-      loadBookmarks();
-    }
+    loadBookmarks();
   }, []);
 
   return (
