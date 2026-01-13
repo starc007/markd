@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { useNoteStore } from "../stores/noteStore";
-import { useUIStore } from "../stores/uiStore";
 
 /**
  * Hook to refresh data when window regains focus
@@ -10,10 +9,9 @@ export function useWindowFocus() {
   useEffect(() => {
     const handleFocus = () => {
       const { loadNotes, currentNote, loadNote } = useNoteStore.getState();
-      const { selectedFolderId } = useUIStore.getState();
 
       // Reload the notes list to get any changes made externally
-      loadNotes(selectedFolderId || undefined, null);
+      loadNotes(undefined, null);
 
       // If there's a current note open, reload it to get the latest content
       if (currentNote) {

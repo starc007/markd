@@ -10,7 +10,6 @@ const STORAGE_KEY = "usedraft-app-state";
 export interface AppState {
   currentNoteId: string | null;
   currentView: string | null;
-  selectedFolderId: string | null;
   parentPath: string[]; // Array of parent IDs from root to direct parent (for expanding hierarchy)
 }
 

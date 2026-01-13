@@ -187,7 +187,6 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
             saveAppState({
               currentNoteId: note.id,
               currentView: currentView ? String(currentView) : null,
-              selectedFolderId: useUIStore.getState().selectedFolderId,
               parentPath: parentPath,
             });
           })
@@ -198,7 +197,6 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
             saveAppState({
               currentNoteId: note.id,
               currentView: currentView ? String(currentView) : null,
-              selectedFolderId: useUIStore.getState().selectedFolderId,
               parentPath: [],
             });
           });
@@ -208,7 +206,6 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         saveAppState({
           currentNoteId: note.id,
           currentView: currentView ? String(currentView) : null,
-          selectedFolderId: useUIStore.getState().selectedFolderId,
           parentPath: [],
         });
       }
@@ -558,17 +555,9 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
           noteToNavigate = parentId;
         } else {
           // It's a root note - find next adjacent note
-          // Get selected folder to filter notes correctly
-          const selectedFolderId = useUIStore.getState().selectedFolderId;
-
           // Filter and sort notes by updated_at descending (same as sidebar)
           const filterNotes = (notesList: typeof notes) => {
-            let filtered = notesList.filter((n) => n.parent_id === null);
-            if (selectedFolderId !== null) {
-              filtered = filtered.filter(
-                (n) => n.folder_id === selectedFolderId
-              );
-            }
+            const filtered = notesList.filter((n) => n.parent_id === null);
             return filtered.sort((a, b) => {
               const timeDiff = b.updated_at - a.updated_at;
               if (timeDiff !== 0) return timeDiff;
@@ -633,7 +622,6 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       saveAppState({
         currentNoteId: newCurrentNote?.id || null,
         currentView: currentView ? String(currentView) : null,
-        selectedFolderId: useUIStore.getState().selectedFolderId,
         parentPath: newCurrentNote ? savedState.parentPath || [] : [],
       });
     } catch (error) {

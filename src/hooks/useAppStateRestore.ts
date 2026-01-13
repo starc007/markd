@@ -12,7 +12,7 @@ import { loadAppState } from "../lib/app-state-persistence";
 
 export function useAppStateRestore() {
   const { loadNote, expandParentPages } = useNoteStore();
-  const { setView, setSelectedFolderId } = useUIStore();
+  const { setView } = useUIStore();
   const hasRestored = useRef(false);
 
   useEffect(() => {
@@ -43,11 +43,6 @@ export function useAppStateRestore() {
         }
       }
 
-      // Restore selected folder if saved
-      if (savedState.selectedFolderId) {
-        setSelectedFolderId(savedState.selectedFolderId);
-      }
-
       // Restore current note if saved
       if (savedState.currentNoteId) {
         try {
@@ -70,5 +65,5 @@ export function useAppStateRestore() {
     };
 
     restoreState();
-  }, [loadNote, expandParentPages, setView, setSelectedFolderId]);
+  }, [loadNote, expandParentPages, setView]);
 }

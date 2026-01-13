@@ -16,7 +16,6 @@ interface UIStore {
   focusMode: boolean;
   commandPaletteOpen: boolean;
   searchOpen: boolean;
-  selectedFolderId: string | null;
   currentView: UIView | null;
   previousNoteId: string | null; // Track note we came from when navigating to bookmarks
   settingsModalOpen: boolean;
@@ -29,7 +28,6 @@ interface UIStore {
   setCommandPaletteOpen: (open: boolean) => void;
   setSearchOpen: (open: boolean) => void;
   setView: (view: UIView | null) => void;
-  setSelectedFolderId: (id: string | null) => void;
   setPreviousNoteId: (id: string | null) => void;
   setSettingsModalOpen: (open: boolean) => void;
 }
@@ -40,7 +38,6 @@ export const useUIStore = create<UIStore>((set, get) => ({
   focusMode: false,
   commandPaletteOpen: false,
   searchOpen: false,
-  selectedFolderId: null,
   currentView: UIView.None,
   previousNoteId: null,
   settingsModalOpen: false,
@@ -93,26 +90,12 @@ export const useUIStore = create<UIStore>((set, get) => ({
     saveAppState({
       currentNoteId: currentNote?.id || null,
       currentView: view ? String(view) : null,
-      selectedFolderId: get().selectedFolderId,
       parentPath: savedState.parentPath || [],
     });
   },
 
   setPreviousNoteId: (id: string | null) => {
     set({ previousNoteId: id });
-  },
-
-  setSelectedFolderId: (id: string | null) => {
-    set({ selectedFolderId: id });
-    // Persist folder selection (preserve existing parentPath)
-    const { currentNote } = useNoteStore.getState();
-    const savedState = loadAppState();
-    saveAppState({
-      currentNoteId: currentNote?.id || null,
-      currentView: get().currentView ? String(get().currentView) : null,
-      selectedFolderId: id,
-      parentPath: savedState.parentPath || [],
-    });
   },
 
   setSettingsModalOpen: (open: boolean) => {

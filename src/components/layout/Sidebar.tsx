@@ -18,7 +18,6 @@ import { toast } from "sonner";
 export const Sidebar = memo(function Sidebar() {
   const notes = useNoteStore((state) => state.notes);
   const currentNoteId = useNoteStore((state) => state.currentNote?.id ?? null);
-  const selectedFolderId = useUIStore((state) => state.selectedFolderId);
   const childrenMap = useNoteStore((state) => state.childrenMap);
   const expandedPages = useNoteStore((state) => state.expandedPages);
 
@@ -32,15 +31,15 @@ export const Sidebar = memo(function Sidebar() {
   useEffect(() => {
     const { loadFolders, loadNotes } = useNoteStore.getState();
     loadFolders();
-    loadNotes(selectedFolderId || undefined, null);
+    loadNotes(undefined, null);
     loadStickyNotes();
-    loadBookmarks(selectedFolderId || undefined);
-  }, [selectedFolderId, loadStickyNotes, loadBookmarks]);
+    loadBookmarks(undefined);
+  }, [loadStickyNotes, loadBookmarks]);
 
   const handleNewNote = useCallback(async () => {
     try {
       const { createNote, loadNote } = useNoteStore.getState();
-      const note = await createNote("Untitled", selectedFolderId || undefined);
+      const note = await createNote("Untitled", undefined);
       if (note) {
         useUIStore.getState().setView(UIView.None);
         await loadNote(note.id);
@@ -53,7 +52,7 @@ export const Sidebar = memo(function Sidebar() {
         }`
       );
     }
-  }, [selectedFolderId]);
+  }, []);
 
   const handleColorSelect = useCallback(
     (noteId: string, newColorId: NoteColorId, e: React.MouseEvent) => {
@@ -89,12 +88,7 @@ export const Sidebar = memo(function Sidebar() {
   // Only show top-level notes (parent_id is null) in the main list
   // Use a stable sort key to prevent unnecessary re-sorting
   const filteredNotes = useMemo(() => {
-    let filtered = notes.filter((note) => note.parent_id === null);
-
-    // Filter by folder if a folder is selected
-    if (selectedFolderId !== null) {
-      filtered = filtered.filter((note) => note.folder_id === selectedFolderId);
-    }
+    const filtered = notes.filter((note) => note.parent_id === null);
 
     // Sort by updated_at descending
     // Create a stable sorted array - only create new array if order actually changed
@@ -107,7 +101,7 @@ export const Sidebar = memo(function Sidebar() {
     });
 
     return sorted;
-  }, [notes, selectedFolderId]);
+  }, [notes]);
 
   const handleCreateSubpage = useCallback(async (parentId: string) => {
     try {

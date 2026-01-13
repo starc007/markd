@@ -104,9 +104,8 @@ export function Editor({ noteId, content }: EditorProps) {
 
   // Handle back navigation
   const handleBack = useCallback(() => {
-    const selectedFolderId = useUIStore.getState().selectedFolderId;
     useNoteStore.setState({ currentNote: null });
-    useNoteStore.getState().loadNotes(selectedFolderId || undefined, null);
+    useNoteStore.getState().loadNotes(undefined, null);
   }, []);
 
   // Handle delete

@@ -14,7 +14,6 @@ import { ArrowDownIcon } from "../tiptap-icons/arrow-down-icon";
 import { toast } from "sonner";
 
 export function Bookmarks() {
-  const selectedFolderId = useUIStore((state) => state.selectedFolderId);
   const { bookmarks, loadBookmarks } = useBookmarkStore();
 
   const [editingBookmark, setEditingBookmark] =
@@ -24,8 +23,8 @@ export function Bookmarks() {
   const listRef = useRef<BookmarkListRef>(null);
 
   useEffect(() => {
-    loadBookmarks(selectedFolderId);
-  }, [selectedFolderId, loadBookmarks]);
+    loadBookmarks(undefined);
+  }, [loadBookmarks]);
 
   const handleEditBookmark = useCallback((bookmark: BookmarkMetadata) => {
     setEditingBookmark(bookmark);
@@ -171,7 +170,7 @@ export function Bookmarks() {
         </div>
         <BookmarkInput
           ref={inputRef}
-          folderId={selectedFolderId}
+          folderId={undefined}
           autoFocus={true}
           onArrowKey={(direction) => {
             if (bookmarks.length === 0) return;
