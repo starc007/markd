@@ -6,7 +6,7 @@ import type {
   SearchResult,
 } from "../lib/tauri/commands";
 import * as commands from "../lib/tauri/commands";
-import { saveAppState, loadAppState } from "../lib/app-state-persistence";
+import { saveAppState } from "../lib/app-state-persistence";
 import { useUIStore } from "./uiStore";
 
 // Re-export UIView from UI store for backward compatibility
@@ -571,11 +571,14 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
           const deletedIndex = originalSorted.findIndex((n) => n.id === id);
 
           if (deletedIndex >= 0 && sortedRootNotes.length > 0) {
-            // Try to get the note at the same index, or the one before it
+            // Navigate to the next adjacent note
+            // If there's a note after the deleted one (at deletedIndex + 1 in original),
+            // it will now be at deletedIndex in the new list
             if (deletedIndex < sortedRootNotes.length) {
+              // The note that was after the deleted one (now at deletedIndex)
               noteToNavigate = sortedRootNotes[deletedIndex].id;
-            } else if (sortedRootNotes.length > 0) {
-              // Use the last note if we were at the end
+            } else {
+              // The deleted note was the last one, go to the previous one (now the last)
               noteToNavigate = sortedRootNotes[sortedRootNotes.length - 1].id;
             }
           }
@@ -583,47 +586,42 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         }
       }
 
-      // Load the note to navigate to, or clear current note
-      let newCurrentNote = currentNote?.id === id ? null : currentNote;
-
-      if (noteToNavigate) {
-        try {
-          // Load the note directly using commands
-          const noteToLoad = await commands.getNote(noteToNavigate);
-          if (noteToLoad) {
-            newCurrentNote = noteToLoad;
-            // Also expand parent pages if it's a subnote
-            if (noteToLoad.parent_id) {
-              const parentPath = await get().getParentPath(noteToNavigate);
-              if (parentPath.length > 0) {
-                get().expandParentPages(parentPath);
-              }
-            }
-          }
-        } catch (error) {
-          console.error("Failed to load note after deletion:", error);
-          // If loading fails, just clear the current note
-          newCurrentNote = null;
-        }
-      }
-
+      // Update state first (remove deleted note from UI)
       set({
         notes: updatedNotes,
         childrenMap: newMap,
         expandedPages: newExpanded,
         loadedChildren: newLoaded,
-        currentNote: newCurrentNote,
+        currentNote: currentNote?.id === id ? null : currentNote,
         isLoading: false,
       });
 
-      // Persist state update
-      const { currentView } = useUIStore.getState();
-      const savedState = loadAppState();
-      saveAppState({
-        currentNoteId: newCurrentNote?.id || null,
-        currentView: currentView ? String(currentView) : null,
-        parentPath: newCurrentNote ? savedState.parentPath || [] : [],
-      });
+      // Load the note to navigate to after deletion
+      if (noteToNavigate) {
+        try {
+          // Use loadNote to properly handle state updates, expanding parent pages, etc.
+          // loadNote already handles state persistence internally
+          await get().loadNote(noteToNavigate);
+        } catch (error) {
+          console.error("Failed to load note after deletion:", error);
+          // If loading fails, ensure current note is cleared and persist
+          set({ currentNote: null });
+          const { currentView } = useUIStore.getState();
+          saveAppState({
+            currentNoteId: null,
+            currentView: currentView ? String(currentView) : null,
+            parentPath: [],
+          });
+        }
+      } else {
+        // No note to navigate to - persist cleared state
+        const { currentView } = useUIStore.getState();
+        saveAppState({
+          currentNoteId: null,
+          currentView: currentView ? String(currentView) : null,
+          parentPath: [],
+        });
+      }
     } catch (error) {
       set({ error: String(error), isLoading: false });
       throw error;
