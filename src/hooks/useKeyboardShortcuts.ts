@@ -70,7 +70,6 @@ export function useKeyboardShortcuts() {
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
       const isMod = e.metaKey || e.ctrlKey;
-
       // Don't handle shortcuts when typing in inputs/textarea (except for Escape and modifier combinations)
       const target = e.target as HTMLElement;
       if (
@@ -92,8 +91,10 @@ export function useKeyboardShortcuts() {
 
       if (matchesShortcut(e, keyboardShortcuts.newNote)) {
         e.preventDefault();
+        console.log("creating new note");
         const note = await createNote("Untitled");
         if (note) {
+          setView(UIView.None);
           loadNote(note.id);
         }
         return;

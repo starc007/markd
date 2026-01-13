@@ -64,10 +64,7 @@
   "plugins": {
     "updater": {
       "active": true,
-      "endpoints": [
-        "https://github.com/yourusername/usedraft/releases/latest/download/latest.json",
-        "https://usedraft.app/updates/latest.json"
-      ],
+      "endpoints": ["https://usedraft.app/updates/latest.json"],
       "dialog": false,
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDcxOUUxMkU3MzE1N0FFNjUKUldSbHJsY3g1eEtlY1V0UkNTZTNzd0hteTZhUUp2UmlCcHNsT3pZUXl4VFpQQ1NyR2hIVkpsY3YK"
     }

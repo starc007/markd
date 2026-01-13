@@ -18,6 +18,10 @@
   margin: 0;
   padding: 3px 0;
 }
+.ProseMirror a {
+  color: var(--primary);
+  text-decoration: underline;
+}
 
 .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);

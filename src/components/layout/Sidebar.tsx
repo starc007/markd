@@ -42,6 +42,7 @@ export const Sidebar = memo(function Sidebar() {
       const { createNote, loadNote } = useNoteStore.getState();
       const note = await createNote("Untitled", selectedFolderId || undefined);
       if (note) {
+        useUIStore.getState().setView(UIView.None);
         await loadNote(note.id);
       }
     } catch (error) {

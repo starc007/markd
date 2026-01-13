@@ -50,12 +50,12 @@ export function Modal({
               transition={{ duration: 0.15 }}
               className={cn(
                 "bg-card border border-border rounded-2xl w-full max-w-md flex flex-col",
-                title ? "p-6" : "p-0",
+                title ? "px-6 pb-6" : "p-6",
                 className
               )}
             >
               {title && (
-                <DialogTitle className="text-lg font-semibold mb-4 px-6 pt-6 shrink-0">
+                <DialogTitle className="text-lg font-semibold mb-4 pt-6 shrink-0">
                   {title}
                 </DialogTitle>
               )}
