@@ -36,7 +36,7 @@ echo -e "${YELLOW}📦 Step 1: Building app...${NC}"
 cd "$PROJECT_ROOT"
 
 # Check if private key is set for signing updates
-if [ -z "$TAURI_PRIVATE_KEY" ]; then
+if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then
   echo -e "${YELLOW}ℹ️  Note: TAURI_PRIVATE_KEY not set. Updates will not be signed.${NC}"
   echo "   To sign updates, set: export TAURI_PRIVATE_KEY=\"path/to/key\""
   echo "   See UPDATE_KEYS_EXPLAINED.md for details"

@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useBookmarkStore } from "../../stores/bookmarkStore";
-import { useUIStore } from "../../stores/uiStore";
+
 import { BookmarkInput, BookmarkInputRef } from "./BookmarkInput";
 import { BookmarkList, BookmarkListRef } from "./BookmarkList";
 import { BookmarkEditModal } from "./BookmarkEditModal";
