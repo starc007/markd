@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script to prepare DMG for distribution
-# Removes quarantine attributes so users can download and use it directly
+# Removes quarantine attributes and prepares DMG for web distribution
 
 set -e
 
@@ -21,19 +21,32 @@ fi
 
 echo "✅ Found DMG: $DMG_PATH"
 
-# Remove quarantine attribute (this is what causes "corrupted" errors)
-echo "🔓 Removing quarantine attributes..."
-xattr -d com.apple.quarantine "$DMG_PATH" 2>/dev/null || {
-  echo "   (No quarantine attribute found - this is fine)"
+# Remove all extended attributes including quarantine
+echo "🔓 Removing quarantine and extended attributes..."
+xattr -cr "$DMG_PATH" 2>/dev/null || {
+  # If xattr -cr fails, try individual removal
+  xattr -d com.apple.quarantine "$DMG_PATH" 2>/dev/null || true
+  xattr -d com.apple.metadata:kMDItemWhereFroms "$DMG_PATH" 2>/dev/null || true
+  xattr -d com.apple.metadata:kMDItemDownloadedDate "$DMG_PATH" 2>/dev/null || true
 }
 
-# Remove all extended attributes that might cause issues
-xattr -c "$DMG_PATH" 2>/dev/null || true
+# Verify attributes are removed
+ATTRIBUTES=$(xattr -l "$DMG_PATH" 2>/dev/null || echo "")
+if [ -n "$ATTRIBUTES" ]; then
+  echo "⚠️  Warning: Some extended attributes remain:"
+  echo "$ATTRIBUTES"
+else
+  echo "✅ All extended attributes removed"
+fi
 
+echo ""
 echo "✅ DMG prepared for distribution!"
 echo ""
-echo "📝 Note: Users may need to:"
-echo "   1. Right-click the DMG → Open (first time only)"
-echo "   2. Or go to System Settings → Privacy & Security → Allow"
+echo "📝 Important: macOS will add quarantine when users download from your website."
+echo "   This is normal macOS security behavior."
 echo ""
-echo "💡 The DMG is ready to upload to your website!"
+echo "💡 Users can fix this by:"
+echo "   1. Right-click the DMG → Open (first time only)"
+echo "   2. Or run: xattr -cr ~/Downloads/Draft_*.dmg"
+echo ""
+echo "📤 The DMG is ready to upload to your website!"
