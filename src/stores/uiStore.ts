@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { useNoteStore } from "./noteStore";
+
+import { useTabStore } from "./tabStore";
 import { saveAppState, loadAppState } from "../lib/app-state-persistence";
 
 export enum UIView {
@@ -70,29 +71,27 @@ export const useUIStore = create<UIStore>((set, get) => ({
   },
 
   setView: (view: UIView | null) => {
-    const { currentNote } = useNoteStore.getState();
+    const { getActiveTab } = useTabStore.getState();
+    const activeTab = getActiveTab();
 
     // Track previous note when navigating to bookmarks
-    if (view === UIView.Bookmarks && currentNote) {
-      set({ previousNoteId: currentNote.id });
+    if (view === UIView.Bookmarks && activeTab) {
+      set({ previousNoteId: activeTab.id });
     } else if (view === UIView.None && get().previousNoteId) {
       // Clear previous note when going back to editor
       set({ previousNoteId: null });
     }
 
     set({ currentView: view });
-    // Only clear currentNote when switching to StickyNotes or Bookmarks view
-    // Don't clear when switching to None (editor view) to prevent flicker
-    // Settings is now a modal, so don't clear note when opening it
-    if (view === UIView.StickyNotes || view === UIView.Bookmarks) {
-      useNoteStore.setState({ currentNote: null });
-    }
-    // Persist view change (preserve existing parentPath)
+    // Persist view change (preserve existing parentPath and tabs)
     const savedState = loadAppState();
+    const { openTabs, activeTabId } = useTabStore.getState();
     saveAppState({
-      currentNoteId: currentNote?.id || null,
+      currentNoteId: activeTab?.id || null,
       currentView: view ? String(view) : null,
       parentPath: savedState.parentPath || [],
+      openTabIds: openTabs.map((tab) => tab.id),
+      activeTabId: activeTabId,
     });
   },
 

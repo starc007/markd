@@ -7,7 +7,10 @@ import {
 } from "@hugeicons/core-free-icons";
 import { save } from "@tauri-apps/plugin-dialog";
 import { useNoteStore } from "@/stores/noteStore";
+import { useTabStore } from "@/stores/tabStore";
 import { useUIStore } from "@/stores/uiStore";
+import { fixedShortcuts } from "@/lib/keyboard-shortcuts";
+import { matchesShortcut } from "@/hooks/useKeyboardShortcuts";
 import {
   IconButton,
   Dropdown,
@@ -32,9 +35,12 @@ export function Editor({ noteId, content }: EditorProps) {
   const editorRef = useRef<EditorContentRef>(null);
   const titleRef = useRef<EditorTitleRef>(null);
 
-  const currentNote = useNoteStore((state) => state.currentNote);
   const newlyCreatedNoteId = useNoteStore((state) => state.newlyCreatedNoteId);
   const focusMode = useUIStore((state) => state.focusMode);
+  const activeTab = useTabStore((state) => state.getActiveTab());
+  const { updateTabContent, updateTabTitle, getTab } = useTabStore();
+
+  const updatedAt = activeTab?.updatedAt || 0;
 
   // Auto-focus title when a new note is created
   // This effect has priority and should run first
@@ -104,7 +110,6 @@ export function Editor({ noteId, content }: EditorProps) {
 
   // Handle back navigation
   const handleBack = useCallback(() => {
-    useNoteStore.setState({ currentNote: null });
     useNoteStore.getState().loadNotes(undefined, null);
   }, []);
 
@@ -117,11 +122,11 @@ export function Editor({ noteId, content }: EditorProps) {
 
   // Handle export
   const handleExport = useCallback(async () => {
-    const note = useNoteStore.getState().currentNote;
-    if (!note) return;
+    const activeTab = useTabStore.getState().getActiveTab();
+    if (!activeTab) return;
 
     const filePath = await save({
-      defaultPath: `${note.title || "untitled"}.md`,
+      defaultPath: `${activeTab.title || "untitled"}.md`,
       filters: [{ name: "Markdown", extensions: ["md"] }],
     });
 
@@ -138,35 +143,48 @@ export function Editor({ noteId, content }: EditorProps) {
       if (useNoteStore.getState().newlyCreatedNoteId === noteId) {
         useNoteStore.setState({ newlyCreatedNoteId: null });
       }
+
+      // Update tab content if tab exists
+      const tab = getTab(noteId);
+      if (tab && tab.content !== newContent) {
+        updateTabContent(noteId, newContent);
+      }
+
       // CRITICAL: Verify we're still on the same note before saving
       // This prevents saving content to the wrong note when switching quickly
-      const currentNote = useNoteStore.getState().currentNote;
+      const activeTab = useTabStore.getState().getActiveTab();
       if (
-        currentNote &&
-        currentNote.id === noteId &&
-        currentNote.content !== newContent
+        activeTab &&
+        activeTab.id === noteId &&
+        activeTab.content !== newContent
       ) {
         useNoteStore.getState().saveCurrentNoteContent(newContent);
       }
     },
-    [noteId]
+    [noteId, getTab, updateTabContent]
   );
 
   // Title change handler
   const handleTitleChange = useCallback(
     (title: string) => {
-      const note = useNoteStore.getState().currentNote;
       // Don't clear newlyCreatedNoteId here - let user type freely in title
       // The flag will be cleared when they press Enter or start typing in editor
       // Use "Untitled" only for saving/display, but allow empty during editing
       const displayTitle = title.trim() || "Untitled";
+
+      // Update tab title if tab exists
+      const tab = getTab(noteId);
+      if (tab && tab.title !== displayTitle) {
+        updateTabTitle(noteId, displayTitle);
+      }
+
       // Only update if the display title (with "Untitled" fallback) is different
       // This allows the user to clear the title without it immediately coming back
-      if (note && displayTitle !== (note.title || "Untitled")) {
+      if (tab && displayTitle !== (tab.title || "Untitled")) {
         useNoteStore.getState().updateNote(noteId, { title: displayTitle });
       }
     },
-    [noteId]
+    [noteId, getTab, updateTabTitle]
   );
 
   // Handle Enter in title to focus content editor
@@ -195,14 +213,14 @@ export function Editor({ noteId, content }: EditorProps) {
       }
 
       // Cmd+Shift+D: Open delete modal
-      if (isMod && e.shiftKey && e.key.toLowerCase() === "d") {
+      if (matchesShortcut(e, fixedShortcuts.deleteNote)) {
         e.preventDefault();
         setShowDeleteModal(true);
         return;
       }
 
       // Cmd+Enter: Confirm deletion when modal is open
-      if (isMod && e.key === "Enter" && showDeleteModal) {
+      if (matchesShortcut(e, fixedShortcuts.confirmDelete) && showDeleteModal) {
         e.preventDefault();
         handleDelete();
         return;
@@ -219,12 +237,12 @@ export function Editor({ noteId, content }: EditorProps) {
         {/* Header with drag region - hidden in focus mode */}
         {!focusMode && (
           <div
-            className="h-[50px] shrink-0 flex items-center justify-between border-b border-sidebar-border px-4"
+            className="pt-2 shrink-0 flex items-center justify-between px-4"
             data-tauri-drag-region
           >
             <div className="flex items-center gap-3 [-webkit-app-region:no-drag]">
-              <span className="font-medium text-muted-foreground truncate text-xs italic">
-                updated {formatRelativeTime(currentNote?.updated_at || 0)}
+              <span className="font-medium text-muted-foreground truncate text-xs">
+                Edited {formatRelativeTime(updatedAt)}
               </span>
             </div>
 
@@ -280,7 +298,7 @@ export function Editor({ noteId, content }: EditorProps) {
             {/* Title Editor */}
             <EditorTitle
               ref={titleRef}
-              title={currentNote?.title || ""}
+              title={activeTab?.title || ""}
               noteId={noteId}
               onTitleChange={handleTitleChange}
               onEnter={handleTitleEnter}
@@ -303,7 +321,7 @@ export function Editor({ noteId, content }: EditorProps) {
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         onConfirm={handleDelete}
-        noteTitle={currentNote?.title}
+        noteTitle={activeTab?.title}
       />
     </>
   );

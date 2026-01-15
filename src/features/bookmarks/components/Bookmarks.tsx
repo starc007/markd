@@ -12,6 +12,8 @@ import { EnterKeyIcon } from "@/components/tiptap-icons/enter-key-icon";
 import { ArrowUpIcon } from "@/components/tiptap-icons/arrow-up-icon";
 import { ArrowDownIcon } from "@/components/tiptap-icons/arrow-down-icon";
 import { toast } from "sonner";
+import { matchesShortcut } from "@/hooks/useKeyboardShortcuts";
+import { fixedShortcuts } from "@/lib/keyboard-shortcuts";
 
 export function Bookmarks() {
   const { bookmarks, loadBookmarks } = useBookmarkStore();
@@ -37,13 +39,12 @@ export function Bookmarks() {
   // Keyboard shortcuts: Cmd+F to focus input, Arrow keys for navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const isMod = e.metaKey || e.ctrlKey;
       const target = e.target as HTMLElement;
       const isInputFocused =
         target.tagName === "INPUT" || target.tagName === "TEXTAREA";
 
       // Cmd+F to focus input
-      if (isMod && e.key === "f") {
+      if (matchesShortcut(e, fixedShortcuts.focusSearch)) {
         e.preventDefault();
         inputRef.current?.focus();
         return;
@@ -118,56 +119,58 @@ export function Bookmarks() {
   }, [bookmarks, focusedIndex, handleEditBookmark]);
 
   return (
-    <div className="flex flex-col h-full bg-background px-28 py-10">
-      {/* Header */}
-      <div className="shrink-0 px-6 py-4 w-full">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-xl font-semibold text-foreground">
-            All Bookmarks
-          </h1>
-          {/* Keyboard Shortcuts */}
-          <div className="flex gap-3 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <kbd className="p-1 bg-muted rounded border border-border font-mono">
-                <ArrowUpIcon className="w-4 h-4" />
-              </kbd>
-              <kbd className="p-1 bg-muted rounded border border-border font-mono">
-                <ArrowDownIcon className="w-4 h-4" />
-              </kbd>
-              <span>Navigate</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <kbd className="p-1 bg-muted rounded border border-border font-mono">
-                <EnterKeyIcon className="w-4 h-4" />
-              </kbd>
-              <span>Open</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <kbd className="flex items-center gap-0.5 p-1 bg-muted rounded border border-border">
-                <HugeiconsIcon
-                  icon={CommandIcon}
-                  size={12}
-                  color="currentColor"
-                  strokeWidth={2}
-                />
-                <span className="font-mono">C</span>
-              </kbd>
-              <span>Copy URL</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <kbd className="p-1 bg-muted rounded border border-border font-mono">
-                E
-              </kbd>
-              <span>Edit</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <kbd className="p-1 bg-muted rounded border border-border font-mono">
-                <BackspaceIcon className="w-4 h-4" />
-              </kbd>
-              <span>Delete</span>
-            </div>
+    <>
+      <div
+        className="h-[50px] shrink-0 flex items-center justify-between px-6 border-b border-sidebar-border"
+        data-tauri-drag-region
+      >
+        <div className="flex items-center gap-2 text-sm [-webkit-app-region:no-drag]">
+          <span className="font-medium">Bookmarks</span>
+        </div>
+        <div className="flex gap-3 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1">
+            <kbd className="p-1 bg-muted rounded border border-border font-mono">
+              <ArrowUpIcon className="w-4 h-4" />
+            </kbd>
+            <kbd className="p-1 bg-muted rounded border border-border font-mono">
+              <ArrowDownIcon className="w-4 h-4" />
+            </kbd>
+            <span>Navigate</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <kbd className="p-1 bg-muted rounded border border-border font-mono">
+              <EnterKeyIcon className="w-4 h-4" />
+            </kbd>
+            <span>Open</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <kbd className="flex items-center gap-0.5 p-1 bg-muted rounded border border-border">
+              <HugeiconsIcon
+                icon={CommandIcon}
+                size={12}
+                color="currentColor"
+                strokeWidth={2}
+              />
+              <span className="font-mono">C</span>
+            </kbd>
+            <span>Copy URL</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <kbd className="p-1 bg-muted rounded border border-border font-mono">
+              E
+            </kbd>
+            <span>Edit</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <kbd className="p-1 bg-muted rounded border border-border font-mono">
+              <BackspaceIcon className="w-4 h-4" />
+            </kbd>
+            <span>Delete</span>
           </div>
         </div>
+      </div>
+
+      <div className="flex flex-col h-full bg-background px-14 py-10">
         <BookmarkInput
           ref={inputRef}
           folderId={undefined}
@@ -193,26 +196,25 @@ export function Bookmarks() {
             }
           }}
         />
+        {/* Bookmarks List */}
+        <BookmarkList
+          ref={listRef}
+          bookmarks={bookmarks}
+          onEditBookmark={handleEditBookmark}
+          focusedIndex={focusedIndex}
+          onFocusedIndexChange={setFocusedIndex}
+          onReturnFocusToInput={() => {
+            inputRef.current?.focus();
+          }}
+        />
+
+        {/* Edit Modal */}
+        <BookmarkEditModal
+          bookmark={editingBookmark}
+          isOpen={!!editingBookmark}
+          onClose={handleCloseEditModal}
+        />
       </div>
-
-      {/* Bookmarks List */}
-      <BookmarkList
-        ref={listRef}
-        bookmarks={bookmarks}
-        onEditBookmark={handleEditBookmark}
-        focusedIndex={focusedIndex}
-        onFocusedIndexChange={setFocusedIndex}
-        onReturnFocusToInput={() => {
-          inputRef.current?.focus();
-        }}
-      />
-
-      {/* Edit Modal */}
-      <BookmarkEditModal
-        bookmark={editingBookmark}
-        isOpen={!!editingBookmark}
-        onClose={handleCloseEditModal}
-      />
-    </div>
+    </>
   );
 }

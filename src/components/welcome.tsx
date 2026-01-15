@@ -2,12 +2,15 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { EditIcon, CommandIcon } from "@hugeicons/core-free-icons";
 import { useNoteStore } from "../stores/noteStore";
 import { useUIStore } from "../stores/uiStore";
+import { useSettingsStore } from "../stores/settingsStore";
 import { Button } from "./ui";
 import Logo from "./Logo";
+import { formatShortcutDisplay } from "../lib/keyboard-shortcuts";
 
 const Welcome = () => {
   const { createNote, loadNote } = useNoteStore();
   const { toggleCommandPalette } = useUIStore();
+  const { keyboardShortcuts } = useSettingsStore();
 
   const handleNewNote = async () => {
     const note = await createNote("Untitled");
@@ -17,10 +20,22 @@ const Welcome = () => {
   };
 
   const shortcuts = [
-    { keys: ["⌘", "N"], description: "Create a new note" },
-    { keys: ["⌘", "⇧", "N"], description: "Create a sticky note" },
-    { keys: ["⌘", "K"], description: "Open command palette" },
-    { keys: ["⌘", "⇧", "T"], description: "Open settings" },
+    {
+      keys: formatShortcutDisplay(keyboardShortcuts.newNote),
+      description: "Create a new note",
+    },
+    {
+      keys: formatShortcutDisplay(keyboardShortcuts.newStickyNote),
+      description: "Create a sticky note",
+    },
+    {
+      keys: formatShortcutDisplay(keyboardShortcuts.commandPalette),
+      description: "Open command palette",
+    },
+    {
+      keys: formatShortcutDisplay(keyboardShortcuts.openSettings),
+      description: "Open settings",
+    },
   ];
 
   return (
@@ -116,7 +131,7 @@ const Welcome = () => {
                       key={keyIndex}
                       className="flex items-center gap-1 px-2 py-1 text-xs font-mono font-medium text-muted-foreground bg-secondary border border-border rounded"
                     >
-                      {key === "⌘" ? (
+                      {key === "⌘" || key === "⌃" ? (
                         <HugeiconsIcon
                           icon={CommandIcon}
                           size={14}

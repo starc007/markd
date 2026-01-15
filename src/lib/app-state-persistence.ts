@@ -11,6 +11,8 @@ export interface AppState {
   currentNoteId: string | null;
   currentView: string | null;
   parentPath: string[]; // Array of parent IDs from root to direct parent (for expanding hierarchy)
+  openTabIds: string[]; // Array of open tab note IDs (for tab persistence)
+  activeTabId: string | null; // Active tab ID
 }
 
 /**

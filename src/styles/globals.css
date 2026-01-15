@@ -205,3 +205,9 @@ mark {
 [data-tauri-drag-region] textarea {
   -webkit-app-region: no-drag;
 }
+
+/* scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent */
+
+.hide-scrollbar {
+  scrollbar-width: none;
+}

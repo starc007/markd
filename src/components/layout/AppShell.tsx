@@ -1,23 +1,25 @@
 import { Sidebar } from "./Sidebar";
 import { Editor } from "../editor/Editor";
 import { CommandPalette } from "@/features/command-palette/components/CommandPalette";
-import { TitleBar } from "./TitleBar";
+
 import { StickyNotesGrid } from "@/features/sticky-notes/components/StickyNotesGrid";
 import { SettingsModal } from "../settings/SettingsModal";
 import { Bookmarks } from "@/features/bookmarks/components/Bookmarks";
 import { SectionErrorBoundary } from "../SectionErrorBoundary";
-import { useNoteStore } from "@/stores/noteStore";
+import { TabBar } from "../tabs/TabBar";
+
 import { useUIStore, UIView } from "@/stores/uiStore";
+import { useTabStore } from "@/stores/tabStore";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useTheme } from "@/hooks/useTheme";
 import { useWindowFocus } from "@/hooks/useWindowFocus";
 import { useAppStateRestore } from "@/hooks/useAppStateRestore";
 import { useUpdateCheck } from "@/hooks/useUpdateCheck";
 import Welcome from "@/components/welcome";
+import { UpdateIndicator } from "../update/UpdateIndicator";
 
 export function AppShell() {
   // Use selective subscriptions to prevent unnecessary re-renders
-  const currentNote = useNoteStore((state) => state.currentNote);
   const currentView = useUIStore((state) => state.currentView);
   const focusMode = useUIStore((state) => state.focusMode);
   const sidebarCollapsed = useUIStore((state) => state.sidebarCollapsed);
@@ -25,6 +27,8 @@ export function AppShell() {
   const setSettingsModalOpen = useUIStore(
     (state) => state.setSettingsModalOpen
   );
+  const activeTab = useTabStore((state) => state.getActiveTab());
+  const openTabs = useTabStore((state) => state.openTabs);
 
   useKeyboardShortcuts();
   useTheme(); // Apply theme
@@ -37,12 +41,12 @@ export function AppShell() {
       return <StickyNotesGrid />;
     } else if (currentView === UIView.Bookmarks) {
       return <Bookmarks />;
-    } else if (currentNote) {
+    } else if (activeTab) {
       return (
         <Editor
-          key={currentNote.id}
-          noteId={currentNote.id}
-          content={currentNote.content}
+          key={activeTab.id}
+          noteId={activeTab.id}
+          content={activeTab.content}
         />
       );
     } else {
@@ -57,9 +61,10 @@ export function AppShell() {
       }`}
     >
       {/* Title Bar with drag region - hidden in focus mode */}
-      {!focusMode && <TitleBar />}
+      {/* {!focusMode && <TitleBar />} */}
+      <UpdateIndicator />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden" data-tauri-drag-region>
         {/* Sidebar - hidden in focus mode or when collapsed */}
         {!sidebarCollapsed && !focusMode && (
           <SectionErrorBoundary section="sidebar">
@@ -69,6 +74,10 @@ export function AppShell() {
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col overflow-hidden w-full">
+          {/* TabBar - only show when not in special views and tabs are open */}
+          {currentView === UIView.None && openTabs.length > 0 && !focusMode && (
+            <TabBar />
+          )}
           <SectionErrorBoundary
             section={
               currentView === UIView.StickyNotes ? "notes-grid" : "editor"

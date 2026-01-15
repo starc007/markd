@@ -7,11 +7,13 @@
 
 import { useEffect, useRef } from "react";
 import { useNoteStore } from "../stores/noteStore";
+import { useTabStore } from "../stores/tabStore";
 import { useUIStore, UIView } from "../stores/uiStore";
 import { loadAppState } from "../lib/app-state-persistence";
 
 export function useAppStateRestore() {
   const { loadNote, expandParentPages } = useNoteStore();
+  const { openTab, switchTab } = useTabStore();
   const { setView } = useUIStore();
   const hasRestored = useRef(false);
 
@@ -43,14 +45,42 @@ export function useAppStateRestore() {
         }
       }
 
-      // Restore current note if saved
-      if (savedState.currentNoteId) {
+      // Restore tabs if saved
+      if (savedState.openTabIds && savedState.openTabIds.length > 0) {
         try {
           // First expand parent pages if saved
           if (savedState.parentPath && savedState.parentPath.length > 0) {
             await expandParentPages(savedState.parentPath);
           }
-          // Then load the note
+
+          // Open all saved tabs
+          for (const tabId of savedState.openTabIds) {
+            try {
+              await openTab(tabId);
+            } catch (error) {
+              // If a note doesn't exist anymore, skip it
+              console.warn(
+                `[AppStateRestore] Failed to restore tab ${tabId}:`,
+                error
+              );
+            }
+          }
+
+          // Switch to active tab if saved
+          if (savedState.activeTabId) {
+            switchTab(savedState.activeTabId);
+          }
+        } catch (error) {
+          console.error("[AppStateRestore] Failed to restore tabs:", error);
+        }
+      } else if (savedState.currentNoteId) {
+        // Fallback: restore single note (backward compatibility)
+        try {
+          // First expand parent pages if saved
+          if (savedState.parentPath && savedState.parentPath.length > 0) {
+            await expandParentPages(savedState.parentPath);
+          }
+          // Then load the note (will open in tab)
           await loadNote(savedState.currentNoteId);
         } catch (error) {
           console.error(
@@ -65,5 +95,5 @@ export function useAppStateRestore() {
     };
 
     restoreState();
-  }, [loadNote, expandParentPages, setView]);
+  }, [loadNote, expandParentPages, setView, openTab, switchTab]);
 }

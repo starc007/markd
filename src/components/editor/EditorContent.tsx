@@ -46,6 +46,7 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
       editorProps: {
         attributes: {
           class: "tiptap-editor focus:outline-none",
+          spellcheck: "false",
         },
       },
       onUpdate: ({ editor, transaction }) => {

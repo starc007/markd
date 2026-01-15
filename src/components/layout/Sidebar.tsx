@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useCallback, memo } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { EditIcon } from "@hugeicons/core-free-icons";
 import { useNoteStore } from "@/stores/noteStore";
+import { useTabStore } from "@/stores/tabStore";
 import { useUIStore, UIView } from "@/stores/uiStore";
 import { useNoteColors } from "@/hooks/useNoteColors";
 import { useStickyNotesStore } from "../../features/sticky-notes/stores/stickyNotesStore";
@@ -17,9 +18,12 @@ import { toast } from "sonner";
 
 export const Sidebar = memo(function Sidebar() {
   const notes = useNoteStore((state) => state.notes);
-  const currentNoteId = useNoteStore((state) => state.currentNote?.id ?? null);
   const childrenMap = useNoteStore((state) => state.childrenMap);
   const expandedPages = useNoteStore((state) => state.expandedPages);
+  const { openTab } = useTabStore();
+
+  // Get current note ID from active tab
+  const activeTabId = useTabStore((state) => state.activeTabId);
 
   const { getColor, setColor, removeColor } = useNoteColors();
   const { stickyNotes, loadStickyNotes } = useStickyNotesStore();
@@ -38,11 +42,12 @@ export const Sidebar = memo(function Sidebar() {
 
   const handleNewNote = useCallback(async () => {
     try {
-      const { createNote, loadNote } = useNoteStore.getState();
+      const { createNote } = useNoteStore.getState();
       const note = await createNote("Untitled", undefined);
       if (note) {
         useUIStore.getState().setView(UIView.None);
-        await loadNote(note.id);
+        // Open in tab
+        await openTab(note.id);
       }
     } catch (error) {
       console.error("Failed to create note:", error);
@@ -52,7 +57,7 @@ export const Sidebar = memo(function Sidebar() {
         }`
       );
     }
-  }, []);
+  }, [openTab]);
 
   const handleColorSelect = useCallback(
     (noteId: string, newColorId: NoteColorId, e: React.MouseEvent) => {
@@ -65,13 +70,10 @@ export const Sidebar = memo(function Sidebar() {
   const handleDeleteNote = useCallback(
     async (noteId: string) => {
       try {
-        const { deleteNote, currentNote } = useNoteStore.getState();
+        const { deleteNote } = useNoteStore.getState();
         await deleteNote(noteId);
         removeColor(noteId);
         setDeleteModalNoteId(null);
-        if (currentNote?.id === noteId) {
-          useNoteStore.setState({ currentNote: null });
-        }
       } catch (error) {
         console.error("Failed to delete note:", error);
         toast.error(
@@ -122,10 +124,14 @@ export const Sidebar = memo(function Sidebar() {
     useUIStore.getState().toggleCommandPalette();
   }, []);
 
-  const handleNoteClick = useCallback((noteId: string) => {
-    useUIStore.getState().setView(UIView.None);
-    useNoteStore.getState().loadNote(noteId);
-  }, []);
+  const handleNoteClick = useCallback(
+    async (noteId: string) => {
+      useUIStore.getState().setView(UIView.None);
+      // Open in tab (will switch if already open)
+      await openTab(noteId);
+    },
+    [openTab]
+  );
 
   const handleToggleExpand = useCallback((pageId: string) => {
     useNoteStore.getState().togglePageExpanded(pageId);
@@ -135,6 +141,8 @@ export const Sidebar = memo(function Sidebar() {
 
   return (
     <aside className="w-[280px] shrink-0 flex flex-col bg-sidebar border-r border-sidebar-border overflow-hidden">
+      <div className="h-[30px] shrink-0" data-tauri-drag-region />
+
       <SidebarSearch onSearchClick={handleSearchClick} />
 
       {/* New Note Button */}
@@ -165,7 +173,7 @@ export const Sidebar = memo(function Sidebar() {
         notes={filteredNotes}
         childrenMap={childrenMap}
         expandedPages={expandedPages}
-        currentNoteId={currentNoteId}
+        currentNoteId={activeTabId}
         getColor={getColor}
         onNoteClick={handleNoteClick}
         onColorSelect={handleColorSelect}
