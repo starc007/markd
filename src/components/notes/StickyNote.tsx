@@ -27,12 +27,14 @@ interface StickyNoteProps {
     updates: Partial<Pick<StickyNoteType, "content" | "colorId">>
   ) => void;
   onDelete: (id: string) => void;
+  selected: boolean;
 }
 
 export function StickyNote({
   stickyNote,
   onUpdate,
   onDelete,
+  selected,
 }: StickyNoteProps) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -57,6 +59,17 @@ export function StickyNote({
       adjustTextareaHeight();
     }
   }, [isEditing, adjustTextareaHeight]);
+
+  useEffect(() => {
+    if (selected && textareaRef.current) {
+      setIsEditing(true);
+      textareaRef.current.focus();
+      // Set cursor to end
+      const length = textareaRef.current.value.length;
+      textareaRef.current.setSelectionRange(length, length);
+      adjustTextareaHeight();
+    }
+  }, [selected, adjustTextareaHeight]);
 
   useEffect(() => {
     if (textareaRef.current && !isEditing) {

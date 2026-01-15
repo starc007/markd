@@ -5,6 +5,7 @@ import { File02Icon, Plus } from "@hugeicons/core-free-icons";
 import { StickyNote } from "./StickyNote";
 import { Button, EmptyState } from "../ui";
 import { useStickyNotesStore } from "../../stores/stickyNotesStore";
+import { useUIStore } from "@/stores/uiStore";
 
 export function NotesGrid() {
   const {
@@ -14,6 +15,10 @@ export function NotesGrid() {
     deleteStickyNote,
     loadStickyNotes,
   } = useStickyNotesStore();
+
+  const selectedStickyNoteId = useUIStore(
+    (state) => state.selectedStickyNoteId
+  );
 
   useEffect(() => {
     loadStickyNotes();
@@ -81,6 +86,7 @@ export function NotesGrid() {
             {stickyNotes.map((stickyNote) => (
               <StickyNote
                 key={stickyNote.id}
+                selected={selectedStickyNoteId === stickyNote.id}
                 stickyNote={stickyNote}
                 onUpdate={updateStickyNote}
                 onDelete={deleteStickyNote}

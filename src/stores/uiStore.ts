@@ -19,6 +19,7 @@ interface UIStore {
   currentView: UIView | null;
   previousNoteId: string | null; // Track note we came from when navigating to bookmarks
   settingsModalOpen: boolean;
+  selectedStickyNoteId: string | null;
 
   // Actions
   toggleSidebar: () => void;
@@ -30,6 +31,7 @@ interface UIStore {
   setView: (view: UIView | null) => void;
   setPreviousNoteId: (id: string | null) => void;
   setSettingsModalOpen: (open: boolean) => void;
+  setSelectedStickyNoteId: (id: string | null) => void;
 }
 
 export const useUIStore = create<UIStore>((set, get) => ({
@@ -41,7 +43,7 @@ export const useUIStore = create<UIStore>((set, get) => ({
   currentView: UIView.None,
   previousNoteId: null,
   settingsModalOpen: false,
-
+  selectedStickyNoteId: null,
   // Actions
   toggleSidebar: () => {
     set({ sidebarCollapsed: !get().sidebarCollapsed });
@@ -100,5 +102,9 @@ export const useUIStore = create<UIStore>((set, get) => ({
 
   setSettingsModalOpen: (open: boolean) => {
     set({ settingsModalOpen: open });
+  },
+
+  setSelectedStickyNoteId: (id: string | null) => {
+    set({ selectedStickyNoteId: id });
   },
 }));

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { NoteColorId } from "../lib/config";
 import * as commands from "../lib/tauri/commands";
+import { useUIStore } from "./uiStore";
 
 // Frontend representation of sticky note (with camelCase)
 export interface StickyNote {
@@ -68,6 +69,7 @@ export const useStickyNotesStore = create<StickyNotesStore>((set) => ({
         stickyNotes: [frontendNote, ...state.stickyNotes],
         isLoading: false,
       }));
+      useUIStore.getState().setSelectedStickyNoteId(frontendNote.id);
       return frontendNote;
     } catch (error) {
       set({ error: String(error), isLoading: false });

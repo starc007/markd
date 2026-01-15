@@ -23,3 +23,15 @@ dist-ssr
 *.sln
 *.sw?
 *.md
+
+# Secrets and keys (never commit these!)
+*.key
+*.p8
+*.p12
+.env
+.env.local
+*.keystore
+
+# macOS code signing (private keys)
+AuthKey_*.p8
+*.mobileprovision

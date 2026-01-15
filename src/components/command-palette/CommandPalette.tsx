@@ -28,7 +28,9 @@ export function CommandPalette() {
   } = useNoteStore();
 
   const bookmarks = useBookmarkStore((state) => state.bookmarks);
-
+  const setSelectedStickyNoteId = useUIStore(
+    (state) => state.setSelectedStickyNoteId
+  );
   const commandPaletteOpen = useUIStore((state) => state.commandPaletteOpen);
   const {
     setCommandPaletteOpen,
@@ -226,6 +228,9 @@ export function CommandPalette() {
               setCommandPaletteOpen(false);
             }
             if (action.startsWith("search-sticky:")) {
+              const stickyNoteId = action.replace("search-sticky:", "");
+              console.log("stickyNoteId", stickyNoteId);
+              setSelectedStickyNoteId(stickyNoteId);
               // Navigate to sticky notes view
               setView(UIView.StickyNotes);
               setCommandPaletteOpen(false);
