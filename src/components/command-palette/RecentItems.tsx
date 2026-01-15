@@ -1,15 +1,21 @@
 import { Command } from "cmdk";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { FileEditIcon, Bookmark01Icon } from "@hugeicons/core-free-icons";
+import {
+  FileEditIcon,
+  Bookmark01Icon,
+  StickyNoteIcon,
+} from "@hugeicons/core-free-icons";
 
 const searchResultColors = {
   note: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/20",
   bookmark:
     "bg-orange-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/20",
+  sticky_note:
+    "bg-green-500/15 text-green-600 dark:text-green-400 border border-green-500/20",
 };
 
 interface RecentItem {
-  type: "note" | "bookmark";
+  type: "note" | "bookmark" | "sticky_note";
   id: string;
   title: string;
   updated_at: number;
@@ -27,11 +33,26 @@ export function RecentItems({ items, onSelect }: RecentItemsProps) {
     <Command.Group heading="Recent">
       {items.map((item) => {
         const isBookmark = item.type === "bookmark";
-        const icon = isBookmark ? Bookmark01Icon : FileEditIcon;
-        const actionPrefix = isBookmark ? "recent-bookmark:" : "recent-note:";
-        const typeLabel = isBookmark ? "Bookmark" : "Note";
+        const isStickyNote = item.type === "sticky_note";
+        const icon = isBookmark
+          ? Bookmark01Icon
+          : isStickyNote
+          ? StickyNoteIcon
+          : FileEditIcon;
+        const actionPrefix = isBookmark
+          ? "recent-bookmark:"
+          : isStickyNote
+          ? "recent-sticky-note:"
+          : "recent-note:";
+        const typeLabel = isBookmark
+          ? "Bookmark"
+          : isStickyNote
+          ? "Sticky Note"
+          : "Note";
         const typeColor = isBookmark
           ? searchResultColors.bookmark
+          : isStickyNote
+          ? searchResultColors.sticky_note
           : searchResultColors.note;
 
         return (

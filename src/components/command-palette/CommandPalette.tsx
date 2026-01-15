@@ -18,6 +18,7 @@ export function CommandPalette() {
   const currentNote = useNoteStore((state) => state.currentNote);
   const searchResults = useNoteStore((state) => state.searchResults);
   const notes = useNoteStore((state) => state.notes);
+  const stickyNotes = useStickyNotesStore((state) => state.stickyNotes);
   const {
     loadNote,
     createNote,
@@ -53,15 +54,9 @@ export function CommandPalette() {
   const shouldSearch = !isCommandMode && searchQuery.length >= SEARCH_THRESHOLD;
 
   // Get recent items (top 5 most recently updated notes/bookmarks)
-  // Prioritize currentNote to appear first
   const recentItems = useMemo(() => {
     const recentNotes = [...notes]
-      .sort((a, b) => {
-        // Prioritize current note
-        if (a.id === currentNote?.id) return -1;
-        if (b.id === currentNote?.id) return 1;
-        return b.updated_at - a.updated_at;
-      })
+      .sort((a, b) => b.updated_at - a.updated_at)
       .slice(0, 5)
       .map((note) => ({
         type: "note" as const,
@@ -80,17 +75,22 @@ export function CommandPalette() {
         updated_at: bookmark.updated_at,
       }));
 
-    const allRecent = [...recentNotes, ...recentBookmarks]
-      .sort((a, b) => {
-        // Prioritize current note
-        if (a.type === "note" && a.id === currentNote?.id) return -1;
-        if (b.type === "note" && b.id === currentNote?.id) return 1;
-        return b.updated_at - a.updated_at;
-      })
+    const recentStickyNotes = [...stickyNotes]
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+      .slice(0, 3)
+      .map((stickyNote) => ({
+        type: "sticky_note" as const,
+        id: stickyNote.id,
+        title: stickyNote.content,
+        updated_at: stickyNote.updatedAt,
+      }));
+
+    const allRecent = [...recentNotes, ...recentBookmarks, ...recentStickyNotes]
+      .sort((a, b) => b.updated_at - a.updated_at)
       .slice(0, 5);
 
     return allRecent;
-  }, [notes, bookmarks, currentNote]);
+  }, [notes, bookmarks, stickyNotes]);
 
   // Group search results by type
   const groupedSearchResults = useMemo(() => {
@@ -229,7 +229,6 @@ export function CommandPalette() {
             }
             if (action.startsWith("search-sticky:")) {
               const stickyNoteId = action.replace("search-sticky:", "");
-              console.log("stickyNoteId", stickyNoteId);
               setSelectedStickyNoteId(stickyNoteId);
               // Navigate to sticky notes view
               setView(UIView.StickyNotes);
@@ -249,6 +248,12 @@ export function CommandPalette() {
               const noteId = action.replace("recent-note:", "");
               setView(UIView.None);
               await loadNote(noteId);
+              setCommandPaletteOpen(false);
+            }
+            if (action.startsWith("recent-sticky-note:")) {
+              const stickyNoteId = action.replace("recent-sticky-note:", "");
+              setSelectedStickyNoteId(stickyNoteId);
+              setView(UIView.StickyNotes);
               setCommandPaletteOpen(false);
             }
             if (action.startsWith("recent-bookmark:")) {
