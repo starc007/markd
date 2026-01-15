@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import * as commands from "../lib/tauri/commands";
+import { useNoteStore } from "./noteStore";
 
 export interface Tab {
   id: string; // Note ID
@@ -86,8 +87,19 @@ export const useTabStore = create<TabStore>((set, get) => ({
       };
 
       // Add to open tabs and make it active
+      const newOpenTabs = [...openTabs, newTab];
       set({
-        openTabs: [...openTabs, newTab],
+        openTabs: newOpenTabs,
+        activeTabId: noteId,
+      });
+
+      // Persist tab state
+      const { currentView } = useUIStore.getState();
+      const { currentNote } = useNoteStore.getState();
+      const savedState = loadAppState();
+      saveAppState({
+        ...savedState,
+        openTabIds: newOpenTabs.map((tab) => tab.id),
         activeTabId: noteId,
       });
     } catch (error) {
@@ -130,6 +142,16 @@ export const useTabStore = create<TabStore>((set, get) => ({
       activeTabId: newActiveTabId,
       closedTabs: newClosedTabs,
     });
+
+    // Persist tab state
+    const { currentView } = useUIStore.getState();
+    const { currentNote } = useNoteStore.getState();
+    const savedState = loadAppState();
+    saveAppState({
+      ...savedState,
+      openTabIds: newOpenTabs.map((tab) => tab.id),
+      activeTabId: newActiveTabId,
+    });
   },
 
   // Switch to a tab
@@ -138,6 +160,13 @@ export const useTabStore = create<TabStore>((set, get) => ({
     const tab = openTabs.find((tab) => tab.id === tabId);
     if (tab) {
       set({ activeTabId: tabId });
+
+      // Persist tab state
+      const savedState = loadAppState();
+      saveAppState({
+        ...savedState,
+        activeTabId: tabId,
+      });
     }
   },
 
@@ -171,6 +200,14 @@ export const useTabStore = create<TabStore>((set, get) => ({
       activeTabId: null,
       closedTabs: newClosedTabs,
     });
+
+    // Persist tab state
+    const savedState = loadAppState();
+    saveAppState({
+      ...savedState,
+      openTabIds: [],
+      activeTabId: null,
+    });
   },
 
   // Close all tabs except specified one
@@ -189,6 +226,14 @@ export const useTabStore = create<TabStore>((set, get) => ({
       openTabs: [tabToKeep],
       activeTabId: tabId,
       closedTabs: newClosedTabs,
+    });
+
+    // Persist tab state
+    const savedState = loadAppState();
+    saveAppState({
+      ...savedState,
+      openTabIds: [tabId],
+      activeTabId: tabId,
     });
   },
 
