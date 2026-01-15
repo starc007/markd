@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { useBookmarkStore } from "../../stores/bookmarkStore";
+import { useBookmarkStore } from "@/features/bookmarks/stores/bookmarkStore";
 import { toast } from "sonner";
-import type { BookmarkMetadata } from "../../lib/tauri/commands";
-import { Modal, ModalFooter } from "../ui/Modal";
-import { Input } from "../ui/Input";
-import { Button } from "../ui/Button";
+import type { BookmarkMetadata } from "@/lib/tauri/commands";
+import { Modal, ModalFooter } from "@/components/ui/Modal";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 
 interface BookmarkEditModalProps {
   bookmark: BookmarkMetadata | null;

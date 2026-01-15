@@ -1,16 +1,16 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useBookmarkStore } from "../../stores/bookmarkStore";
+import { useBookmarkStore } from "@/features/bookmarks/stores/bookmarkStore";
 
 import { BookmarkInput, BookmarkInputRef } from "./BookmarkInput";
 import { BookmarkList, BookmarkListRef } from "./BookmarkList";
 import { BookmarkEditModal } from "./BookmarkEditModal";
-import type { BookmarkMetadata } from "../../lib/tauri/commands";
+import type { BookmarkMetadata } from "@/lib/tauri/commands";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CommandIcon } from "@hugeicons/core-free-icons";
-import { BackspaceIcon } from "../tiptap-icons/backspace-icon";
-import { EnterKeyIcon } from "../tiptap-icons/enter-key-icon";
-import { ArrowUpIcon } from "../tiptap-icons/arrow-up-icon";
-import { ArrowDownIcon } from "../tiptap-icons/arrow-down-icon";
+import { BackspaceIcon } from "@/components/tiptap-icons/backspace-icon";
+import { EnterKeyIcon } from "@/components/tiptap-icons/enter-key-icon";
+import { ArrowUpIcon } from "@/components/tiptap-icons/arrow-up-icon";
+import { ArrowDownIcon } from "@/components/tiptap-icons/arrow-down-icon";
 import { toast } from "sonner";
 
 export function Bookmarks() {

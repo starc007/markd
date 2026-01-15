@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import type { Bookmark, BookmarkMetadata } from "../lib/tauri/commands";
-import * as commands from "../lib/tauri/commands";
+import type { Bookmark, BookmarkMetadata } from "@/lib/tauri/commands";
+import * as commands from "@/lib/tauri/commands";
 
 interface BookmarkStore {
   // State

@@ -2,12 +2,12 @@ import { useEffect } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { File02Icon, Plus } from "@hugeicons/core-free-icons";
 
-import { StickyNote } from "./StickyNote";
-import { Button, EmptyState } from "../ui";
-import { useStickyNotesStore } from "../../stores/stickyNotesStore";
+import { StickyNote } from "@/features/sticky-notes/components/StickyNote";
+import { Button, EmptyState } from "@/components/ui";
+import { useStickyNotesStore } from "@/features/sticky-notes/stores/stickyNotesStore";
 import { useUIStore } from "@/stores/uiStore";
 
-export function NotesGrid() {
+export function StickyNotesGrid() {
   const {
     stickyNotes,
     createStickyNote,

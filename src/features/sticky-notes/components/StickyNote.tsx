@@ -6,8 +6,8 @@ import {
   DeleteIcon,
   Tick02Icon,
 } from "@hugeicons/core-free-icons";
-import { NOTE_COLORS, getNoteColor, type NoteColorId } from "../../lib/config";
-import { formatRelativeTime } from "../../lib/utils";
+import { NOTE_COLORS, getNoteColor, type NoteColorId } from "@/lib/config";
+import { formatRelativeTime } from "@/lib/utils";
 import {
   IconButton,
   Dropdown,
@@ -16,9 +16,9 @@ import {
   DropdownItem,
   DropdownSeparator,
   DropdownLabel,
-} from "../ui";
-import { DeleteNoteModal } from "./DeleteNoteModal";
-import type { StickyNote as StickyNoteType } from "../../stores/stickyNotesStore";
+} from "@/components/ui";
+import { DeleteNoteModal } from "@/components/DeleteNoteModal";
+import type { StickyNote as StickyNoteType } from "@/features/sticky-notes/stores/stickyNotesStore";
 
 interface StickyNoteProps {
   stickyNote: StickyNoteType;

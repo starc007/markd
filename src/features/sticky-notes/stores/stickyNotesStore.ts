@@ -1,7 +1,7 @@
 import { create } from "zustand";
-import type { NoteColorId } from "../lib/config";
-import * as commands from "../lib/tauri/commands";
-import { useUIStore } from "./uiStore";
+import type { NoteColorId } from "@/lib/config";
+import * as commands from "@/lib/tauri/commands";
+import { useUIStore } from "@/stores/uiStore";
 
 // Frontend representation of sticky note (with camelCase)
 export interface StickyNote {

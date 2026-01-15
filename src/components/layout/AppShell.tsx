@@ -1,19 +1,19 @@
 import { Sidebar } from "./Sidebar";
 import { Editor } from "../editor/Editor";
-import { CommandPalette } from "../command-palette/CommandPalette";
+import { CommandPalette } from "@/features/command-palette/components/CommandPalette";
 import { TitleBar } from "./TitleBar";
-import { NotesGrid } from "../notes/NotesGrid";
+import { StickyNotesGrid } from "@/features/sticky-notes/components/StickyNotesGrid";
 import { SettingsModal } from "../settings/SettingsModal";
-import { Bookmarks } from "../bookmarks/Bookmarks";
+import { Bookmarks } from "@/features/bookmarks/components/Bookmarks";
 import { SectionErrorBoundary } from "../SectionErrorBoundary";
-import { useNoteStore } from "../../stores/noteStore";
-import { useUIStore, UIView } from "../../stores/uiStore";
-import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
-import { useTheme } from "../../hooks/useTheme";
-import { useWindowFocus } from "../../hooks/useWindowFocus";
-import { useAppStateRestore } from "../../hooks/useAppStateRestore";
-import { useUpdateCheck } from "../../hooks/useUpdateCheck";
-import Welcome from "../welcome";
+import { useNoteStore } from "@/stores/noteStore";
+import { useUIStore, UIView } from "@/stores/uiStore";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useTheme } from "@/hooks/useTheme";
+import { useWindowFocus } from "@/hooks/useWindowFocus";
+import { useAppStateRestore } from "@/hooks/useAppStateRestore";
+import { useUpdateCheck } from "@/hooks/useUpdateCheck";
+import Welcome from "@/components/welcome";
 
 export function AppShell() {
   // Use selective subscriptions to prevent unnecessary re-renders
@@ -34,7 +34,7 @@ export function AppShell() {
 
   const renderContent = () => {
     if (currentView === UIView.StickyNotes) {
-      return <NotesGrid />;
+      return <StickyNotesGrid />;
     } else if (currentView === UIView.Bookmarks) {
       return <Bookmarks />;
     } else if (currentNote) {

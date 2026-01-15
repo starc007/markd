@@ -36,7 +36,8 @@ export default defineConfig(async () => ({
       "@/context": path.resolve(__dirname, "./src/context/"),
       "@/hooks": path.resolve(__dirname, "./src/hooks/"),
       "@/lib": path.resolve(__dirname, "./src/lib/"),
-      "@/store": path.resolve(__dirname, "./src/store/"),
+      "@/stores": path.resolve(__dirname, "./src/stores/"),
+      "@/features": path.resolve(__dirname, "./src/features/"),
     },
   },
 }));

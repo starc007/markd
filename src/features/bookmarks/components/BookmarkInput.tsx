@@ -6,7 +6,7 @@ import {
   forwardRef,
   useImperativeHandle,
 } from "react";
-import { useBookmarkStore } from "../../stores/bookmarkStore";
+import { useBookmarkStore } from "@/features/bookmarks/stores/bookmarkStore";
 import { toast } from "sonner";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { AddIcon, CommandIcon } from "@hugeicons/core-free-icons";

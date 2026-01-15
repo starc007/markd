@@ -12,8 +12,8 @@ import {
   Copy01Icon,
   Edit02Icon,
 } from "@hugeicons/core-free-icons";
-import type { BookmarkMetadata } from "../../lib/tauri/commands";
-import { useBookmarkStore } from "../../stores/bookmarkStore";
+import type { BookmarkMetadata } from "@/lib/tauri/commands";
+import { useBookmarkStore } from "@/features/bookmarks/stores/bookmarkStore";
 import { toast } from "sonner";
 
 // Format timestamp to relative time (e.g., "2h ago", "3d ago")

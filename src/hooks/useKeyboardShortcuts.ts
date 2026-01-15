@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNoteStore } from "../stores/noteStore";
 import { useUIStore, UIView } from "../stores/uiStore";
-import { useStickyNotesStore } from "../stores/stickyNotesStore";
+import { useStickyNotesStore } from "../features/sticky-notes/stores/stickyNotesStore";
 import { useSettingsStore } from "../stores/settingsStore";
 
 // Helper function to check if a keyboard event matches a shortcut

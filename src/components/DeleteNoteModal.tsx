@@ -1,4 +1,4 @@
-import { Modal, ModalFooter, Button } from "../ui";
+import { Modal, ModalFooter, Button } from "@/components/ui";
 
 interface DeleteNoteModalProps {
   isOpen: boolean;

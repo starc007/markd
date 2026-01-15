@@ -28,7 +28,8 @@
       "@/context/*": ["./src/context/*"],
       "@/hooks/*": ["./src/hooks/*"],
       "@/lib/*": ["./src/lib/*"],
-      "@/store/*": ["./src/store/*"]
+      "@/stores/*": ["./src/stores/*"],
+      "@/features/*": ["./src/features/*"]
     }
   },
   "include": ["src"],

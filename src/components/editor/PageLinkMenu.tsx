@@ -1,10 +1,10 @@
-import { SuggestionMenu } from "../tiptap-ui-utils/suggestion-menu/suggestion-menu";
-import { usePageLinkSuggestion } from "../../hooks/usePageLinkSuggestion";
+import { SuggestionMenu } from "@/components/tiptap-ui-utils/suggestion-menu/suggestion-menu";
+import { usePageLinkSuggestion } from "@/hooks/usePageLinkSuggestion";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { File02Icon, LinkIcon } from "@hugeicons/core-free-icons";
-import type { SuggestionItem } from "../tiptap-ui-utils/suggestion-menu/suggestion-menu-types";
+import type { SuggestionItem } from "@/components/tiptap-ui-utils/suggestion-menu/suggestion-menu-types";
 import type { Editor, Range } from "@tiptap/react";
-import { useBookmarkStore } from "@/stores/bookmarkStore";
+import { useBookmarkStore } from "@/features/bookmarks/stores/bookmarkStore";
 import { useEffect } from "react";
 
 interface PageLinkMenuProps {

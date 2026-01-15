@@ -6,8 +6,8 @@ import {
   Download01Icon,
 } from "@hugeicons/core-free-icons";
 import { save } from "@tauri-apps/plugin-dialog";
-import { useNoteStore } from "../../stores/noteStore";
-import { useUIStore } from "../../stores/uiStore";
+import { useNoteStore } from "@/stores/noteStore";
+import { useUIStore } from "@/stores/uiStore";
 import {
   IconButton,
   Dropdown,
@@ -16,10 +16,10 @@ import {
   DropdownItem,
   DropdownSeparator,
 } from "../ui";
-import { DeleteNoteModal } from "../notes/DeleteNoteModal";
+import { DeleteNoteModal } from "@/components/DeleteNoteModal";
 import { EditorTitle, type EditorTitleRef } from "./EditorTitle";
 import { EditorContent, type EditorContentRef } from "./EditorContent";
-import { AppProvider } from "../../context/app-context";
+import { AppProvider } from "@/context/app-context";
 import { formatRelativeTime } from "@/lib/utils";
 
 interface EditorProps {

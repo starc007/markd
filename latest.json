@@ -1,6 +1,15 @@
 {
-  "version": "0.1.0",
-  "notes": "Initial release",
-  "pub_date": "2026-01-13T11:56:24.261Z",
-  "platforms": {}
+  "version": "0.1.1",
+  "notes": "Bug fixes and improvements",
+  "pub_date": "2026-01-15T09:32:30.543Z",
+  "platforms": {
+    "darwin-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSbHJsY3g1eEtlY1ZEMGY0bDE2OVFwOTJybFlUSm54Q0RiampUSDhWTUt5anVOZUdEajR6d2k2dHJWNkVrK3RVOFFUZFFYc2tSY0t5Ym9wd2tMYTFkZGw4TUtGNUVrV2dFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY4NDY3MTY2CWZpbGU6RHJhZnQuYXBwLnRhci5nego0QnVBT2YvZzVmbUdFQjJpSEh6aXpmcWpOam1XT2gzZlBuaUxvYXFodW9waGM5dkc5SkRsVGRoMS9oaUczRmR1LzkwdkJNbXM2VzNzZEUrSGV3dS9EQT09Cg==",
+      "url": "https://usedraft.app/updates/Draft.app.tar.gz"
+    },
+    "darwin-aarch64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSbHJsY3g1eEtlY1ZEMGY0bDE2OVFwOTJybFlUSm54Q0RiampUSDhWTUt5anVOZUdEajR6d2k2dHJWNkVrK3RVOFFUZFFYc2tSY0t5Ym9wd2tMYTFkZGw4TUtGNUVrV2dFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY4NDY3MTY2CWZpbGU6RHJhZnQuYXBwLnRhci5nego0QnVBT2YvZzVmbUdFQjJpSEh6aXpmcWpOam1XT2gzZlBuaUxvYXFodW9waGM5dkc5SkRsVGRoMS9oaUczRmR1LzkwdkJNbXM2VzNzZEUrSGV3dS9EQT09Cg==",
+      "url": "https://usedraft.app/updates/Draft.app.tar.gz"
+    }
+  }
 }
