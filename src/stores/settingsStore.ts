@@ -49,7 +49,7 @@ const defaultKeyboardShortcuts: KeyboardShortcuts = {
     shift: true,
   },
   openBookmarks: { action: "openBookmarks", key: "b", meta: true, shift: true },
-  openSettings: { action: "openSettings", key: "t", meta: true, shift: true },
+  openSettings: { action: "openSettings", key: ",", meta: true },
   toggleSidebar: { action: "toggleSidebar", key: "\\", meta: true },
 };
 

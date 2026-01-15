@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { useNoteStore } from "./noteStore";
+import { useTabStore } from "./tabStore";
 import { saveAppState, loadAppState } from "../lib/app-state-persistence";
 
 export enum UIView {
@@ -87,12 +88,15 @@ export const useUIStore = create<UIStore>((set, get) => ({
     if (view === UIView.StickyNotes || view === UIView.Bookmarks) {
       useNoteStore.setState({ currentNote: null });
     }
-    // Persist view change (preserve existing parentPath)
+    // Persist view change (preserve existing parentPath and tabs)
     const savedState = loadAppState();
+    const { openTabs, activeTabId } = useTabStore.getState();
     saveAppState({
       currentNoteId: currentNote?.id || null,
       currentView: view ? String(view) : null,
       parentPath: savedState.parentPath || [],
+      openTabIds: openTabs.map((tab) => tab.id),
+      activeTabId: activeTabId,
     });
   },
 

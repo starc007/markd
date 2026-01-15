@@ -7,6 +7,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { save } from "@tauri-apps/plugin-dialog";
 import { useNoteStore } from "@/stores/noteStore";
+import { useTabStore } from "@/stores/tabStore";
 import { useUIStore } from "@/stores/uiStore";
 import {
   IconButton,
@@ -35,6 +36,13 @@ export function Editor({ noteId, content }: EditorProps) {
   const currentNote = useNoteStore((state) => state.currentNote);
   const newlyCreatedNoteId = useNoteStore((state) => state.newlyCreatedNoteId);
   const focusMode = useUIStore((state) => state.focusMode);
+  const activeTab = useTabStore((state) => state.getActiveTab());
+  const { updateTabContent, updateTabTitle, getTab } = useTabStore();
+
+  // Use tab if available, otherwise fallback to currentNote
+  const displayNote = activeTab || currentNote;
+
+  const updatedAt = activeTab?.updatedAt || currentNote?.updated_at || 0;
 
   // Auto-focus title when a new note is created
   // This effect has priority and should run first
@@ -138,6 +146,13 @@ export function Editor({ noteId, content }: EditorProps) {
       if (useNoteStore.getState().newlyCreatedNoteId === noteId) {
         useNoteStore.setState({ newlyCreatedNoteId: null });
       }
+
+      // Update tab content if tab exists
+      const tab = getTab(noteId);
+      if (tab && tab.content !== newContent) {
+        updateTabContent(noteId, newContent);
+      }
+
       // CRITICAL: Verify we're still on the same note before saving
       // This prevents saving content to the wrong note when switching quickly
       const currentNote = useNoteStore.getState().currentNote;
@@ -149,7 +164,7 @@ export function Editor({ noteId, content }: EditorProps) {
         useNoteStore.getState().saveCurrentNoteContent(newContent);
       }
     },
-    [noteId]
+    [noteId, getTab, updateTabContent]
   );
 
   // Title change handler
@@ -160,13 +175,20 @@ export function Editor({ noteId, content }: EditorProps) {
       // The flag will be cleared when they press Enter or start typing in editor
       // Use "Untitled" only for saving/display, but allow empty during editing
       const displayTitle = title.trim() || "Untitled";
+
+      // Update tab title if tab exists
+      const tab = getTab(noteId);
+      if (tab && tab.title !== displayTitle) {
+        updateTabTitle(noteId, displayTitle);
+      }
+
       // Only update if the display title (with "Untitled" fallback) is different
       // This allows the user to clear the title without it immediately coming back
       if (note && displayTitle !== (note.title || "Untitled")) {
         useNoteStore.getState().updateNote(noteId, { title: displayTitle });
       }
     },
-    [noteId]
+    [noteId, getTab, updateTabTitle]
   );
 
   // Handle Enter in title to focus content editor
@@ -224,7 +246,7 @@ export function Editor({ noteId, content }: EditorProps) {
           >
             <div className="flex items-center gap-3 [-webkit-app-region:no-drag]">
               <span className="font-medium text-muted-foreground truncate text-xs italic">
-                updated {formatRelativeTime(currentNote?.updated_at || 0)}
+                updated {formatRelativeTime(updatedAt)}
               </span>
             </div>
 
@@ -280,7 +302,7 @@ export function Editor({ noteId, content }: EditorProps) {
             {/* Title Editor */}
             <EditorTitle
               ref={titleRef}
-              title={currentNote?.title || ""}
+              title={displayNote?.title || ""}
               noteId={noteId}
               onTitleChange={handleTitleChange}
               onEnter={handleTitleEnter}
@@ -303,7 +325,7 @@ export function Editor({ noteId, content }: EditorProps) {
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         onConfirm={handleDelete}
-        noteTitle={currentNote?.title}
+        noteTitle={displayNote?.title}
       />
     </>
   );

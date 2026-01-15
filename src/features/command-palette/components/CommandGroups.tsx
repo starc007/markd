@@ -8,7 +8,9 @@ import {
   SettingsIcon,
   StickyNoteIcon,
   Bookmark01Icon,
+  FileEditIcon,
 } from "@hugeicons/core-free-icons";
+import { useTabStore } from "@/stores/tabStore";
 
 interface CommandGroupsProps {
   currentNote: { id: string; title: string } | null;
@@ -16,8 +18,46 @@ interface CommandGroupsProps {
 }
 
 export function CommandGroups({ currentNote, onSelect }: CommandGroupsProps) {
+  const { openTabs, activeTabId } = useTabStore();
+
   return (
     <>
+      {/* Tabs Category - only show if tabs are open */}
+      {openTabs.length > 0 && (
+        <Command.Group heading="Switch Tab">
+          {openTabs.slice(0, 9).map((tab, index) => (
+            <Command.Item
+              key={tab.id}
+              value={`switch tab ${index + 1} ${tab.title}`}
+              onSelect={() => onSelect(`switch-tab:${tab.id}`)}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent group"
+            >
+              <HugeiconsIcon
+                icon={FileEditIcon}
+                size={18}
+                color="currentColor"
+                strokeWidth={1.5}
+                className={`opacity-50 ${
+                  tab.id === activeTabId ? "opacity-100" : ""
+                }`}
+              />
+              <span className="flex-1 font-medium truncate">{tab.title}</span>
+              {index < 9 && (
+                <kbd className="flex items-center gap-1 text-xs font-mono font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
+                  <HugeiconsIcon
+                    icon={CommandIcon}
+                    size={14}
+                    color="currentColor"
+                    strokeWidth={1.5}
+                  />
+                  <span>{index + 1}</span>
+                </kbd>
+              )}
+            </Command.Item>
+          ))}
+        </Command.Group>
+      )}
+
       {/* Create Category */}
       <Command.Group heading="Create">
         <Command.Item
@@ -194,10 +234,7 @@ export function CommandGroups({ currentNote, onSelect }: CommandGroupsProps) {
               color="currentColor"
               strokeWidth={1.5}
             />
-            <span>+</span>
-            <span>Shift</span>
-            <span>+</span>
-            <span>T</span>
+            <span>,</span>
           </kbd>
         </Command.Item>
       </Command.Group>

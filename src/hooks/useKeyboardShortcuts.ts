@@ -3,6 +3,7 @@ import { useNoteStore } from "../stores/noteStore";
 import { useUIStore, UIView } from "../stores/uiStore";
 import { useStickyNotesStore } from "../features/sticky-notes/stores/stickyNotesStore";
 import { useSettingsStore } from "../stores/settingsStore";
+import { useTabStore } from "../stores/tabStore";
 
 // Helper function to check if a keyboard event matches a shortcut
 function matchesShortcut(
@@ -21,7 +22,13 @@ function matchesShortcut(
   // Handle special keys
   if (shortcutKey === "space" && key !== " ") return false;
   if (shortcutKey === "\\" && key !== "\\") return false;
-  if (shortcutKey !== "space" && shortcutKey !== "\\" && key !== shortcutKey)
+  if (shortcutKey === "," && key !== ",") return false;
+  if (
+    shortcutKey !== "space" &&
+    shortcutKey !== "\\" &&
+    shortcutKey !== "," &&
+    key !== shortcutKey
+  )
     return false;
 
   // Check modifiers - meta/ctrl are interchangeable (meta on Mac, ctrl on Windows/Linux)
@@ -66,6 +73,8 @@ export function useKeyboardShortcuts() {
   const setSettingsModalOpen = useUIStore(
     (state) => state.setSettingsModalOpen
   );
+  const { closeTab, reopenClosedTab, switchTab, openTabs, activeTabId } =
+    useTabStore();
 
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
@@ -131,6 +140,38 @@ export function useKeyboardShortcuts() {
         return;
       }
 
+      // Tab shortcuts (not customizable)
+      // Cmd+W: Close current tab
+      if (isMod && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "w") {
+        const { activeTabId: currentActiveTabId } = useTabStore.getState();
+        if (currentActiveTabId) {
+          e.preventDefault();
+          closeTab(currentActiveTabId);
+        }
+        return;
+      }
+
+      // Cmd+Shift+T: Reopen closed tab
+      if (isMod && e.shiftKey && !e.altKey && e.key.toLowerCase() === "t") {
+        e.preventDefault();
+        reopenClosedTab();
+        return;
+      }
+
+      // Cmd+1-9: Switch to tab by number
+      if (isMod && !e.shiftKey && !e.altKey) {
+        const key = e.key;
+        const tabNumber = parseInt(key, 10);
+        if (!isNaN(tabNumber) && tabNumber >= 1 && tabNumber <= 9) {
+          const { openTabs: currentOpenTabs } = useTabStore.getState();
+          if (currentOpenTabs.length >= tabNumber) {
+            e.preventDefault();
+            switchTab(currentOpenTabs[tabNumber - 1].id);
+          }
+          return;
+        }
+      }
+
       // Escape: Close command palette or settings modal (not customizable)
       if (e.key === "Escape") {
         const { settingsModalOpen } = useUIStore.getState();
@@ -155,5 +196,10 @@ export function useKeyboardShortcuts() {
     setView,
     keyboardShortcuts,
     setSettingsModalOpen,
+    closeTab,
+    reopenClosedTab,
+    switchTab,
+    openTabs,
+    activeTabId,
   ]);
 }

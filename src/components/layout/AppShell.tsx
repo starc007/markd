@@ -6,8 +6,10 @@ import { StickyNotesGrid } from "@/features/sticky-notes/components/StickyNotesG
 import { SettingsModal } from "../settings/SettingsModal";
 import { Bookmarks } from "@/features/bookmarks/components/Bookmarks";
 import { SectionErrorBoundary } from "../SectionErrorBoundary";
+import { TabBar } from "../tabs/TabBar";
 import { useNoteStore } from "@/stores/noteStore";
 import { useUIStore, UIView } from "@/stores/uiStore";
+import { useTabStore } from "@/stores/tabStore";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useTheme } from "@/hooks/useTheme";
 import { useWindowFocus } from "@/hooks/useWindowFocus";
@@ -25,6 +27,8 @@ export function AppShell() {
   const setSettingsModalOpen = useUIStore(
     (state) => state.setSettingsModalOpen
   );
+  const activeTab = useTabStore((state) => state.getActiveTab());
+  const openTabs = useTabStore((state) => state.openTabs);
 
   useKeyboardShortcuts();
   useTheme(); // Apply theme
@@ -37,7 +41,16 @@ export function AppShell() {
       return <StickyNotesGrid />;
     } else if (currentView === UIView.Bookmarks) {
       return <Bookmarks />;
+    } else if (activeTab) {
+      return (
+        <Editor
+          key={activeTab.id}
+          noteId={activeTab.id}
+          content={activeTab.content}
+        />
+      );
     } else if (currentNote) {
+      // Fallback to currentNote for backward compatibility during migration
       return (
         <Editor
           key={currentNote.id}
@@ -69,6 +82,10 @@ export function AppShell() {
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col overflow-hidden w-full">
+          {/* TabBar - only show when not in special views and tabs are open */}
+          {currentView === UIView.None && openTabs.length > 0 && !focusMode && (
+            <TabBar />
+          )}
           <SectionErrorBoundary
             section={
               currentView === UIView.StickyNotes ? "notes-grid" : "editor"

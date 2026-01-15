@@ -8,6 +8,7 @@ import type {
 import * as commands from "../lib/tauri/commands";
 import { saveAppState } from "../lib/app-state-persistence";
 import { useUIStore } from "./uiStore";
+import { useTabStore } from "./tabStore";
 
 // Re-export UIView from UI store for backward compatibility
 export { UIView } from "./uiStore";
@@ -134,6 +135,11 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
   },
 
   loadNote: async (id) => {
+    // Try to open in tab first (will switch if already open)
+    const { openTab } = useTabStore.getState();
+    await openTab(id);
+
+    // Also set currentNote for backward compatibility during migration
     // Don't reload if it's already the current note
     const { currentNote } = get();
     if (currentNote?.id === id) {
@@ -184,29 +190,38 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
             }
             // Persist state after parent path is collected
             const { currentView } = useUIStore.getState();
+            const { openTabs, activeTabId } = useTabStore.getState();
             saveAppState({
               currentNoteId: note.id,
               currentView: currentView ? String(currentView) : null,
               parentPath: parentPath,
+              openTabIds: openTabs.map((tab) => tab.id),
+              activeTabId: activeTabId,
             });
           })
           .catch((error) => {
             console.error("[loadNote] Failed to get parent path:", error);
             // Still persist the note even if parent path fails
             const { currentView } = useUIStore.getState();
+            const { openTabs, activeTabId } = useTabStore.getState();
             saveAppState({
               currentNoteId: note.id,
               currentView: currentView ? String(currentView) : null,
               parentPath: [],
+              openTabIds: openTabs.map((tab) => tab.id),
+              activeTabId: activeTabId,
             });
           });
       } else {
         // No parent, just persist the state
         const { currentView } = useUIStore.getState();
+        const { openTabs, activeTabId } = useTabStore.getState();
         saveAppState({
           currentNoteId: note.id,
           currentView: currentView ? String(currentView) : null,
           parentPath: [],
+          openTabIds: openTabs.map((tab) => tab.id),
+          activeTabId: activeTabId,
         });
       }
     } catch (error) {
@@ -430,6 +445,13 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         }
       }
 
+      // Update tab title if tab exists
+      const { updateTabTitle, getTab } = useTabStore.getState();
+      const tab = getTab(id);
+      if (tab) {
+        updateTabTitle(id, note.title);
+      }
+
       // Also check if the note's parent_id changed and move it to the correct parent
       const oldNote = notes.find((n) => n.id === id);
       if (oldNote && oldNote.parent_id !== note.parent_id) {
@@ -498,6 +520,13 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       }
 
       await commands.deleteNote(id);
+
+      // Close tab if it's open
+      const { closeTab, openTabs } = useTabStore.getState();
+      if (openTabs.some((tab) => tab.id === id)) {
+        closeTab(id);
+      }
+
       const { currentNote, expandedPages, loadedChildren } = get();
 
       // Remove from top-level notes

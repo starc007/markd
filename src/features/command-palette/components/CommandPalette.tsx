@@ -1,6 +1,7 @@
 import { Command } from "cmdk";
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useNoteStore } from "@/stores/noteStore";
+import { useTabStore } from "@/stores/tabStore";
 import { useUIStore, UIView } from "@/stores/uiStore";
 import { useStickyNotesStore } from "@/features/sticky-notes/stores/stickyNotesStore";
 import { useBookmarkStore } from "@/features/bookmarks/stores/bookmarkStore";
@@ -19,14 +20,9 @@ export function CommandPalette() {
   const searchResults = useNoteStore((state) => state.searchResults);
   const notes = useNoteStore((state) => state.notes);
   const stickyNotes = useStickyNotesStore((state) => state.stickyNotes);
-  const {
-    loadNote,
-    createNote,
-    createFolder,
-    exportCurrentNote,
-    search,
-    clearSearch,
-  } = useNoteStore();
+  const { createNote, createFolder, exportCurrentNote, search, clearSearch } =
+    useNoteStore();
+  const { openTab, switchTab } = useTabStore();
 
   const bookmarks = useBookmarkStore((state) => state.bookmarks);
   const setSelectedStickyNoteId = useUIStore(
@@ -163,10 +159,10 @@ export function CommandPalette() {
   const handleCreateNote = useCallback(async () => {
     const note = await createNote("Untitled");
     if (note) {
-      await loadNote(note.id);
+      await openTab(note.id);
     }
     setCommandPaletteOpen(false);
-  }, [createNote, loadNote, setCommandPaletteOpen]);
+  }, [createNote, openTab, setCommandPaletteOpen]);
 
   const handleSelect = useCallback(
     async (action: string) => {
@@ -218,13 +214,13 @@ export function CommandPalette() {
             if (action.startsWith("note:")) {
               const noteId = action.replace("note:", "");
               setView(UIView.None);
-              await loadNote(noteId);
+              await openTab(noteId);
               setCommandPaletteOpen(false);
             }
             if (action.startsWith("search-note:")) {
               const noteId = action.replace("search-note:", "");
               setView(UIView.None);
-              await loadNote(noteId);
+              await openTab(noteId);
               setCommandPaletteOpen(false);
             }
             if (action.startsWith("search-sticky:")) {
@@ -247,7 +243,12 @@ export function CommandPalette() {
             if (action.startsWith("recent-note:")) {
               const noteId = action.replace("recent-note:", "");
               setView(UIView.None);
-              await loadNote(noteId);
+              await openTab(noteId);
+              setCommandPaletteOpen(false);
+            }
+            if (action.startsWith("switch-tab:")) {
+              const tabId = action.replace("switch-tab:", "");
+              switchTab(tabId);
               setCommandPaletteOpen(false);
             }
             if (action.startsWith("recent-sticky-note:")) {
@@ -289,7 +290,8 @@ export function CommandPalette() {
       toggleFocusMode,
       exportCurrentNote,
       createFolder,
-      loadNote,
+      openTab,
+      switchTab,
       searchQuery,
       createStickyNote,
       setView,
