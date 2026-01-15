@@ -12,6 +12,7 @@ import { LinkIcon } from "../../tiptap-icons/link-icon";
 import { cn } from "../../../lib/utils";
 import { Input } from "../../ui/Input";
 import { Button } from "../../ui/Button";
+import { TableControls } from "./TableControls";
 
 interface FloatingToolbarProps {
   editor: Editor | null;
@@ -82,6 +83,8 @@ export function FloatingToolbar({ editor }: FloatingToolbarProps) {
     }
   };
 
+  const isInTable = editor.isActive("table");
+
   return (
     <FloatingElement
       editor={editor}
@@ -93,53 +96,59 @@ export function FloatingToolbar({ editor }: FloatingToolbarProps) {
       }}
     >
       <div className="flex items-center gap-1 bg-background border border-border rounded-lg shadow-lg p-1">
-        <ToolbarButton
-          editor={editor}
-          onClick={() => editor.chain().focus().toggleBold().run()}
-          isActive={editor.isActive("bold")}
-          ariaLabel="Bold"
-        >
-          <BoldIcon className="w-4 h-4" />
-        </ToolbarButton>
+        {!isInTable && (
+          <>
+            <ToolbarButton
+              editor={editor}
+              onClick={() => editor.chain().focus().toggleBold().run()}
+              isActive={editor.isActive("bold")}
+              ariaLabel="Bold"
+            >
+              <BoldIcon className="w-4 h-4" />
+            </ToolbarButton>
 
-        <ToolbarButton
-          editor={editor}
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-          isActive={editor.isActive("italic")}
-          ariaLabel="Italic"
-        >
-          <ItalicIcon className="w-4 h-4" />
-        </ToolbarButton>
+            <ToolbarButton
+              editor={editor}
+              onClick={() => editor.chain().focus().toggleItalic().run()}
+              isActive={editor.isActive("italic")}
+              ariaLabel="Italic"
+            >
+              <ItalicIcon className="w-4 h-4" />
+            </ToolbarButton>
 
-        <ToolbarButton
-          editor={editor}
-          onClick={() => editor.chain().focus().toggleUnderline().run()}
-          isActive={editor.isActive("underline")}
-          ariaLabel="Underline"
-        >
-          <UnderlineIcon className="w-4 h-4" />
-        </ToolbarButton>
+            <ToolbarButton
+              editor={editor}
+              onClick={() => editor.chain().focus().toggleUnderline().run()}
+              isActive={editor.isActive("underline")}
+              ariaLabel="Underline"
+            >
+              <UnderlineIcon className="w-4 h-4" />
+            </ToolbarButton>
 
-        <ToolbarButton
-          editor={editor}
-          onClick={() => editor.chain().focus().toggleStrike().run()}
-          isActive={editor.isActive("strike")}
-          ariaLabel="Strikethrough"
-        >
-          <StrikeIcon className="w-4 h-4" />
-        </ToolbarButton>
+            <ToolbarButton
+              editor={editor}
+              onClick={() => editor.chain().focus().toggleStrike().run()}
+              isActive={editor.isActive("strike")}
+              ariaLabel="Strikethrough"
+            >
+              <StrikeIcon className="w-4 h-4" />
+            </ToolbarButton>
 
-        <div className="w-px h-6 bg-border mx-1" />
+            <div className="w-px h-6 bg-border mx-1" />
 
-        <ToolbarButton
-          editor={editor}
-          onClick={handleLinkClick}
-          isActive={editor.isActive("link")}
-          ariaLabel="Link"
-          ref={linkButtonRef}
-        >
-          <LinkIcon className="w-4 h-4" />
-        </ToolbarButton>
+            <ToolbarButton
+              editor={editor}
+              onClick={handleLinkClick}
+              isActive={editor.isActive("link")}
+              ariaLabel="Link"
+              ref={linkButtonRef}
+            >
+              <LinkIcon className="w-4 h-4" />
+            </ToolbarButton>
+          </>
+        )}
+
+        {isInTable && <TableControls editor={editor} />}
       </div>
 
       {/* Floating Link Input Menu */}

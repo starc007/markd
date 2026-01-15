@@ -220,6 +220,217 @@
   color: var(--foreground);
 }
 
+/* Code Block with Syntax Highlighting */
+.ProseMirror .tiptap-code-block {
+  position: relative;
+  background: var(--muted);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 1em 0;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.ProseMirror .tiptap-code-block code {
+  background: transparent;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+  border-radius: 0;
+}
+
+.ProseMirror .tiptap-code-block pre {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+/* Syntax highlighting styles from lowlight */
+.ProseMirror .tiptap-code-block .hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 0;
+  background: transparent;
+}
+
+.ProseMirror .tiptap-code-block .hljs-comment,
+.ProseMirror .tiptap-code-block .hljs-quote {
+  color: #6a737d;
+  font-style: italic;
+}
+
+.ProseMirror .tiptap-code-block .hljs-keyword,
+.ProseMirror .tiptap-code-block .hljs-selector-tag,
+.ProseMirror .tiptap-code-block .hljs-type {
+  color: #d73a49;
+}
+
+.ProseMirror .tiptap-code-block .hljs-string,
+.ProseMirror .tiptap-code-block .hljs-literal {
+  color: #032f62;
+}
+
+.ProseMirror .tiptap-code-block .hljs-number,
+.ProseMirror .tiptap-code-block .hljs-regexp,
+.ProseMirror .tiptap-code-block .hljs-variable,
+.ProseMirror .tiptap-code-block .hljs-template-variable {
+  color: #005cc5;
+}
+
+.ProseMirror .tiptap-code-block .hljs-subst {
+  color: #24292e;
+}
+
+.ProseMirror .tiptap-code-block .hljs-function,
+.ProseMirror .tiptap-code-block .hljs-title {
+  color: #6f42c1;
+}
+
+.ProseMirror .tiptap-code-block .hljs-params {
+  color: #24292e;
+}
+
+.ProseMirror .tiptap-code-block .hljs-class .hljs-title {
+  color: #6f42c1;
+}
+
+.ProseMirror .tiptap-code-block .hljs-tag,
+.ProseMirror .tiptap-code-block .hljs-name,
+.ProseMirror .tiptap-code-block .hljs-attribute {
+  color: #22863a;
+}
+
+.ProseMirror .tiptap-code-block .hljs-built_in,
+.ProseMirror .tiptap-code-block .hljs-builtin-name {
+  color: #005cc5;
+}
+
+.ProseMirror .tiptap-code-block .hljs-meta {
+  color: #6a737d;
+}
+
+.ProseMirror .tiptap-code-block .hljs-link {
+  color: #005cc5;
+  text-decoration: underline;
+}
+
+/* Dark mode syntax highlighting */
+.dark .ProseMirror .tiptap-code-block .hljs-comment,
+.dark .ProseMirror .tiptap-code-block .hljs-quote {
+  color: #6e7681;
+}
+
+.dark .ProseMirror .tiptap-code-block .hljs-keyword,
+.dark .ProseMirror .tiptap-code-block .hljs-selector-tag,
+.dark .ProseMirror .tiptap-code-block .hljs-type {
+  color: #ff7b72;
+}
+
+.dark .ProseMirror .tiptap-code-block .hljs-string,
+.dark .ProseMirror .tiptap-code-block .hljs-literal {
+  color: #a5d6ff;
+}
+
+.dark .ProseMirror .tiptap-code-block .hljs-number,
+.dark .ProseMirror .tiptap-code-block .hljs-regexp,
+.dark .ProseMirror .tiptap-code-block .hljs-variable,
+.dark .ProseMirror .tiptap-code-block .hljs-template-variable {
+  color: #79c0ff;
+}
+
+.dark .ProseMirror .tiptap-code-block .hljs-subst {
+  color: #c9d1d9;
+}
+
+.dark .ProseMirror .tiptap-code-block .hljs-function,
+.dark .ProseMirror .tiptap-code-block .hljs-title {
+  color: #d2a8ff;
+}
+
+.dark .ProseMirror .tiptap-code-block .hljs-params {
+  color: #c9d1d9;
+}
+
+.dark .ProseMirror .tiptap-code-block .hljs-class .hljs-title {
+  color: #d2a8ff;
+}
+
+.dark .ProseMirror .tiptap-code-block .hljs-tag,
+.dark .ProseMirror .tiptap-code-block .hljs-name,
+.dark .ProseMirror .tiptap-code-block .hljs-attribute {
+  color: #7ee787;
+}
+
+.dark .ProseMirror .tiptap-code-block .hljs-built_in,
+.dark .ProseMirror .tiptap-code-block .hljs-builtin-name {
+  color: #79c0ff;
+}
+
+.dark .ProseMirror .tiptap-code-block .hljs-meta {
+  color: #6e7681;
+}
+
+.dark .ProseMirror .tiptap-code-block .hljs-link {
+  color: #79c0ff;
+}
+
+/* Tables */
+.ProseMirror table {
+  border-collapse: collapse;
+  margin: 0;
+  overflow: hidden;
+  table-layout: fixed;
+  width: 100%;
+}
+.ProseMirror td,
+th {
+  border: 1px solid var(--border);
+  box-sizing: border-box;
+  min-width: 1em;
+  padding: 6px 8px;
+  position: relative;
+  vertical-align: top;
+}
+.ProseMirror th {
+  font-weight: bold;
+  text-align: left;
+  background-color: var(--muted);
+}
+.ProseMirror .selectedCell:after {
+  background-color: var(--muted);
+  content: "";
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+.ProseMirror .column-resize-handle {
+  background-color: var(--ring);
+  bottom: -2px;
+  pointer-events: none;
+  position: absolute;
+  right: -2px;
+  top: 0;
+  width: 4px;
+}
+
+.ProseMirror .column-resize-handle.resize-cursor {
+  cursor: ew-resize;
+  cursor: col-resize;
+}
+
+.ProseMirror > .tableWrapper {
+  margin: 1.5rem 0;
+  overflow-x: auto;
+}
+
 /* Horizontal Rule */
 .ProseMirror hr {
   border: none;
