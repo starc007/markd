@@ -7,7 +7,7 @@ import { SettingsModal } from "../settings/SettingsModal";
 import { Bookmarks } from "@/features/bookmarks/components/Bookmarks";
 import { SectionErrorBoundary } from "../SectionErrorBoundary";
 import { TabBar } from "../tabs/TabBar";
-import { useNoteStore } from "@/stores/noteStore";
+
 import { useUIStore, UIView } from "@/stores/uiStore";
 import { useTabStore } from "@/stores/tabStore";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -19,7 +19,6 @@ import Welcome from "@/components/welcome";
 
 export function AppShell() {
   // Use selective subscriptions to prevent unnecessary re-renders
-  const currentNote = useNoteStore((state) => state.currentNote);
   const currentView = useUIStore((state) => state.currentView);
   const focusMode = useUIStore((state) => state.focusMode);
   const sidebarCollapsed = useUIStore((state) => state.sidebarCollapsed);
@@ -47,15 +46,6 @@ export function AppShell() {
           key={activeTab.id}
           noteId={activeTab.id}
           content={activeTab.content}
-        />
-      );
-    } else if (currentNote) {
-      // Fallback to currentNote for backward compatibility during migration
-      return (
-        <Editor
-          key={currentNote.id}
-          noteId={currentNote.id}
-          content={currentNote.content}
         />
       );
     } else {

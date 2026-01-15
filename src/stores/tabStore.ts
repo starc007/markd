@@ -1,8 +1,10 @@
 import { create } from "zustand";
 import * as commands from "../lib/tauri/commands";
-import { useNoteStore } from "./noteStore";
-import { useUIStore } from "./uiStore";
-import { saveAppState, loadAppState } from "../lib/app-state-persistence";
+import {
+  saveAppState,
+  loadAppState,
+  type AppState,
+} from "../lib/app-state-persistence";
 
 export interface Tab {
   id: string; // Note ID
@@ -97,12 +99,14 @@ export const useTabStore = create<TabStore>((set, get) => ({
 
       // Persist tab state
       const savedState = loadAppState();
-      saveAppState({
-        ...savedState,
+      const appState: AppState = {
+        currentNoteId: savedState.currentNoteId ?? null,
+        currentView: savedState.currentView ?? null,
+        parentPath: savedState.parentPath ?? [],
         openTabIds: newOpenTabs.map((tab) => tab.id),
         activeTabId: noteId,
-        currentView: currentView ? String(currentView) : null,
-      });
+      };
+      saveAppState(appState);
     } catch (error) {
       console.error(`Failed to open tab for note ${noteId}:`, error);
     }
@@ -146,11 +150,14 @@ export const useTabStore = create<TabStore>((set, get) => ({
 
     // Persist tab state
     const savedState = loadAppState();
-    saveAppState({
-      ...savedState,
+    const appState: AppState = {
+      currentNoteId: savedState.currentNoteId ?? null,
+      currentView: savedState.currentView ?? null,
+      parentPath: savedState.parentPath ?? [],
       openTabIds: newOpenTabs.map((tab) => tab.id),
       activeTabId: newActiveTabId,
-    });
+    };
+    saveAppState(appState);
   },
 
   // Switch to a tab
@@ -162,10 +169,14 @@ export const useTabStore = create<TabStore>((set, get) => ({
 
       // Persist tab state
       const savedState = loadAppState();
-      saveAppState({
-        ...savedState,
+      const appState: AppState = {
+        currentNoteId: savedState.currentNoteId ?? null,
+        currentView: savedState.currentView ?? null,
+        parentPath: savedState.parentPath ?? [],
+        openTabIds: savedState.openTabIds ?? [],
         activeTabId: tabId,
-      });
+      };
+      saveAppState(appState);
     }
   },
 
@@ -202,11 +213,14 @@ export const useTabStore = create<TabStore>((set, get) => ({
 
     // Persist tab state
     const savedState = loadAppState();
-    saveAppState({
-      ...savedState,
+    const appState: AppState = {
+      currentNoteId: savedState.currentNoteId ?? null,
+      currentView: savedState.currentView ?? null,
+      parentPath: savedState.parentPath ?? [],
       openTabIds: [],
       activeTabId: null,
-    });
+    };
+    saveAppState(appState);
   },
 
   // Close all tabs except specified one
@@ -229,11 +243,14 @@ export const useTabStore = create<TabStore>((set, get) => ({
 
     // Persist tab state
     const savedState = loadAppState();
-    saveAppState({
-      ...savedState,
+    const appState: AppState = {
+      currentNoteId: savedState.currentNoteId ?? null,
+      currentView: savedState.currentView ?? null,
+      parentPath: savedState.parentPath ?? [],
       openTabIds: [tabId],
       activeTabId: tabId,
-    });
+    };
+    saveAppState(appState);
   },
 
   // Update tab content
