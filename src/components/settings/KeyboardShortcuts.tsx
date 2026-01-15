@@ -52,7 +52,8 @@ function KeyboardShortcutEditor({
     if (s.alt) parts.push("⌥");
     if (s.shift) parts.push("⇧");
     // Format key display
-    const keyDisplay = s.key === "space" ? "Space" : s.key === "\\" ? "\\" : s.key.toUpperCase();
+    const keyDisplay =
+      s.key === "space" ? "Space" : s.key === "\\" ? "\\" : s.key.toUpperCase();
     parts.push(keyDisplay);
     return parts.join(" + ");
   };
@@ -99,6 +100,8 @@ function KeyboardShortcutEditor({
       normalizedKey = "space";
     } else if (key === "\\") {
       normalizedKey = "\\";
+    } else if (key === "," || key === "comma") {
+      normalizedKey = ",";
     }
 
     setCurrentKeys({

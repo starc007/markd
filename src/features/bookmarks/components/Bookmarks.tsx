@@ -12,6 +12,8 @@ import { EnterKeyIcon } from "@/components/tiptap-icons/enter-key-icon";
 import { ArrowUpIcon } from "@/components/tiptap-icons/arrow-up-icon";
 import { ArrowDownIcon } from "@/components/tiptap-icons/arrow-down-icon";
 import { toast } from "sonner";
+import { matchesShortcut } from "@/hooks/useKeyboardShortcuts";
+import { fixedShortcuts } from "@/lib/keyboard-shortcuts";
 
 export function Bookmarks() {
   const { bookmarks, loadBookmarks } = useBookmarkStore();
@@ -37,7 +39,6 @@ export function Bookmarks() {
   // Keyboard shortcuts: Cmd+F to focus input, Arrow keys for navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const isMod = e.metaKey || e.ctrlKey;
       const target = e.target as HTMLElement;
       const isInputFocused =
         target.tagName === "INPUT" || target.tagName === "TEXTAREA";

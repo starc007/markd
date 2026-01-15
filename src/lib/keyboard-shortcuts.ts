@@ -94,7 +94,9 @@ export function getSwitchTabShortcut(tabNumber: number): KeyboardShortcut {
   if (tabNumber < 1 || tabNumber > 9) {
     throw new Error("Tab number must be between 1 and 9");
   }
-  return fixedShortcuts[`switchTab${tabNumber}` as keyof FixedShortcuts] as KeyboardShortcut;
+  return fixedShortcuts[
+    `switchTab${tabNumber}` as keyof FixedShortcuts
+  ] as KeyboardShortcut;
 }
 
 /**
@@ -114,7 +116,7 @@ export function formatShortcutDisplay(shortcut: KeyboardShortcut): string[] {
   if (shortcut.ctrl) parts.push("⌃");
   if (shortcut.alt) parts.push("⌥");
   if (shortcut.shift) parts.push("⇧");
-  
+
   // Format key display
   const keyDisplay =
     shortcut.key === "space"
@@ -129,6 +131,6 @@ export function formatShortcutDisplay(shortcut: KeyboardShortcut): string[] {
       ? "Enter"
       : shortcut.key.toUpperCase();
   parts.push(keyDisplay);
-  
+
   return parts;
 }

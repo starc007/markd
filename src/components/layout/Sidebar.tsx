@@ -140,7 +140,9 @@ export const Sidebar = memo(function Sidebar() {
   const currentView = useUIStore((state) => state.currentView);
 
   return (
-    <aside className="w-[280px] pt-6 shrink-0 flex flex-col bg-sidebar border-r border-sidebar-border overflow-hidden">
+    <aside className="w-[280px] shrink-0 flex flex-col bg-sidebar border-r border-sidebar-border overflow-hidden">
+      <div className="h-[30px] shrink-0" data-tauri-drag-region />
+
       <SidebarSearch onSearchClick={handleSearchClick} />
 
       {/* New Note Button */}

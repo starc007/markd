@@ -4,7 +4,10 @@ import { useUIStore, UIView } from "../stores/uiStore";
 import { useStickyNotesStore } from "../features/sticky-notes/stores/stickyNotesStore";
 import { useSettingsStore } from "../stores/settingsStore";
 import { useTabStore } from "../stores/tabStore";
-import { fixedShortcuts, getSwitchTabShortcut } from "../lib/keyboard-shortcuts";
+import {
+  fixedShortcuts,
+  getSwitchTabShortcut,
+} from "../lib/keyboard-shortcuts";
 
 // Helper function to check if a keyboard event matches a shortcut
 export function matchesShortcut(
@@ -27,16 +30,24 @@ export function matchesShortcut(
     // Handle special keys
     if (shortcutKey === "space" && key !== " ") return false;
     if (shortcutKey === "\\" && key !== "\\") return false;
-    if (shortcutKey === "," && key !== ",") return false;
-    if (shortcutKey === "enter" && key !== "enter") return false;
-    if (
+    // Handle comma - can be "," or "Comma" (browser may report as "Comma")
+    if (shortcutKey === ",") {
+      // Accept both "," and "comma" (from "Comma")
+      if (key !== "," && key !== "comma") return false;
+    } else if (key === "," || key === "comma") {
+      // If the event key is comma but shortcut key is not, it doesn't match
+      return false;
+    } else if (shortcutKey === "enter" && key !== "enter") {
+      return false;
+    } else if (
       shortcutKey !== "space" &&
       shortcutKey !== "\\" &&
       shortcutKey !== "," &&
       shortcutKey !== "enter" &&
       key !== shortcutKey
-    )
+    ) {
       return false;
+    }
   }
 
   // Check modifiers - meta/ctrl are interchangeable (meta on Mac, ctrl on Windows/Linux)

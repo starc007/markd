@@ -37,6 +37,14 @@ const loadSettings = (): Partial<SettingsState> => {
       const parsed = JSON.parse(stored);
       // Merge keyboard shortcuts with defaults
       if (parsed.keyboardShortcuts) {
+        // Migrate old openSettings shortcut (Cmd+Shift+T) to new one (Cmd+,)
+        if (
+          parsed.keyboardShortcuts.openSettings?.key === "t" &&
+          parsed.keyboardShortcuts.openSettings?.shift === true
+        ) {
+          parsed.keyboardShortcuts.openSettings =
+            defaultCustomizableShortcuts.openSettings;
+        }
         parsed.keyboardShortcuts = {
           ...defaultCustomizableShortcuts,
           ...parsed.keyboardShortcuts,
