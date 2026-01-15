@@ -42,11 +42,11 @@ export function Tab({ tabId, title, isActive, isDirty, onClose }: TabProps) {
   return (
     <div
       className={`
-        group flex items-center gap-2 px-3 py-2 border-b-2 transition-colors
+        group flex items-center gap-2 px-3 py-2.5 border-b-2 transition-colors
         ${
           isActive
             ? "border-primary bg-background text-foreground"
-            : "border-transparent bg-muted/30 text-muted-foreground hover:bg-muted/50"
+            : "border-transparent bg-muted text-muted-foreground hover:bg-muted/50"
         }
         cursor-pointer select-none
       `}
@@ -68,7 +68,7 @@ export function Tab({ tabId, title, isActive, isDirty, onClose }: TabProps) {
       >
         <HugeiconsIcon
           icon={Cancel01Icon}
-          size={14}
+          size={16}
           color="currentColor"
           strokeWidth={1.5}
         />

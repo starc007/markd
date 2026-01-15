@@ -235,12 +235,12 @@ export function Editor({ noteId, content }: EditorProps) {
         {/* Header with drag region - hidden in focus mode */}
         {!focusMode && (
           <div
-            className="h-[50px] shrink-0 flex items-center justify-between border-b border-sidebar-border px-4"
+            className="pt-2 shrink-0 flex items-center justify-between px-4"
             data-tauri-drag-region
           >
             <div className="flex items-center gap-3 [-webkit-app-region:no-drag]">
-              <span className="font-medium text-muted-foreground truncate text-xs italic">
-                updated {formatRelativeTime(updatedAt)}
+              <span className="font-medium text-muted-foreground truncate text-xs">
+                Edited {formatRelativeTime(updatedAt)}
               </span>
             </div>
 

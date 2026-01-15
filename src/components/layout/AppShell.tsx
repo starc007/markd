@@ -1,7 +1,7 @@
 import { Sidebar } from "./Sidebar";
 import { Editor } from "../editor/Editor";
 import { CommandPalette } from "@/features/command-palette/components/CommandPalette";
-import { TitleBar } from "./TitleBar";
+
 import { StickyNotesGrid } from "@/features/sticky-notes/components/StickyNotesGrid";
 import { SettingsModal } from "../settings/SettingsModal";
 import { Bookmarks } from "@/features/bookmarks/components/Bookmarks";
@@ -16,6 +16,7 @@ import { useWindowFocus } from "@/hooks/useWindowFocus";
 import { useAppStateRestore } from "@/hooks/useAppStateRestore";
 import { useUpdateCheck } from "@/hooks/useUpdateCheck";
 import Welcome from "@/components/welcome";
+import { UpdateIndicator } from "../update/UpdateIndicator";
 
 export function AppShell() {
   // Use selective subscriptions to prevent unnecessary re-renders
@@ -60,9 +61,10 @@ export function AppShell() {
       }`}
     >
       {/* Title Bar with drag region - hidden in focus mode */}
-      {!focusMode && <TitleBar />}
+      {/* {!focusMode && <TitleBar />} */}
+      <UpdateIndicator />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden" data-tauri-drag-region>
         {/* Sidebar - hidden in focus mode or when collapsed */}
         {!sidebarCollapsed && !focusMode && (
           <SectionErrorBoundary section="sidebar">

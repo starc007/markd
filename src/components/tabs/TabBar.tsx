@@ -9,7 +9,10 @@ export function TabBar() {
   }
 
   return (
-    <div className="flex items-center gap-0 border-b border-sidebar-border bg-background overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+    <div
+      className="flex items-center gap-0 border-b border-border bg-muted overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
+      data-tauri-drag-region
+    >
       <div className="flex items-center min-w-0">
         {openTabs.map((tab) => (
           <Tab
