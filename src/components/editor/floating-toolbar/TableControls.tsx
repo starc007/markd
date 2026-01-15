@@ -7,6 +7,7 @@ import { AddColRightIcon } from "../../tiptap-icons/add-col-right-icon";
 import { TrashIcon } from "../../tiptap-icons/trash-icon";
 import { TableHeaderRowIcon } from "../../tiptap-icons/table-header-row-icon";
 import { cn } from "../../../lib/utils";
+import { SimpleTooltip } from "../../ui/Tooltip";
 
 interface TableControlsProps {
   editor: Editor;
@@ -60,75 +61,91 @@ export function TableControls({ editor }: TableControlsProps) {
       <div className="w-px h-6 bg-border mx-1" />
 
       {/* Row controls */}
-      <ToolbarButton
-        onClick={() => editor.chain().focus().addRowBefore().run()}
-        ariaLabel="Add row above"
-        disabled={!canAddRowBefore}
-      >
-        <AddRowTopIcon className="w-4 h-4" />
-      </ToolbarButton>
+      <SimpleTooltip content="Add row above">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().addRowBefore().run()}
+          ariaLabel="Add row above"
+          disabled={!canAddRowBefore}
+        >
+          <AddRowTopIcon className="w-4 h-4" />
+        </ToolbarButton>
+      </SimpleTooltip>
 
-      <ToolbarButton
-        onClick={() => editor.chain().focus().addRowAfter().run()}
-        ariaLabel="Add row below"
-        disabled={!canAddRowAfter}
-      >
-        <AddRowBottomIcon className="w-4 h-4" />
-      </ToolbarButton>
+      <SimpleTooltip content="Add row below">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().addRowAfter().run()}
+          ariaLabel="Add row below"
+          disabled={!canAddRowAfter}
+        >
+          <AddRowBottomIcon className="w-4 h-4" />
+        </ToolbarButton>
+      </SimpleTooltip>
 
       {/* Column controls */}
-      <ToolbarButton
-        onClick={() => editor.chain().focus().addColumnBefore().run()}
-        ariaLabel="Add column left"
-        disabled={!canAddColumnBefore}
-      >
-        <AddColLeftIcon className="w-4 h-4" />
-      </ToolbarButton>
+      <SimpleTooltip content="Add column left">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().addColumnBefore().run()}
+          ariaLabel="Add column left"
+          disabled={!canAddColumnBefore}
+        >
+          <AddColLeftIcon className="w-4 h-4" />
+        </ToolbarButton>
+      </SimpleTooltip>
 
-      <ToolbarButton
-        onClick={() => editor.chain().focus().addColumnAfter().run()}
-        ariaLabel="Add column right"
-        disabled={!canAddColumnAfter}
-      >
-        <AddColRightIcon className="w-4 h-4" />
-      </ToolbarButton>
+      <SimpleTooltip content="Add column right">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().addColumnAfter().run()}
+          ariaLabel="Add column right"
+          disabled={!canAddColumnAfter}
+        >
+          <AddColRightIcon className="w-4 h-4" />
+        </ToolbarButton>
+      </SimpleTooltip>
 
       {/* Header toggle */}
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleHeaderRow().run()}
-        ariaLabel="Toggle header row"
-        isActive={editor.isActive("tableHeader")}
-        disabled={!canToggleHeaderRow}
-      >
-        <TableHeaderRowIcon className="w-4 h-4" />
-      </ToolbarButton>
+      <SimpleTooltip content="Toggle header row">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleHeaderRow().run()}
+          ariaLabel="Toggle header row"
+          isActive={editor.isActive("tableHeader")}
+          disabled={!canToggleHeaderRow}
+        >
+          <TableHeaderRowIcon className="w-4 h-4" />
+        </ToolbarButton>
+      </SimpleTooltip>
 
       {/* Delete controls */}
       <div className="w-px h-6 bg-border mx-1" />
 
-      <ToolbarButton
-        onClick={() => editor.chain().focus().deleteRow().run()}
-        ariaLabel="Delete row"
-        disabled={!canDeleteRow}
-      >
-        <TrashIcon className="w-4 h-4" />
-      </ToolbarButton>
+      <SimpleTooltip content="Delete row">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().deleteRow().run()}
+          ariaLabel="Delete row"
+          disabled={!canDeleteRow}
+        >
+          <TrashIcon className="w-4 h-4" />
+        </ToolbarButton>
+      </SimpleTooltip>
 
-      <ToolbarButton
-        onClick={() => editor.chain().focus().deleteColumn().run()}
-        ariaLabel="Delete column"
-        disabled={!canDeleteColumn}
-      >
-        <TrashIcon className="w-4 h-4 rotate-90" />
-      </ToolbarButton>
+      <SimpleTooltip content="Delete column">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().deleteColumn().run()}
+          ariaLabel="Delete column"
+          disabled={!canDeleteColumn}
+        >
+          <TrashIcon className="w-4 h-4 rotate-90" />
+        </ToolbarButton>
+      </SimpleTooltip>
 
-      <ToolbarButton
-        onClick={() => editor.chain().focus().deleteTable().run()}
-        ariaLabel="Delete table"
-        disabled={!canDeleteTable}
-      >
-        <TrashIcon className="w-4 h-4" />
-      </ToolbarButton>
+      <SimpleTooltip content="Delete table">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().deleteTable().run()}
+          ariaLabel="Delete table"
+          disabled={!canDeleteTable}
+        >
+          <TrashIcon className="w-4 h-4" />
+        </ToolbarButton>
+      </SimpleTooltip>
     </div>
   );
 }

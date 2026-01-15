@@ -16,3 +16,4 @@ export {
   DropdownSeparator,
   DropdownLabel,
 } from "./Dropdown";
+export { Tooltip, SimpleTooltip } from "./Tooltip";

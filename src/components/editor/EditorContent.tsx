@@ -3,7 +3,6 @@ import { useEditor, EditorContent as TiptapEditorContent } from "@tiptap/react";
 import { SlashDropdownMenu } from "./slash-dropdown-menu";
 import { FloatingToolbar } from "./floating-toolbar";
 import { PageLinkMenu } from "./PageLinkMenu";
-import { CodeBlockToolbar } from "./code-block-toolbar/CodeBlockToolbar";
 import type { SuggestionItem } from "../tiptap-ui-utils/suggestion-menu/suggestion-menu-types";
 import type { Editor, Range } from "@tiptap/react";
 import { FileIcon } from "../tiptap-icons/file-icon";
@@ -134,7 +133,6 @@ export const EditorContent = forwardRef<EditorContentRef, EditorContentProps>(
           />
           <PageLinkMenu editor={editor} currentNoteId={noteId} />
           <FloatingToolbar editor={editor} />
-          <CodeBlockToolbar editor={editor} />
         </TiptapEditorContent>
       </div>
     );
