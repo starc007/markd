@@ -1,25 +1,16 @@
 import { create } from "zustand";
+import type {
+  KeyboardShortcut,
+  CustomizableShortcuts,
+} from "../lib/keyboard-shortcuts";
+import { defaultCustomizableShortcuts } from "../lib/keyboard-shortcuts";
 
 export type Theme = "light" | "dark" | "system";
 
-export interface KeyboardShortcut {
-  action: string;
-  key: string;
-  shift?: boolean;
-  alt?: boolean;
-  ctrl?: boolean;
-  meta?: boolean;
-}
+// Re-export for backward compatibility
+export type { KeyboardShortcut };
 
-export interface KeyboardShortcuts {
-  commandPalette: KeyboardShortcut;
-  newNote: KeyboardShortcut;
-  newStickyNote: KeyboardShortcut;
-  openStickyNotes: KeyboardShortcut;
-  openBookmarks: KeyboardShortcut;
-  openSettings: KeyboardShortcut;
-  toggleSidebar: KeyboardShortcut;
-}
+export type KeyboardShortcuts = CustomizableShortcuts;
 
 interface SettingsState {
   theme: Theme;
@@ -38,21 +29,6 @@ interface SettingsState {
 
 const STORAGE_KEY = "usedraft-settings";
 
-const defaultKeyboardShortcuts: KeyboardShortcuts = {
-  commandPalette: { action: "commandPalette", key: "k", meta: true },
-  newNote: { action: "newNote", key: "n", meta: true },
-  newStickyNote: { action: "newStickyNote", key: "n", meta: true, shift: true },
-  openStickyNotes: {
-    action: "openStickyNotes",
-    key: "o",
-    meta: true,
-    shift: true,
-  },
-  openBookmarks: { action: "openBookmarks", key: "b", meta: true, shift: true },
-  openSettings: { action: "openSettings", key: ",", meta: true },
-  toggleSidebar: { action: "toggleSidebar", key: "\\", meta: true },
-};
-
 // Load initial state from localStorage
 const loadSettings = (): Partial<SettingsState> => {
   try {
@@ -62,7 +38,7 @@ const loadSettings = (): Partial<SettingsState> => {
       // Merge keyboard shortcuts with defaults
       if (parsed.keyboardShortcuts) {
         parsed.keyboardShortcuts = {
-          ...defaultKeyboardShortcuts,
+          ...defaultCustomizableShortcuts,
           ...parsed.keyboardShortcuts,
         };
       }
@@ -99,7 +75,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   isLoggedIn: initialSettings.isLoggedIn ?? false,
   keyboardShortcuts:
     (initialSettings.keyboardShortcuts as KeyboardShortcuts) ||
-    defaultKeyboardShortcuts,
+    defaultCustomizableShortcuts,
   setTheme: (theme) => {
     const state = useSettingsStore.getState();
     set({ theme });
@@ -126,7 +102,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   },
   resetKeyboardShortcuts: () => {
     const state = useSettingsStore.getState();
-    set({ keyboardShortcuts: defaultKeyboardShortcuts });
-    saveSettings({ ...state, keyboardShortcuts: defaultKeyboardShortcuts });
+    set({ keyboardShortcuts: defaultCustomizableShortcuts });
+    saveSettings({ ...state, keyboardShortcuts: defaultCustomizableShortcuts });
   },
 }));

@@ -9,6 +9,8 @@ import { save } from "@tauri-apps/plugin-dialog";
 import { useNoteStore } from "@/stores/noteStore";
 import { useTabStore } from "@/stores/tabStore";
 import { useUIStore } from "@/stores/uiStore";
+import { fixedShortcuts } from "@/lib/keyboard-shortcuts";
+import { matchesShortcut } from "@/hooks/useKeyboardShortcuts";
 import {
   IconButton,
   Dropdown,
@@ -211,14 +213,14 @@ export function Editor({ noteId, content }: EditorProps) {
       }
 
       // Cmd+Shift+D: Open delete modal
-      if (isMod && e.shiftKey && e.key.toLowerCase() === "d") {
+      if (matchesShortcut(e, fixedShortcuts.deleteNote)) {
         e.preventDefault();
         setShowDeleteModal(true);
         return;
       }
 
       // Cmd+Enter: Confirm deletion when modal is open
-      if (isMod && e.key === "Enter" && showDeleteModal) {
+      if (matchesShortcut(e, fixedShortcuts.confirmDelete) && showDeleteModal) {
         e.preventDefault();
         handleDelete();
         return;

@@ -43,7 +43,7 @@ export function Bookmarks() {
         target.tagName === "INPUT" || target.tagName === "TEXTAREA";
 
       // Cmd+F to focus input
-      if (isMod && e.key === "f") {
+      if (matchesShortcut(e, fixedShortcuts.focusSearch)) {
         e.preventDefault();
         inputRef.current?.focus();
         return;

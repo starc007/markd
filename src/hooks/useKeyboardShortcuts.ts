@@ -4,9 +4,10 @@ import { useUIStore, UIView } from "../stores/uiStore";
 import { useStickyNotesStore } from "../features/sticky-notes/stores/stickyNotesStore";
 import { useSettingsStore } from "../stores/settingsStore";
 import { useTabStore } from "../stores/tabStore";
+import { fixedShortcuts, getSwitchTabShortcut } from "../lib/keyboard-shortcuts";
 
 // Helper function to check if a keyboard event matches a shortcut
-function matchesShortcut(
+export function matchesShortcut(
   e: KeyboardEvent,
   shortcut: {
     key: string;
@@ -16,20 +17,27 @@ function matchesShortcut(
     shift?: boolean;
   }
 ): boolean {
-  const key = e.key.toLowerCase();
-  const shortcutKey = shortcut.key.toLowerCase();
+  // Handle Escape key specially (case-sensitive)
+  if (shortcut.key === "Escape") {
+    if (e.key !== "Escape") return false;
+  } else {
+    const key = e.key.toLowerCase();
+    const shortcutKey = shortcut.key.toLowerCase();
 
-  // Handle special keys
-  if (shortcutKey === "space" && key !== " ") return false;
-  if (shortcutKey === "\\" && key !== "\\") return false;
-  if (shortcutKey === "," && key !== ",") return false;
-  if (
-    shortcutKey !== "space" &&
-    shortcutKey !== "\\" &&
-    shortcutKey !== "," &&
-    key !== shortcutKey
-  )
-    return false;
+    // Handle special keys
+    if (shortcutKey === "space" && key !== " ") return false;
+    if (shortcutKey === "\\" && key !== "\\") return false;
+    if (shortcutKey === "," && key !== ",") return false;
+    if (shortcutKey === "enter" && key !== "enter") return false;
+    if (
+      shortcutKey !== "space" &&
+      shortcutKey !== "\\" &&
+      shortcutKey !== "," &&
+      shortcutKey !== "enter" &&
+      key !== shortcutKey
+    )
+      return false;
+  }
 
   // Check modifiers - meta/ctrl are interchangeable (meta on Mac, ctrl on Windows/Linux)
   // If shortcut requires meta, accept either metaKey or ctrlKey
@@ -142,7 +150,7 @@ export function useKeyboardShortcuts() {
 
       // Tab shortcuts (not customizable)
       // Cmd+W: Close current tab
-      if (isMod && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "w") {
+      if (matchesShortcut(e, fixedShortcuts.closeTab)) {
         const { activeTabId: currentActiveTabId } = useTabStore.getState();
         if (currentActiveTabId) {
           e.preventDefault();
@@ -152,7 +160,7 @@ export function useKeyboardShortcuts() {
       }
 
       // Cmd+Shift+T: Reopen closed tab
-      if (isMod && e.shiftKey && !e.altKey && e.key.toLowerCase() === "t") {
+      if (matchesShortcut(e, fixedShortcuts.reopenTab)) {
         e.preventDefault();
         reopenClosedTab();
         return;
@@ -163,17 +171,20 @@ export function useKeyboardShortcuts() {
         const key = e.key;
         const tabNumber = parseInt(key, 10);
         if (!isNaN(tabNumber) && tabNumber >= 1 && tabNumber <= 9) {
-          const { openTabs: currentOpenTabs } = useTabStore.getState();
-          if (currentOpenTabs.length >= tabNumber) {
-            e.preventDefault();
-            switchTab(currentOpenTabs[tabNumber - 1].id);
+          const shortcut = getSwitchTabShortcut(tabNumber);
+          if (matchesShortcut(e, shortcut)) {
+            const { openTabs: currentOpenTabs } = useTabStore.getState();
+            if (currentOpenTabs.length >= tabNumber) {
+              e.preventDefault();
+              switchTab(currentOpenTabs[tabNumber - 1].id);
+            }
           }
           return;
         }
       }
 
       // Escape: Close command palette or settings modal (not customizable)
-      if (e.key === "Escape") {
+      if (matchesShortcut(e, fixedShortcuts.escape)) {
         const { settingsModalOpen } = useUIStore.getState();
         if (settingsModalOpen) {
           setSettingsModalOpen(false);
