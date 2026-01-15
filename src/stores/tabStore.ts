@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import * as commands from "../lib/tauri/commands";
 import { useNoteStore } from "./noteStore";
+import { useUIStore } from "./uiStore";
+import { saveAppState, loadAppState } from "../lib/app-state-persistence";
 
 export interface Tab {
   id: string; // Note ID
@@ -94,13 +96,12 @@ export const useTabStore = create<TabStore>((set, get) => ({
       });
 
       // Persist tab state
-      const { currentView } = useUIStore.getState();
-      const { currentNote } = useNoteStore.getState();
       const savedState = loadAppState();
       saveAppState({
         ...savedState,
         openTabIds: newOpenTabs.map((tab) => tab.id),
         activeTabId: noteId,
+        currentView: currentView ? String(currentView) : null,
       });
     } catch (error) {
       console.error(`Failed to open tab for note ${noteId}:`, error);
@@ -144,8 +145,6 @@ export const useTabStore = create<TabStore>((set, get) => ({
     });
 
     // Persist tab state
-    const { currentView } = useUIStore.getState();
-    const { currentNote } = useNoteStore.getState();
     const savedState = loadAppState();
     saveAppState({
       ...savedState,
