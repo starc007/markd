@@ -1,9 +1,9 @@
-import { useNoteStore } from "../../stores/noteStore";
+import { useTabStore } from "../../stores/tabStore";
 import { UpdateIndicator } from "../update/UpdateIndicator";
 
 export function TitleBar() {
   // Use selective subscriptions to prevent unnecessary re-renders
-  const currentNote = useNoteStore((state) => state.currentNote);
+  const activeTab = useTabStore((state) => state.getActiveTab());
 
   return (
     <header
@@ -21,10 +21,10 @@ export function TitleBar() {
         className="flex-1 flex justify-center items-center min-w-0"
         data-tauri-drag-region
       >
-        {currentNote ? (
+        {activeTab ? (
           <div className="flex items-center gap-2.5">
             <span className="text-[13px] font-medium text-sidebar-foreground truncate">
-              {currentNote.title || "Untitled"}
+              {activeTab.title || "Untitled"}
             </span>
           </div>
         ) : (

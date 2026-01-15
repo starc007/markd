@@ -33,16 +33,12 @@ export function Editor({ noteId, content }: EditorProps) {
   const editorRef = useRef<EditorContentRef>(null);
   const titleRef = useRef<EditorTitleRef>(null);
 
-  const currentNote = useNoteStore((state) => state.currentNote);
   const newlyCreatedNoteId = useNoteStore((state) => state.newlyCreatedNoteId);
   const focusMode = useUIStore((state) => state.focusMode);
   const activeTab = useTabStore((state) => state.getActiveTab());
   const { updateTabContent, updateTabTitle, getTab } = useTabStore();
 
-  // Use tab if available, otherwise fallback to currentNote
-  const displayNote = activeTab || currentNote;
-
-  const updatedAt = activeTab?.updatedAt || currentNote?.updated_at || 0;
+  const updatedAt = activeTab?.updatedAt || 0;
 
   // Auto-focus title when a new note is created
   // This effect has priority and should run first
@@ -112,7 +108,6 @@ export function Editor({ noteId, content }: EditorProps) {
 
   // Handle back navigation
   const handleBack = useCallback(() => {
-    useNoteStore.setState({ currentNote: null });
     useNoteStore.getState().loadNotes(undefined, null);
   }, []);
 
@@ -125,11 +120,11 @@ export function Editor({ noteId, content }: EditorProps) {
 
   // Handle export
   const handleExport = useCallback(async () => {
-    const note = useNoteStore.getState().currentNote;
-    if (!note) return;
+    const activeTab = useTabStore.getState().getActiveTab();
+    if (!activeTab) return;
 
     const filePath = await save({
-      defaultPath: `${note.title || "untitled"}.md`,
+      defaultPath: `${activeTab.title || "untitled"}.md`,
       filters: [{ name: "Markdown", extensions: ["md"] }],
     });
 
@@ -155,11 +150,11 @@ export function Editor({ noteId, content }: EditorProps) {
 
       // CRITICAL: Verify we're still on the same note before saving
       // This prevents saving content to the wrong note when switching quickly
-      const currentNote = useNoteStore.getState().currentNote;
+      const activeTab = useTabStore.getState().getActiveTab();
       if (
-        currentNote &&
-        currentNote.id === noteId &&
-        currentNote.content !== newContent
+        activeTab &&
+        activeTab.id === noteId &&
+        activeTab.content !== newContent
       ) {
         useNoteStore.getState().saveCurrentNoteContent(newContent);
       }
@@ -170,7 +165,6 @@ export function Editor({ noteId, content }: EditorProps) {
   // Title change handler
   const handleTitleChange = useCallback(
     (title: string) => {
-      const note = useNoteStore.getState().currentNote;
       // Don't clear newlyCreatedNoteId here - let user type freely in title
       // The flag will be cleared when they press Enter or start typing in editor
       // Use "Untitled" only for saving/display, but allow empty during editing
@@ -184,7 +178,7 @@ export function Editor({ noteId, content }: EditorProps) {
 
       // Only update if the display title (with "Untitled" fallback) is different
       // This allows the user to clear the title without it immediately coming back
-      if (note && displayTitle !== (note.title || "Untitled")) {
+      if (tab && displayTitle !== (tab.title || "Untitled")) {
         useNoteStore.getState().updateNote(noteId, { title: displayTitle });
       }
     },
@@ -302,7 +296,7 @@ export function Editor({ noteId, content }: EditorProps) {
             {/* Title Editor */}
             <EditorTitle
               ref={titleRef}
-              title={displayNote?.title || ""}
+              title={activeTab?.title || ""}
               noteId={noteId}
               onTitleChange={handleTitleChange}
               onEnter={handleTitleEnter}
@@ -325,7 +319,7 @@ export function Editor({ noteId, content }: EditorProps) {
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         onConfirm={handleDelete}
-        noteTitle={displayNote?.title}
+        noteTitle={activeTab?.title}
       />
     </>
   );

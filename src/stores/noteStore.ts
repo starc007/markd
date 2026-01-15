@@ -6,8 +6,7 @@ import type {
   SearchResult,
 } from "../lib/tauri/commands";
 import * as commands from "../lib/tauri/commands";
-import { saveAppState } from "../lib/app-state-persistence";
-import { useUIStore } from "./uiStore";
+
 import { useTabStore } from "./tabStore";
 
 // Re-export UIView from UI store for backward compatibility
@@ -17,7 +16,6 @@ interface NoteStore {
   // State
   notes: NoteMetadata[];
   folders: Folder[];
-  currentNote: Note | null;
   isLoading: boolean;
   isSaving: boolean;
   error: string | null;
@@ -35,7 +33,7 @@ interface NoteStore {
     folderId?: string | null,
     parentId?: string | null
   ) => Promise<void>;
-  loadNote: (id: string) => Promise<void>;
+  loadNote: (id: string) => Promise<void>; // Opens note in tab
   createNote: (
     title: string,
     folderId?: string,
@@ -89,7 +87,6 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
   // Initial state
   notes: [],
   folders: [],
-  currentNote: null,
   isLoading: false,
   isSaving: false,
   error: null,
@@ -135,52 +132,17 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
   },
 
   loadNote: async (id) => {
-    // Try to open in tab first (will switch if already open)
+    // Open note in tab (will switch if already open)
     const { openTab } = useTabStore.getState();
     await openTab(id);
 
-    // Also set currentNote for backward compatibility during migration
-    // Don't reload if it's already the current note
-    const { currentNote } = get();
-    if (currentNote?.id === id) {
-      return;
-    }
-
-    // Store the original note ID to detect if user switched notes during load
-    const originalNoteId = currentNote?.id;
-
-    set({ isLoading: true, error: null });
+    // Expand parent pages in the background (non-blocking)
     try {
       const note = await commands.getNote(id);
       if (!note) {
-        set({ error: "Note not found", isLoading: false });
         return;
       }
 
-      // CRITICAL: Double-check we're still loading the same note (prevent race conditions)
-      // If user switched notes again while this was loading, don't update state
-      const { currentNote: checkNote } = get();
-      // Only skip if currentNote exists, is different from what we're loading,
-      // AND is different from the original note (meaning user switched to a third note)
-      if (checkNote && checkNote.id !== id && checkNote.id !== originalNoteId) {
-        // Note was switched again while loading, don't update
-        set({ isLoading: false });
-        return;
-      }
-
-      // Set the note immediately so content updates right away
-      // Clear newlyCreatedNoteId if we're loading a different note
-      const { newlyCreatedNoteId } = get();
-      set({
-        currentNote: note,
-        isLoading: false,
-        // Only keep newlyCreatedNoteId if it matches the loaded note
-        newlyCreatedNoteId:
-          newlyCreatedNoteId === note.id ? newlyCreatedNoteId : null,
-      });
-
-      // Expand parent pages in the background (non-blocking)
-      // This ensures the note content is shown immediately
       if (note.parent_id) {
         get()
           .getParentPath(id)
@@ -188,44 +150,13 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
             if (parentPath.length > 0) {
               get().expandParentPages(parentPath);
             }
-            // Persist state after parent path is collected
-            const { currentView } = useUIStore.getState();
-            const { openTabs, activeTabId } = useTabStore.getState();
-            saveAppState({
-              currentNoteId: note.id,
-              currentView: currentView ? String(currentView) : null,
-              parentPath: parentPath,
-              openTabIds: openTabs.map((tab) => tab.id),
-              activeTabId: activeTabId,
-            });
           })
           .catch((error) => {
             console.error("[loadNote] Failed to get parent path:", error);
-            // Still persist the note even if parent path fails
-            const { currentView } = useUIStore.getState();
-            const { openTabs, activeTabId } = useTabStore.getState();
-            saveAppState({
-              currentNoteId: note.id,
-              currentView: currentView ? String(currentView) : null,
-              parentPath: [],
-              openTabIds: openTabs.map((tab) => tab.id),
-              activeTabId: activeTabId,
-            });
           });
-      } else {
-        // No parent, just persist the state
-        const { currentView } = useUIStore.getState();
-        const { openTabs, activeTabId } = useTabStore.getState();
-        saveAppState({
-          currentNoteId: note.id,
-          currentView: currentView ? String(currentView) : null,
-          parentPath: [],
-          openTabIds: openTabs.map((tab) => tab.id),
-          activeTabId: activeTabId,
-        });
       }
     } catch (error) {
-      set({ error: String(error), isLoading: false });
+      console.error("[loadNote] Failed to load note:", error);
     }
   },
 
@@ -286,10 +217,12 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         newMap.set(parentId, updatedChildren);
         set({
           childrenMap: newMap,
-          currentNote: note,
           isLoading: false,
           newlyCreatedNoteId: note.id, // Mark as newly created for auto-focus
         });
+        // Open in tab
+        const { openTab } = useTabStore.getState();
+        await openTab(note.id);
       } else {
         // Replace temp with real data in notes list
         const updatedNotes = get().notes.map((n) =>
@@ -297,10 +230,12 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         );
         set({
           notes: updatedNotes,
-          currentNote: note,
           isLoading: false,
           newlyCreatedNoteId: note.id, // Mark as newly created for auto-focus
         });
+        // Open in tab
+        const { openTab } = useTabStore.getState();
+        await openTab(note.id);
       }
       return note;
     } catch (error) {
@@ -373,16 +308,17 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       const newLoaded = new Set(loadedChildren);
       newLoaded.add(parentId);
 
-      // Set the newly created subpage as the current note so user navigates to it
       set({
         childrenMap: newMap,
         notes: updatedNotes,
         expandedPages: newExpanded,
         loadedChildren: newLoaded,
-        currentNote: fullNote, // Navigate to the newly created subpage
         isLoading: false,
         newlyCreatedNoteId: fullNote.id, // Mark as newly created for auto-focus
       });
+      // Open in tab
+      const { openTab } = useTabStore.getState();
+      await openTab(fullNote.id);
       return fullNote;
     } catch (error) {
       set({ error: String(error), isLoading: false });
@@ -394,7 +330,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
     set({ isSaving: true, error: null });
     try {
       const note = await commands.updateNote({ id, ...updates });
-      const { notes, currentNote } = get();
+      const { notes } = get();
 
       // If title was updated, update all page links that reference this page
       if (updates.title !== undefined && updates.title !== null) {
@@ -403,10 +339,13 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
           const backlinks = await commands.getBacklinks(id);
           await commands.updatePageLinkTitles(id, note.title);
 
-          // If the current note is one of the notes that was updated, reload it
-          if (currentNote && backlinks.includes(currentNote.id)) {
-            // Reload the current note to get the updated content
-            await get().loadNote(currentNote.id);
+          // If any open tab is one of the notes that was updated, reload it
+          const { openTabs } = useTabStore.getState();
+          for (const tab of openTabs) {
+            if (backlinks.includes(tab.id)) {
+              // Reload the tab to get the updated content
+              await get().loadNote(tab.id);
+            }
           }
         } catch (error) {
           console.error("Failed to update page link titles:", error);
@@ -489,7 +428,6 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       set({
         notes: updatedNotes,
         childrenMap: newMap,
-        currentNote: currentNote?.id === id ? note : currentNote,
         isSaving: false,
       });
     } catch (error) {
@@ -522,12 +460,13 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       await commands.deleteNote(id);
 
       // Close tab if it's open
-      const { closeTab, openTabs } = useTabStore.getState();
+      const { closeTab, openTabs, activeTabId } = useTabStore.getState();
+      const isActiveTab = activeTabId === id;
       if (openTabs.some((tab) => tab.id === id)) {
         closeTab(id);
       }
 
-      const { currentNote, expandedPages, loadedChildren } = get();
+      const { expandedPages, loadedChildren } = get();
 
       // Remove from top-level notes
       let updatedNotes = notes.filter((n) => n.id !== id);
@@ -577,8 +516,8 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       // Determine which note to navigate to after deletion
       let noteToNavigate: string | null = null;
 
-      if (currentNote?.id === id) {
-        // We're deleting the currently open note
+      if (isActiveTab) {
+        // We're deleting the active tab
         if (parentId) {
           // It's a subnote - navigate to parent
           noteToNavigate = parentId;
@@ -621,7 +560,6 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         childrenMap: newMap,
         expandedPages: newExpanded,
         loadedChildren: newLoaded,
-        currentNote: currentNote?.id === id ? null : currentNote,
         isLoading: false,
       });
 
@@ -633,23 +571,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
           await get().loadNote(noteToNavigate);
         } catch (error) {
           console.error("Failed to load note after deletion:", error);
-          // If loading fails, ensure current note is cleared and persist
-          set({ currentNote: null });
-          const { currentView } = useUIStore.getState();
-          saveAppState({
-            currentNoteId: null,
-            currentView: currentView ? String(currentView) : null,
-            parentPath: [],
-          });
         }
-      } else {
-        // No note to navigate to - persist cleared state
-        const { currentView } = useUIStore.getState();
-        saveAppState({
-          currentNoteId: null,
-          currentView: currentView ? String(currentView) : null,
-          parentPath: [],
-        });
       }
     } catch (error) {
       set({ error: String(error), isLoading: false });
@@ -658,12 +580,13 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
   },
 
   saveCurrentNoteContent: async (content) => {
-    const { currentNote, notes, childrenMap } = get();
-    if (!currentNote) {
+    const { getActiveTab } = useTabStore.getState();
+    const activeTab = getActiveTab();
+    if (!activeTab) {
       return;
     }
 
-    const noteId = currentNote.id;
+    const noteId = activeTab.id;
 
     // Set saving flag immediately for UI feedback
     set({ isSaving: true });
@@ -674,30 +597,23 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 
       // CRITICAL: Verify we're still on the same note before updating state
       // This prevents race conditions when switching notes quickly
-      const { currentNote: currentNoteAfterSave } = get();
-      if (!currentNoteAfterSave || currentNoteAfterSave.id !== noteId) {
+      const { getActiveTab: getActiveTabAfterSave } = useTabStore.getState();
+      const activeTabAfterSave = getActiveTabAfterSave();
+      if (!activeTabAfterSave || activeTabAfterSave.id !== noteId) {
         // Note was switched during save, don't update state
         set({ isSaving: false });
         return;
       }
 
-      // Update local state optimistically
-      set({
-        currentNote: {
-          ...currentNoteAfterSave,
-          content,
-          updated_at: updatedAt,
-        },
-        isSaving: false,
-      });
-
       // Update notes list timestamp
+      const { notes } = get();
       const updatedNotes = notes.map((n) =>
         n.id === noteId ? { ...n, updated_at: updatedAt } : n
       );
       updatedNotes.sort((a, b) => b.updated_at - a.updated_at);
 
       // Update childrenMap if this note is a child
+      const { childrenMap } = get();
       const newMap = new Map(childrenMap);
       for (const [parentId, children] of newMap.entries()) {
         const updatedChildren = children.map((n) =>
@@ -708,7 +624,11 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         }
       }
 
-      set({ notes: updatedNotes, childrenMap: newMap });
+      // Update tab content and timestamp
+      const { updateTabContent } = useTabStore.getState();
+      updateTabContent(noteId, content);
+
+      set({ notes: updatedNotes, childrenMap: newMap, isSaving: false });
     } catch (error) {
       console.error("[saveCurrentNoteContent] Save failed:", error);
       set({ error: String(error), isSaving: false });
@@ -785,19 +705,20 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 
   // Export actions
   exportCurrentNote: async (destination) => {
-    const { currentNote } = get();
-    if (!currentNote) return;
+    const { getActiveTab } = useTabStore.getState();
+    const activeTab = getActiveTab();
+    if (!activeTab) return;
 
     try {
       // Parse JSON content
-      const json = JSON.parse(currentNote.content);
+      const json = JSON.parse(activeTab.content);
 
       // Convert to markdown using our utility
       const { jsonToMarkdown } = await import("../lib/tiptap/json-to-markdown");
       const markdown = jsonToMarkdown(json);
 
       // Export with markdown content
-      await commands.exportNote(currentNote.id, destination, markdown);
+      await commands.exportNote(activeTab.id, destination, markdown);
     } catch (error) {
       set({ error: String(error) });
       throw error;
@@ -825,9 +746,11 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
           },
           ...notes,
         ],
-        currentNote: note,
         isLoading: false,
       });
+      // Open in tab
+      const { openTab } = useTabStore.getState();
+      await openTab(note.id);
       return note;
     } catch (error) {
       set({ error: String(error), isLoading: false });

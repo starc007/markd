@@ -18,14 +18,12 @@ import { toast } from "sonner";
 
 export const Sidebar = memo(function Sidebar() {
   const notes = useNoteStore((state) => state.notes);
-  const currentNoteId = useNoteStore((state) => state.currentNote?.id ?? null);
   const childrenMap = useNoteStore((state) => state.childrenMap);
   const expandedPages = useNoteStore((state) => state.expandedPages);
   const { openTab } = useTabStore();
 
-  // Get current note ID from either active tab or currentNote
+  // Get current note ID from active tab
   const activeTabId = useTabStore((state) => state.activeTabId);
-  const displayNoteId = activeTabId || currentNoteId;
 
   const { getColor, setColor, removeColor } = useNoteColors();
   const { stickyNotes, loadStickyNotes } = useStickyNotesStore();
@@ -72,13 +70,10 @@ export const Sidebar = memo(function Sidebar() {
   const handleDeleteNote = useCallback(
     async (noteId: string) => {
       try {
-        const { deleteNote, currentNote } = useNoteStore.getState();
+        const { deleteNote } = useNoteStore.getState();
         await deleteNote(noteId);
         removeColor(noteId);
         setDeleteModalNoteId(null);
-        if (currentNote?.id === noteId) {
-          useNoteStore.setState({ currentNote: null });
-        }
       } catch (error) {
         console.error("Failed to delete note:", error);
         toast.error(
@@ -176,7 +171,7 @@ export const Sidebar = memo(function Sidebar() {
         notes={filteredNotes}
         childrenMap={childrenMap}
         expandedPages={expandedPages}
-        currentNoteId={displayNoteId}
+        currentNoteId={activeTabId}
         getColor={getColor}
         onNoteClick={handleNoteClick}
         onColorSelect={handleColorSelect}

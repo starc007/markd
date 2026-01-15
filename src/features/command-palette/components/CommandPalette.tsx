@@ -16,13 +16,13 @@ import type { SearchResult } from "@/lib/tauri/commands";
 const SEARCH_THRESHOLD = 2; // Only search after 2+ characters
 
 export function CommandPalette() {
-  const currentNote = useNoteStore((state) => state.currentNote);
   const searchResults = useNoteStore((state) => state.searchResults);
   const notes = useNoteStore((state) => state.notes);
   const stickyNotes = useStickyNotesStore((state) => state.stickyNotes);
   const { createNote, createFolder, exportCurrentNote, search, clearSearch } =
     useNoteStore();
-  const { openTab, switchTab } = useTabStore();
+  const { openTab, switchTab, getActiveTab } = useTabStore();
+  const activeTab = getActiveTab();
 
   const bookmarks = useBookmarkStore((state) => state.bookmarks);
   const setSelectedStickyNoteId = useUIStore(
@@ -181,9 +181,9 @@ export function CommandPalette() {
             setCommandPaletteOpen(false);
             break;
           case "export":
-            if (currentNote) {
+            if (activeTab) {
               const filePath = await save({
-                defaultPath: `${currentNote.title || "untitled"}.md`,
+                defaultPath: `${activeTab.title || "untitled"}.md`,
                 filters: [{ name: "Markdown", extensions: ["md"] }],
               });
               if (filePath) {
@@ -285,7 +285,7 @@ export function CommandPalette() {
     },
     [
       handleCreateNote,
-      currentNote,
+      activeTab,
       setCommandPaletteOpen,
       toggleFocusMode,
       exportCurrentNote,
@@ -362,7 +362,7 @@ export function CommandPalette() {
           )}
 
           {shouldShowCommands && !hasSearchResults && (
-            <CommandGroups currentNote={currentNote} onSelect={handleSelect} />
+            <CommandGroups currentNote={activeTab} onSelect={handleSelect} />
           )}
 
           {hasSearchResults && (
