@@ -14,6 +14,7 @@ import { BlockquoteIcon } from "../../tiptap-icons/blockquote-icon";
 import { ListTodoIcon } from "../../tiptap-icons/list-todo-icon";
 import { MinusIcon } from "../../tiptap-icons/minus-icon";
 import { TypeIcon } from "../../tiptap-icons/type-icon";
+import { TableIcon } from "../../tiptap-icons/table-icon";
 
 // --- Lib ---
 import { isNodeInSchema } from "../../../lib/tiptap-utils";
@@ -102,6 +103,13 @@ const texts = {
     badge: MinusIcon,
     group: "Basic",
   },
+  table: {
+    title: "Table",
+    subtext: "Insert a table",
+    keywords: ["table", "grid", "spreadsheet"],
+    badge: TableIcon,
+    group: "Basic",
+  },
 };
 
 export type SlashMenuItemType = keyof typeof texts;
@@ -167,6 +175,16 @@ const getItemImplementations = () => {
       check: (editor: Editor) => isNodeInSchema("horizontalRule", editor),
       action: ({ editor }: { editor: Editor }) => {
         editor.chain().focus().setHorizontalRule().run();
+      },
+    },
+    table: {
+      check: (editor: Editor) => isNodeInSchema("table", editor),
+      action: ({ editor }: { editor: Editor }) => {
+        editor
+          .chain()
+          .focus()
+          .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+          .run();
       },
     },
   };

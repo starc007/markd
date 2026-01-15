@@ -5,6 +5,9 @@ import TaskItem from "@tiptap/extension-task-item";
 import Highlight from "@tiptap/extension-highlight";
 import Placeholder from "@tiptap/extension-placeholder";
 import { Markdown } from "@tiptap/markdown";
+import { TableKit } from "@tiptap/extension-table";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import { createLowlight, common } from "lowlight";
 import { UiState } from "@/lib/tiptap-extension/ui-state-extension";
 import { NodeAlignment } from "@/lib/tiptap-extension/node-alignment-extension";
 import { NodeBackground } from "@/lib/tiptap-extension/node-background-extension";
@@ -12,6 +15,9 @@ import { ListNormalizationExtension } from "@/lib/tiptap-extension/list-normaliz
 import { PageLinkExtension } from "@/lib/tiptap-extension/page-link-extension";
 import { BookmarkLinkExtension } from "@/lib/tiptap-extension/bookmark-link-extension";
 import { PasteMarkdownExtension } from "@/lib/tiptap-extension/pasted-markdown-extension";
+
+// Create lowlight instance with common languages (includes JavaScript, TypeScript, Python, etc.)
+const lowlight = createLowlight(common);
 
 /**
  * Parse content safely, returning default doc if invalid
@@ -38,13 +44,28 @@ export function useEditorConfig() {
         heading: {
           levels: [1, 2, 3],
         },
+        // Disable codeBlock from StarterKit since we're using CodeBlockLowlight
+        codeBlock: false,
       }),
       TaskList,
       TaskItem.configure({
         nested: true,
       }),
       Highlight,
-
+      // Table extensions
+      TableKit.configure({
+        table: {
+          resizable: true,
+        },
+      }),
+      // Code block with syntax highlighting
+      CodeBlockLowlight.configure({
+        lowlight,
+        defaultLanguage: null,
+        HTMLAttributes: {
+          class: "tiptap-code-block",
+        },
+      }),
       Placeholder.configure({
         placeholder: "Type '/' for commands...",
       }),

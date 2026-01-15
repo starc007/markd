@@ -34,7 +34,7 @@ export function useEditorContentSync({
   const pendingSaveNoteIdRef = useRef<string | null>(null);
   // Store cursor positions per note
   const cursorPositionsRef = useRef<Map<string, { from: number; to: number }>>(
-    new Map()
+    new Map(),
   );
   // Track if user has made any edits to the current note (to prevent content updates from props)
   const hasUserEditedRef = useRef<boolean>(false);
@@ -75,7 +75,7 @@ export function useEditorContentSync({
         }
       }
     },
-    []
+    [],
   );
 
   // Handle content updates with debouncing
@@ -150,7 +150,7 @@ export function useEditorContentSync({
         pendingSaveNoteIdRef.current = null;
       }, 150);
     },
-    [extractAndSyncPageLinks, isSwitchingNotesRef, isMountedRef]
+    [extractAndSyncPageLinks, isSwitchingNotesRef, isMountedRef],
   );
 
   // Update content when noteId or content changes
@@ -168,24 +168,7 @@ export function useEditorContentSync({
         window.clearTimeout(saveTimeoutRef.current);
         saveTimeoutRef.current = null;
 
-        // Get the noteId that the pending save was for
-        const previousNoteId = pendingSaveNoteIdRef.current;
         pendingSaveNoteIdRef.current = null;
-
-        // If we have a pending save and we're still on that note, save immediately
-        if (previousNoteId && previousNoteId === noteIdRef.current) {
-          const json = editor.getJSON();
-          const jsonString = JSON.stringify(json);
-
-          // Only save if content actually changed
-          if (jsonString !== lastSavedContentRef.current) {
-            lastSavedContentRef.current = jsonString;
-            // Save immediately for the previous note
-            onContentChangeRef.current(jsonString);
-            // Extract page links from content and sync
-            extractAndSyncPageLinks(previousNoteId, json);
-          }
-        }
       }
 
       // Store cursor position for the previous note before switching
