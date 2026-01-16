@@ -148,20 +148,22 @@ export function Editor({ noteId, content }: EditorProps) {
         useNoteStore.setState({ newlyCreatedNoteId: null });
       }
 
+      // CRITICAL: Get active tab and check content BEFORE updating tab
+      // This prevents the save check from failing after tab content is updated
+      const activeTab = useTabStore.getState().getActiveTab();
+      const shouldSave =
+        activeTab &&
+        activeTab.id === noteId &&
+        activeTab.content !== newContent;
+
       // Update tab content if tab exists
       const tab = getTab(noteId);
       if (tab && tab.content !== newContent) {
         updateTabContent(noteId, newContent);
       }
 
-      // CRITICAL: Verify we're still on the same note before saving
-      // This prevents saving content to the wrong note when switching quickly
-      const activeTab = useTabStore.getState().getActiveTab();
-      if (
-        activeTab &&
-        activeTab.id === noteId &&
-        activeTab.content !== newContent
-      ) {
+      // Save to database if content actually changed
+      if (shouldSave) {
         useNoteStore.getState().saveCurrentNoteContent(newContent);
       }
     },
