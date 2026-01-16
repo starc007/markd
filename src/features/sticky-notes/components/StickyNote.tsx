@@ -38,8 +38,19 @@ export function StickyNote({
 }: StickyNoteProps) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [localContent, setLocalContent] = useState(stickyNote.content);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const color = getNoteColor(stickyNote.colorId);
+
+  // Sync local content with prop when it changes externally
+  useEffect(() => {
+    if (
+      stickyNote.content !== localContent &&
+      document.activeElement !== textareaRef.current
+    ) {
+      setLocalContent(stickyNote.content);
+    }
+  }, [stickyNote.content]);
 
   // Auto-resize textarea
   const adjustTextareaHeight = useCallback(() => {
@@ -53,9 +64,6 @@ export function StickyNote({
   useEffect(() => {
     if (isEditing && textareaRef.current) {
       textareaRef.current.focus();
-      // Set cursor to end
-      const length = textareaRef.current.value.length;
-      textareaRef.current.setSelectionRange(length, length);
       adjustTextareaHeight();
     }
   }, [isEditing, adjustTextareaHeight]);
@@ -63,24 +71,23 @@ export function StickyNote({
   useEffect(() => {
     if (selected && textareaRef.current) {
       setIsEditing(true);
-      textareaRef.current.focus();
-      // Set cursor to end
-      const length = textareaRef.current.value.length;
-      textareaRef.current.setSelectionRange(length, length);
-      adjustTextareaHeight();
+      requestAnimationFrame(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          adjustTextareaHeight();
+        }
+      });
     }
   }, [selected, adjustTextareaHeight]);
 
   useEffect(() => {
-    if (textareaRef.current && !isEditing) {
-      adjustTextareaHeight();
-    }
-  }, [stickyNote.content, isEditing, adjustTextareaHeight]);
+    adjustTextareaHeight();
+  }, [localContent, adjustTextareaHeight]);
 
   const handleContentChange = (newContent: string) => {
+    setLocalContent(newContent);
     onUpdate(stickyNote.id, { content: newContent });
-    // Adjust height after content change
-    setTimeout(() => adjustTextareaHeight(), 0);
+    adjustTextareaHeight();
   };
 
   const handleColorSelect = (e: React.MouseEvent, newColorId: NoteColorId) => {
@@ -185,11 +192,8 @@ export function StickyNote({
         <div className="flex-1 p-4">
           <textarea
             ref={textareaRef}
-            value={stickyNote.content}
-            onChange={(e) => {
-              handleContentChange(e.target.value);
-              adjustTextareaHeight();
-            }}
+            value={localContent}
+            onChange={(e) => handleContentChange(e.target.value)}
             onInput={adjustTextareaHeight}
             onBlur={handleBlur}
             onClick={(e) => e.stopPropagation()}
