@@ -15,6 +15,7 @@ import { ListNormalizationExtension } from "@/lib/tiptap-extension/list-normaliz
 import { PageLinkExtension } from "@/lib/tiptap-extension/page-link-extension";
 import { BookmarkLinkExtension } from "@/lib/tiptap-extension/bookmark-link-extension";
 import { PasteMarkdownExtension } from "@/lib/tiptap-extension/pasted-markdown-extension";
+import { WordCountExtension } from "@/lib/tiptap-extension/word-count-extension";
 
 // Create lowlight instance with common languages (includes JavaScript, TypeScript, Python, etc.)
 const lowlight = createLowlight(common);
@@ -85,6 +86,7 @@ export function useEditorConfig() {
       }),
       Markdown,
       PasteMarkdownExtension,
+      WordCountExtension,
     ],
     []
   );

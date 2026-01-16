@@ -22,6 +22,7 @@ import {
 import { DeleteNoteModal } from "@/components/DeleteNoteModal";
 import { EditorTitle, type EditorTitleRef } from "./EditorTitle";
 import { EditorContent, type EditorContentRef } from "./EditorContent";
+import { WordCountStats } from "./WordCountStats";
 import { AppProvider } from "@/context/app-context";
 import { formatRelativeTime } from "@/lib/utils";
 
@@ -32,6 +33,9 @@ interface EditorProps {
 
 export function Editor({ noteId, content }: EditorProps) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [editorInstance, setEditorInstance] = useState<ReturnType<
+    EditorContentRef["getEditor"]
+  > | null>(null);
   const editorRef = useRef<EditorContentRef>(null);
   const titleRef = useRef<EditorTitleRef>(null);
 
@@ -196,6 +200,35 @@ export function Editor({ noteId, content }: EditorProps) {
     editorRef.current?.focus();
   }, [noteId]);
 
+  // Track editor instance when it becomes available
+  useEffect(() => {
+    // Reset editor instance when note changes
+    setEditorInstance(null);
+
+    const checkEditor = () => {
+      const editor = editorRef.current?.getEditor();
+      if (editor) {
+        setEditorInstance(editor);
+        return true;
+      }
+      return false;
+    };
+
+    // Check immediately
+    if (checkEditor()) {
+      return;
+    }
+
+    // Check periodically until editor is available
+    const interval = setInterval(() => {
+      if (checkEditor()) {
+        clearInterval(interval);
+      }
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, [noteId]);
+
   // Keyboard shortcuts: Cmd+Shift+D to open delete modal, Cmd+Enter to confirm when modal is open
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -313,6 +346,11 @@ export function Editor({ noteId, content }: EditorProps) {
                 onContentChange={handleContentChange}
               />
             </AppProvider>
+
+            {/* Word Count Stats */}
+            <div className="mt-6 pt-4 border-t border-border/50">
+              <WordCountStats editor={editorInstance} />
+            </div>
           </div>
         </div>
       </div>
