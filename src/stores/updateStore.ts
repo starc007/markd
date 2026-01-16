@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { Update } from "../lib/tauri/update";
+import type { Update as PluginUpdate } from "@tauri-apps/plugin-updater";
 
 /**
  * Update state management store
@@ -21,6 +22,7 @@ interface UpdateStore {
   // State
   status: UpdateStatus;
   update: Update | null;
+  pluginUpdate: PluginUpdate | null; // The actual plugin update object
   currentVersion: string;
   error: string | null;
   downloadProgress: number; // 0-100
@@ -29,6 +31,7 @@ interface UpdateStore {
   // Actions
   setStatus: (status: UpdateStatus) => void;
   setUpdate: (update: Update | null) => void;
+  setPluginUpdate: (pluginUpdate: PluginUpdate | null) => void;
   setCurrentVersion: (version: string) => void;
   setError: (error: string | null) => void;
   setDownloadProgress: (progress: number) => void;
@@ -39,6 +42,7 @@ interface UpdateStore {
 const initialState = {
   status: "idle" as UpdateStatus,
   update: null,
+  pluginUpdate: null,
   currentVersion: "0.1.0",
   error: null,
   downloadProgress: 0,
@@ -50,6 +54,7 @@ export const useUpdateStore = create<UpdateStore>((set) => ({
 
   setStatus: (status) => set({ status }),
   setUpdate: (update) => set({ update }),
+  setPluginUpdate: (pluginUpdate) => set({ pluginUpdate }),
   setCurrentVersion: (version) => set({ currentVersion: version }),
   setError: (error) => set({ error }),
   setDownloadProgress: (progress) => set({ downloadProgress: progress }),

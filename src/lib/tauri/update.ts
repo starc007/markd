@@ -33,6 +33,7 @@ export type UpdateEventType = "Started" | "Progress" | "Finished";
 export interface UpdateEventData {
   contentLength?: number;
   chunkLength?: number;
+  downloaded?: number; // Cumulative downloaded bytes
 }
 
 /**
@@ -71,7 +72,9 @@ export interface UpdateCheckResult {
  */
 export async function checkForUpdates(
   currentVersion?: string
-): Promise<UpdateCheckResult> {
+): Promise<
+  UpdateCheckResult & { pluginUpdate?: Awaited<ReturnType<typeof check>> }
+> {
   try {
     // Get current version if not provided
     let version = currentVersion;
@@ -82,17 +85,18 @@ export async function checkForUpdates(
     }
 
     // Check for updates using the Tauri updater plugin
-    const update = await check();
+    const pluginUpdate = await check();
 
-    if (update) {
+    if (pluginUpdate) {
       return {
         available: true,
         update: {
-          version: update.version,
-          date: update.date,
-          body: update.body ?? null,
+          version: pluginUpdate.version,
+          date: pluginUpdate.date,
+          body: pluginUpdate.body ?? null,
         },
         currentVersion: version,
+        pluginUpdate, // Return the actual plugin update object
       };
     }
 
@@ -100,6 +104,7 @@ export async function checkForUpdates(
       available: false,
       update: null,
       currentVersion: version,
+      pluginUpdate: undefined,
     };
   } catch (error) {
     // If update check fails (e.g., server down, network error),
@@ -110,6 +115,7 @@ export async function checkForUpdates(
       available: false,
       update: null,
       currentVersion: currentVersion || "unknown",
+      pluginUpdate: undefined,
     };
   }
 }
@@ -141,7 +147,6 @@ export async function downloadAndInstall(
 ): Promise<void> {
   // Import the update object from the plugin
   // We need to get the actual Update object from the plugin, not our interface
-  const { check } = await import("@tauri-apps/plugin-updater");
   const pluginUpdate = await check();
 
   if (!pluginUpdate) {
@@ -184,6 +189,7 @@ export async function downloadAndInstall(
           data: {
             chunkLength: event.data.chunkLength,
             contentLength,
+            downloaded, // Pass cumulative downloaded amount
           },
         });
         break;

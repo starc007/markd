@@ -15,6 +15,7 @@ import { SidebarNavigation } from "./SidebarNavigation";
 import { HierarchicalNotesList } from "./HierarchicalNotesList";
 import { SidebarSettings } from "./SidebarSettings";
 import { toast } from "sonner";
+import { UpdateIndicator } from "../update/UpdateIndicator";
 
 export const Sidebar = memo(function Sidebar() {
   const notes = useNoteStore((state) => state.notes);
@@ -140,9 +141,9 @@ export const Sidebar = memo(function Sidebar() {
   const currentView = useUIStore((state) => state.currentView);
 
   return (
-    <aside className="w-[280px] shrink-0 flex flex-col bg-sidebar border-r border-sidebar-border overflow-hidden">
+    <aside className="w-[280px] shrink-0 flex flex-col bg-sidebar border-r border-sidebar-border overflow-hidden relative">
       <div className="h-[30px] shrink-0" data-tauri-drag-region />
-
+      <UpdateIndicator />
       <SidebarSearch onSearchClick={handleSearchClick} />
 
       {/* New Note Button */}

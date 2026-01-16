@@ -42,6 +42,12 @@ export function UpdateDialog({ open, onClose }: UpdateDialogProps) {
     await check();
   };
 
+  console.log("status", status);
+  console.log("update", update);
+  console.log("currentVersion", currentVersion);
+  console.log("error", error);
+  console.log("downloadProgress", downloadProgress);
+
   return (
     <Modal isOpen={open} onClose={onClose} title="Update Available">
       <div className="space-y-4">

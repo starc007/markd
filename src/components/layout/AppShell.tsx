@@ -16,7 +16,6 @@ import { useWindowFocus } from "@/hooks/useWindowFocus";
 import { useAppStateRestore } from "@/hooks/useAppStateRestore";
 import { useUpdateCheck } from "@/hooks/useUpdateCheck";
 import Welcome from "@/components/welcome";
-import { UpdateIndicator } from "../update/UpdateIndicator";
 
 export function AppShell() {
   // Use selective subscriptions to prevent unnecessary re-renders
@@ -62,7 +61,6 @@ export function AppShell() {
     >
       {/* Title Bar with drag region - hidden in focus mode */}
       {/* {!focusMode && <TitleBar />} */}
-      <UpdateIndicator />
 
       <div className="flex flex-1 overflow-hidden" data-tauri-drag-region>
         {/* Sidebar - hidden in focus mode or when collapsed */}

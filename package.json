@@ -1,7 +1,7 @@
 {
   "name": "Draft",
   "private": true,
-  "version": "0.1.2",
+  "version": "0.1.3",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,6 +13,7 @@
     "pretauri:build": "bun run version:sync",
     "posttauri:build": "bash scripts/prepare-dmg.sh",
     "update:generate": "bun scripts/generate-latest-json.js",
+    "update:test-server": "node scripts/test-update-server.js",
     "icon:generate": "bash scripts/generate-icns.sh",
     "prepare:dmg": "bash scripts/prepare-dmg.sh",
     "release": "bash scripts/release.sh"
