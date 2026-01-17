@@ -86,6 +86,7 @@ impl Database {
         id: &str,
         title: Option<&str>,
         folder_id: Option<Option<&str>>,
+        banner_type: Option<Option<&str>>,
         updated_at: i64,
     ) -> Result<()> {
         let conn = acquire_lock!(self.conn);
@@ -104,7 +105,14 @@ impl Database {
             )?;
         }
 
-        if title.is_none() && folder_id.is_none() {
+        if let Some(bt) = banner_type {
+            conn.execute(
+                "UPDATE notes SET banner_type = ?1, updated_at = ?2 WHERE id = ?3",
+                params![bt, updated_at, id],
+            )?;
+        }
+
+        if title.is_none() && folder_id.is_none() && banner_type.is_none() {
             conn.execute(
                 "UPDATE notes SET updated_at = ?1 WHERE id = ?2",
                 params![updated_at, id],
@@ -367,6 +375,18 @@ impl Database {
 
         if let Some(row) = rows.next()? {
             Ok(Some(row.get(0)?))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn get_note_banner_type(&self, id: &str) -> Result<Option<String>> {
+        let conn = acquire_lock!(self.conn);
+        let mut stmt = conn.prepare("SELECT banner_type FROM notes WHERE id = ?1")?;
+        let mut rows = stmt.query(params![id])?;
+
+        if let Some(row) = rows.next()? {
+            Ok(row.get(0)?)
         } else {
             Ok(None)
         }

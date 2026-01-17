@@ -8,6 +8,7 @@ export interface Note {
   file_path: string;
   folder_id: string | null;
   parent_id: string | null;
+  banner_type: string | null;
   created_at: number;
   updated_at: number;
 }
@@ -106,6 +107,7 @@ export interface UpdateNoteParams {
   title?: string;
   content?: string;
   folder_id?: string;
+  banner_type?: string | null;
 }
 
 export interface CreateFolderParams {
@@ -414,7 +416,7 @@ export async function getNoteVisualIdentity(
   noteId: string
 ): Promise<NoteVisualIdentity | null> {
   return invoke<NoteVisualIdentity | null>("get_note_visual_identity", {
-    note_id: noteId,
+    noteId,
   });
 }
 
@@ -426,11 +428,11 @@ export async function saveNoteVisualIdentity(
   imageData: string | null = null
 ): Promise<void> {
   return invoke<void>("save_note_visual_identity", {
-    note_id: noteId,
-    gradient_colors: gradientColors,
-    pattern_type: patternType,
-    pattern_data: patternData,
-    image_data: imageData,
+    noteId,
+    gradientColors,
+    patternType,
+    patternData,
+    imageData,
   });
 }
 
@@ -438,6 +440,6 @@ export async function regenerateNoteVisualIdentity(
   noteId: string
 ): Promise<void> {
   return invoke<void>("regenerate_note_visual_identity", {
-    note_id: noteId,
+    noteId,
   });
 }

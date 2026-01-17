@@ -105,12 +105,14 @@ export const useVisualIdentityStore = create<VisualIdentityState>(
         // If not in database, generate new one
         if (!fingerprint) {
           // For empty content, use noteId + title for deterministic generation
+          // Include noteId to ensure uniqueness even for empty notes with same title
           const contentForHash =
-            normalizedContent || `${noteId}${normalizedTitle}`;
+            normalizedContent || `${noteId}__${normalizedTitle}`;
 
           // Generate hash and seeds
-          const hashString = `${normalizedTitle}${contentForHash}`;
-          const seeds = hashToSeeds(hashString);
+          const hashString = `${normalizedTitle}__${contentForHash}`;
+
+          const seeds = await hashToSeeds(hashString);
           const patternType = selectPatternType(seeds[0]);
           const gradient = generateGradient(seeds);
 
@@ -207,27 +209,85 @@ export const useVisualIdentityStore = create<VisualIdentityState>(
       try {
         await commands.regenerateNoteVisualIdentity(noteId);
       } catch (error) {
-        console.warn("Failed to delete old visual identity:", error);
+        console.warn(
+          "[regenerateFingerprint] Failed to delete old visual identity:",
+          error
+        );
       }
 
-      // Increment regeneration trigger to force component re-render
-      set((state) => {
-        const newTriggers = new Map(state.regenerationTriggers);
-        const currentTrigger = newTriggers.get(noteId) || 0;
-        newTriggers.set(noteId, currentTrigger + 1);
-        return { regenerationTriggers: newTriggers };
-      });
-
-      // Force regeneration by getting fingerprint (will generate new one)
+      // Add timestamp and random component to ensure new pattern generation
+      // This makes each regeneration produce a different pattern
+      const timestamp = Date.now();
+      const randomComponent = Math.random().toString(36).substring(7);
+      const randomComponent2 = Math.random().toString(36).substring(7);
       const normalizedContent = content || "";
       const normalizedTitle = title || "Untitled";
-      const fingerprint = await get().getFingerprint(
-        noteId,
-        normalizedTitle,
-        normalizedContent,
-        _size
-      );
+      // Add multiple random components and timestamp to ensure uniqueness
+      const contentWithVariation = `${normalizedContent}__REGEN__${timestamp}__${randomComponent}__${randomComponent2}__${Math.random()}`;
 
+      // Generate new fingerprint with variation to ensure uniqueness
+      const hashString = `${normalizedTitle}__${contentWithVariation}`;
+
+      const seeds = await hashToSeeds(hashString);
+      const patternType = selectPatternType(seeds[0]);
+      const gradient = generateGradient(seeds);
+
+      const fingerprint: FingerprintData = {
+        gradientColors: gradient.colors,
+        patternType,
+        patternData: {
+          seed: seeds[0],
+          hash: hashString,
+          regeneratedAt: timestamp,
+        },
+      };
+
+      console.log("[regenerateFingerprint] Generated fingerprint:", {
+        patternType,
+        colors: gradient.colors,
+        hash: hashString.substring(0, 30) + "...",
+      });
+
+      // Update both fingerprint cache and trigger in a single state update
+      // This ensures they're synchronized and component sees both changes
+      set((state) => {
+        const newFingerprints = new Map(state.fingerprints);
+        newFingerprints.set(noteId, fingerprint);
+
+        const newTriggers = new Map(state.regenerationTriggers);
+        const currentTrigger = newTriggers.get(noteId) || 0;
+        const newTrigger = currentTrigger + 1;
+        newTriggers.set(noteId, newTrigger);
+
+        return {
+          fingerprints: newFingerprints,
+          regenerationTriggers: newTriggers,
+        };
+      });
+
+      // Force a small delay to ensure state is updated before returning
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      // Save to backend (fire and forget)
+      commands
+        .saveNoteVisualIdentity(
+          noteId,
+          fingerprint.gradientColors,
+          fingerprint.patternType,
+          JSON.stringify(fingerprint.patternData),
+          null
+        )
+        .then(() => {
+          console.log("[regenerateFingerprint] Saved to backend successfully");
+        })
+        .catch((error) => {
+          console.warn(
+            "[regenerateFingerprint] Failed to save regenerated visual identity:",
+            error
+          );
+        });
+
+      console.log("[regenerateFingerprint] Regeneration complete");
       return fingerprint;
     },
 

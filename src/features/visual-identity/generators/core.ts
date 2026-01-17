@@ -2,7 +2,7 @@
  * Core utilities for generating visual identity fingerprints
  */
 
-export type PatternType = "mesh" | "voronoi" | "waves" | "sacred" | "particles";
+export type PatternType = "radial-gradient";
 
 export interface GradientColors {
   colors: string[]; // Array of 2-3 hex colors
@@ -15,16 +15,27 @@ export interface PatternData {
 }
 
 /**
+ * Hash a string to SHA-256 hex string
+ */
+async function hashString(input: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(input);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/**
  * Convert hash string to numeric seed values
  * Takes a hex hash string and extracts 8 u32 seed values
  */
-export function hashToSeeds(hash: string): number[] {
+function hexHashToSeeds(hexHash: string): number[] {
   const seeds: number[] = [];
 
   // Parse hex string to bytes
   const bytes: number[] = [];
-  for (let i = 0; i < hash.length; i += 2) {
-    const byte = parseInt(hash.substr(i, 2), 16);
+  for (let i = 0; i < hexHash.length; i += 2) {
+    const byte = parseInt(hexHash.substr(i, 2), 16);
     bytes.push(isNaN(byte) ? 0 : byte);
   }
 
@@ -47,16 +58,52 @@ export function hashToSeeds(hash: string): number[] {
 }
 
 /**
- * Generate HSL color from seed value
- * Returns hex color string
+ * Convert any string to numeric seed values by hashing it first
+ * This is the main function to use - it hashes the input string to SHA-256,
+ * then extracts 8 u32 seed values from the hash
  */
-function seedToHSLColor(seed: number): string {
-  // Use seed to generate HSL values
-  const h = seed % 360; // Hue: 0-360
-  const s = 40 + ((seed >> 8) % 40); // Saturation: 40-80%
-  const l = 45 + ((seed >> 16) % 25); // Lightness: 45-70%
+export async function hashToSeeds(input: string): Promise<number[]> {
+  // If input is already a hex string (64 chars, only 0-9a-f), use it directly
+  // Otherwise, hash it first
+  const isHexString = /^[0-9a-f]{64}$/i.test(input);
 
-  return hslToHex(h, s, l);
+  if (isHexString) {
+    return hexHashToSeeds(input);
+  }
+
+  // Hash the input string first
+  const hexHash = await hashString(input);
+  return hexHashToSeeds(hexHash);
+}
+
+/**
+ * Generate subtle, light color from seed value
+ * Returns hex color string with very light, muted colors like the example
+ * Example: muted green/teal fading to light grey/off-white
+ */
+function seedToHSLColor(seed: number, index: number = 0): string {
+  // Use subtle color ranges: muted greens, teals, blues, lavenders, soft pinks
+  // Base hue from seed, constrained to soft ranges (120-240 degrees for variety)
+  const hueRange = 120; // Start at green
+  const hueSpread = 120; // Wider range for more variety (120-240° covers green to blue)
+  const baseHue = hueRange + (seed % hueSpread);
+
+  let hue = baseHue;
+
+  if (index === 1) {
+    // Second color: very close analogous for subtle transitions
+    // Small hue shift for gentle gradient
+    const shift = 15 + ((seed >> 8) % 25); // 15-40° shift
+    hue = (baseHue + shift) % 360;
+  }
+
+  // Low saturation for subtle, muted colors (15-35%)
+  const s = 15 + ((seed >> 8) % 20); // Saturation: 15-35%
+
+  // Medium-high lightness for visible but still light feel (60-80%)
+  const l = 60 + ((seed >> 16) % 20); // Lightness: 60-80%
+
+  return hslToHex(hue, s, l);
 }
 
 /**
@@ -77,19 +124,20 @@ function hslToHex(h: number, s: number, l: number): string {
 
 /**
  * Generate gradient colors from seed values
- * Returns 2-3 colors for the gradient
+ * Returns 2 colors for the gradient with aesthetic color harmony
+ * Always returns 2 colors for consistency with the example style
  */
 export function generateGradient(seeds: number[]): GradientColors {
   if (seeds.length < 2) {
-    return { colors: ["#6366f1", "#8b5cf6"] }; // Default gradient
+    return { colors: ["#84d2cc", "#914db3"] }; // Aesthetic default: teal to purple (matching example)
   }
 
-  const numColors = 2 + (seeds[0] % 2); // 2 or 3 colors
+  // Always use 2 colors for aesthetic gradients (like the example)
   const colors: string[] = [];
 
-  for (let i = 0; i < numColors && i < seeds.length; i++) {
-    colors.push(seedToHSLColor(seeds[i]));
-  }
+  // Use first seed for base color, second seed for variation
+  colors.push(seedToHSLColor(seeds[0], 0));
+  colors.push(seedToHSLColor(seeds[0], 1));
 
   return { colors };
 }
@@ -97,15 +145,9 @@ export function generateGradient(seeds: number[]): GradientColors {
 /**
  * Select pattern type deterministically from seed
  */
-export function selectPatternType(seed: number): PatternType {
-  const patterns: PatternType[] = [
-    "mesh",
-    "voronoi",
-    "waves",
-    "sacred",
-    "particles",
-  ];
-  return patterns[seed % patterns.length];
+export function selectPatternType(_seed: number): PatternType {
+  // Always use radial-gradient pattern
+  return "radial-gradient";
 }
 
 /**

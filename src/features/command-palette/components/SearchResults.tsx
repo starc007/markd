@@ -6,7 +6,6 @@ import {
   LinkIcon,
 } from "@hugeicons/core-free-icons";
 import { SearchResult } from "@/lib/tauri/commands";
-import { FingerprintIndicator } from "@/features/visual-identity/components/FingerprintIndicator";
 
 const searchResultColors = {
   note: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/20",
@@ -48,12 +47,6 @@ export function SearchResults({
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
             >
               <div className="flex items-center gap-2 shrink-0">
-                <FingerprintIndicator
-                  noteId={result.id}
-                  title={result.title}
-                  content={result.snippet || ""}
-                  brightness={1}
-                />
                 <HugeiconsIcon
                   icon={FileEditIcon}
                   size={18}

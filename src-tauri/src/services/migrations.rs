@@ -20,6 +20,11 @@ fn get_migrations() -> Vec<Migration> {
             description: "Add note visual identity table",
             up: migration_v2_note_visual_identity,
         },
+        Migration {
+            version: 3,
+            description: "Add banner_type column to notes",
+            up: migration_v3_add_banner_type,
+        },
     ]
 }
 
@@ -284,6 +289,17 @@ fn migration_v2_note_visual_identity(conn: &Connection) -> Result<()> {
 
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_note_visual_identity_note_id ON note_visual_identity(note_id)",
+        [],
+    )?;
+
+    Ok(())
+}
+
+/// Migration v3: Add banner_type column to notes table
+fn migration_v3_add_banner_type(conn: &Connection) -> Result<()> {
+    // Add banner_type column to notes table (nullable, defaults to NULL which means "none")
+    conn.execute(
+        "ALTER TABLE notes ADD COLUMN banner_type TEXT",
         [],
     )?;
 

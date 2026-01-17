@@ -42,7 +42,7 @@ interface NoteStore {
   createSubpage: (parentId: string, title: string) => Promise<Note>;
   updateNote: (
     id: string,
-    updates: { title?: string; content?: string }
+    updates: { title?: string; content?: string; banner_type?: string | null }
   ) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   saveCurrentNoteContent: (content: string) => Promise<void>;

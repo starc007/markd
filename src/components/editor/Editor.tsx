@@ -5,7 +5,6 @@ import {
   DeleteIcon,
   Download01Icon,
 } from "@hugeicons/core-free-icons";
-import { RefreshCcwIcon } from "../tiptap-icons/refresh-ccw-icon";
 import { save } from "@tauri-apps/plugin-dialog";
 import { useNoteStore } from "@/stores/noteStore";
 import { useTabStore } from "@/stores/tabStore";
@@ -27,9 +26,8 @@ import { WordCountStats } from "./WordCountStats";
 import { AppProvider } from "@/context/app-context";
 import { formatRelativeTime } from "@/lib/utils";
 import { FingerprintBanner } from "@/features/visual-identity/components/FingerprintBanner";
-import { useSettingsStore } from "@/stores/settingsStore";
-import { useVisualIdentityStore } from "@/features/visual-identity/stores/visualIdentityStore";
-import { toast } from "sonner";
+import { JapanesePrintBanner } from "./JapanesePrintBanner";
+import { type BannerType } from "./BannerSelector";
 
 interface EditorProps {
   noteId: string;
@@ -48,9 +46,9 @@ export function Editor({ noteId, content }: EditorProps) {
   const focusMode = useUIStore((state) => state.focusMode);
   const activeTab = useTabStore((state) => state.getActiveTab());
   const { updateTabContent, updateTabTitle, getTab } = useTabStore();
-  const showBanner = useSettingsStore((state) => state.showBanner);
-  const { regenerateFingerprint, invalidateFingerprint } =
-    useVisualIdentityStore();
+  const [bannerType, setBannerType] = useState<BannerType>(
+    activeTab?.bannerType || "none"
+  );
 
   const updatedAt = activeTab?.updatedAt || 0;
 
@@ -147,19 +145,25 @@ export function Editor({ noteId, content }: EditorProps) {
     }
   }, []);
 
-  // Handle regenerate fingerprint
-  const handleRegenerateFingerprint = useCallback(async () => {
-    try {
-      const activeTab = useTabStore.getState().getActiveTab();
-      if (!activeTab) return;
-
-      invalidateFingerprint(noteId);
-      await regenerateFingerprint(noteId, activeTab.title || "", content || "");
-    } catch (error) {
-      console.error("Failed to regenerate fingerprint:", error);
-      toast.error("Failed to regenerate banner");
-    }
-  }, [noteId, content, invalidateFingerprint, regenerateFingerprint]);
+  // Handle banner type change
+  const handleBannerChange = useCallback(
+    async (type: BannerType) => {
+      setBannerType(type);
+      // Save banner type to database
+      // Always pass banner_type, even if "none" (pass null to clear it)
+      try {
+        const bannerValue = type === "none" ? null : type;
+        console.log("[Editor] Saving banner type:", bannerValue);
+        await useNoteStore.getState().updateNote(noteId, {
+          banner_type: bannerValue,
+        });
+        console.log("[Editor] Banner type saved successfully");
+      } catch (error) {
+        console.error("Failed to save banner type:", error);
+      }
+    },
+    [noteId]
+  );
 
   // Content save handler (already debounced in EditorContent)
   const handleContentChange = useCallback(
@@ -294,7 +298,7 @@ export function Editor({ noteId, content }: EditorProps) {
         {/* Header with drag region - hidden in focus mode */}
         {!focusMode && (
           <div
-            className="pt-2 shrink-0 flex items-center justify-between px-4"
+            className="shrink-0 flex items-center justify-between px-4"
             data-tauri-drag-region
           >
             <div className="flex items-center gap-3 [-webkit-app-region:no-drag]">
@@ -318,50 +322,6 @@ export function Editor({ noteId, content }: EditorProps) {
                 </DropdownTrigger>
 
                 <DropdownContent align="end" className="w-48">
-                  {showBanner && (
-                    <>
-                      <DropdownItem onClick={handleRegenerateFingerprint}>
-                        <RefreshCcwIcon className="w-4 h-4 text-muted-foreground" />
-                        Regenerate Banner
-                      </DropdownItem>
-                      <DropdownItem
-                        onClick={() => {
-                          useSettingsStore.getState().setShowBanner(false);
-                          toast.success("Banner hidden");
-                        }}
-                      >
-                        <HugeiconsIcon
-                          icon={Download01Icon}
-                          size={16}
-                          color="currentColor"
-                          strokeWidth={1.5}
-                          className="text-muted-foreground"
-                        />
-                        Hide Banner
-                      </DropdownItem>
-                      <DropdownSeparator />
-                    </>
-                  )}
-                  {!showBanner && (
-                    <>
-                      <DropdownItem
-                        onClick={() => {
-                          useSettingsStore.getState().setShowBanner(true);
-                          toast.success("Banner shown");
-                        }}
-                      >
-                        <HugeiconsIcon
-                          icon={Download01Icon}
-                          size={16}
-                          color="currentColor"
-                          strokeWidth={1.5}
-                          className="text-muted-foreground"
-                        />
-                        Show Banner
-                      </DropdownItem>
-                      <DropdownSeparator />
-                    </>
-                  )}
                   <DropdownItem onClick={handleExport}>
                     <HugeiconsIcon
                       icon={Download01Icon}
@@ -395,13 +355,30 @@ export function Editor({ noteId, content }: EditorProps) {
 
         {/* Editor Content - Notion style */}
         <div className="flex-1 overflow-y-auto">
-          {!focusMode && showBanner && (
-            <FingerprintBanner
-              noteId={noteId}
-              title={activeTab?.title || ""}
-              content={content}
-              isEditing={!!editorInstance}
-            />
+          {!focusMode && bannerType !== "none" && (
+            <>
+              {bannerType.startsWith("gradient-") && (
+                <FingerprintBanner
+                  noteId={noteId}
+                  title={activeTab?.title || ""}
+                  content={content}
+                  isEditing={!!editorInstance}
+                  gradientIndex={parseInt(bannerType.replace("gradient-", ""))}
+                  onBannerChange={handleBannerChange}
+                  currentBanner={bannerType}
+                />
+              )}
+              {bannerType.startsWith("japanese-print-") && (
+                <JapanesePrintBanner
+                  printId={bannerType.replace("japanese-print-", "")}
+                  title={activeTab?.title || ""}
+                  noteId={noteId}
+                  content={content}
+                  onBannerChange={handleBannerChange}
+                  currentBanner={bannerType}
+                />
+              )}
+            </>
           )}
           <div className="max-w-[900px] mx-auto px-12 py-8">
             {/* Title Editor */}
@@ -409,8 +386,11 @@ export function Editor({ noteId, content }: EditorProps) {
               ref={titleRef}
               title={activeTab?.title || ""}
               noteId={noteId}
+              content={content}
               onTitleChange={handleTitleChange}
               onEnter={handleTitleEnter}
+              onBannerChange={handleBannerChange}
+              currentBanner={bannerType}
             />
 
             {/* Content Editor */}

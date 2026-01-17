@@ -5,6 +5,7 @@ import {
   loadAppState,
   type AppState,
 } from "../lib/app-state-persistence";
+import { BannerType } from "@/components/editor/BannerSelector";
 
 export interface Tab {
   id: string; // Note ID
@@ -12,6 +13,7 @@ export interface Tab {
   content: string; // TipTap JSON
   updatedAt: number;
   isDirty?: boolean; // Has unsaved changes
+  bannerType: BannerType | "none";
 }
 
 interface TabStore {
@@ -88,6 +90,9 @@ export const useTabStore = create<TabStore>((set, get) => ({
         content: note.content,
         updatedAt: note.updated_at,
         isDirty: false,
+        bannerType: note.banner_type
+          ? (note.banner_type as BannerType)
+          : "none",
       };
 
       // Add to open tabs and make it active
