@@ -69,34 +69,19 @@ pub async fn save_note_visual_identity(
 }
 
 /// Regenerate visual identity for a note
+/// This deletes the old identity so the frontend will regenerate it
 #[tauri::command]
 pub async fn regenerate_note_visual_identity(
     state: State<'_, AppState>,
     note_id: String,
-) -> Result<VisualIdentitySeed, String> {
-    // Get note data
-    let note = state
-        .db
-        .get_note_content(&note_id)
-        .map_err(|e| format!("Failed to get note: {}", e))?
-        .ok_or_else(|| "Note not found".to_string())?;
-
-    let note_metadata = state
-        .db
-        .get_note_metadata(&note_id)
-        .map_err(|e| format!("Failed to get note metadata: {}", e))?
-        .ok_or_else(|| "Note metadata not found".to_string())?;
-
-    // Generate new seed
-    let seed = generate_visual_identity_seed(&note_metadata.title, &note);
-
-    // Delete old identity
+) -> Result<(), String> {
+    // Delete old identity (frontend will regenerate on next access)
     state
         .db
         .delete_visual_identity(&note_id)
         .map_err(|e| format!("Failed to delete old visual identity: {}", e))?;
 
-    Ok(seed)
+    Ok(())
 }
 
 /// Regenerate visual identities for all notes (batch operation)

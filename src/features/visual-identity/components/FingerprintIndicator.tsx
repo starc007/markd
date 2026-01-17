@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { NoteFingerprint } from "./NoteFingerprint";
+import { CSSFingerprint } from "./CSSFingerprint";
 
 interface FingerprintIndicatorProps {
   noteId: string;
@@ -24,11 +24,12 @@ export const FingerprintIndicator = memo(function FingerprintIndicator({
         transition: "opacity 0.2s ease-in-out",
       }}
     >
-      <NoteFingerprint
+      <CSSFingerprint
         noteId={noteId}
         title={title}
         content={content}
-        size={16}
+        width={16}
+        height={16}
         variant="indicator"
         style={{
           flexShrink: 0,

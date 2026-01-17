@@ -1,38 +1,28 @@
 import { memo } from "react";
-import { motion } from "framer-motion";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   MoreVerticalIcon,
   DeleteIcon,
-  Tick02Icon,
   Add01Icon,
+  FileEditIcon,
+  FolderIcon,
 } from "@hugeicons/core-free-icons";
 import type { NoteMetadata } from "../../lib/tauri/commands";
-import { getNoteColor, NOTE_COLORS } from "../../lib/config";
-import type { NoteColorId } from "../../lib/config";
+
 import {
   IconButton,
   Dropdown,
   DropdownTrigger,
   DropdownContent,
   DropdownItem,
-  DropdownSeparator,
-  DropdownLabel,
 } from "../ui";
 import { ChevronDownIcon } from "../tiptap-icons/chevron-down-icon";
 import { ChevronRightIcon } from "../tiptap-icons/chevron-right-icon";
-import { FingerprintThumbnail } from "../../features/visual-identity/components/FingerprintThumbnail";
 
 interface NoteListItemProps {
   note: NoteMetadata;
   isActive: boolean;
-  colorId: NoteColorId;
   onNoteClick: (noteId: string) => void;
-  onColorSelect: (
-    noteId: string,
-    colorId: NoteColorId,
-    e: React.MouseEvent
-  ) => void;
   onDeleteClick: (noteId: string) => void;
   className?: string;
   onCreateSubpage: (parentId: string) => void;
@@ -44,9 +34,7 @@ interface NoteListItemProps {
 export const NoteListItem = memo(function NoteListItem({
   note,
   isActive,
-  colorId,
   onNoteClick,
-  onColorSelect,
   onDeleteClick,
   className = "",
   onCreateSubpage,
@@ -54,8 +42,6 @@ export const NoteListItem = memo(function NoteListItem({
   hasChildren,
   onToggleExpand,
 }: NoteListItemProps) {
-  const color = getNoteColor(colorId);
-
   return (
     <div className={`group relative ${className}`}>
       <button
@@ -68,7 +54,7 @@ export const NoteListItem = memo(function NoteListItem({
       >
         {/* Toggle button - shown on hover, replaces color indicator */}
         {hasChildren && (
-          <div className="w-1 h-5 flex items-center justify-center shrink-0 relative [-webkit-app-region:no-drag]">
+          <div className="w-4 h-4 flex items-center justify-center shrink-0 relative [-webkit-app-region:no-drag]">
             <div className="absolute inset-0 items-center justify-center hidden group-hover:flex transition-opacity duration-200 ease-in-out">
               <IconButton
                 size="sm"
@@ -77,7 +63,7 @@ export const NoteListItem = memo(function NoteListItem({
                   onToggleExpand(note.id);
                 }}
                 title={isExpanded ? "Collapse" : "Expand"}
-                className="rounded-sm !p-1 ml-1"
+                className="rounded-sm !p-1"
               >
                 {isExpanded ? (
                   <ChevronDownIcon className="w-4 h-4" />
@@ -86,22 +72,26 @@ export const NoteListItem = memo(function NoteListItem({
                 )}
               </IconButton>
             </div>
-            {/* Fingerprint thumbnail - hidden on hover */}
-            <div className="block group-hover:hidden transition-opacity duration-200 ease-in-out">
-              <FingerprintThumbnail
-                noteId={note.id}
-                title={note.title}
-                content={note.preview || ""}
+            {/* File/Folder icon - hidden on hover */}
+            <div className="block group-hover:hidden transition-opacity duration-200 ease-in-out shrink-0">
+              <HugeiconsIcon
+                icon={hasChildren ? FolderIcon : FileEditIcon}
+                size={16}
+                color="currentColor"
+                strokeWidth={1.5}
+                className="text-muted-foreground"
               />
             </div>
           </div>
         )}
-        {/* Fingerprint thumbnail for items without children */}
+        {/* File/Folder icon for items without children */}
         {!hasChildren && (
-          <FingerprintThumbnail
-            noteId={note.id}
-            title={note.title}
-            content={note.preview || ""}
+          <HugeiconsIcon
+            icon={FileEditIcon}
+            size={16}
+            color="currentColor"
+            strokeWidth={1.5}
+            className="text-muted-foreground shrink-0"
           />
         )}
         <div className="flex-1 min-w-0 pl-1.5">
@@ -153,36 +143,6 @@ export const NoteListItem = memo(function NoteListItem({
               </DropdownTrigger>
 
               <DropdownContent align="end" className="w-48">
-                <DropdownLabel>Background Color</DropdownLabel>
-                <div className="px-2 pb-2" onClick={(e) => e.stopPropagation()}>
-                  <div className="grid grid-cols-7 gap-1">
-                    {NOTE_COLORS.map((c) => (
-                      <motion.button
-                        key={c.id}
-                        onClick={(e) => onColorSelect(note.id, c.id, e)}
-                        className="w-5 h-5 rounded-md border border-border/50 hover:border-ring/50 flex items-center justify-center"
-                        style={{ backgroundColor: c.darkHeader }}
-                        title={c.name}
-                        whileHover={{ scale: 1.15 }}
-                        whileTap={{ scale: 0.95 }}
-                        transition={{ duration: 0.1 }}
-                      >
-                        {colorId === c.id && (
-                          <HugeiconsIcon
-                            icon={Tick02Icon}
-                            size={12}
-                            color="currentColor"
-                            strokeWidth={1.5}
-                            className="text-foreground/70"
-                          />
-                        )}
-                      </motion.button>
-                    ))}
-                  </div>
-                </div>
-
-                <DropdownSeparator />
-
                 <DropdownItem
                   onClick={(e) => {
                     e?.stopPropagation();

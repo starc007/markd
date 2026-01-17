@@ -5,6 +5,7 @@ import {
   DeleteIcon,
   Download01Icon,
 } from "@hugeicons/core-free-icons";
+import { RefreshCcwIcon } from "../tiptap-icons/refresh-ccw-icon";
 import { save } from "@tauri-apps/plugin-dialog";
 import { useNoteStore } from "@/stores/noteStore";
 import { useTabStore } from "@/stores/tabStore";
@@ -26,6 +27,9 @@ import { WordCountStats } from "./WordCountStats";
 import { AppProvider } from "@/context/app-context";
 import { formatRelativeTime } from "@/lib/utils";
 import { FingerprintBanner } from "@/features/visual-identity/components/FingerprintBanner";
+import { useSettingsStore } from "@/stores/settingsStore";
+import { useVisualIdentityStore } from "@/features/visual-identity/stores/visualIdentityStore";
+import { toast } from "sonner";
 
 interface EditorProps {
   noteId: string;
@@ -44,6 +48,9 @@ export function Editor({ noteId, content }: EditorProps) {
   const focusMode = useUIStore((state) => state.focusMode);
   const activeTab = useTabStore((state) => state.getActiveTab());
   const { updateTabContent, updateTabTitle, getTab } = useTabStore();
+  const showBanner = useSettingsStore((state) => state.showBanner);
+  const { regenerateFingerprint, invalidateFingerprint } =
+    useVisualIdentityStore();
 
   const updatedAt = activeTab?.updatedAt || 0;
 
@@ -139,6 +146,20 @@ export function Editor({ noteId, content }: EditorProps) {
       await useNoteStore.getState().exportCurrentNote(filePath);
     }
   }, []);
+
+  // Handle regenerate fingerprint
+  const handleRegenerateFingerprint = useCallback(async () => {
+    try {
+      const activeTab = useTabStore.getState().getActiveTab();
+      if (!activeTab) return;
+
+      invalidateFingerprint(noteId);
+      await regenerateFingerprint(noteId, activeTab.title || "", content || "");
+    } catch (error) {
+      console.error("Failed to regenerate fingerprint:", error);
+      toast.error("Failed to regenerate banner");
+    }
+  }, [noteId, content, invalidateFingerprint, regenerateFingerprint]);
 
   // Content save handler (already debounced in EditorContent)
   const handleContentChange = useCallback(
@@ -297,6 +318,50 @@ export function Editor({ noteId, content }: EditorProps) {
                 </DropdownTrigger>
 
                 <DropdownContent align="end" className="w-48">
+                  {showBanner && (
+                    <>
+                      <DropdownItem onClick={handleRegenerateFingerprint}>
+                        <RefreshCcwIcon className="w-4 h-4 text-muted-foreground" />
+                        Regenerate Banner
+                      </DropdownItem>
+                      <DropdownItem
+                        onClick={() => {
+                          useSettingsStore.getState().setShowBanner(false);
+                          toast.success("Banner hidden");
+                        }}
+                      >
+                        <HugeiconsIcon
+                          icon={Download01Icon}
+                          size={16}
+                          color="currentColor"
+                          strokeWidth={1.5}
+                          className="text-muted-foreground"
+                        />
+                        Hide Banner
+                      </DropdownItem>
+                      <DropdownSeparator />
+                    </>
+                  )}
+                  {!showBanner && (
+                    <>
+                      <DropdownItem
+                        onClick={() => {
+                          useSettingsStore.getState().setShowBanner(true);
+                          toast.success("Banner shown");
+                        }}
+                      >
+                        <HugeiconsIcon
+                          icon={Download01Icon}
+                          size={16}
+                          color="currentColor"
+                          strokeWidth={1.5}
+                          className="text-muted-foreground"
+                        />
+                        Show Banner
+                      </DropdownItem>
+                      <DropdownSeparator />
+                    </>
+                  )}
                   <DropdownItem onClick={handleExport}>
                     <HugeiconsIcon
                       icon={Download01Icon}
@@ -330,7 +395,7 @@ export function Editor({ noteId, content }: EditorProps) {
 
         {/* Editor Content - Notion style */}
         <div className="flex-1 overflow-y-auto">
-          {!focusMode && (
+          {!focusMode && showBanner && (
             <FingerprintBanner
               noteId={noteId}
               title={activeTab?.title || ""}
@@ -338,33 +403,29 @@ export function Editor({ noteId, content }: EditorProps) {
               isEditing={!!editorInstance}
             />
           )}
-          <div className="max-w-[900px] mx-auto">
-            {/* Fingerprint Banner */}
+          <div className="max-w-[900px] mx-auto px-12 py-8">
+            {/* Title Editor */}
+            <EditorTitle
+              ref={titleRef}
+              title={activeTab?.title || ""}
+              noteId={noteId}
+              onTitleChange={handleTitleChange}
+              onEnter={handleTitleEnter}
+            />
 
-            <div className="px-12 py-8">
-              {/* Title Editor */}
-              <EditorTitle
-                ref={titleRef}
-                title={activeTab?.title || ""}
+            {/* Content Editor */}
+            <AppProvider>
+              <EditorContent
+                ref={editorRef}
                 noteId={noteId}
-                onTitleChange={handleTitleChange}
-                onEnter={handleTitleEnter}
+                content={content}
+                onContentChange={handleContentChange}
               />
+            </AppProvider>
 
-              {/* Content Editor */}
-              <AppProvider>
-                <EditorContent
-                  ref={editorRef}
-                  noteId={noteId}
-                  content={content}
-                  onContentChange={handleContentChange}
-                />
-              </AppProvider>
-
-              {/* Word Count Stats */}
-              <div className="mt-6 pt-4 border-t border-border/50">
-                <WordCountStats editor={editorInstance} />
-              </div>
+            {/* Word Count Stats */}
+            <div className="mt-6 pt-4 border-t border-border/50">
+              <WordCountStats editor={editorInstance} />
             </div>
           </div>
         </div>

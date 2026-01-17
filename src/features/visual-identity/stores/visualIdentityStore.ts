@@ -1,34 +1,57 @@
 import { create } from "zustand";
-import { invoke } from "@tauri-apps/api/core";
-import type { FingerprintData } from "../utils/canvas";
-import { generateFingerprint } from "../utils/canvas";
-import { hashToSeeds } from "../generators/core";
+import type { PatternType } from "../generators/core";
+import {
+  generateGradient,
+  hashToSeeds,
+  selectPatternType,
+} from "../generators/core";
+import * as commands from "@/lib/tauri/commands";
+
+export interface FingerprintData {
+  gradientColors: string[];
+  patternType: PatternType;
+  patternData: Record<string, unknown>;
+}
 
 interface VisualIdentityState {
   fingerprints: Map<string, FingerprintData>;
   loading: Set<string>;
+  regenerationTriggers: Map<string, number>; // Track regeneration count per note
   getFingerprint: (
     noteId: string,
     title: string,
     content: string,
-    size: number
+    _size?: number // Size is optional, kept for backward compatibility
   ) => Promise<FingerprintData>;
   preloadFingerprints: (
-    notes: Array<{ id: string; title: string; content?: string }>
+    notes: Array<{
+      id: string;
+      title: string;
+      content?: string;
+      preview?: string;
+    }>
   ) => Promise<void>;
   invalidateFingerprint: (noteId: string) => void;
+  regenerateFingerprint: (
+    noteId: string,
+    title: string,
+    content: string,
+    _size?: number // Size is optional, kept for backward compatibility
+  ) => Promise<FingerprintData>;
+  getRegenerationTrigger: (noteId: string) => number;
 }
 
 export const useVisualIdentityStore = create<VisualIdentityState>(
   (set, get) => ({
     fingerprints: new Map(),
     loading: new Set(),
+    regenerationTriggers: new Map(),
 
     getFingerprint: async (
       noteId: string,
       title: string,
       content: string,
-      size: number
+      _size?: number
     ): Promise<FingerprintData> => {
       const state = get();
 
@@ -58,25 +81,21 @@ export const useVisualIdentityStore = create<VisualIdentityState>(
       }));
 
       try {
-        // Try to get from database first
+        // Normalize content - use empty string if content is empty/null
+        const normalizedContent = content || "";
+        const normalizedTitle = title || "Untitled";
+
+        // Try to get from backend first
         let fingerprint: FingerprintData | null = null;
         try {
-          const stored = await invoke<{
-            gradient_colors: string[];
-            pattern_type: string;
-            pattern_data: string | null;
-            image_data: string | null;
-          } | null>("get_note_visual_identity", { noteId });
-
-          if (stored && stored.image_data) {
+          const stored = await commands.getNoteVisualIdentity(noteId);
+          if (stored) {
             fingerprint = {
               gradientColors: stored.gradient_colors,
-              patternType:
-                stored.pattern_type as FingerprintData["patternType"],
+              patternType: stored.pattern_type as PatternType,
               patternData: stored.pattern_data
                 ? JSON.parse(stored.pattern_data)
                 : {},
-              imageData: stored.image_data,
             };
           }
         } catch (error) {
@@ -85,37 +104,37 @@ export const useVisualIdentityStore = create<VisualIdentityState>(
 
         // If not in database, generate new one
         if (!fingerprint) {
-          // Get seed from backend
-          const seedData = await invoke<{
-            seeds: number[];
-            hash: string;
-          }>("generate_note_visual_identity_seed", {
-            params: {
-              note_id: noteId,
-              title,
-              content,
+          // For empty content, use noteId + title for deterministic generation
+          const contentForHash =
+            normalizedContent || `${noteId}${normalizedTitle}`;
+
+          // Generate hash and seeds
+          const hashString = `${normalizedTitle}${contentForHash}`;
+          const seeds = hashToSeeds(hashString);
+          const patternType = selectPatternType(seeds[0]);
+          const gradient = generateGradient(seeds);
+
+          fingerprint = {
+            gradientColors: gradient.colors,
+            patternType,
+            patternData: {
+              seed: seeds[0],
+              hash: hashString,
             },
-          });
+          };
 
-          // Generate fingerprint
-          fingerprint = await generateFingerprint(
-            noteId,
-            title,
-            content,
-            size,
-            seedData.hash
-          );
-
-          // Save to database (fire and forget)
-          invoke("save_note_visual_identity", {
-            noteId,
-            gradientColors: fingerprint.gradientColors,
-            patternType: fingerprint.patternType,
-            patternData: JSON.stringify(fingerprint.patternData),
-            imageData: fingerprint.imageData,
-          }).catch((error) => {
-            console.warn("Failed to save visual identity:", error);
-          });
+          // Save to backend (fire and forget)
+          commands
+            .saveNoteVisualIdentity(
+              noteId,
+              fingerprint.gradientColors,
+              fingerprint.patternType,
+              JSON.stringify(fingerprint.patternData),
+              null // No image_data for CSS patterns
+            )
+            .catch((error) => {
+              console.warn("Failed to save visual identity:", error);
+            });
         }
 
         // Cache it
@@ -149,22 +168,71 @@ export const useVisualIdentityStore = create<VisualIdentityState>(
     },
 
     preloadFingerprints: async (
-      notes: Array<{ id: string; title: string; content?: string }>
+      notes: Array<{
+        id: string;
+        title: string;
+        content?: string;
+        preview?: string;
+      }>
     ): Promise<void> => {
       const state = get();
+      // Use preview for faster generation (it's already available in metadata)
       const promises = notes.map((note) => {
         if (state.fingerprints.has(note.id)) {
           return Promise.resolve();
         }
+        // Use preview if available, otherwise empty string (will still generate)
+        const contentForFingerprint = note.preview || note.content || "";
         return state.getFingerprint(
           note.id,
-          note.title,
-          note.content || "",
+          note.title || "Untitled",
+          contentForFingerprint,
           64 // Standard size for preloading
         );
       });
 
       await Promise.all(promises);
+    },
+
+    regenerateFingerprint: async (
+      noteId: string,
+      title: string,
+      content: string,
+      _size?: number
+    ): Promise<FingerprintData> => {
+      // Invalidate cache first
+      get().invalidateFingerprint(noteId);
+
+      // Delete from backend to force regeneration
+      try {
+        await commands.regenerateNoteVisualIdentity(noteId);
+      } catch (error) {
+        console.warn("Failed to delete old visual identity:", error);
+      }
+
+      // Increment regeneration trigger to force component re-render
+      set((state) => {
+        const newTriggers = new Map(state.regenerationTriggers);
+        const currentTrigger = newTriggers.get(noteId) || 0;
+        newTriggers.set(noteId, currentTrigger + 1);
+        return { regenerationTriggers: newTriggers };
+      });
+
+      // Force regeneration by getting fingerprint (will generate new one)
+      const normalizedContent = content || "";
+      const normalizedTitle = title || "Untitled";
+      const fingerprint = await get().getFingerprint(
+        noteId,
+        normalizedTitle,
+        normalizedContent,
+        _size
+      );
+
+      return fingerprint;
+    },
+
+    getRegenerationTrigger: (noteId: string) => {
+      return get().regenerationTriggers.get(noteId) || 0;
     },
 
     invalidateFingerprint: (noteId: string) => {

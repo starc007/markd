@@ -383,3 +383,61 @@ export interface AppVersion {
 export async function getAppVersion(): Promise<AppVersion> {
   return invoke<AppVersion>("get_app_version");
 }
+
+// Visual identity commands
+export interface NoteVisualIdentity {
+  note_id: string;
+  gradient_colors: string[];
+  pattern_type: string;
+  pattern_data: string | null;
+  image_data: string | null;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface VisualIdentitySeed {
+  seeds: number[];
+  hash: string;
+}
+
+export async function generateNoteVisualIdentitySeed(params: {
+  note_id: string;
+  title: string;
+  content: string;
+}): Promise<VisualIdentitySeed> {
+  return invoke<VisualIdentitySeed>("generate_note_visual_identity_seed", {
+    params,
+  });
+}
+
+export async function getNoteVisualIdentity(
+  noteId: string
+): Promise<NoteVisualIdentity | null> {
+  return invoke<NoteVisualIdentity | null>("get_note_visual_identity", {
+    note_id: noteId,
+  });
+}
+
+export async function saveNoteVisualIdentity(
+  noteId: string,
+  gradientColors: string[],
+  patternType: string,
+  patternData: string | null,
+  imageData: string | null = null
+): Promise<void> {
+  return invoke<void>("save_note_visual_identity", {
+    note_id: noteId,
+    gradient_colors: gradientColors,
+    pattern_type: patternType,
+    pattern_data: patternData,
+    image_data: imageData,
+  });
+}
+
+export async function regenerateNoteVisualIdentity(
+  noteId: string
+): Promise<void> {
+  return invoke<void>("regenerate_note_visual_identity", {
+    note_id: noteId,
+  });
+}

@@ -4,7 +4,6 @@ import { Virtuoso } from "react-virtuoso";
 import type { NoteMetadata } from "../../lib/tauri/commands";
 import { NoteListItem } from "./NoteListItem";
 import { SectionHeading } from "../ui";
-import type { NoteColorId } from "../../lib/config";
 
 interface HierarchicalNote extends NoteMetadata {
   depth: number;
@@ -17,13 +16,7 @@ interface HierarchicalNotesListProps {
   childrenMap: Map<string, NoteMetadata[]>;
   expandedPages: Set<string>;
   currentNoteId: string | null;
-  getColor: (noteId: string) => NoteColorId;
   onNoteClick: (noteId: string) => void;
-  onColorSelect: (
-    noteId: string,
-    colorId: NoteColorId,
-    e: React.MouseEvent
-  ) => void;
   onDeleteClick: (noteId: string) => void;
   onToggleExpand: (pageId: string) => void;
   onCreateSubpage: (parentId: string) => void;
@@ -66,9 +59,7 @@ export const HierarchicalNotesList = memo(function HierarchicalNotesList({
   childrenMap,
   expandedPages,
   currentNoteId,
-  getColor,
   onNoteClick,
-  onColorSelect,
   onDeleteClick,
   onToggleExpand,
   onCreateSubpage,
@@ -97,7 +88,6 @@ export const HierarchicalNotesList = memo(function HierarchicalNotesList({
 
   const renderNote = (note: HierarchicalNote, _index?: number) => {
     const isActive = currentNoteId === note.id;
-    const colorId = getColor(note.id);
     const indent = note.depth * 16; // 16px per level
 
     return (
@@ -111,9 +101,7 @@ export const HierarchicalNotesList = memo(function HierarchicalNotesList({
           <NoteListItem
             note={note}
             isActive={isActive}
-            colorId={colorId}
             onNoteClick={onNoteClick}
-            onColorSelect={onColorSelect}
             onDeleteClick={onDeleteClick}
             onCreateSubpage={onCreateSubpage}
             isExpanded={note.isExpanded}

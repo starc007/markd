@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { NoteFingerprint } from "./NoteFingerprint";
+import { CSSFingerprint } from "./CSSFingerprint";
 
 interface FingerprintThumbnailProps {
   noteId: string;
@@ -14,12 +14,16 @@ export const FingerprintThumbnail = memo(function FingerprintThumbnail({
   content,
   className = "",
 }: FingerprintThumbnailProps) {
+  // Use empty string if content is not provided (will use noteId+title for hash)
+  const contentForFingerprint = content || "";
+
   return (
-    <NoteFingerprint
+    <CSSFingerprint
       noteId={noteId}
-      title={title}
-      content={content}
-      size={20}
+      title={title || "Untitled"}
+      content={contentForFingerprint}
+      width={20}
+      height={20}
       variant="thumbnail"
       className={className}
       style={{

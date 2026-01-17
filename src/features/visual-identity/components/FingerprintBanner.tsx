@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { NoteFingerprint } from "./NoteFingerprint";
+import { CSSFingerprint } from "./CSSFingerprint";
 
 interface FingerprintBannerProps {
   noteId: string;
@@ -29,11 +29,12 @@ export const FingerprintBanner = memo(function FingerprintBanner({
       className={`relative w-full overflow-hidden ${className}`}
       style={{ height: `${height}px` }}
     >
-      <NoteFingerprint
+      <CSSFingerprint
         noteId={noteId}
-        title={title}
-        content={content}
-        size={size}
+        title={title || "Untitled"}
+        content={content || ""}
+        width={width}
+        height={height}
         variant="banner"
         isEditing={isEditing}
         style={{
