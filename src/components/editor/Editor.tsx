@@ -25,6 +25,7 @@ import { EditorContent, type EditorContentRef } from "./EditorContent";
 import { WordCountStats } from "./WordCountStats";
 import { AppProvider } from "@/context/app-context";
 import { formatRelativeTime } from "@/lib/utils";
+import { FingerprintBanner } from "@/features/visual-identity/components/FingerprintBanner";
 
 interface EditorProps {
   noteId: string;
@@ -329,29 +330,41 @@ export function Editor({ noteId, content }: EditorProps) {
 
         {/* Editor Content - Notion style */}
         <div className="flex-1 overflow-y-auto">
-          <div className="max-w-[900px] mx-auto px-12 py-8">
-            {/* Title Editor */}
-            <EditorTitle
-              ref={titleRef}
-              title={activeTab?.title || ""}
+          {!focusMode && (
+            <FingerprintBanner
               noteId={noteId}
-              onTitleChange={handleTitleChange}
-              onEnter={handleTitleEnter}
+              title={activeTab?.title || ""}
+              content={content}
+              isEditing={!!editorInstance}
             />
+          )}
+          <div className="max-w-[900px] mx-auto">
+            {/* Fingerprint Banner */}
 
-            {/* Content Editor */}
-            <AppProvider>
-              <EditorContent
-                ref={editorRef}
+            <div className="px-12 py-8">
+              {/* Title Editor */}
+              <EditorTitle
+                ref={titleRef}
+                title={activeTab?.title || ""}
                 noteId={noteId}
-                content={content}
-                onContentChange={handleContentChange}
+                onTitleChange={handleTitleChange}
+                onEnter={handleTitleEnter}
               />
-            </AppProvider>
 
-            {/* Word Count Stats */}
-            <div className="mt-6 pt-4 border-t border-border/50">
-              <WordCountStats editor={editorInstance} />
+              {/* Content Editor */}
+              <AppProvider>
+                <EditorContent
+                  ref={editorRef}
+                  noteId={noteId}
+                  content={content}
+                  onContentChange={handleContentChange}
+                />
+              </AppProvider>
+
+              {/* Word Count Stats */}
+              <div className="mt-6 pt-4 border-t border-border/50">
+                <WordCountStats editor={editorInstance} />
+              </div>
             </div>
           </div>
         </div>

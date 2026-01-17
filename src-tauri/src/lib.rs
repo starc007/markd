@@ -12,6 +12,7 @@ use commands::notes::*;
 use commands::page_links::*;
 use commands::search::*;
 use commands::sticky_notes::*;
+use commands::visual_identity::*;
 use state::AppState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -82,6 +83,12 @@ pub fn run() {
             update_bookmark,
             delete_bookmark,
             list_bookmarks,
+            // Visual identity commands
+            generate_note_visual_identity_seed,
+            get_note_visual_identity,
+            save_note_visual_identity,
+            regenerate_note_visual_identity,
+            regenerate_all_visual_identities,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

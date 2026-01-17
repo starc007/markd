@@ -21,6 +21,7 @@ import {
 } from "../ui";
 import { ChevronDownIcon } from "../tiptap-icons/chevron-down-icon";
 import { ChevronRightIcon } from "../tiptap-icons/chevron-right-icon";
+import { FingerprintThumbnail } from "../../features/visual-identity/components/FingerprintThumbnail";
 
 interface NoteListItemProps {
   note: NoteMetadata;
@@ -85,18 +86,22 @@ export const NoteListItem = memo(function NoteListItem({
                 )}
               </IconButton>
             </div>
-            {/* Color indicator - hidden on hover */}
-            <div
-              className="w-1 h-5 rounded-full shrink-0 block group-hover:hidden transition-opacity duration-200 ease-in-out"
-              style={{ backgroundColor: color.darkHeader }}
-            />
+            {/* Fingerprint thumbnail - hidden on hover */}
+            <div className="block group-hover:hidden transition-opacity duration-200 ease-in-out">
+              <FingerprintThumbnail
+                noteId={note.id}
+                title={note.title}
+                content={note.preview || ""}
+              />
+            </div>
           </div>
         )}
-        {/* Color indicator for items without children */}
+        {/* Fingerprint thumbnail for items without children */}
         {!hasChildren && (
-          <div
-            className="w-1 h-5 rounded-full shrink-0"
-            style={{ backgroundColor: color.darkHeader }}
+          <FingerprintThumbnail
+            noteId={note.id}
+            title={note.title}
+            content={note.preview || ""}
           />
         )}
         <div className="flex-1 min-w-0 pl-1.5">

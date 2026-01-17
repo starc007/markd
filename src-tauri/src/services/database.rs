@@ -1258,6 +1258,92 @@ impl Database {
 
         Ok(())
     }
+
+    // Visual identity operations
+    pub fn insert_visual_identity(
+        &self,
+        note_id: &str,
+        gradient_colors: &[String],
+        pattern_type: &str,
+        pattern_data: Option<&str>,
+        image_data: Option<&str>,
+        created_at: i64,
+        updated_at: i64,
+    ) -> Result<()> {
+        let conn = acquire_lock!(self.conn);
+        let gradient_colors_json = serde_json::to_string(gradient_colors)
+            .map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(e)))?;
+        
+        conn.execute(
+            "INSERT OR REPLACE INTO note_visual_identity 
+             (note_id, gradient_colors, pattern_type, pattern_data, image_data, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![
+                note_id,
+                gradient_colors_json,
+                pattern_type,
+                pattern_data,
+                image_data,
+                created_at,
+                updated_at
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_visual_identity(&self, note_id: &str) -> Result<Option<crate::models::visual_identity::NoteVisualIdentity>> {
+        let conn = acquire_lock!(self.conn);
+        let mut stmt = conn.prepare(
+            "SELECT note_id, gradient_colors, pattern_type, pattern_data, image_data, created_at, updated_at
+             FROM note_visual_identity WHERE note_id = ?1"
+        )?;
+
+        let result = stmt.query_row(params![note_id], |row| {
+            let gradient_colors_json: String = row.get(1)?;
+            let gradient_colors: Vec<String> = serde_json::from_str(&gradient_colors_json)
+                .unwrap_or_else(|_| vec![]);
+            
+            Ok(crate::models::visual_identity::NoteVisualIdentity {
+                note_id: row.get(0)?,
+                gradient_colors,
+                pattern_type: row.get(2)?,
+                pattern_data: row.get(3)?,
+                image_data: row.get(4)?,
+                created_at: row.get(5)?,
+                updated_at: row.get(6)?,
+            })
+        });
+
+        match result {
+            Ok(identity) => Ok(Some(identity)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(e) => Err(e),
+        }
+    }
+
+    pub fn delete_visual_identity(&self, note_id: &str) -> Result<()> {
+        let conn = acquire_lock!(self.conn);
+        conn.execute(
+            "DELETE FROM note_visual_identity WHERE note_id = ?1",
+            params![note_id],
+        )?;
+        Ok(())
+    }
+
+    pub fn list_all_note_ids(&self) -> Result<Vec<String>> {
+        let conn = acquire_lock!(self.conn);
+        let mut stmt = conn.prepare("SELECT id FROM notes")?;
+        let mut note_ids = Vec::new();
+        let rows = stmt.query_map([], |row| {
+            Ok(row.get::<_, String>(0)?)
+        })?;
+
+        for row in rows {
+            note_ids.push(row?);
+        }
+
+        Ok(note_ids)
+    }
 }
 
 // Helper function to recursively update page link titles in JSON
