@@ -18,16 +18,11 @@ export type BannerType =
 interface BannerSelectorProps {
   currentBanner?: BannerType;
   onSelect: (type: BannerType) => void;
-  noteId: string;
-  title: string;
-  content: string;
 }
 
 export function BannerSelector({
   onSelect,
-  noteId,
-  title,
-  content,
+
   currentBanner,
 }: BannerSelectorProps) {
   const isNone = currentBanner === "none";
@@ -64,15 +59,7 @@ export function BannerSelector({
                 onClick={() => onSelect(`gradient-${index}` as BannerType)}
               >
                 <div className="w-full aspect-5/2 rounded-lg overflow-hidden border-2 border-border group-hover:border-primary transition-colors relative">
-                  <CSSFingerprint
-                    noteId={noteId}
-                    title={title || "Untitled"}
-                    content={content || ""}
-                    width={200}
-                    height={80}
-                    variant="banner"
-                    gradientIndex={index}
-                  />
+                  <CSSFingerprint width={200} height={80} variant="banner" />
                 </div>
               </div>
             ))}

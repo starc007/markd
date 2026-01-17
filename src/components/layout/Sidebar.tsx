@@ -7,7 +7,7 @@ import { useUIStore, UIView } from "@/stores/uiStore";
 import { useNoteColors } from "@/hooks/useNoteColors";
 import { useStickyNotesStore } from "../../features/sticky-notes/stores/stickyNotesStore";
 import { useBookmarkStore } from "@/features/bookmarks/stores/bookmarkStore";
-import { useVisualIdentityStore } from "@/features/visual-identity/stores/visualIdentityStore";
+
 import { Button } from "../ui";
 import { DeleteNoteModal } from "@/components/DeleteNoteModal";
 import { SidebarSearch } from "./SidebarSearch";
@@ -29,7 +29,7 @@ export const Sidebar = memo(function Sidebar() {
   const { removeColor } = useNoteColors();
   const { stickyNotes, loadStickyNotes } = useStickyNotesStore();
   const { bookmarks, loadBookmarks } = useBookmarkStore();
-  const { preloadFingerprints } = useVisualIdentityStore();
+
   const [deleteModalNoteId, setDeleteModalNoteId] = useState<string | null>(
     null
   );
@@ -41,22 +41,6 @@ export const Sidebar = memo(function Sidebar() {
     loadStickyNotes();
     loadBookmarks(undefined);
   }, [loadStickyNotes, loadBookmarks]);
-
-  // Preload fingerprints when notes change
-  useEffect(() => {
-    if (notes.length > 0) {
-      // Preload fingerprints for all notes (use preview for faster generation)
-      preloadFingerprints(
-        notes.map((note) => ({
-          id: note.id,
-          title: note.title,
-          preview: note.preview || undefined,
-        }))
-      ).catch((error) => {
-        console.warn("Failed to preload fingerprints:", error);
-      });
-    }
-  }, [notes, preloadFingerprints]);
 
   const handleNewNote = useCallback(async () => {
     try {

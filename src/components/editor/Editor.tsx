@@ -359,10 +359,6 @@ export function Editor({ noteId, content }: EditorProps) {
             <>
               {bannerType.startsWith("gradient-") && (
                 <FingerprintBanner
-                  noteId={noteId}
-                  title={activeTab?.title || ""}
-                  content={content}
-                  isEditing={!!editorInstance}
                   gradientIndex={parseInt(bannerType.replace("gradient-", ""))}
                   onBannerChange={handleBannerChange}
                   currentBanner={bannerType}

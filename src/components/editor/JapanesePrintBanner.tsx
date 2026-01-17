@@ -55,9 +55,6 @@ export const JapanesePrintBanner = memo(function JapanesePrintBanner({
           <BannerSelector
             currentBanner={currentBanner}
             onSelect={onBannerChange}
-            noteId={noteId}
-            title={title}
-            content={content}
           />
         </div>
       )}

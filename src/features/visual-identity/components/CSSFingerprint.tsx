@@ -3,134 +3,56 @@
  * Generates beautiful patterns using pure CSS
  */
 
-import { useRef, useState, useEffect } from "react";
-import { generateCSSPattern } from "../utils/css-patterns";
-import { useVisualIdentityStore } from "../stores/visualIdentityStore";
-import type { CSSPatternData } from "../utils/css-patterns";
-
 interface CSSFingerprintProps {
-  noteId: string;
-  title: string;
-  content: string;
   width: number;
   height: number;
   variant?: "thumbnail" | "banner" | "indicator";
-  isEditing?: boolean;
   className?: string;
   style?: React.CSSProperties;
-  gradientIndex?: number; // Index for generating different gradient variations
 }
 
 export function CSSFingerprint({
-  noteId,
-  title,
-  content,
   width,
   height,
   variant = "thumbnail",
-  isEditing = false,
   className = "",
   style,
   gradientIndex = 0,
-}: CSSFingerprintProps) {
-  // Subscribe to regeneration trigger - this will trigger re-render when it changes
-  const regenerationTrigger = useVisualIdentityStore(
-    (state) => state.regenerationTriggers.get(noteId) || 0
-  );
+}: CSSFingerprintProps & { gradientIndex?: number }) {
+  // Fixed gradient colors - 6 predefined gradients, each is a mix of 2 colors
+  const fixedGradients = [
+    { colors: ["#84d2cc", "#914db3"] }, // Teal to Purple
+    { colors: ["#a8e6cf", "#dcedc1"] }, // Mint to Light Green
+    { colors: ["#ffd3b6", "#ffaaa5"] }, // Peach to Coral
+    { colors: ["#c7ceea", "#b4a7d6"] }, // Lavender to Purple
+    { colors: ["#ffeaa7", "#fdcb6e"] }, // Yellow to Orange
+    { colors: ["#dfe6e9", "#b2bec3"] }, // Light Grey to Grey
+  ];
 
-  // Subscribe to fingerprint hash - get it directly from the store
-  // We'll use the trigger as a dependency to force re-evaluation
-  const fingerprintHash = useVisualIdentityStore((state) => {
-    const fp = state.fingerprints.get(noteId);
-    const hash = fp?.patternData?.hash as string | undefined;
-    const trigger = state.regenerationTriggers.get(noteId) || 0;
-    const result = hash || `default-${noteId}-${trigger}`;
+  const gradient = fixedGradients[gradientIndex % fixedGradients.length];
+  const color1 = gradient.colors[0];
+  const color2 = gradient.colors[1];
 
-    // Return hash with trigger appended to force updates when trigger changes
-    return `${result}__trigger__${trigger}`;
-  });
+  // Generate simple radial gradient pattern with fixed colors
+  const centerX = 40 + ((gradientIndex * 5) % 30); // 40-70%
+  const centerY = 40 + ((gradientIndex * 7) % 30); // 40-70%
+  const blurAmount = 20 + ((gradientIndex * 3) % 15); // 20-35px
 
-  // Extract the actual hash (remove trigger suffix)
-  const actualHash = fingerprintHash.split("__trigger__")[0];
+  const gradientCSS = `radial-gradient(circle at ${centerX}% ${centerY}%, ${color1} 0%, ${color2} 50%, rgba(250, 250, 250, 0.98) 100%)`;
 
-  // Generate CSS pattern data - use useState + useEffect for async generation
-  const [patternData, setPatternData] = useState<CSSPatternData | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function generatePattern() {
-      // If gradientIndex is provided, use it to generate different variations
-      // This ensures each gradient preview is unique
-      let hashInput: string;
-      if (
-        gradientIndex > 0 ||
-        (actualHash && !actualHash.startsWith("default-"))
-      ) {
-        // Use gradientIndex to create unique hash for each gradient variation
-        if (actualHash && !actualHash.startsWith("default-")) {
-          // If we have a cached hash, combine it with gradientIndex
-          hashInput = `${actualHash}__gradient__${gradientIndex}`;
-        } else {
-          // Generate unique hash based on note content + gradientIndex
-          const baseHash =
-            content && content.trim()
-              ? `${title}${content}`
-              : `${noteId}${title || "Untitled"}`;
-          hashInput = `${baseHash}__gradient__${gradientIndex}`;
-        }
-        const pattern = await generateCSSPattern(
-          noteId,
-          "",
-          hashInput,
-          width,
-          height
-        );
-        if (!cancelled) {
-          setPatternData(pattern);
-        }
-      } else {
-        // Normal generation without gradient index
-        const pattern = await generateCSSPattern(
-          noteId,
-          title,
-          content || "",
-          width,
-          height
-        );
-        if (!cancelled) {
-          setPatternData(pattern);
-        }
-      }
-    }
-
-    generatePattern();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    noteId,
-    title,
-    content,
-    width,
-    height,
-    regenerationTrigger, // This will change when regenerated, forcing re-computation
-    actualHash, // This will change when fingerprint is regenerated
-    gradientIndex, // This will change when different gradient is selected
-  ]);
-
-  // Fallback pattern while loading
-  const finalPatternData = patternData || {
-    gradientColors: ["#6366f1", "#8b5cf6"],
-    patternType: "mesh" as const,
-    cssStyles: {},
-    cssClasses: "",
-    patternParams: {},
+  const patternData = {
+    gradientColors: gradient.colors,
+    patternType: "radial-gradient",
+    cssStyles: {
+      background: gradientCSS,
+      filter: `blur(${blurAmount}px)`,
+    },
+    cssClasses: "pattern-radial-gradient",
+    patternParams: {
+      width,
+      height,
+    },
   };
-
-  // Container ref for potential future animations
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const containerStyle: React.CSSProperties = {
     width: "100%",
@@ -139,33 +61,14 @@ export function CSSFingerprint({
       variant === "thumbnail" || variant === "indicator" ? "50%" : 0,
     overflow: "hidden",
     position: "relative",
-    ...finalPatternData.cssStyles,
+    ...patternData.cssStyles,
     ...style,
   };
 
   return (
     <div
-      ref={containerRef}
-      className={`${className} ${finalPatternData.cssClasses}`}
+      className={`${className} ${patternData.cssClasses}`}
       style={containerStyle}
-    >
-      {/* Additional pattern layers for depth */}
-      {/* <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: `radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1) 0%, transparent 50%)`,
-          mixBlendMode: "overlay",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: `radial-gradient(circle at 70% 70%, rgba(0,0,0,0.1) 0%, transparent 50%)`,
-          mixBlendMode: "multiply",
-        }}
-      /> */}
-    </div>
+    />
   );
 }

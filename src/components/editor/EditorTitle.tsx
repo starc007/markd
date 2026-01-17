@@ -112,9 +112,6 @@ export const EditorTitle = forwardRef<EditorTitleRef, EditorTitleProps>(
             <BannerSelector
               currentBanner={currentBanner}
               onSelect={onBannerChange}
-              noteId={noteId}
-              title={title}
-              content={content}
             />
           </div>
         )}
