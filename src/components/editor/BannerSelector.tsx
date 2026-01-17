@@ -59,7 +59,12 @@ export function BannerSelector({
                 onClick={() => onSelect(`gradient-${index}` as BannerType)}
               >
                 <div className="w-full aspect-5/2 rounded-lg overflow-hidden border-2 border-border group-hover:border-primary transition-colors relative">
-                  <CSSFingerprint width={200} height={80} variant="banner" />
+                  <CSSFingerprint
+                    width={200}
+                    height={80}
+                    variant="banner"
+                    gradientIndex={index}
+                  />
                 </div>
               </div>
             ))}

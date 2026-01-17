@@ -19,14 +19,15 @@ export function CSSFingerprint({
   style,
   gradientIndex = 0,
 }: CSSFingerprintProps & { gradientIndex?: number }) {
-  // Fixed gradient colors - 6 predefined gradients, each is a mix of 2 colors
+  // Fixed gradient colors - 6 predefined gradients
+  // Warm, greenish, and blueish tones - soft and subtle
   const fixedGradients = [
-    { colors: ["#84d2cc", "#914db3"] }, // Teal to Purple
-    { colors: ["#a8e6cf", "#dcedc1"] }, // Mint to Light Green
-    { colors: ["#ffd3b6", "#ffaaa5"] }, // Peach to Coral
-    { colors: ["#c7ceea", "#b4a7d6"] }, // Lavender to Purple
-    { colors: ["#ffeaa7", "#fdcb6e"] }, // Yellow to Orange
-    { colors: ["#dfe6e9", "#b2bec3"] }, // Light Grey to Grey
+    { colors: ["#a8d5ba", "#7fb3a3"] }, // Warm green to teal
+    { colors: ["#b8e0d2", "#6bb5a0"] }, // Mint green to blue-green
+    { colors: ["#c4e8d8", "#8bc4b0"] }, // Light green to sage
+    { colors: ["#a3d9d1", "#7ab8c4"] }, // Teal to blue
+    { colors: ["#b5d4e3", "#8fb8d1"] }, // Sky blue to soft blue
+    { colors: ["#c8e0e8", "#a0c4d4"] }, // Light blue to periwinkle
   ];
 
   const gradient = fixedGradients[gradientIndex % fixedGradients.length];
