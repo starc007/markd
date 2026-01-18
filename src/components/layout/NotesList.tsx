@@ -2,18 +2,11 @@ import { Virtuoso } from "react-virtuoso";
 import type { NoteMetadata } from "../../lib/tauri/commands";
 import { NoteListItem } from "./NoteListItem";
 import { SectionHeading } from "../ui";
-import type { NoteColorId } from "../../lib/config";
 
 interface NotesListProps {
   notes: NoteMetadata[];
   currentNoteId: string | null;
-  getColor: (noteId: string) => NoteColorId;
   onNoteClick: (noteId: string) => void;
-  onColorSelect: (
-    noteId: string,
-    colorId: NoteColorId,
-    e: React.MouseEvent,
-  ) => void;
   onDeleteClick: (noteId: string) => void;
   onCreateSubpage?: (parentId: string) => void;
   onToggleExpand?: (pageId: string) => void;
@@ -22,9 +15,7 @@ interface NotesListProps {
 export function NotesList({
   notes,
   currentNoteId,
-  getColor,
   onNoteClick,
-  onColorSelect,
   onDeleteClick,
   onCreateSubpage,
   onToggleExpand,
@@ -57,15 +48,12 @@ export function NotesList({
             data={notes}
             itemContent={(_index, note) => {
               const isActive = currentNoteId === note.id;
-              const colorId = getColor(note.id);
               return (
                 <div className="px-3 pb-1">
                   <NoteListItem
                     note={note}
                     isActive={isActive}
-                    colorId={colorId}
                     onNoteClick={onNoteClick}
-                    onColorSelect={onColorSelect}
                     onDeleteClick={onDeleteClick}
                     onCreateSubpage={onCreateSubpage || (() => {})}
                     onToggleExpand={onToggleExpand || (() => {})}
@@ -81,15 +69,12 @@ export function NotesList({
           <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-1">
             {notes.map((note) => {
               const isActive = currentNoteId === note.id;
-              const colorId = getColor(note.id);
               return (
                 <NoteListItem
                   key={note.id}
                   note={note}
                   isActive={isActive}
-                  colorId={colorId}
                   onNoteClick={onNoteClick}
-                  onColorSelect={onColorSelect}
                   onDeleteClick={onDeleteClick}
                   onCreateSubpage={onCreateSubpage || (() => {})}
                   onToggleExpand={onToggleExpand || (() => {})}

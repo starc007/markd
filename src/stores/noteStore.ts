@@ -25,24 +25,25 @@ interface NoteStore {
   childrenMap: Map<string, NoteMetadata[]>; // parent_id -> children
   expandedPages: Set<string>; // Set of expanded page IDs
   loadedChildren: Set<string>; // Pages whose children have been loaded
+  loadingChildren: Set<string>; // Pages currently being loaded (prevents concurrent requests)
   // Track newly created notes for auto-focus
   newlyCreatedNoteId: string | null;
 
   // Note actions
   loadNotes: (
     folderId?: string | null,
-    parentId?: string | null
+    parentId?: string | null,
   ) => Promise<void>;
   loadNote: (id: string) => Promise<void>; // Opens note in tab
   createNote: (
     title: string,
     folderId?: string,
-    parentId?: string
+    parentId?: string,
   ) => Promise<Note>;
   createSubpage: (parentId: string, title: string) => Promise<Note>;
   updateNote: (
     id: string,
-    updates: { title?: string; content?: string }
+    updates: { title?: string; content?: string; banner_type?: string | null },
   ) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   saveCurrentNoteContent: (content: string) => Promise<void>;
@@ -72,7 +73,7 @@ interface NoteStore {
 
 // Helper function to refresh a note's metadata (including children_count)
 async function refreshNoteMetadata(
-  noteId: string
+  noteId: string,
 ): Promise<NoteMetadata | null> {
   try {
     const notes = await commands.listNotes();
@@ -95,6 +96,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
   childrenMap: new Map(),
   expandedPages: new Set(),
   loadedChildren: new Set(),
+  loadingChildren: new Set(),
   newlyCreatedNoteId: null,
 
   // Note actions
@@ -106,8 +108,8 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         new Promise<NoteMetadata[]>((_, reject) =>
           setTimeout(
             () => reject(new Error("listNotes timeout after 5s")),
-            5000
-          )
+            5000,
+          ),
         ),
       ]);
 
@@ -212,7 +214,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         const newMap = new Map(get().childrenMap);
         const parentChildren = newMap.get(parentId) || [];
         const updatedChildren = parentChildren.map((n) =>
-          n.id === tempId ? metadata : n
+          n.id === tempId ? metadata : n,
         );
         newMap.set(parentId, updatedChildren);
         set({
@@ -226,7 +228,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       } else {
         // Replace temp with real data in notes list
         const updatedNotes = get().notes.map((n) =>
-          n.id === tempId ? metadata : n
+          n.id === tempId ? metadata : n,
         );
         set({
           notes: updatedNotes,
@@ -288,13 +290,13 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       let updatedNotes = notes;
       if (refreshedParent) {
         updatedNotes = notes.map((n) =>
-          n.id === parentId ? refreshedParent : n
+          n.id === parentId ? refreshedParent : n,
         );
 
         // Also update parent in childrenMap if it's a child itself
         for (const [parentIdKey, children] of newMap.entries()) {
           const updatedChildren = children.map((n) =>
-            n.id === parentId ? refreshedParent : n
+            n.id === parentId ? refreshedParent : n,
           );
           if (updatedChildren.some((n) => n.id === parentId)) {
             newMap.set(parentIdKey, updatedChildren);
@@ -362,7 +364,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
               updated_at: note.updated_at,
               parent_id: note.parent_id,
             }
-          : n
+          : n,
       );
 
       // Update in children map if it's a child
@@ -377,7 +379,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
                 updated_at: note.updated_at,
                 parent_id: note.parent_id,
               }
-            : n
+            : n,
         );
         if (updatedChildren.some((n) => n.id === id)) {
           newMap.set(parentId, updatedChildren);
@@ -399,7 +401,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
           const oldParentChildren = newMap.get(oldNote.parent_id) || [];
           newMap.set(
             oldNote.parent_id,
-            oldParentChildren.filter((n) => n.id !== id)
+            oldParentChildren.filter((n) => n.id !== id),
           );
         }
         // Add to new parent
@@ -492,13 +494,13 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         const refreshed = await refreshNoteMetadata(pid);
         if (refreshed) {
           updatedNotes = updatedNotes.map((n) =>
-            n.id === pid ? refreshed : n
+            n.id === pid ? refreshed : n,
           );
 
           // Update in childrenMap
           for (const [mapParentId, children] of newMap.entries()) {
             const updatedChildren = children.map((n) =>
-              n.id === pid ? refreshed : n
+              n.id === pid ? refreshed : n,
             );
             if (updatedChildren.some((n) => n.id === pid)) {
               newMap.set(mapParentId, updatedChildren);
@@ -608,7 +610,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       // Update notes list timestamp
       const { notes } = get();
       const updatedNotes = notes.map((n) =>
-        n.id === noteId ? { ...n, updated_at: updatedAt } : n
+        n.id === noteId ? { ...n, updated_at: updatedAt } : n,
       );
       updatedNotes.sort((a, b) => b.updated_at - a.updated_at);
 
@@ -617,7 +619,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       const newMap = new Map(childrenMap);
       for (const [parentId, children] of newMap.entries()) {
         const updatedChildren = children.map((n) =>
-          n.id === noteId ? { ...n, updated_at: updatedAt } : n
+          n.id === noteId ? { ...n, updated_at: updatedAt } : n,
         );
         if (updatedChildren.some((n) => n.id === noteId)) {
           newMap.set(parentId, updatedChildren);
@@ -760,22 +762,42 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 
   // Hierarchy actions
   loadPageChildren: async (parentId) => {
-    const { loadedChildren } = get();
+    const { loadedChildren, loadingChildren } = get();
+
+    // Already loaded - skip
     if (loadedChildren.has(parentId)) {
-      return; // Already loaded
+      return;
     }
+
+    // Already loading - skip (prevents concurrent requests for same parent)
+    if (loadingChildren.has(parentId)) {
+      return;
+    }
+
+    // Mark as loading to prevent concurrent requests
+    set({ loadingChildren: new Set([...loadingChildren, parentId]) });
 
     try {
       const children = await commands.getPageChildren(parentId);
-      const { childrenMap } = get();
+      const { childrenMap, loadingChildren: currentLoading } = get();
       const newMap = new Map(childrenMap);
       newMap.set(parentId, children);
+
+      // Remove from loading and add to loaded
+      const newLoading = new Set(currentLoading);
+      newLoading.delete(parentId);
+
       set({
         childrenMap: newMap,
-        loadedChildren: new Set([...loadedChildren, parentId]),
+        loadedChildren: new Set([...get().loadedChildren, parentId]),
+        loadingChildren: newLoading,
       });
     } catch (error) {
-      set({ error: String(error) });
+      // Remove from loading on error
+      const { loadingChildren: currentLoading } = get();
+      const newLoading = new Set(currentLoading);
+      newLoading.delete(parentId);
+      set({ error: String(error), loadingChildren: newLoading });
     }
   },
 
@@ -802,7 +824,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 
       // Find the page being moved
       const page = [...notes, ...Array.from(childrenMap.values()).flat()].find(
-        (n) => n.id === pageId
+        (n) => n.id === pageId,
       );
       if (!page) return;
 
@@ -814,7 +836,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         const oldChildren = newMap.get(oldParentId) || [];
         newMap.set(
           oldParentId,
-          oldChildren.filter((n) => n.id !== pageId)
+          oldChildren.filter((n) => n.id !== pageId),
         );
         set({ childrenMap: newMap });
       } else {
@@ -884,7 +906,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         } catch (error) {
           console.error(
             `[getParentPath] Failed to load note ${currentNoteId}:`,
-            error
+            error,
           );
           break;
         }
@@ -927,7 +949,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         } catch (error) {
           console.error(
             `[expandParentPages] Failed to load children for ${pid}:`,
-            error
+            error,
           );
         }
       }
@@ -935,31 +957,10 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 
     // Only update state if something actually changed
     // This prevents unnecessary re-renders that cause scroll position to jump
-    const expandedChanged =
-      newExpanded.size !== expandedPages.size ||
-      Array.from(newExpanded).some((id) => !expandedPages.has(id));
-    const loadedChanged =
-      newLoaded.size !== loadedChildren.size ||
-      Array.from(newLoaded).some((id) => !loadedChildren.has(id));
-
-    // Check if childrenMap actually changed
-    let mapChanged = false;
-    if (newMap.size !== childrenMap.size) {
-      mapChanged = true;
-    } else {
-      for (const [key, newChildren] of newMap.entries()) {
-        const oldChildren = childrenMap.get(key);
-        if (!oldChildren || oldChildren.length !== newChildren.length) {
-          mapChanged = true;
-          break;
-        }
-        // Check if any child IDs changed
-        if (oldChildren.some((child, i) => child.id !== newChildren[i]?.id)) {
-          mapChanged = true;
-          break;
-        }
-      }
-    }
+    // Since we only add items (never remove), size comparison is sufficient
+    const expandedChanged = newExpanded.size !== expandedPages.size;
+    const loadedChanged = newLoaded.size !== loadedChildren.size;
+    const mapChanged = newMap.size !== childrenMap.size;
 
     if (expandedChanged || loadedChanged || mapChanged) {
       set({

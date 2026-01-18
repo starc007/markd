@@ -15,8 +15,15 @@ import { SettingsSidebar, type SettingsSection } from "./SettingsSidebar";
 export function Settings() {
   const [selectedSection, setSelectedSection] =
     useState<SettingsSection>("appearance");
-  const { theme, syncEnabled, isLoggedIn, setTheme, setSyncEnabled } =
-    useSettingsStore();
+  const {
+    theme,
+    syncEnabled,
+    isLoggedIn,
+    showBanner,
+    setTheme,
+    setSyncEnabled,
+    setShowBanner,
+  } = useSettingsStore();
 
   const themeOptions: Array<{
     value: Theme;
@@ -84,6 +91,30 @@ export function Settings() {
                   onChange={(value) => setTheme(value as Theme)}
                   options={themeOptions}
                 />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground mb-3 block">
+                  Visual Identity
+                </label>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-card border border-border rounded-lg">
+                    <div>
+                      <div className="text-sm font-medium text-foreground">
+                        Show Note Banner
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Display visual fingerprint banner above note title
+                      </div>
+                    </div>
+                    <Button
+                      variant={showBanner ? "primary" : "secondary"}
+                      size="sm"
+                      onClick={() => setShowBanner(!showBanner)}
+                    >
+                      {showBanner ? "On" : "Off"}
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
           </section>

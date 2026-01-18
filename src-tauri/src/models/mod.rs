@@ -3,3 +3,4 @@ pub mod folder;
 pub mod note;
 pub mod sticky_note;
 pub mod tag;
+pub mod visual_identity;

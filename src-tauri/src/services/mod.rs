@@ -4,3 +4,4 @@ pub mod migrations;
 pub mod save_queue;
 pub mod search_service;
 pub mod url_metadata;
+pub mod visual_identity;

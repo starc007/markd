@@ -100,6 +100,7 @@ pub async fn move_note_to_folder(
             &note_id,
             None,
             Some(folder_id.as_deref()),
+            None,
             now,
         )
         .map_err(|e| format!("Failed to move note: {}", e))

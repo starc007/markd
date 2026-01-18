@@ -46,13 +46,15 @@ export function SearchResults({
               onSelect={() => onSelect(`search-note:${result.id}`)}
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px] text-foreground data-[selected=true]:bg-accent"
             >
-              <HugeiconsIcon
-                icon={FileEditIcon}
-                size={18}
-                color="currentColor"
-                strokeWidth={1.5}
-                className="opacity-50 shrink-0"
-              />
+              <div className="flex items-center gap-2 shrink-0">
+                <HugeiconsIcon
+                  icon={FileEditIcon}
+                  size={18}
+                  color="currentColor"
+                  strokeWidth={1.5}
+                  className="opacity-50"
+                />
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="font-medium truncate flex items-center justify-between">
                   {result.title}

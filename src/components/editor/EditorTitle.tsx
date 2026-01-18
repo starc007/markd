@@ -1,21 +1,48 @@
-import { useRef, useEffect, useImperativeHandle, forwardRef } from "react";
+import {
+  useRef,
+  useEffect,
+  useImperativeHandle,
+  forwardRef,
+  useState,
+} from "react";
+import { BannerSelector, type BannerType } from "./BannerSelector";
 
 interface EditorTitleProps {
   title: string;
   noteId: string;
+  content: string;
   onTitleChange: (title: string) => void;
   onEnter?: () => void;
+  onBannerChange?: (type: BannerType) => void;
+  currentBanner?: BannerType;
 }
 
 export interface EditorTitleRef {
   focus: () => void;
+  selectAll: () => void;
+  getValue: () => string;
 }
 
 export const EditorTitle = forwardRef<EditorTitleRef, EditorTitleProps>(
-  ({ title, noteId, onTitleChange, onEnter }, ref) => {
+  (
+    {
+      title,
+      noteId,
+      content: _content,
+      onTitleChange,
+      onEnter,
+      onBannerChange,
+      currentBanner,
+    },
+    ref,
+  ) => {
+    // _content is passed for consistency but not currently used
+    void _content;
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
     const noteIdRef = useRef(noteId);
     const isUpdatingRef = useRef(false);
+    const [isHovered, setIsHovered] = useState(false);
 
     // Update textarea value when noteId changes
     useEffect(() => {
@@ -57,29 +84,50 @@ export const EditorTitle = forwardRef<EditorTitleRef, EditorTitleProps>(
       }
     };
 
-    // Expose focus method to parent
+    // Expose methods to parent
     useImperativeHandle(ref, () => ({
       focus: () => {
         textareaRef.current?.focus();
       },
+      selectAll: () => {
+        textareaRef.current?.select();
+      },
+      getValue: () => {
+        return textareaRef.current?.value || "";
+      },
     }));
 
     return (
-      <textarea
-        ref={textareaRef}
-        defaultValue={title || ""}
-        onChange={handleChange}
-        onKeyDown={handleKeyDown}
-        placeholder="Untitled"
-        className="w-full outline-none border-none bg-transparent text-[36px] font-bold leading-tight placeholder:text-muted-foreground/40 resize-none overflow-hidden text-primary"
-        style={{
-          lineHeight: "1.2",
-          minHeight: "60px",
-        }}
-        rows={1}
-      />
+      <div
+        ref={containerRef}
+        className="relative group"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <textarea
+          ref={textareaRef}
+          defaultValue={title || ""}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          placeholder="Untitled"
+          className="w-full outline-none border-none bg-transparent text-[36px] font-bold leading-tight placeholder:text-muted-foreground/40 resize-none overflow-hidden text-primary"
+          style={{
+            lineHeight: "1.2",
+            minHeight: "60px",
+          }}
+          rows={1}
+        />
+        {isHovered && onBannerChange && currentBanner === "none" && (
+          <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
+            <BannerSelector
+              currentBanner={currentBanner}
+              onSelect={onBannerChange}
+            />
+          </div>
+        )}
+      </div>
     );
-  }
+  },
 );
 
 EditorTitle.displayName = "EditorTitle";

@@ -128,7 +128,7 @@ export function useUpdateCheck(options?: {
             const timeSinceLastUpdate =
               now - progressThrottleRef.current.lastUpdate;
             const progressDelta = Math.abs(
-              progress - progressThrottleRef.current.lastProgress
+              progress - progressThrottleRef.current.lastProgress,
             );
 
             // Update if: 200ms passed, progress changed by 2%, or reached 100%

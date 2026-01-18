@@ -5,6 +5,7 @@ import {
   loadAppState,
   type AppState,
 } from "../lib/app-state-persistence";
+import { BannerType } from "@/components/editor/BannerSelector";
 
 export interface Tab {
   id: string; // Note ID
@@ -12,6 +13,7 @@ export interface Tab {
   content: string; // TipTap JSON
   updatedAt: number;
   isDirty?: boolean; // Has unsaved changes
+  bannerType: BannerType | "none";
 }
 
 interface TabStore {
@@ -32,6 +34,7 @@ interface TabStore {
   setTabDirty: (tabId: string, isDirty: boolean) => void;
   getActiveTab: () => Tab | null;
   getTab: (tabId: string) => Tab | null;
+  updateTabBannerType: (tabId: string, bannerType: BannerType | "none") => void;
 }
 
 const MAX_TABS = 20;
@@ -88,6 +91,9 @@ export const useTabStore = create<TabStore>((set, get) => ({
         content: note.content,
         updatedAt: note.updated_at,
         isDirty: false,
+        bannerType: note.banner_type
+          ? (note.banner_type as BannerType)
+          : "none",
       };
 
       // Add to open tabs and make it active
@@ -158,6 +164,27 @@ export const useTabStore = create<TabStore>((set, get) => ({
       activeTabId: newActiveTabId,
     };
     saveAppState(appState);
+  },
+
+  // Update banner type for a tab
+  updateTabBannerType: (tabId: string, bannerType: BannerType | "none") => {
+    const { openTabs } = get();
+    const tab = openTabs.find((tab) => tab.id === tabId);
+    if (tab) {
+      tab.bannerType = bannerType;
+      set({ openTabs });
+
+      // Persist tab state
+      const savedState = loadAppState();
+      const appState: AppState = {
+        currentNoteId: savedState.currentNoteId ?? null,
+        currentView: savedState.currentView ?? null,
+        parentPath: savedState.parentPath ?? [],
+        openTabIds: savedState.openTabIds ?? [],
+        activeTabId: savedState.activeTabId ?? null,
+      };
+      saveAppState(appState);
+    }
   },
 
   // Switch to a tab
@@ -257,7 +284,7 @@ export const useTabStore = create<TabStore>((set, get) => ({
   updateTabContent: (tabId: string, content: string) => {
     const { openTabs } = get();
     const updatedTabs = openTabs.map((tab) =>
-      tab.id === tabId ? { ...tab, content, updatedAt: Date.now() } : tab
+      tab.id === tabId ? { ...tab, content, updatedAt: Date.now() } : tab,
     );
     set({ openTabs: updatedTabs });
   },
@@ -266,7 +293,7 @@ export const useTabStore = create<TabStore>((set, get) => ({
   updateTabTitle: (tabId: string, title: string) => {
     const { openTabs } = get();
     const updatedTabs = openTabs.map((tab) =>
-      tab.id === tabId ? { ...tab, title } : tab
+      tab.id === tabId ? { ...tab, title } : tab,
     );
     set({ openTabs: updatedTabs });
   },
@@ -275,7 +302,7 @@ export const useTabStore = create<TabStore>((set, get) => ({
   setTabDirty: (tabId: string, isDirty: boolean) => {
     const { openTabs } = get();
     const updatedTabs = openTabs.map((tab) =>
-      tab.id === tabId ? { ...tab, isDirty } : tab
+      tab.id === tabId ? { ...tab, isDirty } : tab,
     );
     set({ openTabs: updatedTabs });
   },

@@ -9,11 +9,23 @@ struct Migration {
 
 /// Get all migrations in order
 fn get_migrations() -> Vec<Migration> {
-    vec![Migration {
-        version: 1,
-        description: "Initial complete schema",
-        up: migration_v1_complete_schema,
-    }]
+    vec![
+        Migration {
+            version: 1,
+            description: "Initial complete schema",
+            up: migration_v1_complete_schema,
+        },
+        Migration {
+            version: 2,
+            description: "Add note visual identity table",
+            up: migration_v2_note_visual_identity,
+        },
+        Migration {
+            version: 3,
+            description: "Add banner_type column to notes",
+            up: migration_v3_add_banner_type,
+        },
+    ]
 }
 
 /// Run all pending migrations
@@ -259,14 +271,37 @@ fn migration_v1_complete_schema(conn: &Connection) -> Result<()> {
     Ok(())
 }
 
-// Future migrations will be added here as needed
-// Example for next migration:
-//
-// /// Migration v2: Add new feature
-// fn migration_v2_new_feature(conn: &Connection) -> Result<()> {
-//     conn.execute(
-//         "ALTER TABLE some_table ADD COLUMN new_column TEXT",
-//         [],
-//     )?;
-//     Ok(())
-// }
+/// Migration v2: Add note visual identity table
+fn migration_v2_note_visual_identity(conn: &Connection) -> Result<()> {
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS note_visual_identity (
+            note_id TEXT PRIMARY KEY,
+            gradient_colors TEXT NOT NULL,
+            pattern_type TEXT NOT NULL,
+            pattern_data TEXT,
+            image_data TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_note_visual_identity_note_id ON note_visual_identity(note_id)",
+        [],
+    )?;
+
+    Ok(())
+}
+
+/// Migration v3: Add banner_type column to notes table
+fn migration_v3_add_banner_type(conn: &Connection) -> Result<()> {
+    // Add banner_type column to notes table (nullable, defaults to NULL which means "none")
+    conn.execute(
+        "ALTER TABLE notes ADD COLUMN banner_type TEXT",
+        [],
+    )?;
+
+    Ok(())
+}

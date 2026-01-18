@@ -8,6 +8,7 @@ export interface Note {
   file_path: string;
   folder_id: string | null;
   parent_id: string | null;
+  banner_type: string | null;
   created_at: number;
   updated_at: number;
 }
@@ -106,6 +107,7 @@ export interface UpdateNoteParams {
   title?: string;
   content?: string;
   folder_id?: string;
+  banner_type?: string | null;
 }
 
 export interface CreateFolderParams {
@@ -138,7 +140,7 @@ export async function deleteNote(id: string): Promise<void> {
 
 export async function listNotes(
   folderId?: string | null,
-  parentId?: string | null
+  parentId?: string | null,
 ): Promise<NoteMetadata[]> {
   // Tauri needs explicit null values, not undefined
   try {
@@ -157,7 +159,7 @@ export async function listNotes(
 
 export async function saveNoteContent(
   id: string,
-  content: string
+  content: string,
 ): Promise<number> {
   // Add timeout to prevent hanging
   // Note: We removed re-indexing from save_note_content to prevent blocking,
@@ -167,15 +169,23 @@ export async function saveNoteContent(
     new Promise<number>((_, reject) =>
       setTimeout(
         () => reject(new Error("saveNoteContent timeout after 5s")),
-        5000
-      )
+        5000,
+      ),
     ),
   ]);
 }
 
+/**
+ * Flush all pending saves immediately
+ * Call this before app shutdown or when window loses focus to ensure no data is lost
+ */
+export async function flushPendingSaves(): Promise<void> {
+  return invoke<void>("flush_pending_saves");
+}
+
 // Folder commands
 export async function createFolder(
-  params: CreateFolderParams
+  params: CreateFolderParams,
 ): Promise<Folder> {
   return invoke<Folder>("create_folder", { params });
 }
@@ -185,7 +195,7 @@ export async function getFolder(id: string): Promise<Folder | null> {
 }
 
 export async function updateFolder(
-  params: UpdateFolderParams
+  params: UpdateFolderParams,
 ): Promise<Folder> {
   return invoke<Folder>("update_folder", { params });
 }
@@ -200,7 +210,7 @@ export async function listFolders(): Promise<Folder[]> {
 
 export async function moveNoteToFolder(
   noteId: string,
-  folderId?: string | null
+  folderId?: string | null,
 ): Promise<void> {
   return invoke<void>("move_note_to_folder", { noteId, folderId });
 }
@@ -214,7 +224,7 @@ export async function searchNotes(query: string): Promise<SearchResult[]> {
 export async function exportNote(
   noteId: string,
   destination: string,
-  markdownContent: string
+  markdownContent: string,
 ): Promise<void> {
   return invoke<void>("export_note", { noteId, destination, markdownContent });
 }
@@ -225,21 +235,21 @@ export async function getNoteContentForExport(noteId: string): Promise<string> {
 
 export async function importFile(
   filePath: string,
-  folderId?: string | null
+  folderId?: string | null,
 ): Promise<Note> {
   return invoke<Note>("import_file", { filePath, folderId });
 }
 
 export async function toggleNotePinned(
   id: string,
-  pinned: boolean
+  pinned: boolean,
 ): Promise<void> {
   return invoke<void>("toggle_note_pinned", { id, pinned });
 }
 
 // Sticky Notes commands
 export async function createStickyNote(
-  params: CreateStickyNoteParams
+  params: CreateStickyNoteParams,
 ): Promise<StickyNote> {
   return invoke<StickyNote>("create_sticky_note", { params });
 }
@@ -249,7 +259,7 @@ export async function getStickyNote(id: string): Promise<StickyNote | null> {
 }
 
 export async function updateStickyNote(
-  params: UpdateStickyNoteParams
+  params: UpdateStickyNoteParams,
 ): Promise<StickyNote> {
   return invoke<StickyNote>("update_sticky_note", { params });
 }
@@ -267,7 +277,7 @@ export async function createBookmark(
   url: string,
   title?: string,
   tags?: string,
-  folder_id?: string
+  folder_id?: string,
 ): Promise<Bookmark> {
   return invoke<Bookmark>("create_bookmark", {
     url,
@@ -282,7 +292,7 @@ export async function getBookmark(id: string): Promise<Bookmark | null> {
 }
 
 export async function listBookmarks(
-  folderId?: string
+  folderId?: string,
 ): Promise<BookmarkMetadata[]> {
   return invoke<BookmarkMetadata[]>("list_bookmarks", {
     folderId: folderId || null,
@@ -293,7 +303,7 @@ export async function updateBookmark(
   id: string,
   url?: string,
   title?: string,
-  tags?: string
+  tags?: string,
 ): Promise<void> {
   return invoke<void>("update_bookmark", {
     id,
@@ -310,20 +320,20 @@ export async function deleteBookmark(id: string): Promise<void> {
 // Page hierarchy commands
 export async function createSubpage(
   parentId: string,
-  title: string
+  title: string,
 ): Promise<Note> {
   return invoke<Note>("create_subpage", { parentId, title });
 }
 
 export async function getPageChildren(
-  parentId: string
+  parentId: string,
 ): Promise<NoteMetadata[]> {
   return invoke<NoteMetadata[]>("get_page_children", { parentId });
 }
 
 export async function movePage(
   pageId: string,
-  newParentId?: string | null
+  newParentId?: string | null,
 ): Promise<void> {
   return invoke<void>("move_page", { pageId, newParentId });
 }
@@ -331,14 +341,14 @@ export async function movePage(
 // Page linking commands
 export async function linkPage(
   sourcePageId: string,
-  targetPageId: string
+  targetPageId: string,
 ): Promise<void> {
   return invoke<void>("link_page", { sourcePageId, targetPageId });
 }
 
 export async function unlinkPage(
   sourcePageId: string,
-  targetPageId: string
+  targetPageId: string,
 ): Promise<void> {
   return invoke<void>("unlink_page", { sourcePageId, targetPageId });
 }
@@ -353,14 +363,14 @@ export async function getBacklinks(pageId: string): Promise<string[]> {
 
 export async function syncPageLinks(
   pageId: string,
-  linkedPageIds: string[]
+  linkedPageIds: string[],
 ): Promise<void> {
   return invoke<void>("sync_page_links", { pageId, linkedPageIds });
 }
 
 export async function updatePageLinkTitles(
   pageId: string,
-  newTitle: string
+  newTitle: string,
 ): Promise<void> {
   return invoke<void>("update_page_link_titles", { pageId, newTitle });
 }
@@ -382,4 +392,62 @@ export interface AppVersion {
  */
 export async function getAppVersion(): Promise<AppVersion> {
   return invoke<AppVersion>("get_app_version");
+}
+
+// Visual identity commands
+export interface NoteVisualIdentity {
+  note_id: string;
+  gradient_colors: string[];
+  pattern_type: string;
+  pattern_data: string | null;
+  image_data: string | null;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface VisualIdentitySeed {
+  seeds: number[];
+  hash: string;
+}
+
+export async function generateNoteVisualIdentitySeed(params: {
+  note_id: string;
+  title: string;
+  content: string;
+}): Promise<VisualIdentitySeed> {
+  return invoke<VisualIdentitySeed>("generate_note_visual_identity_seed", {
+    params,
+  });
+}
+
+export async function getNoteVisualIdentity(
+  noteId: string,
+): Promise<NoteVisualIdentity | null> {
+  return invoke<NoteVisualIdentity | null>("get_note_visual_identity", {
+    noteId,
+  });
+}
+
+export async function saveNoteVisualIdentity(
+  noteId: string,
+  gradientColors: string[],
+  patternType: string,
+  patternData: string | null,
+  imageData: string | null = null,
+): Promise<void> {
+  return invoke<void>("save_note_visual_identity", {
+    noteId,
+    gradientColors,
+    patternType,
+    patternData,
+    imageData,
+  });
+}
+
+export async function regenerateNoteVisualIdentity(
+  noteId: string,
+): Promise<void> {
+  return invoke<void>("regenerate_note_visual_identity", {
+    noteId,
+  });
 }

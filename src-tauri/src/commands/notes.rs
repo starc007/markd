@@ -22,6 +22,7 @@ pub struct UpdateNoteParams {
     pub title: Option<String>,
     pub content: Option<String>,
     pub folder_id: Option<String>,
+    pub banner_type: Option<String>,
 }
 
 const PREVIEW_MAX_LENGTH: usize = 150;
@@ -73,6 +74,7 @@ pub async fn create_note(
         file_path: String::new(), // Deprecated, kept for compatibility
         folder_id: params.folder_id,
         parent_id: params.parent_id,
+        banner_type: None, // New notes don't have a banner by default
         created_at: now,
         updated_at: now,
     })
@@ -95,6 +97,9 @@ pub async fn get_note(state: State<'_, AppState>, id: String) -> Result<Option<N
                 .map_err(|e| format!("Failed to get note content: {}", e))?
                 .unwrap_or_else(|| DEFAULT_CONTENT.to_string());
 
+            // Get banner_type from database
+            let banner_type = state.db.get_note_banner_type(&id).ok().flatten();
+
             Ok(Some(Note {
                 id: meta.id,
                 title: meta.title,
@@ -102,6 +107,7 @@ pub async fn get_note(state: State<'_, AppState>, id: String) -> Result<Option<N
                 file_path: String::new(), // Deprecated
                 folder_id: meta.folder_id,
                 parent_id: meta.parent_id,
+                banner_type,
                 created_at: meta.created_at,
                 updated_at: meta.updated_at,
             }))
@@ -157,18 +163,26 @@ pub async fn update_note(
             .unwrap_or_else(|| DEFAULT_CONTENT.to_string())
     };
 
-    // Update metadata if title or folder changed
-    if params.title.is_some() || params.folder_id.is_some() {
+    // Update metadata if title, folder, or banner_type changed
+    // Note: banner_type can be None (to remove banner). Since we can't distinguish
+    // "not provided" from "provided as None" with Option<String>, we'll always update
+    // banner_type when it's in the params. The frontend always includes it when changing banners.
+    if params.title.is_some() || params.folder_id.is_some() || true {
         state
             .db
             .update_note_metadata(
                 &params.id,
                 params.title.as_deref(),
                 params.folder_id.as_ref().map(|f| Some(f.as_str())),
+                // Always pass banner_type (even if None) - this allows setting to NULL in DB
+                Some(params.banner_type.as_ref().map(|b| b.as_str())),
                 now,
             )
             .map_err(|e| format!("Failed to update note metadata: {}", e))?;
     }
+
+    // Get banner_type from database
+    let banner_type = state.db.get_note_banner_type(&params.id).ok().flatten();
 
     Ok(Note {
         id: params.id,
@@ -177,6 +191,7 @@ pub async fn update_note(
         file_path: String::new(), // Deprecated
         folder_id,
         parent_id: existing.parent_id,
+        banner_type,
         created_at: existing.created_at,
         updated_at: now,
     })
@@ -240,6 +255,13 @@ pub async fn save_note_content(
     // Return current timestamp immediately
     // The actual save happens asynchronously in the queue
     Ok(Utc::now().timestamp_millis())
+}
+
+/// Flush all pending saves immediately
+/// Call this before app shutdown or when window loses focus to ensure no data is lost
+#[tauri::command]
+pub async fn flush_pending_saves(state: State<'_, AppState>) -> Result<(), String> {
+    state.save_queue.flush_now().await
 }
 
 #[tauri::command]
@@ -319,6 +341,7 @@ pub async fn import_file(
         file_path: String::new(),
         folder_id,
         parent_id: None, // Imported files are top-level
+        banner_type: None,
         created_at: now,
         updated_at: now,
     })
@@ -374,6 +397,7 @@ pub async fn create_subpage(
         file_path: String::new(),
         folder_id: parent.folder_id,
         parent_id: Some(parent_id),
+        banner_type: None,
         created_at: now,
         updated_at: now,
     })

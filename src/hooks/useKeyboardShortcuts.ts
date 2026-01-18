@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useNoteStore } from "../stores/noteStore";
 import { useUIStore, UIView } from "../stores/uiStore";
 import { useStickyNotesStore } from "../features/sticky-notes/stores/stickyNotesStore";
@@ -18,7 +18,7 @@ export function matchesShortcut(
     ctrl?: boolean;
     alt?: boolean;
     shift?: boolean;
-  }
+  },
 ): boolean {
   // Handle Escape key specially (case-sensitive)
   if (shortcut.key === "Escape") {
@@ -80,20 +80,18 @@ export function matchesShortcut(
 }
 
 export function useKeyboardShortcuts() {
-  const { createNote, loadNote } = useNoteStore();
-  const {
-    toggleSidebar,
-    toggleCommandPalette,
-    setCommandPaletteOpen,
-    setView,
-  } = useUIStore();
-  const { createStickyNote } = useStickyNotesStore();
-  const { keyboardShortcuts } = useSettingsStore();
-  const setSettingsModalOpen = useUIStore(
-    (state) => state.setSettingsModalOpen
+  // Store refs to avoid stale closures while keeping event listener stable
+  const keyboardShortcutsRef = useRef(
+    useSettingsStore.getState().keyboardShortcuts,
   );
-  const { closeTab, reopenClosedTab, switchTab, openTabs, activeTabId } =
-    useTabStore();
+
+  // Subscribe to keyboard shortcuts changes
+  useEffect(() => {
+    const unsubscribe = useSettingsStore.subscribe((state) => {
+      keyboardShortcutsRef.current = state.keyboardShortcuts;
+    });
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
@@ -109,6 +107,21 @@ export function useKeyboardShortcuts() {
       ) {
         return;
       }
+
+      // Get fresh state from stores inside the handler to avoid stale closures
+      const keyboardShortcuts = keyboardShortcutsRef.current;
+      const {
+        toggleSidebar,
+        toggleCommandPalette,
+        setCommandPaletteOpen,
+        setView,
+        setSettingsModalOpen,
+        settingsModalOpen,
+      } = useUIStore.getState();
+      const { createNote, loadNote } = useNoteStore.getState();
+      const { createStickyNote } = useStickyNotesStore.getState();
+      const { closeTab, reopenClosedTab, switchTab, openTabs, activeTabId } =
+        useTabStore.getState();
 
       // Check customizable shortcuts
       if (matchesShortcut(e, keyboardShortcuts.commandPalette)) {
@@ -162,10 +175,9 @@ export function useKeyboardShortcuts() {
       // Tab shortcuts (not customizable)
       // Cmd+W: Close current tab
       if (matchesShortcut(e, fixedShortcuts.closeTab)) {
-        const { activeTabId: currentActiveTabId } = useTabStore.getState();
-        if (currentActiveTabId) {
+        if (activeTabId) {
           e.preventDefault();
-          closeTab(currentActiveTabId);
+          closeTab(activeTabId);
         }
         return;
       }
@@ -184,10 +196,9 @@ export function useKeyboardShortcuts() {
         if (!isNaN(tabNumber) && tabNumber >= 1 && tabNumber <= 9) {
           const shortcut = getSwitchTabShortcut(tabNumber);
           if (matchesShortcut(e, shortcut)) {
-            const { openTabs: currentOpenTabs } = useTabStore.getState();
-            if (currentOpenTabs.length >= tabNumber) {
+            if (openTabs.length >= tabNumber) {
               e.preventDefault();
-              switchTab(currentOpenTabs[tabNumber - 1].id);
+              switchTab(openTabs[tabNumber - 1].id);
             }
           }
           return;
@@ -196,7 +207,6 @@ export function useKeyboardShortcuts() {
 
       // Escape: Close command palette or settings modal (not customizable)
       if (matchesShortcut(e, fixedShortcuts.escape)) {
-        const { settingsModalOpen } = useUIStore.getState();
         if (settingsModalOpen) {
           setSettingsModalOpen(false);
         } else {
@@ -208,20 +218,5 @@ export function useKeyboardShortcuts() {
 
     window.addEventListener("keydown", handleKeyDown, true);
     return () => window.removeEventListener("keydown", handleKeyDown, true);
-  }, [
-    toggleSidebar,
-    toggleCommandPalette,
-    setCommandPaletteOpen,
-    createNote,
-    loadNote,
-    createStickyNote,
-    setView,
-    keyboardShortcuts,
-    setSettingsModalOpen,
-    closeTab,
-    reopenClosedTab,
-    switchTab,
-    openTabs,
-    activeTabId,
-  ]);
+  }, []); // Empty dependency array - handler gets fresh state from stores
 }

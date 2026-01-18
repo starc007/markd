@@ -8,6 +8,7 @@ pub struct Note {
     pub file_path: String,
     pub folder_id: Option<String>,
     pub parent_id: Option<String>,
+    pub banner_type: Option<String>,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -38,6 +39,7 @@ pub struct UpdateNoteRequest {
     pub title: Option<String>,
     pub content: Option<String>,
     pub folder_id: Option<String>,
+    pub banner_type: Option<String>,
 }
 
 /// Extract a preview from markdown content

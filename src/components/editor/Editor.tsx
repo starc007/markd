@@ -25,6 +25,9 @@ import { EditorContent, type EditorContentRef } from "./EditorContent";
 import { WordCountStats } from "./WordCountStats";
 import { AppProvider } from "@/context/app-context";
 import { formatRelativeTime } from "@/lib/utils";
+import { FingerprintBanner } from "@/features/visual-identity/components/FingerprintBanner";
+import { JapanesePrintBanner } from "./JapanesePrintBanner";
+import { type BannerType } from "./BannerSelector";
 
 interface EditorProps {
   noteId: string;
@@ -43,6 +46,17 @@ export function Editor({ noteId, content }: EditorProps) {
   const focusMode = useUIStore((state) => state.focusMode);
   const activeTab = useTabStore((state) => state.getActiveTab());
   const { updateTabContent, updateTabTitle, getTab } = useTabStore();
+  const [bannerType, setBannerType] = useState<BannerType>(
+    activeTab?.bannerType || "none",
+  );
+
+  // Sync bannerType state when active tab changes (e.g., switching notes)
+  useEffect(() => {
+    setBannerType(activeTab?.bannerType || "none");
+  }, [activeTab?.bannerType]);
+
+  console.log("[Editor] Banner type:", bannerType);
+  console.log("[Editor] Active tab:", activeTab);
 
   const updatedAt = activeTab?.updatedAt || 0;
 
@@ -56,16 +70,10 @@ export function Editor({ noteId, content }: EditorProps) {
         const currentFlag = useNoteStore.getState().newlyCreatedNoteId;
         if (currentFlag === noteId && titleRef.current) {
           titleRef.current.focus();
-          // Select all text if it's "Untitled" so user can immediately type
-          // Access the textarea element directly via DOM query
-          const textarea = document.querySelector(
-            `textarea[placeholder="Untitled"]`
-          ) as HTMLTextAreaElement;
-          if (
-            textarea &&
-            (textarea.value === "Untitled" || textarea.value === "")
-          ) {
-            textarea.select();
+          // Select all text if it's "Untitled" or empty so user can immediately type
+          const currentValue = titleRef.current.getValue();
+          if (currentValue === "Untitled" || currentValue === "") {
+            titleRef.current.selectAll();
           }
         }
       };
@@ -139,6 +147,26 @@ export function Editor({ noteId, content }: EditorProps) {
     }
   }, []);
 
+  // Handle banner type change
+  const handleBannerChange = useCallback(
+    async (type: BannerType) => {
+      setBannerType(type);
+      // Save banner type to database
+      // Always pass banner_type, even if "none" (pass null to clear it)
+      try {
+        const bannerValue = type === "none" ? "none" : type;
+        await useNoteStore.getState().updateNote(noteId, {
+          banner_type: bannerValue,
+        });
+        if (activeTab?.id)
+          useTabStore.getState().updateTabBannerType(activeTab.id, bannerValue);
+      } catch (error) {
+        console.error("Failed to save banner type:", error);
+      }
+    },
+    [noteId],
+  );
+
   // Content save handler (already debounced in EditorContent)
   const handleContentChange = useCallback(
     (newContent: string) => {
@@ -167,7 +195,7 @@ export function Editor({ noteId, content }: EditorProps) {
         useNoteStore.getState().saveCurrentNoteContent(newContent);
       }
     },
-    [noteId, getTab, updateTabContent]
+    [noteId, getTab, updateTabContent],
   );
 
   // Title change handler
@@ -190,7 +218,7 @@ export function Editor({ noteId, content }: EditorProps) {
         useNoteStore.getState().updateNote(noteId, { title: displayTitle });
       }
     },
-    [noteId, getTab, updateTabTitle]
+    [noteId, getTab, updateTabTitle],
   );
 
   // Handle Enter in title to focus content editor
@@ -272,7 +300,7 @@ export function Editor({ noteId, content }: EditorProps) {
         {/* Header with drag region - hidden in focus mode */}
         {!focusMode && (
           <div
-            className="pt-2 shrink-0 flex items-center justify-between px-4"
+            className="shrink-0 flex items-center justify-between px-4"
             data-tauri-drag-region
           >
             <div className="flex items-center gap-3 [-webkit-app-region:no-drag]">
@@ -329,14 +357,38 @@ export function Editor({ noteId, content }: EditorProps) {
 
         {/* Editor Content - Notion style */}
         <div className="flex-1 overflow-y-auto">
+          {!focusMode && bannerType !== "none" && (
+            <>
+              {bannerType.startsWith("gradient-") && (
+                <FingerprintBanner
+                  gradientIndex={parseInt(bannerType.replace("gradient-", ""))}
+                  onBannerChange={handleBannerChange}
+                  currentBanner={bannerType}
+                />
+              )}
+              {bannerType.startsWith("japanese-print-") && (
+                <JapanesePrintBanner
+                  printId={bannerType.replace("japanese-print-", "")}
+                  title={activeTab?.title || ""}
+                  noteId={noteId}
+                  content={content}
+                  onBannerChange={handleBannerChange}
+                  currentBanner={bannerType}
+                />
+              )}
+            </>
+          )}
           <div className="max-w-[900px] mx-auto px-12 py-8">
             {/* Title Editor */}
             <EditorTitle
               ref={titleRef}
               title={activeTab?.title || ""}
               noteId={noteId}
+              content={content}
               onTitleChange={handleTitleChange}
               onEnter={handleTitleEnter}
+              onBannerChange={handleBannerChange}
+              currentBanner={bannerType}
             />
 
             {/* Content Editor */}

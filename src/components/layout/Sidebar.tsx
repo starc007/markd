@@ -7,7 +7,7 @@ import { useUIStore, UIView } from "@/stores/uiStore";
 import { useNoteColors } from "@/hooks/useNoteColors";
 import { useStickyNotesStore } from "../../features/sticky-notes/stores/stickyNotesStore";
 import { useBookmarkStore } from "@/features/bookmarks/stores/bookmarkStore";
-import type { NoteColorId } from "@/lib/config";
+
 import { Button } from "../ui";
 import { DeleteNoteModal } from "@/components/DeleteNoteModal";
 import { SidebarSearch } from "./SidebarSearch";
@@ -26,9 +26,10 @@ export const Sidebar = memo(function Sidebar() {
   // Get current note ID from active tab
   const activeTabId = useTabStore((state) => state.activeTabId);
 
-  const { getColor, setColor, removeColor } = useNoteColors();
+  const { removeColor } = useNoteColors();
   const { stickyNotes, loadStickyNotes } = useStickyNotesStore();
   const { bookmarks, loadBookmarks } = useBookmarkStore();
+
   const [deleteModalNoteId, setDeleteModalNoteId] = useState<string | null>(
     null
   );
@@ -59,14 +60,6 @@ export const Sidebar = memo(function Sidebar() {
       );
     }
   }, [openTab]);
-
-  const handleColorSelect = useCallback(
-    (noteId: string, newColorId: NoteColorId, e: React.MouseEvent) => {
-      e.stopPropagation();
-      setColor(noteId, newColorId);
-    },
-    [setColor]
-  );
 
   const handleDeleteNote = useCallback(
     async (noteId: string) => {
@@ -175,9 +168,7 @@ export const Sidebar = memo(function Sidebar() {
         childrenMap={childrenMap}
         expandedPages={expandedPages}
         currentNoteId={activeTabId}
-        getColor={getColor}
         onNoteClick={handleNoteClick}
-        onColorSelect={handleColorSelect}
         onDeleteClick={setDeleteModalNoteId}
         onToggleExpand={handleToggleExpand}
         onCreateSubpage={handleCreateSubpage}
