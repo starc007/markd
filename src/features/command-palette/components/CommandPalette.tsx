@@ -26,7 +26,7 @@ export function CommandPalette() {
 
   const bookmarks = useBookmarkStore((state) => state.bookmarks);
   const setSelectedStickyNoteId = useUIStore(
-    (state) => state.setSelectedStickyNoteId
+    (state) => state.setSelectedStickyNoteId,
   );
   const commandPaletteOpen = useUIStore((state) => state.commandPaletteOpen);
   const {
@@ -166,20 +166,25 @@ export function CommandPalette() {
 
   const handleSelect = useCallback(
     async (action: string) => {
+      // Helper to safely close palette after successful action
+      const closeOnSuccess = () => setCommandPaletteOpen(false);
+
       try {
         switch (action) {
           case "new-note":
             await handleCreateNote();
-            break;
-          case "new-sticky-note":
+            // handleCreateNote already closes the palette
+            return;
+          case "new-sticky-note": {
             await createStickyNote();
             setView(UIView.StickyNotes);
-            setCommandPaletteOpen(false);
-            break;
+            closeOnSuccess();
+            return;
+          }
           case "focus-mode":
             toggleFocusMode();
-            setCommandPaletteOpen(false);
-            break;
+            closeOnSuccess();
+            return;
           case "export":
             if (activeTab) {
               const filePath = await save({
@@ -190,95 +195,86 @@ export function CommandPalette() {
                 await exportCurrentNote(filePath);
               }
             }
-            setCommandPaletteOpen(false);
-            break;
+            closeOnSuccess();
+            return;
           case "new-folder":
             if (searchQuery.trim()) {
               await createFolder(searchQuery.trim());
-              setCommandPaletteOpen(false);
+              closeOnSuccess();
             }
-            break;
+            return;
           case "settings":
             setSettingsModalOpen(true);
-            setCommandPaletteOpen(false);
-            break;
+            closeOnSuccess();
+            return;
           case "open-bookmarks":
             setView(UIView.Bookmarks);
-            setCommandPaletteOpen(false);
-            break;
+            closeOnSuccess();
+            return;
           case "open-sticky-notes":
             setView(UIView.StickyNotes);
-            setCommandPaletteOpen(false);
-            break;
-          default:
-            if (action.startsWith("note:")) {
-              const noteId = action.replace("note:", "");
-              setView(UIView.None);
-              await openTab(noteId);
-              setCommandPaletteOpen(false);
-            }
-            if (action.startsWith("search-note:")) {
-              const noteId = action.replace("search-note:", "");
-              setView(UIView.None);
-              await openTab(noteId);
-              setCommandPaletteOpen(false);
-            }
-            if (action.startsWith("search-sticky:")) {
-              const stickyNoteId = action.replace("search-sticky:", "");
-              setSelectedStickyNoteId(stickyNoteId);
-              // Navigate to sticky notes view
-              setView(UIView.StickyNotes);
-              setCommandPaletteOpen(false);
-            }
-            if (action.startsWith("search-bookmark:")) {
-              const bookmarkId = action.replace("search-bookmark:", "");
-              const bookmark = searchResults.find((r) => r.id === bookmarkId);
-              if (bookmark) {
-                // Open bookmark URL in browser
-                const { openUrl } = await import("@tauri-apps/plugin-opener");
-                await openUrl(bookmark.snippet.replace(/<\/?mark>/g, ""));
-              }
-              setCommandPaletteOpen(false);
-            }
-            if (action.startsWith("recent-note:")) {
-              const noteId = action.replace("recent-note:", "");
-              setView(UIView.None);
-              await openTab(noteId);
-              setCommandPaletteOpen(false);
-            }
-            if (action.startsWith("switch-tab:")) {
-              const tabId = action.replace("switch-tab:", "");
-              switchTab(tabId);
-              setCommandPaletteOpen(false);
-            }
-            if (action.startsWith("recent-sticky-note:")) {
-              const stickyNoteId = action.replace("recent-sticky-note:", "");
-              setSelectedStickyNoteId(stickyNoteId);
-              setView(UIView.StickyNotes);
-              setCommandPaletteOpen(false);
-            }
-            if (action.startsWith("recent-bookmark:")) {
-              const bookmarkId = action.replace("recent-bookmark:", "");
-              const bookmark = bookmarks.find((b) => b.id === bookmarkId);
-              if (bookmark) {
-                const { openBookmark, updateBookmark, loadBookmarks } =
-                  useBookmarkStore.getState();
-                // Update bookmark timestamp by updating title to itself (no-op update that updates timestamp)
-                await updateBookmark(bookmarkId, { title: bookmark.title });
-                // Reload bookmarks to get fresh timestamp
-                await loadBookmarks(bookmark.folder_id ?? null);
-                await openBookmark(bookmark.url);
-              }
-              setCommandPaletteOpen(false);
-            }
-            break;
+            closeOnSuccess();
+            return;
+        }
+
+        // Handle prefixed actions with else-if to ensure only one branch executes
+        if (action.startsWith("note:")) {
+          const noteId = action.replace("note:", "");
+          setView(UIView.None);
+          await openTab(noteId);
+          closeOnSuccess();
+        } else if (action.startsWith("search-note:")) {
+          const noteId = action.replace("search-note:", "");
+          setView(UIView.None);
+          await openTab(noteId);
+          closeOnSuccess();
+        } else if (action.startsWith("search-sticky:")) {
+          const stickyNoteId = action.replace("search-sticky:", "");
+          setSelectedStickyNoteId(stickyNoteId);
+          setView(UIView.StickyNotes);
+          closeOnSuccess();
+        } else if (action.startsWith("search-bookmark:")) {
+          const bookmarkId = action.replace("search-bookmark:", "");
+          const bookmark = searchResults.find((r) => r.id === bookmarkId);
+          if (bookmark) {
+            const { openUrl } = await import("@tauri-apps/plugin-opener");
+            await openUrl(bookmark.snippet.replace(/<\/?mark>/g, ""));
+          }
+          closeOnSuccess();
+        } else if (action.startsWith("recent-note:")) {
+          const noteId = action.replace("recent-note:", "");
+          setView(UIView.None);
+          await openTab(noteId);
+          closeOnSuccess();
+        } else if (action.startsWith("switch-tab:")) {
+          const tabId = action.replace("switch-tab:", "");
+          switchTab(tabId);
+          closeOnSuccess();
+        } else if (action.startsWith("recent-sticky-note:")) {
+          const stickyNoteId = action.replace("recent-sticky-note:", "");
+          setSelectedStickyNoteId(stickyNoteId);
+          setView(UIView.StickyNotes);
+          closeOnSuccess();
+        } else if (action.startsWith("recent-bookmark:")) {
+          const bookmarkId = action.replace("recent-bookmark:", "");
+          const bookmark = bookmarks.find((b) => b.id === bookmarkId);
+          if (bookmark) {
+            const { openBookmark, updateBookmark, loadBookmarks } =
+              useBookmarkStore.getState();
+            // Update bookmark timestamp
+            await updateBookmark(bookmarkId, { title: bookmark.title });
+            // Reload bookmarks to get fresh timestamp
+            await loadBookmarks(bookmark.folder_id ?? null);
+            await openBookmark(bookmark.url);
+          }
+          closeOnSuccess();
         }
       } catch (error) {
         console.error("Command failed:", error);
         toast.error(
           `Operation failed: ${
             error instanceof Error ? error.message : "Unknown error"
-          }`
+          }`,
         );
         // Don't close palette on error so user can retry
       }
@@ -295,9 +291,11 @@ export function CommandPalette() {
       searchQuery,
       createStickyNote,
       setView,
+      setSettingsModalOpen,
+      setSelectedStickyNoteId,
       searchResults,
       bookmarks,
-    ]
+    ],
   );
 
   if (!commandPaletteOpen) return null;
@@ -306,8 +304,8 @@ export function CommandPalette() {
   const placeholder = isCommandMode
     ? "Type a command..."
     : shouldShowCommands
-    ? "Search notes or type '>' for commands..."
-    : "Search notes, bookmarks, and sticky notes...";
+      ? "Search notes or type '>' for commands..."
+      : "Search notes, bookmarks, and sticky notes...";
 
   // Check if we have any results to show
   // Never show search results in command mode

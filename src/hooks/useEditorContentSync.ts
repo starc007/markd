@@ -163,10 +163,29 @@ export function useEditorContentSync({
     if (noteIdChanged) {
       // CRITICAL: Before switching notes, save any pending content from the previous note
       // This ensures no content is lost when switching notes
-      if (saveTimeoutRef.current && editor) {
-        // Cancel the timeout
+      if (saveTimeoutRef.current && editor && pendingSaveNoteIdRef.current) {
+        // Get the noteId that has pending changes
+        const pendingNoteId = pendingSaveNoteIdRef.current;
+
+        // Cancel the timeout first
         window.clearTimeout(saveTimeoutRef.current);
         saveTimeoutRef.current = null;
+
+        // IMPORTANT: Save the pending content immediately before switching
+        // This prevents data loss when user switches notes quickly
+        const json = editor.getJSON();
+        const jsonString = JSON.stringify(json);
+
+        if (jsonString !== lastSavedContentRef.current) {
+          lastSavedContentRef.current = jsonString;
+          // Save to the note that had pending changes, not the new note
+          commands.saveNoteContent(pendingNoteId, jsonString).catch((error) => {
+            console.error(
+              "[useEditorContentSync] Failed to save pending content on note switch:",
+              error,
+            );
+          });
+        }
 
         pendingSaveNoteIdRef.current = null;
       }

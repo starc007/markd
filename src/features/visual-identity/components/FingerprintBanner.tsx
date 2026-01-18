@@ -41,7 +41,7 @@ export const FingerprintBanner = memo(function FingerprintBanner({
         gradientIndex={gradientIndex}
         style={{
           width: "100%",
-          height: `${height}px`,
+          height: "100%",
           borderRadius: 0,
           position: "absolute",
           top: 0,

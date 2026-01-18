@@ -16,11 +16,14 @@ export const JapanesePrintBanner = memo(function JapanesePrintBanner({
   printId,
   title,
   className = "",
-  noteId,
-  content,
+  noteId: _noteId,
+  content: _content,
   onBannerChange,
   currentBanner,
 }: JapanesePrintBannerProps) {
+  // _noteId and _content are passed for consistency but not currently used
+  void _noteId;
+  void _content;
   const [isHovered, setIsHovered] = useState(false);
   const imageUrl =
     JAPANESE_PRINT_IMAGES[printId as keyof typeof JAPANESE_PRINT_IMAGES] ||
@@ -36,9 +39,6 @@ export const JapanesePrintBanner = memo(function JapanesePrintBanner({
         src={imageUrl}
         alt={title || "Banner"}
         className="w-full h-full object-cover"
-        style={{
-          filter: "brightness(0.9) contrast(1.1)",
-        }}
         onError={(e) => {
           // Fallback to gradient if image fails to load
           const target = e.target as HTMLImageElement;

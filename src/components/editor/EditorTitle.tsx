@@ -26,14 +26,16 @@ export const EditorTitle = forwardRef<EditorTitleRef, EditorTitleProps>(
     {
       title,
       noteId,
-      content,
+      content: _content,
       onTitleChange,
       onEnter,
       onBannerChange,
       currentBanner,
     },
-    ref
+    ref,
   ) => {
+    // _content is passed for consistency but not currently used
+    void _content;
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const noteIdRef = useRef(noteId);
@@ -117,7 +119,7 @@ export const EditorTitle = forwardRef<EditorTitleRef, EditorTitleProps>(
         )}
       </div>
     );
-  }
+  },
 );
 
 EditorTitle.displayName = "EditorTitle";
