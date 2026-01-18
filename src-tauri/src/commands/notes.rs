@@ -98,11 +98,7 @@ pub async fn get_note(state: State<'_, AppState>, id: String) -> Result<Option<N
                 .unwrap_or_else(|| DEFAULT_CONTENT.to_string());
 
             // Get banner_type from database
-            let banner_type = state
-                .db
-                .get_note_banner_type(&id)
-                .ok()
-                .flatten();
+            let banner_type = state.db.get_note_banner_type(&id).ok().flatten();
 
             Ok(Some(Note {
                 id: meta.id,
@@ -186,11 +182,7 @@ pub async fn update_note(
     }
 
     // Get banner_type from database
-    let banner_type = state
-        .db
-        .get_note_banner_type(&params.id)
-        .ok()
-        .flatten();
+    let banner_type = state.db.get_note_banner_type(&params.id).ok().flatten();
 
     Ok(Note {
         id: params.id,
@@ -263,6 +255,13 @@ pub async fn save_note_content(
     // Return current timestamp immediately
     // The actual save happens asynchronously in the queue
     Ok(Utc::now().timestamp_millis())
+}
+
+/// Flush all pending saves immediately
+/// Call this before app shutdown or when window loses focus to ensure no data is lost
+#[tauri::command]
+pub async fn flush_pending_saves(state: State<'_, AppState>) -> Result<(), String> {
+    state.save_queue.flush_now().await
 }
 
 #[tauri::command]

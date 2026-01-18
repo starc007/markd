@@ -46,6 +46,7 @@ pub fn run() {
             delete_note,
             list_notes,
             save_note_content,
+            flush_pending_saves,
             import_file,
             toggle_note_pinned,
             // Page hierarchy commands

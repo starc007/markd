@@ -50,7 +50,13 @@ export function Editor({ noteId, content }: EditorProps) {
     activeTab?.bannerType || "none",
   );
 
-  console.log("[Editor] Banner type:", activeTab?.bannerType);
+  // Sync bannerType state when active tab changes (e.g., switching notes)
+  useEffect(() => {
+    setBannerType(activeTab?.bannerType || "none");
+  }, [activeTab?.bannerType]);
+
+  console.log("[Editor] Banner type:", bannerType);
+  console.log("[Editor] Active tab:", activeTab);
 
   const updatedAt = activeTab?.updatedAt || 0;
 
@@ -148,12 +154,12 @@ export function Editor({ noteId, content }: EditorProps) {
       // Save banner type to database
       // Always pass banner_type, even if "none" (pass null to clear it)
       try {
-        const bannerValue = type === "none" ? null : type;
-        console.log("[Editor] Saving banner type:", bannerValue);
+        const bannerValue = type === "none" ? "none" : type;
         await useNoteStore.getState().updateNote(noteId, {
           banner_type: bannerValue,
         });
-        console.log("[Editor] Banner type saved successfully");
+        if (activeTab?.id)
+          useTabStore.getState().updateTabBannerType(activeTab.id, bannerValue);
       } catch (error) {
         console.error("Failed to save banner type:", error);
       }
