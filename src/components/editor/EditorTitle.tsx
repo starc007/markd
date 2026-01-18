@@ -19,6 +19,8 @@ interface EditorTitleProps {
 
 export interface EditorTitleRef {
   focus: () => void;
+  selectAll: () => void;
+  getValue: () => string;
 }
 
 export const EditorTitle = forwardRef<EditorTitleRef, EditorTitleProps>(
@@ -82,10 +84,16 @@ export const EditorTitle = forwardRef<EditorTitleRef, EditorTitleProps>(
       }
     };
 
-    // Expose focus method to parent
+    // Expose methods to parent
     useImperativeHandle(ref, () => ({
       focus: () => {
         textareaRef.current?.focus();
+      },
+      selectAll: () => {
+        textareaRef.current?.select();
+      },
+      getValue: () => {
+        return textareaRef.current?.value || "";
       },
     }));
 

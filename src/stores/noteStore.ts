@@ -957,31 +957,10 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 
     // Only update state if something actually changed
     // This prevents unnecessary re-renders that cause scroll position to jump
-    const expandedChanged =
-      newExpanded.size !== expandedPages.size ||
-      Array.from(newExpanded).some((id) => !expandedPages.has(id));
-    const loadedChanged =
-      newLoaded.size !== loadedChildren.size ||
-      Array.from(newLoaded).some((id) => !loadedChildren.has(id));
-
-    // Check if childrenMap actually changed
-    let mapChanged = false;
-    if (newMap.size !== childrenMap.size) {
-      mapChanged = true;
-    } else {
-      for (const [key, newChildren] of newMap.entries()) {
-        const oldChildren = childrenMap.get(key);
-        if (!oldChildren || oldChildren.length !== newChildren.length) {
-          mapChanged = true;
-          break;
-        }
-        // Check if any child IDs changed
-        if (oldChildren.some((child, i) => child.id !== newChildren[i]?.id)) {
-          mapChanged = true;
-          break;
-        }
-      }
-    }
+    // Since we only add items (never remove), size comparison is sufficient
+    const expandedChanged = newExpanded.size !== expandedPages.size;
+    const loadedChanged = newLoaded.size !== loadedChildren.size;
+    const mapChanged = newMap.size !== childrenMap.size;
 
     if (expandedChanged || loadedChanged || mapChanged) {
       set({

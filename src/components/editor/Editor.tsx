@@ -47,8 +47,10 @@ export function Editor({ noteId, content }: EditorProps) {
   const activeTab = useTabStore((state) => state.getActiveTab());
   const { updateTabContent, updateTabTitle, getTab } = useTabStore();
   const [bannerType, setBannerType] = useState<BannerType>(
-    activeTab?.bannerType || "none"
+    activeTab?.bannerType || "none",
   );
+
+  console.log("[Editor] Banner type:", activeTab?.bannerType);
 
   const updatedAt = activeTab?.updatedAt || 0;
 
@@ -62,16 +64,10 @@ export function Editor({ noteId, content }: EditorProps) {
         const currentFlag = useNoteStore.getState().newlyCreatedNoteId;
         if (currentFlag === noteId && titleRef.current) {
           titleRef.current.focus();
-          // Select all text if it's "Untitled" so user can immediately type
-          // Access the textarea element directly via DOM query
-          const textarea = document.querySelector(
-            `textarea[placeholder="Untitled"]`
-          ) as HTMLTextAreaElement;
-          if (
-            textarea &&
-            (textarea.value === "Untitled" || textarea.value === "")
-          ) {
-            textarea.select();
+          // Select all text if it's "Untitled" or empty so user can immediately type
+          const currentValue = titleRef.current.getValue();
+          if (currentValue === "Untitled" || currentValue === "") {
+            titleRef.current.selectAll();
           }
         }
       };
@@ -162,7 +158,7 @@ export function Editor({ noteId, content }: EditorProps) {
         console.error("Failed to save banner type:", error);
       }
     },
-    [noteId]
+    [noteId],
   );
 
   // Content save handler (already debounced in EditorContent)
@@ -193,7 +189,7 @@ export function Editor({ noteId, content }: EditorProps) {
         useNoteStore.getState().saveCurrentNoteContent(newContent);
       }
     },
-    [noteId, getTab, updateTabContent]
+    [noteId, getTab, updateTabContent],
   );
 
   // Title change handler
@@ -216,7 +212,7 @@ export function Editor({ noteId, content }: EditorProps) {
         useNoteStore.getState().updateNote(noteId, { title: displayTitle });
       }
     },
-    [noteId, getTab, updateTabTitle]
+    [noteId, getTab, updateTabTitle],
   );
 
   // Handle Enter in title to focus content editor
