@@ -38,7 +38,6 @@ interface NoteStore {
   createNote: (
     title: string,
     folderId?: string,
-    parentId?: string,
   ) => Promise<Note>;
   createSubpage: (parentId: string, title: string) => Promise<Note>;
   updateNote: (
@@ -162,8 +161,8 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
     }
   },
 
-  createNote: async (title, folderId, parentId) => {
-    const { notes, childrenMap } = get();
+  createNote: async (title, folderId) => {
+    const { notes } = get();
 
     // Generate temporary ID for optimistic update
     const tempId = `temp-${Date.now()}`;
@@ -173,28 +172,21 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       title,
       preview: null,
       folder_id: folderId || null,
-      parent_id: parentId || null,
+      parent_id: null, // Always root-level
       pinned: false,
       children_count: 0,
       created_at: now,
       updated_at: now,
     };
 
-    // Optimistic update - add to UI immediately
-    if (parentId) {
-      const newMap = new Map(childrenMap);
-      const parentChildren = newMap.get(parentId) || [];
-      newMap.set(parentId, [tempMetadata, ...parentChildren]);
-      set({ childrenMap: newMap, isLoading: false });
-    } else {
-      set({ notes: [tempMetadata, ...notes], isLoading: false });
-    }
+    // Optimistic update - add to UI immediately (root-level notes only)
+    set({ notes: [tempMetadata, ...notes], isLoading: false });
 
     try {
       const note = await commands.createNote({
         title,
         folder_id: folderId,
-        parent_id: parentId,
+        // parent_id is omitted - always root-level
       });
 
       const metadata = {
@@ -202,56 +194,30 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         title: note.title,
         preview: null,
         folder_id: note.folder_id,
-        parent_id: note.parent_id,
+        parent_id: null, // Always root-level
         pinned: false,
         children_count: 0,
         created_at: note.created_at,
         updated_at: note.updated_at,
       };
 
-      // Replace temp with real data
-      if (parentId) {
-        const newMap = new Map(get().childrenMap);
-        const parentChildren = newMap.get(parentId) || [];
-        const updatedChildren = parentChildren.map((n) =>
-          n.id === tempId ? metadata : n,
-        );
-        newMap.set(parentId, updatedChildren);
-        set({
-          childrenMap: newMap,
-          isLoading: false,
-          newlyCreatedNoteId: note.id, // Mark as newly created for auto-focus
-        });
-        // Open in tab
-        const { openTab } = useTabStore.getState();
-        await openTab(note.id);
-      } else {
-        // Replace temp with real data in notes list
-        const updatedNotes = get().notes.map((n) =>
-          n.id === tempId ? metadata : n,
-        );
-        set({
-          notes: updatedNotes,
-          isLoading: false,
-          newlyCreatedNoteId: note.id, // Mark as newly created for auto-focus
-        });
-        // Open in tab
-        const { openTab } = useTabStore.getState();
-        await openTab(note.id);
-      }
+      // Replace temp with real data in notes list
+      const updatedNotes = get().notes.map((n) =>
+        n.id === tempId ? metadata : n,
+      );
+      set({
+        notes: updatedNotes,
+        isLoading: false,
+        newlyCreatedNoteId: note.id, // Mark as newly created for auto-focus
+      });
+      // Open in tab
+      const { openTab } = useTabStore.getState();
+      await openTab(note.id);
       return note;
     } catch (error) {
       // Rollback optimistic update on error
-      if (parentId) {
-        const newMap = new Map(get().childrenMap);
-        const parentChildren = newMap.get(parentId) || [];
-        const rolledBack = parentChildren.filter((n) => n.id !== tempId);
-        newMap.set(parentId, rolledBack);
-        set({ childrenMap: newMap, error: String(error), isLoading: false });
-      } else {
-        const rolledBack = get().notes.filter((n) => n.id !== tempId);
-        set({ notes: rolledBack, error: String(error), isLoading: false });
-      }
+      const rolledBack = get().notes.filter((n) => n.id !== tempId);
+      set({ notes: rolledBack, error: String(error), isLoading: false });
       throw error;
     }
   },
@@ -261,8 +227,10 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
     try {
       const note = await commands.createSubpage(parentId, title);
 
+
       // Reload the full note data from database to ensure we have correct content
       const fullNote = await commands.getNote(note.id);
+
       if (!fullNote) {
         throw new Error("Failed to load created sub-page");
       }
@@ -286,21 +254,50 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       newMap.set(parentId, [metadata, ...parentChildren]);
 
       // Refresh parent's metadata from DB to get accurate children_count
-      const refreshedParent = await refreshNoteMetadata(parentId);
+      // First check if parent is in notes (root-level) or childrenMap (nested)
+      const parentInNotes = notes.find((n) => n.id === parentId);
+      let parentParentId: string | null = null;
+      
+      // Find parent in childrenMap to get its parent_id
+      for (const [, children] of childrenMap.entries()) {
+        const found = children.find((n) => n.id === parentId);
+        if (found) {
+          parentParentId = found.parent_id;
+          break;
+        }
+      }
+      
+      // If parent is root-level, use refreshNoteMetadata
+      // If nested, get it from its parent's children
+      let refreshedParent: NoteMetadata | null = null;
+      if (parentInNotes) {
+        refreshedParent = await refreshNoteMetadata(parentId);
+      } else if (parentParentId) {
+        // Parent is nested - get refreshed metadata from its parent's children
+        try {
+          const parentChildren = await commands.getPageChildren(parentParentId);
+          refreshedParent = parentChildren.find((n) => n.id === parentId) || null;
+        } catch (error) {
+          console.error("[createSubpage] Failed to get parent children:", error);
+        }
+      }
+      
       let updatedNotes = notes;
       if (refreshedParent) {
-        updatedNotes = notes.map((n) =>
-          n.id === parentId ? refreshedParent : n,
-        );
-
-        // Also update parent in childrenMap if it's a child itself
-        for (const [parentIdKey, children] of newMap.entries()) {
-          const updatedChildren = children.map((n) =>
-            n.id === parentId ? refreshedParent : n,
+        // Determine if parent is root-level or nested based on its parent_id
+        if (refreshedParent.parent_id === null) {
+          // Parent is root-level - update in notes array
+          updatedNotes = notes.map((n) =>
+            n.id === parentId ? refreshedParent! : n,
           );
-          if (updatedChildren.some((n) => n.id === parentId)) {
-            newMap.set(parentIdKey, updatedChildren);
-          }
+        } else {
+          // Parent is nested - update it in childrenMap under its parent
+          const parentParentId = refreshedParent.parent_id;
+          const children = newMap.get(parentParentId) || [];
+          const updatedChildren = children.map((n) =>
+            n.id === parentId ? refreshedParent! : n,
+          );
+          newMap.set(parentParentId, updatedChildren);
         }
       }
 
@@ -491,20 +488,50 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       }
 
       for (const pid of parentIdsToRefresh) {
-        const refreshed = await refreshNoteMetadata(pid);
+        // Check if parent is root-level or nested
+        const parentInNotes = updatedNotes.find((n) => n.id === pid);
+        let parentParentId: string | null = null;
+        
+        // Find parent in childrenMap to get its parent_id
+        for (const [, children] of newMap.entries()) {
+          const found = children.find((n) => n.id === pid);
+          if (found) {
+            parentParentId = found.parent_id;
+            break;
+          }
+        }
+        
+        // Get refreshed parent metadata
+        let refreshed: NoteMetadata | null = null;
+        if (parentInNotes) {
+          // Parent is root-level
+          refreshed = await refreshNoteMetadata(pid);
+        } else if (parentParentId) {
+          // Parent is nested - get refreshed metadata from its parent's children
+          try {
+            const parentChildren = await commands.getPageChildren(parentParentId);
+            refreshed = parentChildren.find((n) => n.id === pid) || null;
+          } catch (error) {
+            console.error("[deleteNote] Failed to get parent children:", error);
+          }
+        }
+        
         if (refreshed) {
-          updatedNotes = updatedNotes.map((n) =>
-            n.id === pid ? refreshed : n,
-          );
-
-          // Update in childrenMap
-          for (const [mapParentId, children] of newMap.entries()) {
-            const updatedChildren = children.map((n) =>
-              n.id === pid ? refreshed : n,
+          // Update in notes array if root-level
+          if (refreshed.parent_id === null) {
+            updatedNotes = updatedNotes.map((n) =>
+              n.id === pid ? refreshed! : n,
             );
-            if (updatedChildren.some((n) => n.id === pid)) {
-              newMap.set(mapParentId, updatedChildren);
-            }
+          }
+          
+          // Update in childrenMap if nested
+          if (refreshed.parent_id !== null) {
+            const parentParentId = refreshed.parent_id;
+            const children = newMap.get(parentParentId) || [];
+            const updatedChildren = children.map((n) =>
+              n.id === pid ? refreshed! : n,
+            );
+            newMap.set(parentParentId, updatedChildren);
           }
         }
       }

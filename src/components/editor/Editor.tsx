@@ -41,6 +41,7 @@ export function Editor({ noteId, content }: EditorProps) {
   > | null>(null);
   const editorRef = useRef<EditorContentRef>(null);
   const titleRef = useRef<EditorTitleRef>(null);
+  const hasFocusedRef = useRef<string | null>(null);
 
   const newlyCreatedNoteId = useNoteStore((state) => state.newlyCreatedNoteId);
   const focusMode = useUIStore((state) => state.focusMode);
@@ -55,25 +56,42 @@ export function Editor({ noteId, content }: EditorProps) {
     setBannerType(activeTab?.bannerType || "none");
   }, [activeTab?.bannerType]);
 
-  console.log("[Editor] Banner type:", bannerType);
-  console.log("[Editor] Active tab:", activeTab);
-
   const updatedAt = activeTab?.updatedAt || 0;
 
   // Auto-focus title when a new note is created
-  // This effect has priority and should run first
+  const currentFlag = useNoteStore.getState().newlyCreatedNoteId;
   useEffect(() => {
-    if (newlyCreatedNoteId === noteId) {
+    // Check if this note is the newly created one
+    const shouldFocus = currentFlag === noteId;
+    
+    if (shouldFocus && hasFocusedRef.current !== noteId) {
+      // Reset focus tracking for this note
+      hasFocusedRef.current = null;
+      
       // Try to focus immediately, then retry with delays to ensure it works
       const focusTitle = () => {
         // Check flag again before focusing (in case it was cleared)
         const currentFlag = useNoteStore.getState().newlyCreatedNoteId;
-        if (currentFlag === noteId && titleRef.current) {
-          titleRef.current.focus();
-          // Select all text if it's "Untitled" or empty so user can immediately type
-          const currentValue = titleRef.current.getValue();
-          if (currentValue === "Untitled" || currentValue === "") {
-            titleRef.current.selectAll();
+        
+        if (currentFlag === noteId && titleRef.current && hasFocusedRef.current !== noteId) {
+          try {
+            titleRef.current.focus();
+            // Select all text if it's "Untitled" or empty so user can immediately type
+            const currentValue = titleRef.current.getValue();
+            if (currentValue === "Untitled" || currentValue === "") {
+              titleRef.current.selectAll();
+            }
+            // Mark as focused for this note
+            hasFocusedRef.current = noteId;
+            // Clear the flag after a short delay to ensure focus is complete
+            setTimeout(() => {
+              if (useNoteStore.getState().newlyCreatedNoteId === noteId) {
+                useNoteStore.setState({ newlyCreatedNoteId: null });
+              }
+            }, 100);
+          } catch (error) {
+            // Silently fail if focus doesn't work yet
+            console.debug("[Editor] Failed to focus title:", error);
           }
         }
       };
@@ -84,9 +102,14 @@ export function Editor({ noteId, content }: EditorProps) {
       // Retry with delays to ensure it works even if component isn't fully ready
       const timeout1 = setTimeout(focusTitle, 50);
 
+
       return () => {
         clearTimeout(timeout1);
+
       };
+    } else if (!shouldFocus) {
+      // Reset focus tracking when note changes or flag doesn't match
+      hasFocusedRef.current = null;
     }
   }, [newlyCreatedNoteId, noteId]);
 
@@ -112,13 +135,7 @@ export function Editor({ noteId, content }: EditorProps) {
   //   }
   // }, []);
 
-  // Clear newlyCreatedNoteId when user starts typing in title or when note changes
-  useEffect(() => {
-    // Clear the flag when navigating to a different note
-    if (newlyCreatedNoteId && newlyCreatedNoteId !== noteId) {
-      useNoteStore.setState({ newlyCreatedNoteId: null });
-    }
-  }, [noteId, newlyCreatedNoteId]);
+
 
   // Handle back navigation
   const handleBack = useCallback(() => {
@@ -170,11 +187,8 @@ export function Editor({ noteId, content }: EditorProps) {
   // Content save handler (already debounced in EditorContent)
   const handleContentChange = useCallback(
     (newContent: string) => {
-      // Clear the newlyCreatedNoteId flag when user starts typing in editor
-      // This allows normal editor focus behavior after user explicitly moves to editor
-      if (useNoteStore.getState().newlyCreatedNoteId === noteId) {
-        useNoteStore.setState({ newlyCreatedNoteId: null });
-      }
+      // Don't clear newlyCreatedNoteId here - let the focus effect handle it
+      // Only clear it after focus succeeds or when user explicitly interacts
 
       // CRITICAL: Get active tab and check content BEFORE updating tab
       // This prevents the save check from failing after tab content is updated

@@ -87,15 +87,15 @@ export const PageLinkExtension = Node.create<PageLinkOptions>({
       dom.setAttribute("data-page-title", node.attrs.pageTitle);
       dom.href = "#"; // Placeholder href for accessibility
       dom.className =
-        "page-link inline-flex items-center gap-1 hover:bg-primary/5 pr-2 py-0.5 rounded text-primary hover:text-primary/80 transition-colors cursor-pointer font-medium";
+        "page-link inline-flex items-center gap-1 pr-2 text-primary transition-colors cursor-pointer";
 
       // Create SVG icon
       const iconSvg = document.createElementNS(
         "http://www.w3.org/2000/svg",
         "svg"
       );
-      iconSvg.setAttribute("width", "20");
-      iconSvg.setAttribute("height", "20");
+      iconSvg.setAttribute("width", "18");
+      iconSvg.setAttribute("height", "18");
       iconSvg.setAttribute("viewBox", "0 0 24 24");
       iconSvg.setAttribute("fill", "none");
       iconSvg.setAttribute("class", "shrink-0 opacity-70");
@@ -170,7 +170,7 @@ export const PageLinkExtension = Node.create<PageLinkOptions>({
         return "currentColor";
       };
 
-      textSpan.style.textDecoration = "underline";
+      // textSpan.style.textDecoration = "underline";
       textSpan.style.textDecorationColor = getPrimaryColorWithOpacity();
       textSpan.style.textUnderlineOffset = "5px";
       textSpan.textContent = node.attrs.pageTitle || "Untitled";

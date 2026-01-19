@@ -118,7 +118,7 @@ export function useKeyboardShortcuts() {
         setSettingsModalOpen,
         settingsModalOpen,
       } = useUIStore.getState();
-      const { createNote, loadNote } = useNoteStore.getState();
+      const { createNote, loadNote,createSubpage } = useNoteStore.getState();
       const { createStickyNote } = useStickyNotesStore.getState();
       const { closeTab, reopenClosedTab, switchTab, openTabs, activeTabId } =
         useTabStore.getState();
@@ -132,8 +132,7 @@ export function useKeyboardShortcuts() {
 
       if (matchesShortcut(e, keyboardShortcuts.newNote)) {
         e.preventDefault();
-        console.log("creating new note");
-        const note = await createNote("Untitled");
+        const note = activeTabId ? await createSubpage(activeTabId, "Untitled") : await createNote("Untitled");
         if (note) {
           setView(UIView.None);
           loadNote(note.id);

@@ -1,11 +1,12 @@
 import {
   useRef,
-  useEffect,
+
   useImperativeHandle,
   forwardRef,
   useState,
 } from "react";
 import { BannerSelector, type BannerType } from "./BannerSelector";
+
 
 interface EditorTitleProps {
   title: string;
@@ -40,22 +41,23 @@ export const EditorTitle = forwardRef<EditorTitleRef, EditorTitleProps>(
     void _content;
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
-    const noteIdRef = useRef(noteId);
+
     const isUpdatingRef = useRef(false);
     const [isHovered, setIsHovered] = useState(false);
 
     // Update textarea value when noteId changes
-    useEffect(() => {
-      if (noteIdRef.current !== noteId) {
-        noteIdRef.current = noteId;
-        if (textareaRef.current && !isUpdatingRef.current) {
-          textareaRef.current.value = title || "";
-          // Auto-resize textarea
-          textareaRef.current.style.height = "auto";
-          textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-        }
-      }
-    }, [noteId, title]);
+    // useEffect(() => {
+    //   if (noteIdRef.current !== noteId) {
+    //     noteIdRef.current = noteId;
+    //     if (textareaRef.current && !isUpdatingRef.current) {
+    //       textareaRef.current.value = title || "";
+    //       // Auto-resize textarea
+    //       textareaRef.current.style.height = "auto";
+    //       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    //     }
+    //   }
+    // }, [noteId, title]);
+
 
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       isUpdatingRef.current = true;

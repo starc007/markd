@@ -48,8 +48,7 @@ export const Sidebar = memo(function Sidebar() {
       const note = await createNote("Untitled", undefined);
       if (note) {
         useUIStore.getState().setView(UIView.None);
-        // Open in tab
-        await openTab(note.id);
+        // Note: createNote already opens the tab, so we don't need to call openTab again
       }
     } catch (error) {
       console.error("Failed to create note:", error);
@@ -59,7 +58,7 @@ export const Sidebar = memo(function Sidebar() {
         }`
       );
     }
-  }, [openTab]);
+  }, []);
 
   const handleDeleteNote = useCallback(
     async (noteId: string) => {
@@ -102,7 +101,6 @@ export const Sidebar = memo(function Sidebar() {
   const handleCreateSubpage = useCallback(async (parentId: string) => {
     try {
       const { createSubpage } = useNoteStore.getState();
-      // createSubpage already navigates to the newly created subpage
       await createSubpage(parentId, "Untitled");
     } catch (error) {
       console.error("Failed to create subpage:", error);
