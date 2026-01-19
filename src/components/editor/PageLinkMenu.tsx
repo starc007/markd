@@ -16,6 +16,8 @@ export function PageLinkMenu({ editor, currentNoteId }: PageLinkMenuProps) {
   const { getPageSuggestions } = usePageLinkSuggestion(currentNoteId);
   const { bookmarks, loadBookmarks } = useBookmarkStore();
 
+
+
   // Load bookmarks when component mounts
   useEffect(() => {
     loadBookmarks();
@@ -31,7 +33,7 @@ export function PageLinkMenu({ editor, currentNoteId }: PageLinkMenuProps) {
       selector="tiptap-page-link-menu"
       items={({ query }) => {
         try {
-          // Get page suggestions - ensure it's an array
+
           const pageSuggestionsResult = getPageSuggestions(query);
           const pageSuggestions = Array.isArray(pageSuggestionsResult)
             ? pageSuggestionsResult
@@ -54,40 +56,52 @@ export function PageLinkMenu({ editor, currentNoteId }: PageLinkMenuProps) {
 
           // Build page items
           const pageItems: SuggestionItem[] = [];
+
           for (const item of pageSuggestions) {
-            if (item && item.pageId && item.pageTitle) {
-              pageItems.push({
-                title: item.pageTitle,
-                subtext: "Page",
-                icon: File02Icon,
-                onSelect: ({
-                  editor,
-                  range,
-                }: {
-                  editor: Editor;
-                  range: Range;
-                }) => {
-                  editor
-                    .chain()
-                    .focus()
-                    .insertContentAt(range, [
-                      {
-                        type: "pageLink",
-                        attrs: {
-                          pageId: item.pageId,
-                          pageTitle: item.pageTitle,
-                        },
-                      },
-                      {
-                        type: "text",
-                        text: " ",
-                      },
-                    ])
-                    .run();
-                },
-              });
+            if (!item) {
+              console.warn(`[PageLinkMenu] Skipping null/undefined item`);
+              continue;
             }
+            if (!item.pageId) {
+              console.warn(`[PageLinkMenu] Skipping item without pageId:`, item);
+              continue;
+            }
+            if (!item.pageTitle) {
+              console.warn(`[PageLinkMenu] Skipping item without pageTitle:`, item);
+              continue;
+            }
+            pageItems.push({
+              title: item.pageTitle,
+              subtext: "Page",
+              icon: File02Icon,
+              onSelect: ({
+                editor,
+                range,
+              }: {
+                editor: Editor;
+                range: Range;
+              }) => {
+                editor
+                  .chain()
+                  .focus()
+                  .insertContentAt(range, [
+                    {
+                      type: "pageLink",
+                      attrs: {
+                        pageId: item.pageId,
+                        pageTitle: item.pageTitle,
+                      },
+                    },
+                    {
+                      type: "text",
+                      text: " ",
+                    },
+                  ])
+                  .run();
+              },
+            });
           }
+          
 
           // Build bookmark items
           const bookmarkItems: SuggestionItem[] = [];
