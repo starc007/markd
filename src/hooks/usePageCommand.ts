@@ -2,7 +2,6 @@ import { useRef, useEffect } from "react";
 import type { Editor, Range } from "@tiptap/react";
 import * as commands from "../lib/tauri/commands";
 import { useNoteStore } from "../stores/noteStore";
-import type { NoteMetadata } from "../lib/tauri/commands";
 
 export function usePageCommand(
   noteId: string,
@@ -46,68 +45,16 @@ export function usePageCommand(
         return;
       }
 
-      commands
-        .createSubpage(currentNoteId, "Untitled")
-        .then(async (newPage) => {
-          if (editor.isDestroyed || !newPage) {
+      // Use store's createSubpage method which handles all state updates properly
+      // Skip opening the tab so we can insert the link first
+      const { createSubpage } = useNoteStore.getState();
+      createSubpage(currentNoteId, "Untitled", { skipOpenTab: true })
+        .then(async (fullNote) => {
+          if (editor.isDestroyed || !fullNote) {
             return;
           }
 
-          const fullNote = await commands.getNote(newPage.id);
-          if (!fullNote) {
-            console.error("Failed to load created sub-page");
-            return;
-          }
-
-          // Update store state
-          const { childrenMap, notes, expandedPages, loadedChildren } =
-            useNoteStore.getState();
-          const metadata: NoteMetadata = {
-            id: fullNote.id,
-            title: fullNote.title,
-            preview: null,
-            folder_id: fullNote.folder_id,
-            parent_id: fullNote.parent_id,
-            pinned: false,
-            children_count: 0,
-            created_at: fullNote.created_at,
-            updated_at: fullNote.updated_at,
-          };
-
-          const newMap = new Map(childrenMap);
-          const parentChildren = newMap.get(currentNoteId) || [];
-          newMap.set(currentNoteId, [metadata, ...parentChildren]);
-
-          const updatedNotes = notes.map((n) =>
-            n.id === currentNoteId
-              ? { ...n, children_count: n.children_count + 1 }
-              : n
-          );
-
-          for (const [parentIdKey, children] of newMap.entries()) {
-            const updatedChildren = children.map((n) =>
-              n.id === currentNoteId
-                ? { ...n, children_count: n.children_count + 1 }
-                : n
-            );
-            if (updatedChildren.some((n) => n.id === currentNoteId)) {
-              newMap.set(parentIdKey, updatedChildren);
-            }
-          }
-
-          const newExpanded = new Set(expandedPages);
-          newExpanded.add(currentNoteId);
-          const newLoaded = new Set(loadedChildren);
-          newLoaded.add(currentNoteId);
-
-          useNoteStore.setState({
-            childrenMap: newMap,
-            notes: updatedNotes,
-            expandedPages: newExpanded,
-            loadedChildren: newLoaded,
-          });
-
-          // Insert page link BEFORE navigating (so it's inserted into the current page's editor)
+          // Insert page link into the current page's editor BEFORE navigating
           try {
             const currentState = editor.state;
             if (!currentState?.doc) {
@@ -132,8 +79,8 @@ export function usePageCommand(
                 {
                   type: "pageLink",
                   attrs: {
-                    pageId: newPage.id,
-                    pageTitle: newPage.title,
+                    pageId: fullNote.id,
+                    pageTitle: fullNote.title,
                   },
                 },
                 { type: "text", text: " " },

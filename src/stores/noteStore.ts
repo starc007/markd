@@ -39,7 +39,7 @@ interface NoteStore {
     title: string,
     folderId?: string,
   ) => Promise<Note>;
-  createSubpage: (parentId: string, title: string) => Promise<Note>;
+  createSubpage: (parentId: string, title: string, options?: { skipOpenTab?: boolean }) => Promise<Note>;
   updateNote: (
     id: string,
     updates: { title?: string; content?: string; banner_type?: string | null },
@@ -222,7 +222,8 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
     }
   },
 
-  createSubpage: async (parentId, title) => {
+  createSubpage: async (parentId, title, options = {}) => {
+    const { skipOpenTab = false } = options;
     set({ isLoading: true, error: null });
     try {
       const note = await commands.createSubpage(parentId, title);
@@ -315,9 +316,11 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         isLoading: false,
         newlyCreatedNoteId: fullNote.id, // Mark as newly created for auto-focus
       });
-      // Open in tab
-      const { openTab } = useTabStore.getState();
-      await openTab(fullNote.id);
+      // Open in tab (unless skipped)
+      if (!skipOpenTab) {
+        const { openTab } = useTabStore.getState();
+        await openTab(fullNote.id);
+      }
       return fullNote;
     } catch (error) {
       set({ error: String(error), isLoading: false });
@@ -338,12 +341,25 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
           const backlinks = await commands.getBacklinks(id);
           await commands.updatePageLinkTitles(id, note.title);
 
-          // If any open tab is one of the notes that was updated, reload it
-          const { openTabs } = useTabStore.getState();
+          // If any open tab is one of the notes that was updated, refresh its content
+          // without switching to it (to avoid interrupting the user)
+          const { openTabs, activeTabId, updateTabContent } = useTabStore.getState();
           for (const tab of openTabs) {
             if (backlinks.includes(tab.id)) {
-              // Reload the tab to get the updated content
-              await get().loadNote(tab.id);
+              // Only refresh content if it's not the currently active tab
+              // (to avoid interrupting the user while they're typing)
+              if (tab.id !== activeTabId) {
+                try {
+                  const refreshedNote = await commands.getNote(tab.id);
+                  if (refreshedNote) {
+                    updateTabContent(tab.id, refreshedNote.content);
+                  }
+                } catch (error) {
+                  console.error(`Failed to refresh tab ${tab.id}:`, error);
+                }
+              }
+              // If it's the active tab, the content will be updated naturally
+              // through the normal save/load cycle, so we don't need to do anything
             }
           }
         } catch (error) {
