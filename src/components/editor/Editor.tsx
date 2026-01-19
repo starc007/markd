@@ -397,8 +397,6 @@ export function Editor({ noteId, content }: EditorProps) {
             <EditorTitle
               ref={titleRef}
               title={activeTab?.title || ""}
-              noteId={noteId}
-              content={content}
               onTitleChange={handleTitleChange}
               onEnter={handleTitleEnter}
               onBannerChange={handleBannerChange}

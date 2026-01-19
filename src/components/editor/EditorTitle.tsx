@@ -10,8 +10,6 @@ import { BannerSelector, type BannerType } from "./BannerSelector";
 
 interface EditorTitleProps {
   title: string;
-  noteId: string;
-  content: string;
   onTitleChange: (title: string) => void;
   onEnter?: () => void;
   onBannerChange?: (type: BannerType) => void;
@@ -28,8 +26,7 @@ export const EditorTitle = forwardRef<EditorTitleRef, EditorTitleProps>(
   (
     {
       title,
-      noteId,
-      content: _content,
+
       onTitleChange,
       onEnter,
       onBannerChange,
@@ -37,8 +34,7 @@ export const EditorTitle = forwardRef<EditorTitleRef, EditorTitleProps>(
     },
     ref,
   ) => {
-    // _content is passed for consistency but not currently used
-    void _content;
+
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
