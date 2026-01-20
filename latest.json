@@ -1,14 +1,14 @@
 {
-  "version": "0.1.5",
-  "notes": "Added banners in note and UX improvement",
-  "pub_date": "2026-01-19T15:22:25.748Z",
+  "version": "0.1.6",
+  "notes": "Added custom banner upload",
+  "pub_date": "2026-01-20T15:40:44.558Z",
   "platforms": {
     "darwin-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSbHJsY3g1eEtlY1ZwSkNxR0JzN0hGdzlyQnRpS3FOM3Qzbk5OWVhCOHJwU1RHWWk5dHdibk8wRlQ2aUJCYjZkR0NVdTdjREMxTWVrUFNNRW5EUngxbUZmVGx4cS94REF3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY4ODM2MTQ1CWZpbGU6RHJhZnQuYXBwLnRhci5negpiMDB5VzZ4MUY0cHlxTDZsRHRRZVh1c0VwMHZGdEFRR2tNQllhQ2JGOEk1WjRSeUxtY1BPdVBSVFBhM0I5WWMwVjAwcFZDVStWZ0hIS1hmMXlQYU9CQT09Cg==",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSbHJsY3g1eEtlY2FhbkZJL3JLa0xTdno2UllMOThNVG5QaUdsYzdBRXFCWVJjcEJNL3FUamg2U215SkEwNXdwRElNWUFGVzkrYloyKzdaZ1R3ekI1R053YlQrZDBvdWdnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY4OTIzNjQ0CWZpbGU6RHJhZnQuYXBwLnRhci5negpBTHZTQ3JYV2xnbm1qcTNGZmp4aWlSSEpZQlNScUlxdEozQkFtaXpnQk1XdWIvbU9jQk1zSmhCL0JtaWlYNlpOZnM2RXV5ZlBoa3NvZGd0Rm1PWHdDQT09Cg==",
       "url": "https://usedraft.app/updates/Draft.app.tar.gz"
     },
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSbHJsY3g1eEtlY1ZwSkNxR0JzN0hGdzlyQnRpS3FOM3Qzbk5OWVhCOHJwU1RHWWk5dHdibk8wRlQ2aUJCYjZkR0NVdTdjREMxTWVrUFNNRW5EUngxbUZmVGx4cS94REF3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY4ODM2MTQ1CWZpbGU6RHJhZnQuYXBwLnRhci5negpiMDB5VzZ4MUY0cHlxTDZsRHRRZVh1c0VwMHZGdEFRR2tNQllhQ2JGOEk1WjRSeUxtY1BPdVBSVFBhM0I5WWMwVjAwcFZDVStWZ0hIS1hmMXlQYU9CQT09Cg==",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSbHJsY3g1eEtlY2FhbkZJL3JLa0xTdno2UllMOThNVG5QaUdsYzdBRXFCWVJjcEJNL3FUamg2U215SkEwNXdwRElNWUFGVzkrYloyKzdaZ1R3ekI1R053YlQrZDBvdWdnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY4OTIzNjQ0CWZpbGU6RHJhZnQuYXBwLnRhci5negpBTHZTQ3JYV2xnbm1qcTNGZmp4aWlSSEpZQlNScUlxdEozQkFtaXpnQk1XdWIvbU9jQk1zSmhCL0JtaWlYNlpOZnM2RXV5ZlBoa3NvZGd0Rm1PWHdDQT09Cg==",
       "url": "https://usedraft.app/updates/Draft.app.tar.gz"
     }
   }
