@@ -628,6 +628,14 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         isLoading: false,
       });
 
+      // Refresh trashed notes count immediately
+      try {
+        await get().loadTrashedNotes();
+      } catch (error) {
+        console.error("Failed to refresh trashed notes:", error);
+        // Don't throw - this is not critical
+      }
+
       // Load the note to navigate to after deletion
       if (noteToNavigate) {
         try {
@@ -1052,11 +1060,9 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
     try {
       await commands.restoreNote(id);
       toast.success("Note restored");
-
-      // Remove from trashed notes list
-      set((state) => ({
-        trashedNotes: state.trashedNotes.filter((n) => n.id !== id),
-      }));
+      
+      // Refresh trashed notes count (handles child notes too)
+      await get().loadTrashedNotes();
 
       // Reload notes to show restored note
       const { loadNotes } = get();
@@ -1073,10 +1079,8 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       await commands.permanentlyDeleteNote(id);
       toast.success("Note permanently deleted");
 
-      // Remove from trashed notes list
-      set((state) => ({
-        trashedNotes: state.trashedNotes.filter((n) => n.id !== id),
-      }));
+      // Refresh trashed notes count (handles child notes too)
+      await get().loadTrashedNotes();
     } catch (error) {
       console.error("Failed to permanently delete note:", error);
       toast.error("Failed to permanently delete note");

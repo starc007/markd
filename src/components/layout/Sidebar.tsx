@@ -34,14 +34,15 @@ export const Sidebar = memo(function Sidebar() {
   const [deleteModalNoteId, setDeleteModalNoteId] = useState<string | null>(
     null
   );
+  const { loadFolders, loadNotes, loadTrashedNotes } = useNoteStore.getState();
 
   useEffect(() => {
-    const { loadFolders, loadNotes } = useNoteStore.getState();
     loadFolders();
     loadNotes(undefined, null);
+    loadTrashedNotes();
     loadStickyNotes();
     loadBookmarks(undefined);
-  }, [loadStickyNotes, loadBookmarks]);
+  }, [loadFolders, loadNotes, loadTrashedNotes, loadStickyNotes, loadBookmarks]);
 
   const handleNewNote = useCallback(async () => {
     try {

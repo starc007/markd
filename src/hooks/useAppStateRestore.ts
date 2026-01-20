@@ -73,25 +73,7 @@ export function useAppStateRestore() {
         } catch (error) {
           console.error("[AppStateRestore] Failed to restore tabs:", error);
         }
-      } else if (savedState.currentNoteId) {
-        // Fallback: restore single note (backward compatibility)
-        try {
-          // First expand parent pages if saved
-          if (savedState.parentPath && savedState.parentPath.length > 0) {
-            await expandParentPages(savedState.parentPath);
-          }
-          // Then load the note (will open in tab)
-          await loadNote(savedState.currentNoteId);
-        } catch (error) {
-          console.error(
-            "[AppStateRestore] Failed to restore note:",
-            savedState.currentNoteId,
-            error
-          );
-          // If note doesn't exist anymore, clear the saved state
-          // This can happen if the note was deleted
-        }
-      }
+      } 
     };
 
     restoreState();

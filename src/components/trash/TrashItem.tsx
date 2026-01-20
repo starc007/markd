@@ -4,7 +4,7 @@ import { DeleteIcon } from "@hugeicons/core-free-icons";
 import { Undo2Icon } from "../tiptap-icons/undo2-icon";
 import type { TrashedNoteMetadata } from "../../lib/tauri/commands";
 import { useNoteStore } from "../../stores/noteStore";
-import { IconButton } from "../ui";
+import { IconButton, Modal, ModalFooter, Button } from "../ui";
 import { formatRelativeTime } from "../../lib/utils";
 
 interface TrashItemProps {
@@ -15,6 +15,7 @@ export function TrashItem({ note }: TrashItemProps) {
     const { restoreNote, permanentlyDeleteNote } = useNoteStore();
     const [isDeleting, setIsDeleting] = useState(false);
     const [isRestoring, setIsRestoring] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
 
     const handleRestore = async () => {
         setIsRestoring(true);
@@ -27,15 +28,12 @@ export function TrashItem({ note }: TrashItemProps) {
         }
     };
 
-    const handlePermanentDelete = async () => {
-        if (
-            !confirm(
-                "Are you sure you want to permanently delete this note? This action cannot be undone."
-            )
-        ) {
-            return;
-        }
+    const handlePermanentDeleteClick = () => {
+        setShowDeleteModal(true);
+    };
 
+    const handleConfirmPermanentDelete = async () => {
+        setShowDeleteModal(false);
         setIsDeleting(true);
         try {
             await permanentlyDeleteNote(note.id);
@@ -108,7 +106,7 @@ export function TrashItem({ note }: TrashItemProps) {
                     </IconButton>
                     <IconButton
                         size="sm"
-                        onClick={handlePermanentDelete}
+                        onClick={handlePermanentDeleteClick}
                         disabled={isRestoring || isDeleting}
                         title="Permanently delete"
                         className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-600 hover:bg-red-500/10"
@@ -122,6 +120,30 @@ export function TrashItem({ note }: TrashItemProps) {
                     </IconButton>
                 </div>
             </div>
+
+            {/* Permanent Delete Confirmation Modal */}
+            <Modal
+                isOpen={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                title="Permanently Delete Note"
+            >
+                <p className="text-muted-foreground">
+                    Are you sure you want to permanently delete "{note.title || "Untitled"}"?
+                    This action cannot be undone and the note will be immediately removed from your trash.
+                </p>
+                <ModalFooter>
+                    <Button variant="ghost" onClick={() => setShowDeleteModal(false)}>
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="destructive"
+                        onClick={handleConfirmPermanentDelete}
+                        disabled={isDeleting}
+                    >
+                        {isDeleting ? "Deleting..." : "Delete Permanently"}
+                    </Button>
+                </ModalFooter>
+            </Modal>
         </div>
     );
 }
