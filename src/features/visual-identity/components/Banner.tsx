@@ -1,6 +1,7 @@
 import { memo, useState, useEffect } from "react";
 import { BannerSelector, type BannerType } from "./BannerSelector";
 import { getBannerImage } from "@/lib/tauri/commands";
+import { normalizeBannerType } from "../utils/util";
 
 interface BannerProps {
   bannerType: BannerType;
@@ -11,12 +12,15 @@ interface BannerProps {
 }
 
 export const Banner = memo(function Banner({
-  bannerType,
+  bannerType: rawBannerType,
   title,
   className = "",
   noteId,
   onBannerChange,
 }: BannerProps) {
+  // Normalize banner type to handle old formats
+  const bannerType = normalizeBannerType(rawBannerType);
+  
   const [isHovered, setIsHovered] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);

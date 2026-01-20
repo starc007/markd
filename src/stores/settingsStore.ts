@@ -17,7 +17,6 @@ interface SettingsState {
   syncEnabled: boolean;
   isLoggedIn: boolean;
   keyboardShortcuts: KeyboardShortcuts;
-  showBanner: boolean; // Show fingerprint banner in editor
   setTheme: (theme: Theme) => void;
   setSyncEnabled: (enabled: boolean) => void;
   setIsLoggedIn: (loggedIn: boolean) => void;
@@ -26,7 +25,6 @@ interface SettingsState {
     shortcut: KeyboardShortcut
   ) => void;
   resetKeyboardShortcuts: () => void;
-  setShowBanner: (show: boolean) => void;
 }
 
 const STORAGE_KEY = "usedraft-settings";
@@ -70,7 +68,6 @@ const saveSettings = (state: SettingsState) => {
         syncEnabled: state.syncEnabled,
         isLoggedIn: state.isLoggedIn,
         keyboardShortcuts: state.keyboardShortcuts,
-        showBanner: state.showBanner,
       })
     );
   } catch (error) {
@@ -87,7 +84,6 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   keyboardShortcuts:
     (initialSettings.keyboardShortcuts as KeyboardShortcuts) ||
     defaultCustomizableShortcuts,
-  showBanner: initialSettings.showBanner ?? true, // Default to showing banner
   setTheme: (theme) => {
     const state = useSettingsStore.getState();
     set({ theme });
@@ -116,10 +112,5 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     const state = useSettingsStore.getState();
     set({ keyboardShortcuts: defaultCustomizableShortcuts });
     saveSettings({ ...state, keyboardShortcuts: defaultCustomizableShortcuts });
-  },
-  setShowBanner: (show: boolean) => {
-    const state = useSettingsStore.getState();
-    set({ showBanner: show });
-    saveSettings({ ...state, showBanner: show });
   },
 }));

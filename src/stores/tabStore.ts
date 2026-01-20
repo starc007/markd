@@ -5,7 +5,8 @@ import {
   loadAppState,
   type AppState,
 } from "../lib/app-state-persistence";
-import { BannerType } from "@/components/editor/BannerSelector";
+import { BannerType } from "@/features/visual-identity/components";
+import { normalizeBannerType } from "@/features/visual-identity/utils/util";
 
 export interface Tab {
   id: string; // Note ID
@@ -92,9 +93,7 @@ export const useTabStore = create<TabStore>((set, get) => ({
         content: note.content,
         updatedAt: note.updated_at,
         isDirty: false,
-        bannerType: note.banner_type
-          ? (note.banner_type as BannerType)
-          : "none",
+        bannerType: normalizeBannerType(note.banner_type),
       };
 
       // Add to open tabs and make it active

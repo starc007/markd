@@ -5,7 +5,8 @@ import {
   forwardRef,
   useState,
 } from "react";
-import { BannerSelector, type BannerType } from "./BannerSelector";
+import { BannerSelector, type BannerType } from "@/features/visual-identity/components";
+import { normalizeBannerType } from "@/features/visual-identity/utils/util";
 
 
 interface EditorTitleProps {
@@ -96,6 +97,7 @@ export const EditorTitle = forwardRef<EditorTitleRef, EditorTitleProps>(
       },
     }));
 
+
     return (
       <div
         ref={containerRef}
@@ -116,10 +118,10 @@ export const EditorTitle = forwardRef<EditorTitleRef, EditorTitleProps>(
           }}
           rows={1}
         />
-        {isHovered && onBannerChange && currentBanner === "none" && (
+        {isHovered && onBannerChange && (
           <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
             <BannerSelector
-              currentBanner={currentBanner}
+              currentBanner={normalizeBannerType(currentBanner)}
               onSelect={onBannerChange}
               noteId={noteId}
             />

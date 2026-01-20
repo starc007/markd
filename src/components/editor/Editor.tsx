@@ -25,9 +25,9 @@ import { EditorContent, type EditorContentRef } from "./EditorContent";
 import { WordCountStats } from "./WordCountStats";
 import { AppProvider } from "@/context/app-context";
 import { formatRelativeTime } from "@/lib/utils";
-import { Banner } from "./Banner";
-import { type BannerType } from "./BannerSelector";
+import { Banner, type BannerType } from "@/features/visual-identity/components";
 import { deleteBannerImage } from "@/lib/tauri/commands";
+import { normalizeBannerType } from "@/features/visual-identity/utils/util";
 
 interface EditorProps {
   noteId: string;
@@ -48,12 +48,12 @@ export function Editor({ noteId, content }: EditorProps) {
   const activeTab = useTabStore((state) => state.getActiveTab());
   const { updateTabContent, updateTabTitle, getTab } = useTabStore();
   const [bannerType, setBannerType] = useState<BannerType>(
-    activeTab?.bannerType || "none",
+    normalizeBannerType(activeTab?.bannerType),
   );
 
   // Sync bannerType state when active tab changes (e.g., switching notes)
   useEffect(() => {
-    setBannerType(activeTab?.bannerType || "none");
+    setBannerType(normalizeBannerType(activeTab?.bannerType));
   }, [activeTab?.bannerType]);
 
   const updatedAt = activeTab?.updatedAt || 0;

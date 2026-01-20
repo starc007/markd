@@ -150,17 +150,17 @@ export async function saveBannerImage(
   noteId: string,
   imageData: string
 ): Promise<string> {
-  return invoke<string>("save_banner_image", { note_id: noteId, image_data: imageData });
+  return invoke<string>("save_banner_image", { noteId, imageData });
 }
 
 export async function getBannerImage(
   noteId: string
 ): Promise<string | null> {
-  return invoke<string | null>("get_banner_image", { note_id: noteId });
+  return invoke<string | null>("get_banner_image", { noteId });
 }
 
 export async function deleteBannerImage(noteId: string): Promise<void> {
-  return invoke<void>("delete_banner_image", { note_id: noteId });
+  return invoke<void>("delete_banner_image", { noteId });
 }
 
 export async function restoreNote(id: string): Promise<Note> {
@@ -448,62 +448,4 @@ export interface AppVersion {
  */
 export async function getAppVersion(): Promise<AppVersion> {
   return invoke<AppVersion>("get_app_version");
-}
-
-// Visual identity commands
-export interface NoteVisualIdentity {
-  note_id: string;
-  gradient_colors: string[];
-  pattern_type: string;
-  pattern_data: string | null;
-  image_data: string | null;
-  created_at: number;
-  updated_at: number;
-}
-
-export interface VisualIdentitySeed {
-  seeds: number[];
-  hash: string;
-}
-
-export async function generateNoteVisualIdentitySeed(params: {
-  note_id: string;
-  title: string;
-  content: string;
-}): Promise<VisualIdentitySeed> {
-  return invoke<VisualIdentitySeed>("generate_note_visual_identity_seed", {
-    params,
-  });
-}
-
-export async function getNoteVisualIdentity(
-  noteId: string,
-): Promise<NoteVisualIdentity | null> {
-  return invoke<NoteVisualIdentity | null>("get_note_visual_identity", {
-    noteId,
-  });
-}
-
-export async function saveNoteVisualIdentity(
-  noteId: string,
-  gradientColors: string[],
-  patternType: string,
-  patternData: string | null,
-  imageData: string | null = null,
-): Promise<void> {
-  return invoke<void>("save_note_visual_identity", {
-    noteId,
-    gradientColors,
-    patternType,
-    patternData,
-    imageData,
-  });
-}
-
-export async function regenerateNoteVisualIdentity(
-  noteId: string,
-): Promise<void> {
-  return invoke<void>("regenerate_note_visual_identity", {
-    noteId,
-  });
 }

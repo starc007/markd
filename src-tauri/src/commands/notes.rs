@@ -511,7 +511,7 @@ pub async fn cleanup_expired_trash(
 }
 
 /// Save custom banner image for a note
-/// image_data: Base64-encoded data URL (e.g., "data:image/png;base64,...")
+/// imageData: Base64-encoded data URL (e.g., "data:image/png;base64,...")
 #[tauri::command]
 pub async fn save_banner_image(
     state: State<'_, AppState>,

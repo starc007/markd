@@ -4,7 +4,7 @@ import {
   DropdownContent,
   DropdownSeparator,
   Button,
-} from "../ui";
+} from "@/components/ui";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ImageIcon, UploadIcon } from "@hugeicons/core-free-icons";
 import { open } from "@tauri-apps/plugin-dialog";
@@ -15,15 +15,21 @@ import { useState } from "react";
 
 // Static banner image URLs - add your image URLs here
 const STATIC_BANNER_IMAGES = [
-  // Add your static image URLs here
-  // Example: "https://example.com/image1.jpg",
-  // Example: "https://example.com/image2.jpg",
+  "https://img-r2.usedraft.app/2.jpg",
+  "https://img-r2.usedraft.app/4.jpg",
+  "https://img-r2.usedraft.app/6..jpg",
+  "https://img-r2.usedraft.app/7.jpg",
+  "https://img-r2.usedraft.app/905c55ab0d82167337241b69a41afa2f.jpg",
+  "https://img-r2.usedraft.app/afaa06d350a755321c1c515a72c2c774.jpg",
+  "https://img-r2.usedraft.app/d59a1e29dcfedb6668d3d7b79b5a82c0.jpg"
 ] as const;
 
 export type BannerType =
   | "none"
   | `static-${string}`
   | `custom-${string}`;
+
+
 
 interface BannerSelectorProps {
   currentBanner?: BannerType;
@@ -39,10 +45,11 @@ export function BannerSelector({
   const isNone = currentBanner === "none";
   const [isUploading, setIsUploading] = useState(false);
 
+
   const handleFileSelect = async () => {
     try {
       setIsUploading(true);
-      const file = await open({
+      const selectedFile = await open({
         multiple: false,
         filters: [
           {
@@ -52,13 +59,13 @@ export function BannerSelector({
         ],
       });
 
-      if (!file) {
+      if (!selectedFile || typeof selectedFile !== "string") {
         setIsUploading(false);
         return;
       }
 
-      // Get file path (handle both string and FileWithPath types)
-      const filePath = typeof file === "string" ? file : file.path;
+      // Get file path - open() returns string when multiple: false
+      const filePath = selectedFile;
       
       // Read file as binary (readFile returns Uint8Array in Tauri v2)
       const fileData = await readFile(filePath);
@@ -129,7 +136,7 @@ export function BannerSelector({
         <div className="mb-4">
           <h3 className="text-sm font-semibold mb-3">Upload Image</h3>
           <Button
-            variant="outline"
+            variant="secondary"
             className="w-full"
             onClick={handleFileSelect}
             disabled={isUploading}
