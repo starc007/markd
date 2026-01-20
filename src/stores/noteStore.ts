@@ -1,9 +1,11 @@
 import { create } from "zustand";
+import { toast } from "sonner";
 import type {
   Note,
   NoteMetadata,
   Folder,
   SearchResult,
+  TrashedNoteMetadata,
 } from "../lib/tauri/commands";
 import * as commands from "../lib/tauri/commands";
 
@@ -68,6 +70,14 @@ interface NoteStore {
 
   // Import actions
   importFile: (filePath: string, folderId?: string | null) => Promise<Note>;
+
+  // Trash actions
+  trashedNotes: TrashedNoteMetadata[];
+  isLoadingTrash: boolean;
+  loadTrashedNotes: () => Promise<void>;
+  restoreNote: (id: string) => Promise<void>;
+  permanentlyDeleteNote: (id: string) => Promise<void>;
+  permanentlyDeleteAllTrashedNotes: () => Promise<void>;
 }
 
 // Helper function to refresh a note's metadata (including children_count)
@@ -97,6 +107,9 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
   loadedChildren: new Set(),
   loadingChildren: new Set(),
   newlyCreatedNoteId: null,
+  // Trash state
+  trashedNotes: [],
+  isLoadingTrash: false,
 
   // Note actions
   loadNotes: async (folderId, parentId) => {
@@ -175,11 +188,13 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       parent_id: null, // Always root-level
       pinned: false,
       children_count: 0,
+      deleted_at: null,
       created_at: now,
       updated_at: now,
     };
 
     // Optimistic update - add to UI immediately (root-level notes only)
+    // Note: tempMetadata already has deleted_at: null
     set({ notes: [tempMetadata, ...notes], isLoading: false });
 
     try {
@@ -197,6 +212,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         parent_id: null, // Always root-level
         pinned: false,
         children_count: 0,
+        deleted_at: note.deleted_at,
         created_at: note.created_at,
         updated_at: note.updated_at,
       };
@@ -245,6 +261,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         parent_id: fullNote.parent_id,
         pinned: false,
         children_count: 0,
+        deleted_at: fullNote.deleted_at,
         created_at: fullNote.created_at,
         updated_at: fullNote.updated_at,
       };
@@ -428,6 +445,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
             parent_id: note.parent_id,
             pinned: oldNote.pinned,
             children_count: oldNote.children_count,
+            deleted_at: oldNote.deleted_at,
             created_at: oldNote.created_at,
             updated_at: note.updated_at,
           };
@@ -454,6 +472,9 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
   deleteNote: async (id) => {
     set({ isLoading: true, error: null });
     try {
+      // Show toast notification
+      toast.success("Note moved to trash");
+      
       // Find parent before deletion to refresh it later
       const { notes, childrenMap } = get();
       const deletedNote = notes.find((n) => n.id === id);
@@ -607,6 +628,14 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         loadedChildren: newLoaded,
         isLoading: false,
       });
+
+      // Refresh trashed notes count immediately
+      try {
+        await get().loadTrashedNotes();
+      } catch (error) {
+        console.error("Failed to refresh trashed notes:", error);
+        // Don't throw - this is not critical
+      }
 
       // Load the note to navigate to after deletion
       if (noteToNavigate) {
@@ -786,6 +815,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
             parent_id: note.parent_id,
             pinned: false,
             children_count: 0,
+            deleted_at: note.deleted_at,
             created_at: note.created_at,
             updated_at: note.updated_at,
           },
@@ -1011,6 +1041,74 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         loadedChildren: newLoaded,
         childrenMap: newMap,
       });
+    }
+  },
+
+  // Trash actions
+  loadTrashedNotes: async () => {
+    set({ isLoadingTrash: true, error: null });
+    try {
+      const notes = await commands.listTrashedNotes();
+      set({ trashedNotes: notes, isLoadingTrash: false });
+    } catch (error) {
+      console.error("Failed to load trashed notes:", error);
+      toast.error("Failed to load trashed notes");
+      set({ error: String(error), isLoadingTrash: false });
+    }
+  },
+
+  restoreNote: async (id) => {
+    try {
+      await commands.restoreNote(id);
+      toast.success("Note restored");
+      
+      // Refresh trashed notes count (handles child notes too)
+      await get().loadTrashedNotes();
+
+      // Reload notes to show restored note
+      const { loadNotes } = get();
+      await loadNotes();
+    } catch (error) {
+      console.error("Failed to restore note:", error);
+      toast.error("Failed to restore note");
+      throw error;
+    }
+  },
+
+  permanentlyDeleteNote: async (id) => {
+    try {
+      await commands.permanentlyDeleteNote(id);
+      toast.success("Note permanently deleted");
+
+      // Refresh trashed notes count (handles child notes too)
+      await get().loadTrashedNotes();
+    } catch (error) {
+      console.error("Failed to permanently delete note:", error);
+      toast.error("Failed to permanently delete note");
+      throw error;
+    }
+  },
+
+  permanentlyDeleteAllTrashedNotes: async () => {
+    const { trashedNotes } = get();
+    if (trashedNotes.length === 0) {
+      return;
+    }
+
+    try {
+      // Delete all trashed notes one by one
+      for (const note of trashedNotes) {
+        await commands.permanentlyDeleteNote(note.id);
+      }
+
+      toast.success(`Permanently deleted ${trashedNotes.length} ${trashedNotes.length === 1 ? "note" : "notes"}`);
+
+      // Refresh trashed notes count
+      await get().loadTrashedNotes();
+    } catch (error) {
+      console.error("Failed to permanently delete all notes:", error);
+      toast.error("Failed to permanently delete all notes");
+      throw error;
     }
   },
 }));

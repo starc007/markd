@@ -21,6 +21,7 @@ export const Sidebar = memo(function Sidebar() {
   const notes = useNoteStore((state) => state.notes);
   const childrenMap = useNoteStore((state) => state.childrenMap);
   const expandedPages = useNoteStore((state) => state.expandedPages);
+  const trashedNotes = useNoteStore((state) => state.trashedNotes);
   const { openTab } = useTabStore();
 
   // Get current note ID from active tab
@@ -33,14 +34,15 @@ export const Sidebar = memo(function Sidebar() {
   const [deleteModalNoteId, setDeleteModalNoteId] = useState<string | null>(
     null
   );
+  const { loadFolders, loadNotes, loadTrashedNotes } = useNoteStore.getState();
 
   useEffect(() => {
-    const { loadFolders, loadNotes } = useNoteStore.getState();
     loadFolders();
     loadNotes(undefined, null);
+    loadTrashedNotes();
     loadStickyNotes();
     loadBookmarks(undefined);
-  }, [loadStickyNotes, loadBookmarks]);
+  }, [loadFolders, loadNotes, loadTrashedNotes, loadStickyNotes, loadBookmarks]);
 
   const handleNewNote = useCallback(async () => {
     try {
@@ -53,8 +55,7 @@ export const Sidebar = memo(function Sidebar() {
     } catch (error) {
       console.error("Failed to create note:", error);
       toast.error(
-        `Failed to create note: ${
-          error instanceof Error ? error.message : "Unknown error"
+        `Failed to create note: ${error instanceof Error ? error.message : "Unknown error"
         }`
       );
     }
@@ -70,8 +71,7 @@ export const Sidebar = memo(function Sidebar() {
       } catch (error) {
         console.error("Failed to delete note:", error);
         toast.error(
-          `Failed to delete note: ${
-            error instanceof Error ? error.message : "Unknown error"
+          `Failed to delete note: ${error instanceof Error ? error.message : "Unknown error"
           }`
         );
       }
@@ -105,8 +105,7 @@ export const Sidebar = memo(function Sidebar() {
     } catch (error) {
       console.error("Failed to create subpage:", error);
       toast.error(
-        `Failed to create subpage: ${
-          error instanceof Error ? error.message : "Unknown error"
+        `Failed to create subpage: ${error instanceof Error ? error.message : "Unknown error"
         }`
       );
     }
@@ -172,7 +171,7 @@ export const Sidebar = memo(function Sidebar() {
         onCreateSubpage={handleCreateSubpage}
       />
 
-      <SidebarSettings />
+      <SidebarSettings trashedNotesCount={trashedNotes.length} />
 
       {/* Delete Note Modal */}
       {deleteModalNoteId && (

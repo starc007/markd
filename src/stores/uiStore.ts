@@ -8,6 +8,7 @@ export enum UIView {
   StickyNotes = "sticky_notes",
   Bookmarks = "bookmarks",
   Settings = "settings",
+  Trash = "trash",
   None = "idle",
 }
 
@@ -18,7 +19,6 @@ interface UIStore {
   commandPaletteOpen: boolean;
   searchOpen: boolean;
   currentView: UIView | null;
-  previousNoteId: string | null; // Track note we came from when navigating to bookmarks
   settingsModalOpen: boolean;
   selectedStickyNoteId: string | null;
 
@@ -30,7 +30,6 @@ interface UIStore {
   setCommandPaletteOpen: (open: boolean) => void;
   setSearchOpen: (open: boolean) => void;
   setView: (view: UIView | null) => void;
-  setPreviousNoteId: (id: string | null) => void;
   setSettingsModalOpen: (open: boolean) => void;
   setSelectedStickyNoteId: (id: string | null) => void;
 }
@@ -42,7 +41,7 @@ export const useUIStore = create<UIStore>((set, get) => ({
   commandPaletteOpen: false,
   searchOpen: false,
   currentView: UIView.None,
-  previousNoteId: null,
+
   settingsModalOpen: false,
   selectedStickyNoteId: null,
   // Actions
@@ -71,33 +70,24 @@ export const useUIStore = create<UIStore>((set, get) => ({
   },
 
   setView: (view: UIView | null) => {
-    const { getActiveTab } = useTabStore.getState();
-    const activeTab = getActiveTab();
-
-    // Track previous note when navigating to bookmarks
-    if (view === UIView.Bookmarks && activeTab) {
-      set({ previousNoteId: activeTab.id });
-    } else if (view === UIView.None && get().previousNoteId) {
-      // Clear previous note when going back to editor
-      set({ previousNoteId: null });
-    }
+    const { updateActiveTabId } = useTabStore.getState();
+    //set active tab to null
+    updateActiveTabId(null);
 
     set({ currentView: view });
     // Persist view change (preserve existing parentPath and tabs)
     const savedState = loadAppState();
-    const { openTabs, activeTabId } = useTabStore.getState();
+    const { openTabs } = useTabStore.getState();
     saveAppState({
-      currentNoteId: activeTab?.id || null,
+
       currentView: view ? String(view) : null,
       parentPath: savedState.parentPath || [],
       openTabIds: openTabs.map((tab) => tab.id),
-      activeTabId: activeTabId,
+      activeTabId: null,
     });
   },
 
-  setPreviousNoteId: (id: string | null) => {
-    set({ previousNoteId: id });
-  },
+
 
   setSettingsModalOpen: (open: boolean) => {
     set({ settingsModalOpen: open });

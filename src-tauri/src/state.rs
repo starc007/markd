@@ -3,11 +3,13 @@ use std::sync::Arc;
 use crate::services::batch_indexer::BatchIndexer;
 use crate::services::database::Database;
 use crate::services::save_queue::SaveQueue;
+use crate::services::trash_cleanup::TrashCleanup;
 
 pub struct AppState {
     pub db: Arc<Database>,
     pub batch_indexer: Arc<BatchIndexer>,
     pub save_queue: Arc<SaveQueue>,
+    pub trash_cleanup: Arc<TrashCleanup>,
 }
 
 impl AppState {
@@ -47,10 +49,18 @@ impl AppState {
         // Create save queue (processes saves sequentially with deduplication)
         let save_queue = Arc::new(SaveQueue::new(Arc::clone(&db), Arc::clone(&batch_indexer)));
 
+        // Create trash cleanup service
+        let trash_cleanup = Arc::new(TrashCleanup::new(Arc::clone(&db)));
+
+        // Start background task for periodic trash cleanup (runs on startup and every hour)
+        let trash_cleanup_clone = Arc::clone(&trash_cleanup);
+        crate::services::trash_cleanup::start_trash_cleanup_task(trash_cleanup_clone);
+
         Ok(AppState {
             db,
             batch_indexer,
             save_queue,
+            trash_cleanup,
         })
     }
 }

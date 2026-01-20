@@ -7,8 +7,7 @@
 
 const STORAGE_KEY = "usedraft-app-state";
 
-export interface AppState {
-  currentNoteId: string | null;
+export interface AppState { 
   currentView: string | null;
   parentPath: string[]; // Array of parent IDs from root to direct parent (for expanding hierarchy)
   openTabIds: string[]; // Array of open tab note IDs (for tab persistence)

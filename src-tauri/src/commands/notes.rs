@@ -75,6 +75,7 @@ pub async fn create_note(
         folder_id: params.folder_id,
         parent_id: params.parent_id,
         banner_type: None, // New notes don't have a banner by default
+        deleted_at: None, // New notes are not deleted
         created_at: now,
         updated_at: now,
     })
@@ -108,6 +109,7 @@ pub async fn get_note(state: State<'_, AppState>, id: String) -> Result<Option<N
                 folder_id: meta.folder_id,
                 parent_id: meta.parent_id,
                 banner_type,
+                deleted_at: meta.deleted_at,
                 created_at: meta.created_at,
                 updated_at: meta.updated_at,
             }))
@@ -192,6 +194,7 @@ pub async fn update_note(
         folder_id,
         parent_id: existing.parent_id,
         banner_type,
+        deleted_at: existing.deleted_at, // Preserve deleted_at status
         created_at: existing.created_at,
         updated_at: now,
     })
@@ -199,16 +202,10 @@ pub async fn update_note(
 
 #[tauri::command]
 pub async fn delete_note(state: State<'_, AppState>, id: String) -> Result<(), String> {
-    // Remove from search index
+    // Soft delete (move to trash)
     state
         .db
-        .remove_from_index(&id)
-        .map_err(|e| format!("Failed to remove from search index: {}", e))?;
-
-    // Delete from database
-    state
-        .db
-        .delete_note_metadata(&id)
+        .soft_delete_note_metadata(&id)
         .map_err(|e| format!("Failed to delete note: {}", e))?;
 
     Ok(())
@@ -342,6 +339,7 @@ pub async fn import_file(
         folder_id,
         parent_id: None, // Imported files are top-level
         banner_type: None,
+        deleted_at: None, // Imported notes are not deleted
         created_at: now,
         updated_at: now,
     })
@@ -398,6 +396,7 @@ pub async fn create_subpage(
         folder_id: parent.folder_id,
         parent_id: Some(parent_id),
         banner_type: None,
+        deleted_at: None, // New subpages are not deleted
         created_at: now,
         updated_at: now,
     })
@@ -438,6 +437,80 @@ pub async fn move_page(
         .map_err(|e| format!("Failed to move page: {}", e))?;
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn restore_note(
+    state: State<'_, AppState>,
+    id: String,
+) -> Result<Note, String> {
+    // Restore note from trash
+    state
+        .db
+        .restore_note(&id)
+        .map_err(|e| format!("Failed to restore note: {}", e))?;
+
+    // Get the restored note
+    let metadata = state
+        .db
+        .get_note_metadata(&id)
+        .map_err(|e| format!("Failed to get restored note: {}", e))?
+        .ok_or_else(|| "Note not found after restore".to_string())?;
+
+    let content = state
+        .db
+        .get_note_content(&id)
+        .map_err(|e| format!("Failed to get note content: {}", e))?
+        .unwrap_or_else(|| DEFAULT_CONTENT.to_string());
+
+    let banner_type = state.db.get_note_banner_type(&id).ok().flatten();
+
+    Ok(Note {
+        id: metadata.id,
+        title: metadata.title,
+        content,
+        file_path: String::new(),
+        folder_id: metadata.folder_id,
+        parent_id: metadata.parent_id,
+        banner_type,
+        deleted_at: None, // Restored notes have deleted_at = NULL
+        created_at: metadata.created_at,
+        updated_at: metadata.updated_at,
+    })
+}
+
+#[tauri::command]
+pub async fn permanently_delete_note(
+    state: State<'_, AppState>,
+    id: String,
+) -> Result<(), String> {
+    // Permanently delete note from database
+    state
+        .db
+        .permanently_delete_note_metadata(&id)
+        .map_err(|e| format!("Failed to permanently delete note: {}", e))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn list_trashed_notes(
+    state: State<'_, AppState>,
+) -> Result<Vec<NoteMetadata>, String> {
+    state
+        .db
+        .list_trashed_notes()
+        .map_err(|e| format!("Failed to list trashed notes: {}", e))
+}
+
+#[tauri::command]
+pub async fn cleanup_expired_trash(
+    state: State<'_, AppState>,
+) -> Result<u32, String> {
+    state
+        .db
+        .cleanup_expired_trash()
+        .map_err(|e| format!("Failed to cleanup expired trash: {}", e))
 }
 
 #[cfg(test)]

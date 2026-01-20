@@ -35,6 +35,7 @@ interface TabStore {
   getActiveTab: () => Tab | null;
   getTab: (tabId: string) => Tab | null;
   updateTabBannerType: (tabId: string, bannerType: BannerType | "none") => void;
+  updateActiveTabId: (tabId: string | null) => void;
 }
 
 const MAX_TABS = 20;
@@ -106,7 +107,6 @@ export const useTabStore = create<TabStore>((set, get) => ({
       // Persist tab state
       const savedState = loadAppState();
       const appState: AppState = {
-        currentNoteId: savedState.currentNoteId ?? null,
         currentView: savedState.currentView ?? null,
         parentPath: savedState.parentPath ?? [],
         openTabIds: newOpenTabs.map((tab) => tab.id),
@@ -157,7 +157,6 @@ export const useTabStore = create<TabStore>((set, get) => ({
     // Persist tab state
     const savedState = loadAppState();
     const appState: AppState = {
-      currentNoteId: savedState.currentNoteId ?? null,
       currentView: savedState.currentView ?? null,
       parentPath: savedState.parentPath ?? [],
       openTabIds: newOpenTabs.map((tab) => tab.id),
@@ -177,7 +176,6 @@ export const useTabStore = create<TabStore>((set, get) => ({
       // Persist tab state
       const savedState = loadAppState();
       const appState: AppState = {
-        currentNoteId: savedState.currentNoteId ?? null,
         currentView: savedState.currentView ?? null,
         parentPath: savedState.parentPath ?? [],
         openTabIds: savedState.openTabIds ?? [],
@@ -197,7 +195,6 @@ export const useTabStore = create<TabStore>((set, get) => ({
       // Persist tab state
       const savedState = loadAppState();
       const appState: AppState = {
-        currentNoteId: savedState.currentNoteId ?? null,
         currentView: savedState.currentView ?? null,
         parentPath: savedState.parentPath ?? [],
         openTabIds: savedState.openTabIds ?? [],
@@ -241,7 +238,6 @@ export const useTabStore = create<TabStore>((set, get) => ({
     // Persist tab state
     const savedState = loadAppState();
     const appState: AppState = {
-      currentNoteId: savedState.currentNoteId ?? null,
       currentView: savedState.currentView ?? null,
       parentPath: savedState.parentPath ?? [],
       openTabIds: [],
@@ -271,7 +267,6 @@ export const useTabStore = create<TabStore>((set, get) => ({
     // Persist tab state
     const savedState = loadAppState();
     const appState: AppState = {
-      currentNoteId: savedState.currentNoteId ?? null,
       currentView: savedState.currentView ?? null,
       parentPath: savedState.parentPath ?? [],
       openTabIds: [tabId],
@@ -305,5 +300,10 @@ export const useTabStore = create<TabStore>((set, get) => ({
       tab.id === tabId ? { ...tab, isDirty } : tab,
     );
     set({ openTabs: updatedTabs });
+  },
+
+  // Update active tab ID
+  updateActiveTabId: (tabId) => {
+    set({ activeTabId: tabId });
   },
 }));

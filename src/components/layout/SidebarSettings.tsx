@@ -1,12 +1,18 @@
 import { HugeiconsIcon } from "@hugeicons/react";
-import { SettingsIcon } from "@hugeicons/core-free-icons";
+import { SettingsIcon, Delete02Icon } from "@hugeicons/core-free-icons";
 import { NavItem, SectionHeading } from "../ui";
-import { useUIStore } from "@/stores/uiStore";
+import { useUIStore, UIView } from "@/stores/uiStore";
 
-export function SidebarSettings() {
+interface SidebarSettingsProps {
+  trashedNotesCount: number;
+}
+
+export function SidebarSettings({ trashedNotesCount }: SidebarSettingsProps) {
   const setSettingsModalOpen = useUIStore(
     (state) => state.setSettingsModalOpen
   );
+  const currentView = useUIStore((state) => state.currentView);
+  const setView = useUIStore((state) => state.setView);
 
   const handleSettingsClick = () => {
     setSettingsModalOpen(true);
@@ -27,6 +33,20 @@ export function SidebarSettings() {
           }
           label="Settings"
           onClick={handleSettingsClick}
+        />
+        <NavItem
+          icon={
+            <HugeiconsIcon
+              icon={Delete02Icon}
+              size={18}
+              color="currentColor"
+              strokeWidth={1.5}
+            />
+          }
+          label="Trash"
+          count={trashedNotesCount}
+          isActive={currentView === UIView.Trash}
+          onClick={() => setView(UIView.Trash)}
         />
       </div>
     </div>
