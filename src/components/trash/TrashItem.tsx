@@ -48,7 +48,7 @@ export function TrashItem({ note }: TrashItemProps) {
     const isExpired = note.days_until_deletion <= 0;
 
     return (
-        <div className="group relative border border-border rounded-lg p-4 hover:bg-accent/50 transition-colors">
+        <div className="group relative border border-border rounded-xl p-4 hover:bg-accent/50 transition-colors">
             <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">

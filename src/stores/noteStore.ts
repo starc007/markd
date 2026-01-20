@@ -77,6 +77,7 @@ interface NoteStore {
   loadTrashedNotes: () => Promise<void>;
   restoreNote: (id: string) => Promise<void>;
   permanentlyDeleteNote: (id: string) => Promise<void>;
+  permanentlyDeleteAllTrashedNotes: () => Promise<void>;
 }
 
 // Helper function to refresh a note's metadata (including children_count)
@@ -1084,6 +1085,29 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
     } catch (error) {
       console.error("Failed to permanently delete note:", error);
       toast.error("Failed to permanently delete note");
+      throw error;
+    }
+  },
+
+  permanentlyDeleteAllTrashedNotes: async () => {
+    const { trashedNotes } = get();
+    if (trashedNotes.length === 0) {
+      return;
+    }
+
+    try {
+      // Delete all trashed notes one by one
+      for (const note of trashedNotes) {
+        await commands.permanentlyDeleteNote(note.id);
+      }
+
+      toast.success(`Permanently deleted ${trashedNotes.length} ${trashedNotes.length === 1 ? "note" : "notes"}`);
+
+      // Refresh trashed notes count
+      await get().loadTrashedNotes();
+    } catch (error) {
+      console.error("Failed to permanently delete all notes:", error);
+      toast.error("Failed to permanently delete all notes");
       throw error;
     }
   },
