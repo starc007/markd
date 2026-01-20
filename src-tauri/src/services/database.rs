@@ -671,6 +671,56 @@ impl Database {
         }
     }
 
+    // Banner image operations
+    // Stores custom uploaded banner images as base64 data URLs
+    // Banner types: "none", "static-{url}", or "custom-{id}"
+    pub fn save_banner_image(
+        &self,
+        id: &str,
+        note_id: &str,
+        image_data: &str,
+        created_at: i64,
+    ) -> Result<()> {
+        let conn = acquire_lock!(self.conn);
+        // Delete any existing banner image for this note first (one image per note)
+        conn.execute(
+            "DELETE FROM note_banner_images WHERE note_id = ?1",
+            params![note_id],
+        )?;
+        // Insert new banner image (base64 data URL)
+        conn.execute(
+            "INSERT INTO note_banner_images (id, note_id, image_data, created_at)
+             VALUES (?1, ?2, ?3, ?4)",
+            params![id, note_id, image_data, created_at],
+        )?;
+        Ok(())
+    }
+
+    /// Get custom banner image for a note (returns base64 data URL or None)
+    pub fn get_banner_image(&self, note_id: &str) -> Result<Option<String>> {
+        let conn = acquire_lock!(self.conn);
+        let mut stmt = conn.prepare(
+            "SELECT image_data FROM note_banner_images WHERE note_id = ?1 LIMIT 1",
+        )?;
+        let mut rows = stmt.query(params![note_id])?;
+
+        if let Some(row) = rows.next()? {
+            Ok(Some(row.get(0)?))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Delete custom banner image for a note
+    pub fn delete_banner_image(&self, note_id: &str) -> Result<()> {
+        let conn = acquire_lock!(self.conn);
+        conn.execute(
+            "DELETE FROM note_banner_images WHERE note_id = ?1",
+            params![note_id],
+        )?;
+        Ok(())
+    }
+
     pub fn list_notes(
         &self,
         folder_id: Option<&str>,

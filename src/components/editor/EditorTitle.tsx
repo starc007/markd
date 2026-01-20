@@ -14,6 +14,7 @@ interface EditorTitleProps {
   onEnter?: () => void;
   onBannerChange?: (type: BannerType) => void;
   currentBanner?: BannerType;
+  noteId: string;
 }
 
 export interface EditorTitleRef {
@@ -26,11 +27,11 @@ export const EditorTitle = forwardRef<EditorTitleRef, EditorTitleProps>(
   (
     {
       title,
-
       onTitleChange,
       onEnter,
       onBannerChange,
       currentBanner,
+      noteId,
     },
     ref,
   ) => {
@@ -120,6 +121,7 @@ export const EditorTitle = forwardRef<EditorTitleRef, EditorTitleProps>(
             <BannerSelector
               currentBanner={currentBanner}
               onSelect={onBannerChange}
+              noteId={noteId}
             />
           </div>
         )}

@@ -145,6 +145,24 @@ export async function deleteNote(id: string): Promise<void> {
   return invoke<void>("delete_note", { id });
 }
 
+// Banner image commands
+export async function saveBannerImage(
+  noteId: string,
+  imageData: string
+): Promise<string> {
+  return invoke<string>("save_banner_image", { note_id: noteId, image_data: imageData });
+}
+
+export async function getBannerImage(
+  noteId: string
+): Promise<string | null> {
+  return invoke<string | null>("get_banner_image", { note_id: noteId });
+}
+
+export async function deleteBannerImage(noteId: string): Promise<void> {
+  return invoke<void>("delete_banner_image", { note_id: noteId });
+}
+
 export async function restoreNote(id: string): Promise<Note> {
   return invoke<Note>("restore_note", { id });
 }

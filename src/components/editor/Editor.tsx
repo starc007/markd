@@ -25,9 +25,9 @@ import { EditorContent, type EditorContentRef } from "./EditorContent";
 import { WordCountStats } from "./WordCountStats";
 import { AppProvider } from "@/context/app-context";
 import { formatRelativeTime } from "@/lib/utils";
-import { FingerprintBanner } from "@/features/visual-identity/components/FingerprintBanner";
-import { JapanesePrintBanner } from "./JapanesePrintBanner";
+import { Banner } from "./Banner";
 import { type BannerType } from "./BannerSelector";
+import { deleteBannerImage } from "@/lib/tauri/commands";
 
 interface EditorProps {
   noteId: string;
@@ -172,6 +172,16 @@ export function Editor({ noteId, content }: EditorProps) {
       // Always pass banner_type, even if "none" (pass null to clear it)
       try {
         const bannerValue = type === "none" ? "none" : type;
+        
+        // If removing banner and it was a custom image, delete the image from DB
+        if (type === "none" && bannerType?.startsWith("custom-")) {
+          try {
+            await deleteBannerImage(noteId);
+          } catch (error) {
+            console.error("Failed to delete banner image:", error);
+          }
+        }
+        
         await useNoteStore.getState().updateNote(noteId, {
           banner_type: bannerValue,
         });
@@ -181,7 +191,7 @@ export function Editor({ noteId, content }: EditorProps) {
         console.error("Failed to save banner type:", error);
       }
     },
-    [noteId],
+    [noteId, bannerType, activeTab?.id],
   );
 
   // Content save handler (already debounced in EditorContent)
@@ -372,25 +382,12 @@ export function Editor({ noteId, content }: EditorProps) {
         {/* Editor Content - Notion style */}
         <div className="flex-1 overflow-y-auto">
           {!focusMode && bannerType !== "none" && (
-            <>
-              {bannerType.startsWith("gradient-") && (
-                <FingerprintBanner
-                  gradientIndex={parseInt(bannerType.replace("gradient-", ""))}
-                  onBannerChange={handleBannerChange}
-                  currentBanner={bannerType}
-                />
-              )}
-              {bannerType.startsWith("japanese-print-") && (
-                <JapanesePrintBanner
-                  printId={bannerType.replace("japanese-print-", "")}
-                  title={activeTab?.title || ""}
-                  noteId={noteId}
-                  content={content}
-                  onBannerChange={handleBannerChange}
-                  currentBanner={bannerType}
-                />
-              )}
-            </>
+            <Banner
+              bannerType={bannerType}
+              title={activeTab?.title || ""}
+              noteId={noteId}
+              onBannerChange={handleBannerChange}
+            />
           )}
           <div className="max-w-[900px] mx-auto px-12 py-8">
             {/* Title Editor */}
@@ -401,6 +398,7 @@ export function Editor({ noteId, content }: EditorProps) {
               onEnter={handleTitleEnter}
               onBannerChange={handleBannerChange}
               currentBanner={bannerType}
+              noteId={noteId}
             />
 
             {/* Content Editor */}

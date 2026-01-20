@@ -49,6 +49,10 @@ pub fn run() {
             flush_pending_saves,
             import_file,
             toggle_note_pinned,
+            // Banner image commands
+            save_banner_image,
+            get_banner_image,
+            delete_banner_image,
             // Trash commands
             restore_note,
             permanently_delete_note,

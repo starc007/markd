@@ -165,10 +165,7 @@ pub async fn update_note(
             .unwrap_or_else(|| DEFAULT_CONTENT.to_string())
     };
 
-    // Update metadata if title, folder, or banner_type changed
-    // Note: banner_type can be None (to remove banner). Since we can't distinguish
-    // "not provided" from "provided as None" with Option<String>, we'll always update
-    // banner_type when it's in the params. The frontend always includes it when changing banners.
+
     if params.title.is_some() || params.folder_id.is_some() || true {
         state
             .db
@@ -511,6 +508,48 @@ pub async fn cleanup_expired_trash(
         .db
         .cleanup_expired_trash()
         .map_err(|e| format!("Failed to cleanup expired trash: {}", e))
+}
+
+/// Save custom banner image for a note
+/// image_data: Base64-encoded data URL (e.g., "data:image/png;base64,...")
+#[tauri::command]
+pub async fn save_banner_image(
+    state: State<'_, AppState>,
+    note_id: String,
+    image_data: String,
+) -> Result<String, String> {
+    let id = Uuid::new_v4().to_string();
+    let now = Utc::now().timestamp_millis();
+    state
+        .db
+        .save_banner_image(&id, &note_id, &image_data, now)
+        .map_err(|e| format!("Failed to save banner image: {}", e))?;
+    Ok(id)
+}
+
+/// Get custom banner image for a note
+/// Returns base64 data URL or None if no custom image exists
+#[tauri::command]
+pub async fn get_banner_image(
+    state: State<'_, AppState>,
+    note_id: String,
+) -> Result<Option<String>, String> {
+    state
+        .db
+        .get_banner_image(&note_id)
+        .map_err(|e| format!("Failed to get banner image: {}", e))
+}
+
+/// Delete custom banner image for a note
+#[tauri::command]
+pub async fn delete_banner_image(
+    state: State<'_, AppState>,
+    note_id: String,
+) -> Result<(), String> {
+    state
+        .db
+        .delete_banner_image(&note_id)
+        .map_err(|e| format!("Failed to delete banner image: {}", e))
 }
 
 #[cfg(test)]

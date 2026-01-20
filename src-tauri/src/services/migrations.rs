@@ -30,6 +30,11 @@ fn get_migrations() -> Vec<Migration> {
             description: "Add deleted_at column to notes for trash feature",
             up: migration_v4_add_deleted_at,
         },
+        Migration {
+            version: 5,
+            description: "Add note_banner_images table for custom banner images",
+            up: migration_v5_add_note_banner_images,
+        },
     ]
 }
 
@@ -301,6 +306,7 @@ fn migration_v2_note_visual_identity(conn: &Connection) -> Result<()> {
 }
 
 /// Migration v3: Add banner_type column to notes table
+/// Stores banner type: "none", "static-{url}", or "custom-{id}"
 fn migration_v3_add_banner_type(conn: &Connection) -> Result<()> {
     // Add banner_type column to notes table (nullable, defaults to NULL which means "none")
     conn.execute(
@@ -323,6 +329,28 @@ fn migration_v4_add_deleted_at(conn: &Connection) -> Result<()> {
     // Add index for efficient cleanup queries
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_notes_deleted_at ON notes(deleted_at)",
+        [],
+    )?;
+
+    Ok(())
+}
+
+/// Migration v5: Add note_banner_images table for custom uploaded banner images
+/// Stores base64-encoded image data for custom banners uploaded by users
+fn migration_v5_add_note_banner_images(conn: &Connection) -> Result<()> {
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS note_banner_images (
+            id TEXT PRIMARY KEY,
+            note_id TEXT NOT NULL,
+            image_data TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_note_banner_images_note_id ON note_banner_images(note_id)",
         [],
     )?;
 
