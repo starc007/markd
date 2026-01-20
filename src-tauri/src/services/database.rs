@@ -150,10 +150,11 @@ impl Database {
     /// Soft delete a note (move to trash) by setting deleted_at timestamp
     pub fn soft_delete_note_metadata(&self, id: &str) -> Result<()> {
         let now = chrono::Utc::now().timestamp_millis();
-        let conn = acquire_lock!(self.conn);
-
-        // Get backlinks first (before soft deleting)
+        
+        // Get backlinks first (before acquiring the main lock to avoid deadlock)
         let backlinks = self.get_backlinks(id)?;
+
+        let conn = acquire_lock!(self.conn);
 
         // Remove page links from all notes that reference this page before soft deleting
         if !backlinks.is_empty() {
