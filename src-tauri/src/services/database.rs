@@ -212,50 +212,67 @@ impl Database {
 
     /// Restore a note from trash (set deleted_at to NULL)
     pub fn restore_note(&self, id: &str) -> Result<()> {
-        let conn = acquire_lock!(self.conn);
+        // Get all descendant IDs and note data first (while holding connection)
+        let (all_descendants, note_data) = {
+            let conn = acquire_lock!(self.conn);
 
-        // Get all descendant IDs that will be restored (for re-indexing)
-        let query = "
-            WITH RECURSIVE descendants(id) AS (
-                SELECT id FROM notes WHERE parent_id = ?1 AND deleted_at IS NOT NULL
-                UNION ALL
-                SELECT n.id FROM notes n
-                INNER JOIN descendants d ON n.parent_id = d.id
-                WHERE n.deleted_at IS NOT NULL
-            )
-            SELECT id FROM descendants
-        ";
-        let mut stmt = conn.prepare(query)?;
-        let all_descendants: Vec<String> = stmt
-            .query_map(params![id], |row| Ok(row.get::<_, String>(0)?))?
-            .collect::<Result<_, _>>()?;
+            // Get all descendant IDs that will be restored (for re-indexing)
+            let query = "
+                WITH RECURSIVE descendants(id) AS (
+                    SELECT id FROM notes WHERE parent_id = ?1 AND deleted_at IS NOT NULL
+                    UNION ALL
+                    SELECT n.id FROM notes n
+                    INNER JOIN descendants d ON n.parent_id = d.id
+                    WHERE n.deleted_at IS NOT NULL
+                )
+                SELECT id FROM descendants
+            ";
+            let mut stmt = conn.prepare(query)?;
+            let all_descendants: Vec<String> = stmt
+                .query_map(params![id], |row| Ok(row.get::<_, String>(0)?))?
+                .collect::<Result<_, _>>()?;
+            drop(stmt); // Explicitly drop statement
 
-        // Get note data for re-indexing before restoring
-        let mut note_data: Vec<(String, String, String)> = Vec::new();
-        // Include the note itself
-        let mut stmt = conn.prepare("SELECT title, content FROM notes WHERE id = ?1")?;
-        let mut rows = stmt.query(params![id])?;
-        if let Some(row) = rows.next()? {
-            let title: String = row.get(0)?;
-            let content: String = row.get(1)?;
-            note_data.push((id.to_string(), title, content));
-        }
-        // Include all descendants
-        for child_id in &all_descendants {
+            // Get note data for re-indexing before restoring
+            let mut note_data: Vec<(String, String, String)> = Vec::new();
+            // Include the note itself
             let mut stmt = conn.prepare("SELECT title, content FROM notes WHERE id = ?1")?;
-            let mut rows = stmt.query(params![child_id])?;
+            let mut rows = stmt.query(params![id])?;
             if let Some(row) = rows.next()? {
                 let title: String = row.get(0)?;
                 let content: String = row.get(1)?;
-                note_data.push((child_id.clone(), title, content));
+                note_data.push((id.to_string(), title, content));
             }
-        }
+            drop(rows);
+            drop(stmt); // Explicitly drop statement
 
-        // Recursively restore all child notes first
-        self.restore_note_children(&conn, id)?;
+            // Include all descendants
+            for child_id in &all_descendants {
+                let mut stmt = conn.prepare("SELECT title, content FROM notes WHERE id = ?1")?;
+                let mut rows = stmt.query(params![child_id])?;
+                if let Some(row) = rows.next()? {
+                    let title: String = row.get(0)?;
+                    let content: String = row.get(1)?;
+                    note_data.push((child_id.clone(), title, content));
+                }
+                drop(rows);
+                drop(stmt); // Explicitly drop statement
+            }
 
-        // Restore the note itself (set deleted_at to NULL)
-        conn.execute("UPDATE notes SET deleted_at = NULL WHERE id = ?1", params![id])?;
+            // All statements are dropped, connection will be dropped at end of scope
+            (all_descendants, note_data)
+        };
+
+        // Now restore notes (acquire connection again)
+        {
+            let conn = acquire_lock!(self.conn);
+
+            // Recursively restore all child notes first
+            self.restore_note_children(&conn, id)?;
+
+            // Restore the note itself (set deleted_at to NULL)
+            conn.execute("UPDATE notes SET deleted_at = NULL WHERE id = ?1", params![id])?;
+        } // Connection dropped here
 
         // Invalidate cache entry
         if let Ok(mut cache) = self.metadata_cache.lock() {
@@ -264,9 +281,6 @@ impl Database {
                 cache.pop(child_id);
             }
         }
-
-        // Release connection lock before re-indexing
-        drop(conn);
 
         // Re-index all restored notes in FTS5 for search
         for (note_id, title, content) in note_data {
@@ -324,14 +338,18 @@ impl Database {
         let cutoff_time = now - seven_days_ms;
 
         // Find all notes that should be permanently deleted
-        let conn = acquire_lock!(self.conn);
-        let mut stmt = conn.prepare(
-            "SELECT id FROM notes WHERE deleted_at IS NOT NULL AND deleted_at < ?1",
-        )?;
-        let expired_ids: Vec<String> = stmt
-            .query_map(params![cutoff_time], |row| Ok(row.get::<_, String>(0)?))?
-            .collect::<Result<_, _>>()?;
-        drop(conn); // Release lock before calling other methods
+        let expired_ids: Vec<String> = {
+            let conn = acquire_lock!(self.conn);
+            let mut stmt = conn.prepare(
+                "SELECT id FROM notes WHERE deleted_at IS NOT NULL AND deleted_at < ?1",
+            )?;
+            let ids: Vec<String> = stmt
+                .query_map(params![cutoff_time], |row| Ok(row.get::<_, String>(0)?))?
+                .collect::<Result<_, _>>()?;
+            drop(stmt); // Explicitly drop statement
+            ids
+            // Connection dropped here at end of scope
+        };
 
         let count = expired_ids.len() as u32;
 

@@ -155,7 +155,6 @@ export const Sidebar = memo(function Sidebar() {
       <SidebarNavigation
         stickyNotesCount={stickyNotes.length}
         bookmarksCount={bookmarks.length}
-        trashedNotesCount={trashedNotes.length}
         currentView={currentView}
         onViewChange={(view) => useUIStore.getState().setView(view)}
       />
@@ -171,7 +170,7 @@ export const Sidebar = memo(function Sidebar() {
         onCreateSubpage={handleCreateSubpage}
       />
 
-      <SidebarSettings />
+      <SidebarSettings trashedNotesCount={trashedNotes.length} />
 
       {/* Delete Note Modal */}
       {deleteModalNoteId && (
