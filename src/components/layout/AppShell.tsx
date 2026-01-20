@@ -5,6 +5,7 @@ import { CommandPalette } from "@/features/command-palette/components/CommandPal
 import { StickyNotesGrid } from "@/features/sticky-notes/components/StickyNotesGrid";
 import { SettingsModal } from "../settings/SettingsModal";
 import { Bookmarks } from "@/features/bookmarks/components/Bookmarks";
+import { TrashView } from "../trash/TrashView";
 import { SectionErrorBoundary } from "../SectionErrorBoundary";
 import { TabBar } from "../tabs/TabBar";
 
@@ -40,6 +41,8 @@ export function AppShell() {
       return <StickyNotesGrid />;
     } else if (currentView === UIView.Bookmarks) {
       return <Bookmarks />;
+    } else if (currentView === UIView.Trash) {
+      return <TrashView />;
     } else if (activeTab) {
       return (
         <Editor
@@ -55,9 +58,8 @@ export function AppShell() {
 
   return (
     <div
-      className={`flex flex-col h-screen overflow-hidden bg-background ${
-        focusMode ? "focus-mode" : ""
-      }`}
+      className={`flex flex-col h-screen overflow-hidden bg-background ${focusMode ? "focus-mode" : ""
+        }`}
     >
       {/* Title Bar with drag region - hidden in focus mode */}
       {/* {!focusMode && <TitleBar />} */}

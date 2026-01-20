@@ -49,6 +49,11 @@ pub fn run() {
             flush_pending_saves,
             import_file,
             toggle_note_pinned,
+            // Trash commands
+            restore_note,
+            permanently_delete_note,
+            list_trashed_notes,
+            cleanup_expired_trash,
             // Page hierarchy commands
             create_subpage,
             get_page_children,

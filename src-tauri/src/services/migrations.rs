@@ -25,6 +25,11 @@ fn get_migrations() -> Vec<Migration> {
             description: "Add banner_type column to notes",
             up: migration_v3_add_banner_type,
         },
+        Migration {
+            version: 4,
+            description: "Add deleted_at column to notes for trash feature",
+            up: migration_v4_add_deleted_at,
+        },
     ]
 }
 
@@ -300,6 +305,24 @@ fn migration_v3_add_banner_type(conn: &Connection) -> Result<()> {
     // Add banner_type column to notes table (nullable, defaults to NULL which means "none")
     conn.execute(
         "ALTER TABLE notes ADD COLUMN banner_type TEXT",
+        [],
+    )?;
+
+    Ok(())
+}
+
+/// Migration v4: Add deleted_at column to notes table for trash feature
+fn migration_v4_add_deleted_at(conn: &Connection) -> Result<()> {
+    // Add deleted_at column to notes table (nullable, Unix timestamp in milliseconds)
+    // NULL means note is not deleted, non-NULL means note is in trash
+    conn.execute(
+        "ALTER TABLE notes ADD COLUMN deleted_at INTEGER",
+        [],
+    )?;
+
+    // Add index for efficient cleanup queries
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_notes_deleted_at ON notes(deleted_at)",
         [],
     )?;
 

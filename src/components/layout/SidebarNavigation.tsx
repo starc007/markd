@@ -1,11 +1,12 @@
 import { HugeiconsIcon } from "@hugeicons/react";
-import { StickyNoteIcon, Bookmark01Icon } from "@hugeicons/core-free-icons";
+import { StickyNoteIcon, Bookmark01Icon, Delete02Icon } from "@hugeicons/core-free-icons";
 import { NavItem, SectionHeading } from "../ui";
 import { UIView } from "@/stores/uiStore";
 
 interface SidebarNavigationProps {
   stickyNotesCount: number;
   bookmarksCount: number;
+  trashedNotesCount: number;
   currentView: UIView | null;
   onViewChange: (view: UIView) => void;
 }
@@ -13,6 +14,7 @@ interface SidebarNavigationProps {
 export function SidebarNavigation({
   stickyNotesCount,
   bookmarksCount,
+  trashedNotesCount,
   currentView,
   onViewChange,
 }: SidebarNavigationProps) {
@@ -48,6 +50,20 @@ export function SidebarNavigation({
             count={bookmarksCount}
             isActive={currentView === UIView.Bookmarks}
             onClick={() => onViewChange(UIView.Bookmarks)}
+          />
+          <NavItem
+            icon={
+              <HugeiconsIcon
+                icon={Delete02Icon}
+                size={18}
+                color="currentColor"
+                strokeWidth={1.5}
+              />
+            }
+            label="Trash"
+            count={trashedNotesCount}
+            isActive={currentView === UIView.Trash}
+            onClick={() => onViewChange(UIView.Trash)}
           />
         </div>
       </div>

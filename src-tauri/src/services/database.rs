@@ -147,7 +147,41 @@ impl Database {
         Ok(())
     }
 
-    pub fn delete_note_metadata(&self, id: &str) -> Result<()> {
+    /// Soft delete a note (move to trash) by setting deleted_at timestamp
+    pub fn soft_delete_note_metadata(&self, id: &str) -> Result<()> {
+        let now = chrono::Utc::now().timestamp_millis();
+        let conn = acquire_lock!(self.conn);
+
+        // Get backlinks first (before soft deleting)
+        let backlinks = self.get_backlinks(id)?;
+
+        // Remove page links from all notes that reference this page before soft deleting
+        if !backlinks.is_empty() {
+            self.remove_page_links_from_content_with_conn(&conn, id, &backlinks)?;
+        }
+
+        // Recursively soft-delete all child notes first
+        self.soft_delete_note_children(&conn, id, now)?;
+
+        // Remove from search index (deleted notes shouldn't appear in search)
+        conn.execute("DELETE FROM notes_fts WHERE id = ?1", params![id])?;
+
+        // Soft delete the note itself (set deleted_at timestamp)
+        conn.execute(
+            "UPDATE notes SET deleted_at = ?1 WHERE id = ?2",
+            params![now, id],
+        )?;
+
+        // Invalidate cache entry
+        if let Ok(mut cache) = self.metadata_cache.lock() {
+            cache.pop(id);
+        }
+
+        Ok(())
+    }
+
+    /// Permanently delete a note from database (used for trash cleanup)
+    pub fn permanently_delete_note_metadata(&self, id: &str) -> Result<()> {
         // Get backlinks first (before acquiring the main lock)
         let backlinks = self.get_backlinks(id)?;
 
@@ -174,6 +208,139 @@ impl Database {
         }
 
         Ok(())
+    }
+
+    /// Restore a note from trash (set deleted_at to NULL)
+    pub fn restore_note(&self, id: &str) -> Result<()> {
+        let conn = acquire_lock!(self.conn);
+
+        // Get all descendant IDs that will be restored (for re-indexing)
+        let query = "
+            WITH RECURSIVE descendants(id) AS (
+                SELECT id FROM notes WHERE parent_id = ?1 AND deleted_at IS NOT NULL
+                UNION ALL
+                SELECT n.id FROM notes n
+                INNER JOIN descendants d ON n.parent_id = d.id
+                WHERE n.deleted_at IS NOT NULL
+            )
+            SELECT id FROM descendants
+        ";
+        let mut stmt = conn.prepare(query)?;
+        let all_descendants: Vec<String> = stmt
+            .query_map(params![id], |row| Ok(row.get::<_, String>(0)?))?
+            .collect::<Result<_, _>>()?;
+
+        // Get note data for re-indexing before restoring
+        let mut note_data: Vec<(String, String, String)> = Vec::new();
+        // Include the note itself
+        let mut stmt = conn.prepare("SELECT title, content FROM notes WHERE id = ?1")?;
+        let mut rows = stmt.query(params![id])?;
+        if let Some(row) = rows.next()? {
+            let title: String = row.get(0)?;
+            let content: String = row.get(1)?;
+            note_data.push((id.to_string(), title, content));
+        }
+        // Include all descendants
+        for child_id in &all_descendants {
+            let mut stmt = conn.prepare("SELECT title, content FROM notes WHERE id = ?1")?;
+            let mut rows = stmt.query(params![child_id])?;
+            if let Some(row) = rows.next()? {
+                let title: String = row.get(0)?;
+                let content: String = row.get(1)?;
+                note_data.push((child_id.clone(), title, content));
+            }
+        }
+
+        // Recursively restore all child notes first
+        self.restore_note_children(&conn, id)?;
+
+        // Restore the note itself (set deleted_at to NULL)
+        conn.execute("UPDATE notes SET deleted_at = NULL WHERE id = ?1", params![id])?;
+
+        // Invalidate cache entry
+        if let Ok(mut cache) = self.metadata_cache.lock() {
+            cache.pop(id);
+            for child_id in &all_descendants {
+                cache.pop(child_id);
+            }
+        }
+
+        // Release connection lock before re-indexing
+        drop(conn);
+
+        // Re-index all restored notes in FTS5 for search
+        for (note_id, title, content) in note_data {
+            let plain_text = crate::utils::json_utils::extract_plain_text(&content);
+            self.index_note(&note_id, &title, &plain_text, "")?;
+        }
+
+        Ok(())
+    }
+
+    /// List all trashed notes (where deleted_at IS NOT NULL)
+    pub fn list_trashed_notes(&self) -> Result<Vec<NoteMetadata>> {
+        let conn = acquire_lock!(self.conn);
+
+        let sql = "SELECT n.id, n.title, n.preview, n.folder_id, n.parent_id, n.pinned,
+                 COALESCE(c.children_count, 0) as children_count,
+                 n.deleted_at, n.created_at, n.updated_at
+                 FROM notes n
+                 LEFT JOIN (
+                     SELECT parent_id, COUNT(*) as children_count
+                     FROM notes
+                     WHERE deleted_at IS NULL
+                     GROUP BY parent_id
+                 ) c ON n.id = c.parent_id
+                 WHERE n.deleted_at IS NOT NULL
+                 ORDER BY n.deleted_at DESC";
+
+        let mut stmt = conn.prepare(sql)?;
+
+        let notes: Result<Vec<NoteMetadata>, _> = stmt
+            .query_map([], |row| {
+                Ok(NoteMetadata {
+                    id: row.get(0)?,
+                    title: row.get(1)?,
+                    preview: row.get(2)?,
+                    folder_id: row.get(3)?,
+                    parent_id: row.get(4)?,
+                    pinned: row.get::<_, i32>(5)? != 0,
+                    children_count: row.get::<_, i32>(6)? as u32,
+                    deleted_at: row.get(7)?,
+                    created_at: row.get(8)?,
+                    updated_at: row.get(9)?,
+                })
+            })?
+            .collect();
+
+        Ok(notes?)
+    }
+
+    /// Cleanup expired trash (notes deleted more than 7 days ago)
+    pub fn cleanup_expired_trash(&self) -> Result<u32> {
+        // Calculate 7 days ago in milliseconds
+        let now = chrono::Utc::now().timestamp_millis();
+        let seven_days_ms = 7 * 24 * 60 * 60 * 1000;
+        let cutoff_time = now - seven_days_ms;
+
+        // Find all notes that should be permanently deleted
+        let conn = acquire_lock!(self.conn);
+        let mut stmt = conn.prepare(
+            "SELECT id FROM notes WHERE deleted_at IS NOT NULL AND deleted_at < ?1",
+        )?;
+        let expired_ids: Vec<String> = stmt
+            .query_map(params![cutoff_time], |row| Ok(row.get::<_, String>(0)?))?
+            .collect::<Result<_, _>>()?;
+        drop(conn); // Release lock before calling other methods
+
+        let count = expired_ids.len() as u32;
+
+        // Permanently delete each expired note
+        for id in expired_ids {
+            self.permanently_delete_note_metadata(&id)?;
+        }
+
+        Ok(count)
     }
 
     // Remove page links from content of all notes that reference a deleted page
@@ -233,6 +400,98 @@ impl Database {
             if let Ok(mut cache) = self.metadata_cache.lock() {
                 cache.pop(source_page_id);
             }
+        }
+
+        Ok(())
+    }
+
+    // Helper function to recursively soft-delete all child notes
+    fn soft_delete_note_children(&self, conn: &Connection, parent_id: &str, deleted_at: i64) -> Result<()> {
+        // Use a single query with recursive CTE to get all descendant IDs
+        let query = "
+            WITH RECURSIVE descendants(id) AS (
+                SELECT id FROM notes WHERE parent_id = ?1 AND deleted_at IS NULL
+                UNION ALL
+                SELECT n.id FROM notes n
+                INNER JOIN descendants d ON n.parent_id = d.id
+                WHERE n.deleted_at IS NULL
+            )
+            SELECT id FROM descendants
+        ";
+
+        let mut stmt = conn.prepare(query)?;
+        let all_descendants: Vec<String> = stmt
+            .query_map(params![parent_id], |row| Ok(row.get::<_, String>(0)?))?
+            .collect::<Result<_, _>>()?;
+
+        // Soft-delete all descendants in batch operations
+        if !all_descendants.is_empty() {
+            // Batch remove from search index
+            let placeholders = all_descendants
+                .iter()
+                .map(|_| "?")
+                .collect::<Vec<_>>()
+                .join(",");
+            let delete_fts_sql = format!("DELETE FROM notes_fts WHERE id IN ({})", placeholders);
+            let mut delete_fts_stmt = conn.prepare(&delete_fts_sql)?;
+            let fts_params: Vec<&dyn rusqlite::ToSql> = all_descendants
+                .iter()
+                .map(|s| s as &dyn rusqlite::ToSql)
+                .collect();
+            delete_fts_stmt.execute(fts_params.as_slice())?;
+
+            // Batch soft-delete notes (set deleted_at)
+            let update_notes_sql = format!("UPDATE notes SET deleted_at = ?1 WHERE id IN ({})", placeholders);
+            let mut update_notes_stmt = conn.prepare(&update_notes_sql)?;
+            let mut notes_params: Vec<&dyn rusqlite::ToSql> = vec![&deleted_at as &dyn rusqlite::ToSql];
+            notes_params.extend(all_descendants.iter().map(|s| s as &dyn rusqlite::ToSql));
+            update_notes_stmt.execute(notes_params.as_slice())?;
+
+            // Invalidate cache entries
+            if let Ok(mut cache) = self.metadata_cache.lock() {
+                for child_id in &all_descendants {
+                    cache.pop(child_id);
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    // Helper function to recursively restore all child notes
+    fn restore_note_children(&self, conn: &Connection, parent_id: &str) -> Result<()> {
+        // Use a single query with recursive CTE to get all descendant IDs that are deleted
+        let query = "
+            WITH RECURSIVE descendants(id) AS (
+                SELECT id FROM notes WHERE parent_id = ?1 AND deleted_at IS NOT NULL
+                UNION ALL
+                SELECT n.id FROM notes n
+                INNER JOIN descendants d ON n.parent_id = d.id
+                WHERE n.deleted_at IS NOT NULL
+            )
+            SELECT id FROM descendants
+        ";
+
+        let mut stmt = conn.prepare(query)?;
+        let all_descendants: Vec<String> = stmt
+            .query_map(params![parent_id], |row| Ok(row.get::<_, String>(0)?))?
+            .collect::<Result<_, _>>()?;
+
+        // Restore all descendants in batch operations
+        if !all_descendants.is_empty() {
+            // Batch restore notes (set deleted_at to NULL)
+            let placeholders = all_descendants
+                .iter()
+                .map(|_| "?")
+                .collect::<Vec<_>>()
+                .join(",");
+            let restore_notes_sql = format!("UPDATE notes SET deleted_at = NULL WHERE id IN ({})", placeholders);
+            let mut restore_notes_stmt = conn.prepare(&restore_notes_sql)?;
+            let notes_params: Vec<&dyn rusqlite::ToSql> = all_descendants
+                .iter()
+                .map(|s| s as &dyn rusqlite::ToSql)
+                .collect();
+            restore_notes_stmt.execute(notes_params.as_slice())?;
         }
 
         Ok(())
@@ -305,8 +564,8 @@ impl Database {
         let conn = acquire_lock!(self.conn);
         let mut stmt = conn.prepare(
             "SELECT id, title, preview, folder_id, parent_id, pinned,
-             (SELECT COUNT(*) FROM notes WHERE parent_id = notes.id) as children_count,
-             created_at, updated_at
+             (SELECT COUNT(*) FROM notes WHERE parent_id = notes.id AND deleted_at IS NULL) as children_count,
+             deleted_at, created_at, updated_at
              FROM notes WHERE id = ?1",
         )?;
 
@@ -321,8 +580,9 @@ impl Database {
                 parent_id: row.get(4)?,
                 pinned: row.get::<_, i32>(5)? != 0,
                 children_count: row.get::<_, i32>(6)? as u32,
-                created_at: row.get(7)?,
-                updated_at: row.get(8)?,
+                deleted_at: row.get(7)?,
+                created_at: row.get(8)?,
+                updated_at: row.get(9)?,
             };
 
             // Store in cache
@@ -406,56 +666,60 @@ impl Database {
             (Some(fid), Some(pid)) => (
                 "SELECT n.id, n.title, n.preview, n.folder_id, n.parent_id, n.pinned,
                  COALESCE(c.children_count, 0) as children_count,
-                 n.created_at, n.updated_at
+                 n.deleted_at, n.created_at, n.updated_at
                  FROM notes n
                  LEFT JOIN (
                      SELECT parent_id, COUNT(*) as children_count
                      FROM notes
+                     WHERE deleted_at IS NULL
                      GROUP BY parent_id
                  ) c ON n.id = c.parent_id
-                 WHERE n.folder_id = ?1 AND n.parent_id = ?2
+                 WHERE n.folder_id = ?1 AND n.parent_id = ?2 AND n.deleted_at IS NULL
                  ORDER BY n.pinned DESC, n.updated_at DESC",
                 vec![fid.to_string(), pid.to_string()],
             ),
             (Some(fid), None) => (
                 "SELECT n.id, n.title, n.preview, n.folder_id, n.parent_id, n.pinned,
                  COALESCE(c.children_count, 0) as children_count,
-                 n.created_at, n.updated_at
+                 n.deleted_at, n.created_at, n.updated_at
                  FROM notes n
                  LEFT JOIN (
                      SELECT parent_id, COUNT(*) as children_count
                      FROM notes
+                     WHERE deleted_at IS NULL
                      GROUP BY parent_id
                  ) c ON n.id = c.parent_id
-                 WHERE n.folder_id = ?1 AND n.parent_id IS NULL
+                 WHERE n.folder_id = ?1 AND n.parent_id IS NULL AND n.deleted_at IS NULL
                  ORDER BY n.pinned DESC, n.updated_at DESC",
                 vec![fid.to_string()],
             ),
             (None, Some(pid)) => (
                 "SELECT n.id, n.title, n.preview, n.folder_id, n.parent_id, n.pinned,
                  COALESCE(c.children_count, 0) as children_count,
-                 n.created_at, n.updated_at
+                 n.deleted_at, n.created_at, n.updated_at
                  FROM notes n
                  LEFT JOIN (
                      SELECT parent_id, COUNT(*) as children_count
                      FROM notes
+                     WHERE deleted_at IS NULL
                      GROUP BY parent_id
                  ) c ON n.id = c.parent_id
-                 WHERE n.parent_id = ?1
+                 WHERE n.parent_id = ?1 AND n.deleted_at IS NULL
                  ORDER BY n.pinned DESC, n.updated_at DESC",
                 vec![pid.to_string()],
             ),
             (None, None) => (
                 "SELECT n.id, n.title, n.preview, n.folder_id, n.parent_id, n.pinned,
                  COALESCE(c.children_count, 0) as children_count,
-                 n.created_at, n.updated_at
+                 n.deleted_at, n.created_at, n.updated_at
                  FROM notes n
                  LEFT JOIN (
                      SELECT parent_id, COUNT(*) as children_count
                      FROM notes
+                     WHERE deleted_at IS NULL
                      GROUP BY parent_id
                  ) c ON n.id = c.parent_id
-                 WHERE n.parent_id IS NULL
+                 WHERE n.parent_id IS NULL AND n.deleted_at IS NULL
                  ORDER BY n.pinned DESC, n.updated_at DESC",
                 vec![],
             ),
@@ -478,8 +742,9 @@ impl Database {
                     parent_id: row.get(4)?,
                     pinned: row.get::<_, i32>(5)? != 0,
                     children_count: row.get::<_, i32>(6)? as u32,
-                    created_at: row.get(7)?,
-                    updated_at: row.get(8)?,
+                    deleted_at: row.get(7)?,
+                    created_at: row.get(8)?,
+                    updated_at: row.get(9)?,
                 })
             })?
             .collect()
@@ -493,8 +758,9 @@ impl Database {
                     parent_id: row.get(4)?,
                     pinned: row.get::<_, i32>(5)? != 0,
                     children_count: row.get::<_, i32>(6)? as u32,
-                    created_at: row.get(7)?,
-                    updated_at: row.get(8)?,
+                    deleted_at: row.get(7)?,
+                    created_at: row.get(8)?,
+                    updated_at: row.get(9)?,
                 })
             })?
             .collect()

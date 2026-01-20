@@ -9,6 +9,7 @@ export interface Note {
   folder_id: string | null;
   parent_id: string | null;
   banner_type: string | null;
+  deleted_at: number | null;
   created_at: number;
   updated_at: number;
 }
@@ -21,8 +22,14 @@ export interface NoteMetadata {
   parent_id: string | null;
   pinned: boolean;
   children_count: number;
+  deleted_at: number | null;
   created_at: number;
   updated_at: number;
+}
+
+export interface TrashedNoteMetadata extends NoteMetadata {
+  deleted_at: number; // Non-null for trashed notes
+  days_until_deletion: number; // Calculated on frontend
 }
 
 export interface Folder {
@@ -136,6 +143,37 @@ export async function updateNote(params: UpdateNoteParams): Promise<Note> {
 
 export async function deleteNote(id: string): Promise<void> {
   return invoke<void>("delete_note", { id });
+}
+
+export async function restoreNote(id: string): Promise<Note> {
+  return invoke<Note>("restore_note", { id });
+}
+
+export async function permanentlyDeleteNote(id: string): Promise<void> {
+  return invoke<void>("permanently_delete_note", { id });
+}
+
+export async function listTrashedNotes(): Promise<TrashedNoteMetadata[]> {
+  const notes = await invoke<NoteMetadata[]>("list_trashed_notes");
+  // Calculate days until deletion for each note
+  const now = Date.now();
+  const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+  
+  return notes.map((note) => {
+    const deletedAt = note.deleted_at!; // Guaranteed non-null for trashed notes
+    const expiresAt = deletedAt + sevenDaysMs;
+    const daysUntilDeletion = Math.ceil((expiresAt - now) / (24 * 60 * 60 * 1000));
+    
+    return {
+      ...note,
+      deleted_at: deletedAt,
+      days_until_deletion: Math.max(0, daysUntilDeletion),
+    } as TrashedNoteMetadata;
+  });
+}
+
+export async function cleanupExpiredTrash(): Promise<number> {
+  return invoke<number>("cleanup_expired_trash");
 }
 
 export async function listNotes(

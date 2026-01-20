@@ -8,6 +8,7 @@ export enum UIView {
   StickyNotes = "sticky_notes",
   Bookmarks = "bookmarks",
   Settings = "settings",
+  Trash = "trash",
   None = "idle",
 }
 

@@ -21,6 +21,7 @@ export const Sidebar = memo(function Sidebar() {
   const notes = useNoteStore((state) => state.notes);
   const childrenMap = useNoteStore((state) => state.childrenMap);
   const expandedPages = useNoteStore((state) => state.expandedPages);
+  const trashedNotes = useNoteStore((state) => state.trashedNotes);
   const { openTab } = useTabStore();
 
   // Get current note ID from active tab
@@ -53,8 +54,7 @@ export const Sidebar = memo(function Sidebar() {
     } catch (error) {
       console.error("Failed to create note:", error);
       toast.error(
-        `Failed to create note: ${
-          error instanceof Error ? error.message : "Unknown error"
+        `Failed to create note: ${error instanceof Error ? error.message : "Unknown error"
         }`
       );
     }
@@ -70,8 +70,7 @@ export const Sidebar = memo(function Sidebar() {
       } catch (error) {
         console.error("Failed to delete note:", error);
         toast.error(
-          `Failed to delete note: ${
-            error instanceof Error ? error.message : "Unknown error"
+          `Failed to delete note: ${error instanceof Error ? error.message : "Unknown error"
           }`
         );
       }
@@ -105,8 +104,7 @@ export const Sidebar = memo(function Sidebar() {
     } catch (error) {
       console.error("Failed to create subpage:", error);
       toast.error(
-        `Failed to create subpage: ${
-          error instanceof Error ? error.message : "Unknown error"
+        `Failed to create subpage: ${error instanceof Error ? error.message : "Unknown error"
         }`
       );
     }
@@ -157,6 +155,7 @@ export const Sidebar = memo(function Sidebar() {
       <SidebarNavigation
         stickyNotesCount={stickyNotes.length}
         bookmarksCount={bookmarks.length}
+        trashedNotesCount={trashedNotes.length}
         currentView={currentView}
         onViewChange={(view) => useUIStore.getState().setView(view)}
       />

@@ -9,6 +9,7 @@ pub struct Note {
     pub folder_id: Option<String>,
     pub parent_id: Option<String>,
     pub banner_type: Option<String>,
+    pub deleted_at: Option<i64>,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -22,6 +23,7 @@ pub struct NoteMetadata {
     pub parent_id: Option<String>,
     pub pinned: bool,
     pub children_count: u32,
+    pub deleted_at: Option<i64>,
     pub created_at: i64,
     pub updated_at: i64,
 }
