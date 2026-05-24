@@ -1,7 +1,9 @@
 import {
+  FolderAddIcon,
   FolderRemoveIcon,
   FolderIcon,
   MoreHorizontalIcon,
+  NoteAddIcon,
   PencilEdit01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -16,6 +18,8 @@ export function FolderNode({
   activeId,
   onDeleteNote,
   onDeleteFolder,
+  onCreateFolder,
+  onCreateNote,
   onOpen,
   onRenameFolder,
 }: {
@@ -25,6 +29,8 @@ export function FolderNode({
   activeId?: string;
   onDeleteNote: (id: string) => void;
   onDeleteFolder: (folder: FolderRecord) => void;
+  onCreateFolder: (parentId: string) => void;
+  onCreateNote: (folderId: string) => void;
   onOpen: (id: string) => void;
   onRenameFolder: (folder: FolderRecord) => void;
 }) {
@@ -44,9 +50,9 @@ export function FolderNode({
               aria-label={`Options for ${folder.name}`}
               className="grid h-6 w-6 place-items-center rounded-md text-sidebar-ink-muted opacity-0 transition-opacity hover:bg-sidebar-active hover:text-sidebar-ink-strong group-hover:opacity-100 data-[open]:opacity-100 dark:text-sidebar-ink-muted-dark dark:hover:bg-sidebar-active-dark dark:hover:text-sidebar-ink-strong-dark"
               onClick={(event) => event.stopPropagation()}
-            type="button"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
+              type="button"
+              onMouseDown={(event) => event.stopPropagation()}
+            >
               <HugeiconsIcon
                 icon={MoreHorizontalIcon}
                 size={15}
@@ -55,9 +61,15 @@ export function FolderNode({
             </button>
           }
         >
-          <DropdownItem
-            onClick={() => onRenameFolder(folder)}
-          >
+          <DropdownItem onClick={() => onCreateNote(folder.id)}>
+            <HugeiconsIcon icon={NoteAddIcon} size={15} color="currentColor" />
+            New note inside
+          </DropdownItem>
+          <DropdownItem onClick={() => onCreateFolder(folder.id)}>
+            <HugeiconsIcon icon={FolderAddIcon} size={15} color="currentColor" />
+            New folder inside
+          </DropdownItem>
+          <DropdownItem onClick={() => onRenameFolder(folder)}>
             <HugeiconsIcon
               icon={PencilEdit01Icon}
               size={15}
@@ -85,6 +97,8 @@ export function FolderNode({
             activeId={activeId}
             onDeleteNote={onDeleteNote}
             onDeleteFolder={onDeleteFolder}
+            onCreateFolder={onCreateFolder}
+            onCreateNote={onCreateNote}
             onOpen={onOpen}
             onRenameFolder={onRenameFolder}
           />

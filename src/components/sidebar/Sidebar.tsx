@@ -76,6 +76,8 @@ export function Sidebar() {
           onOpen={openNote}
           onCreateNote={() => createNote()}
           onCreateFolder={() => createFolder()}
+          onCreateNoteInside={(folderId) => createNote(folderId)}
+          onCreateFolderInside={(parentId) => createFolder(parentId)}
           onRenameFolder={(folder) => {
             setFolderToRename(folder);
             setFolderName(folder.name);
@@ -134,7 +136,7 @@ export function Sidebar() {
             Folder name
             <input
               autoFocus
-              className="h-10 rounded-xl border border-line bg-panel px-3 text-sm text-ink outline-none transition-colors focus:border-focus-line dark:border-line-dark dark:bg-panel-dark dark:text-ink-dark dark:focus:border-focus-line-dark"
+              className="h-10 rounded-xl border border-line bg-panel px-3 text-sm text-ink outline-none transition-colors placeholder:text-muted focus:border-focus-line dark:border-tooltip-ink/15 dark:bg-tooltip-ink/10 dark:text-tooltip-ink dark:placeholder:text-tooltip-ink/45 dark:focus:border-tooltip-ink/35"
               value={folderName}
               onChange={(event) => setFolderName(event.target.value)}
             />

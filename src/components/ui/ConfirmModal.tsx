@@ -19,7 +19,7 @@ export function ConfirmModal({
 }) {
   return (
     <Modal open={open} title={title} onClose={onClose}>
-      <div className="mt-4 text-sm leading-6 text-muted dark:text-muted-dark">
+      <div className="mt-4 text-sm leading-6 text-muted dark:text-tooltip-ink/65">
         {children}
       </div>
       <div className="mt-5 flex justify-end gap-2">

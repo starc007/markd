@@ -111,7 +111,7 @@ export function RichNoteEditor({
 
   return (
     <main className="relative flex h-full min-h-0 overflow-hidden bg-editor dark:bg-editor-dark">
-      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
+      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <SelectionBubbleMenu
           editor={editor}
           notes={notes}

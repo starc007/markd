@@ -10,6 +10,8 @@ export function WorkspaceTree({
   activeId,
   onDeleteNote,
   onDeleteFolder,
+  onCreateFolderInside,
+  onCreateNoteInside,
   onOpen,
   onCreateNote,
   onCreateFolder,
@@ -20,6 +22,8 @@ export function WorkspaceTree({
   activeId?: string;
   onDeleteNote: (id: string) => void;
   onDeleteFolder: (folder: FolderRecord) => void;
+  onCreateFolderInside: (parentId: string) => void;
+  onCreateNoteInside: (folderId: string) => void;
   onOpen: (id: string) => void;
   onCreateNote: () => void;
   onCreateFolder: () => void;
@@ -58,6 +62,8 @@ export function WorkspaceTree({
         activeId={activeId}
         onDeleteNote={onDeleteNote}
         onDeleteFolder={onDeleteFolder}
+        onCreateFolder={onCreateFolderInside}
+        onCreateNote={onCreateNoteInside}
         onOpen={onOpen}
         onRenameFolder={onRenameFolder}
       />

@@ -7,6 +7,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
+import { cx } from "@/components/ui";
 import { useWorkspaceStore } from "@/stores/workspace";
 
 const MotionDialogPanel = motion.create(DialogPanel);
@@ -18,6 +19,7 @@ export function CommandBar() {
   const openNote = useWorkspaceStore((state) => state.openNote);
   const createNote = useWorkspaceStore((state) => state.createNote);
   const [query, setQuery] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -42,6 +44,43 @@ export function CommandBar() {
       .slice(0, 8);
   }, [manifest?.notes, query]);
 
+  const actionCount = results.length + 1;
+
+  useEffect(() => {
+    if (!open) return;
+    setSelectedIndex(0);
+  }, [open, query]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setSelectedIndex((index) => (index + 1) % actionCount);
+      }
+
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        setSelectedIndex((index) => (index - 1 + actionCount) % actionCount);
+      }
+
+      if (event.key === "Enter") {
+        event.preventDefault();
+        if (selectedIndex === 0) {
+          createNote();
+        } else {
+          const note = results[selectedIndex - 1];
+          if (note) openNote(note.id);
+        }
+        setOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [actionCount, createNote, open, openNote, results, selectedIndex, setOpen]);
+
   return (
     <AnimatePresence>
       {open && (
@@ -65,7 +104,7 @@ export function CommandBar() {
               transition={{ type: "spring", stiffness: 460, damping: 36 }}
               className="w-[min(520px,100%)] overflow-hidden rounded-2xl border border-line bg-panel/95 p-1.5 text-ink shadow-overlay backdrop-blur-[22px] dark:border-line-dark dark:bg-tooltip dark:text-tooltip-ink"
             >
-              <div className="flex items-center gap-2 border-b border-line-soft px-2.5 pb-2.5 pt-2 dark:border-tooltip-ink/10">
+              <div className="flex items-center gap-2  px-2.5 pb-2.5 pt-2 dark:border-tooltip-ink/10">
                 <HugeiconsIcon
                   icon={Search01Icon}
                   size={16}
@@ -81,11 +120,17 @@ export function CommandBar() {
               </div>
               <div className="mt-1 max-h-[320px] overflow-y-auto">
                 <button
-                  className="relative flex w-full items-center gap-2 rounded-xl border-0 bg-transparent px-2 py-1.5 text-left text-sm transition-colors hover:bg-hover dark:hover:bg-tooltip-ink/10"
+                  className={cx(
+                    "relative flex w-full items-center gap-2 rounded-xl border-0 bg-transparent px-2 py-1.5 text-left text-sm transition-colors hover:bg-hover dark:hover:bg-tooltip-ink/10",
+                    selectedIndex === 0 &&
+                      "bg-hover text-ink dark:bg-tooltip-ink/10 dark:text-tooltip-ink",
+                  )}
                   onClick={() => {
                     createNote();
                     setOpen(false);
                   }}
+                  onMouseEnter={() => setSelectedIndex(0)}
+                  type="button"
                 >
                   <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-panel-soft dark:bg-tooltip-ink/10">
                     <HugeiconsIcon
@@ -99,14 +144,20 @@ export function CommandBar() {
                     ⌘N
                   </kbd>
                 </button>
-                {results.map((note) => (
+                {results.map((note, index) => (
                   <button
                     key={note.id}
-                    className="relative flex w-full items-center gap-2 rounded-xl border-0 bg-transparent px-2 py-1.5 text-left text-sm transition-colors hover:bg-hover dark:hover:bg-tooltip-ink/10"
+                    className={cx(
+                      "relative flex w-full items-center gap-2 rounded-xl border-0 bg-transparent px-2 py-1.5 text-left text-sm transition-colors hover:bg-hover dark:hover:bg-tooltip-ink/10",
+                      selectedIndex === index + 1 &&
+                        "bg-hover text-ink dark:bg-tooltip-ink/10 dark:text-tooltip-ink",
+                    )}
                     onClick={() => {
                       openNote(note.id);
                       setOpen(false);
                     }}
+                    onMouseEnter={() => setSelectedIndex(index + 1)}
+                    type="button"
                   >
                     <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-panel-soft dark:bg-tooltip-ink/10">
                       <HugeiconsIcon

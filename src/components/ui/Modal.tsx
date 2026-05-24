@@ -23,7 +23,7 @@ export function Modal({
       {open && (
         <Dialog static open={open} onClose={onClose} className="relative z-70">
           <motion.div
-            className="fixed inset-0 bg-overlay-backdrop dark:bg-overlay-backdrop-dark backdrop-blur-lg"
+            className="fixed inset-0 bg-overlay-backdrop backdrop-blur-lg dark:bg-overlay-backdrop-dark"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -35,10 +35,12 @@ export function Modal({
               animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
               exit={{ opacity: 0, scale: 0.97, y: 10, filter: "blur(8px)" }}
               transition={{ type: "spring", stiffness: 430, damping: 34 }}
-              className="w-[min(520px,100%)] rounded-[22px] border border-line dark:border-line-dark bg-panel/85 dark:bg-panel-dark/85 p-[18px] shadow-overlay backdrop-blur-[22px]"
+              className="w-[min(440px,100%)] rounded-2xl border border-line bg-panel/95 p-4 text-ink shadow-overlay backdrop-blur-[22px] dark:border-line-dark dark:bg-tooltip dark:text-tooltip-ink"
             >
               <div className="flex items-center justify-between">
-                <DialogTitle>{title}</DialogTitle>
+                <DialogTitle className="text-sm font-semibold">
+                  {title}
+                </DialogTitle>
                 <IconButton onClick={onClose} aria-label="Close">
                   <HugeiconsIcon
                     icon={Cancel01Icon}

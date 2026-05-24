@@ -8,6 +8,8 @@ export function FolderTree({
   activeId,
   onDeleteNote,
   onDeleteFolder,
+  onCreateFolder,
+  onCreateNote,
   onOpen,
   onRenameFolder,
 }: {
@@ -16,6 +18,8 @@ export function FolderTree({
   activeId?: string;
   onDeleteNote: (id: string) => void;
   onDeleteFolder: (folder: FolderRecord) => void;
+  onCreateFolder: (parentId: string) => void;
+  onCreateNote: (folderId: string) => void;
   onOpen: (id: string) => void;
   onRenameFolder: (folder: FolderRecord) => void;
 }) {
@@ -33,6 +37,8 @@ export function FolderTree({
           activeId={activeId}
           onDeleteNote={onDeleteNote}
           onDeleteFolder={onDeleteFolder}
+          onCreateFolder={onCreateFolder}
+          onCreateNote={onCreateNote}
           onOpen={onOpen}
           onRenameFolder={onRenameFolder}
         />
