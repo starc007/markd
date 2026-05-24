@@ -32,7 +32,6 @@
     "motion": "^12.40.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-tooltip": "^6.0.4",
     "sonner": "^2.0.7",
     "tailwindcss": "^4.1.18",
     "zustand": "^5.0.9"

@@ -1,31 +1,139 @@
-import { useId } from "react";
-import { Tooltip as ReactTooltip, type PlacesType } from "react-tooltip";
-import type { ReactNode } from "react";
+import { AnimatePresence, motion, useReducedMotion, type Variants } from "motion/react";
+import {
+  cloneElement,
+  isValidElement,
+  useId,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from "react";
+import { cx } from "./utils";
+
+type TooltipSide = "top" | "right" | "bottom" | "left";
+
+const positionClass: Record<TooltipSide, string> = {
+  top: "bottom-full left-1/2 mb-1.5 -translate-x-1/2",
+  right: "left-full top-1/2 ml-1.5 -translate-y-1/2",
+  bottom: "left-1/2 top-full mt-1.5 -translate-x-1/2",
+  left: "right-full top-1/2 mr-1.5 -translate-y-1/2",
+};
+
+const origin: Record<TooltipSide, string> = {
+  top: "center bottom",
+  right: "left center",
+  bottom: "center top",
+  left: "right center",
+};
+
+const offset: Record<TooltipSide, { x?: number; y?: number }> = {
+  top: { y: 8 },
+  right: { x: -8 },
+  bottom: { y: -8 },
+  left: { x: 8 },
+};
+
+function variantsFor(side: TooltipSide): Variants {
+  const move = offset[side];
+  return {
+    hidden: {
+      opacity: 0,
+      scale: 0.88,
+      filter: "blur(8px)",
+      x: move.x ?? 0,
+      y: move.y ?? 0,
+    },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      filter: "blur(0px)",
+      x: 0,
+      y: 0,
+      transition: {
+        type: "spring",
+        stiffness: 440,
+        damping: 30,
+        mass: 0.7,
+        opacity: { duration: 0.16 },
+        filter: { duration: 0.2 },
+      },
+    },
+    exit: {
+      opacity: 0,
+      scale: 0.94,
+      filter: "blur(5px)",
+      x: (move.x ?? 0) * 0.5,
+      y: (move.y ?? 0) * 0.5,
+      transition: { duration: 0.12, ease: [0.16, 1, 0.3, 1] },
+    },
+  };
+}
+
+const reducedVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.12 } },
+  exit: { opacity: 0, transition: { duration: 0.1 } },
+};
 
 export function Tooltip({
   label,
   children,
   place = "top",
 }: {
-  label: string;
+  label: ReactNode;
   children: ReactNode;
-  place?: PlacesType;
+  place?: TooltipSide;
 }) {
-  const id = useId().replace(/:/g, "-");
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  const timerRef = useRef<number | null>(null);
+  const reduceMotion = useReducedMotion();
+
+  const show = () => {
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    timerRef.current = window.setTimeout(() => setOpen(true), 120);
+  };
+
+  const hide = () => {
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    timerRef.current = null;
+    setOpen(false);
+  };
+
+  if (!isValidElement(children)) return children;
+
+  const trigger = cloneElement(children as ReactElement<Record<string, unknown>>, {
+    onMouseEnter: show,
+    onMouseLeave: hide,
+    onFocus: show,
+    onBlur: hide,
+    "aria-describedby": id,
+  });
 
   return (
-    <span className="inline-flex" data-tooltip-id={id} data-tooltip-content={label}>
-      {children}
-      <ReactTooltip
-        id={id}
-        place={place}
-        offset={7}
-        delayShow={120}
-        delayHide={40}
-        opacity={1}
-        className="!z-90 !rounded-lg !border-0 !bg-panel/90 !px-2 !py-1 !text-[11px] !font-medium !leading-none !text-ink !shadow-overlay !backdrop-blur-[18px] !transition !duration-150 dark:!bg-panel-dark/90 dark:!text-ink-dark"
-        classNameArrow="!hidden"
-      />
+    <span className="relative inline-flex align-middle">
+      {trigger}
+      <AnimatePresence>
+        {open && (
+          <span className={cx("pointer-events-none absolute z-90", positionClass[place])}>
+            <motion.span
+              id={id}
+              role="tooltip"
+              variants={reduceMotion ? reducedVariants : variantsFor(place)}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              style={{
+                transformOrigin: origin[place],
+                willChange: "transform, opacity, filter",
+              }}
+              className="block whitespace-nowrap rounded-lg bg-panel px-2 py-1 text-[11px] font-medium leading-none text-ink shadow-overlay dark:bg-panel-dark dark:text-ink-dark"
+            >
+              {label}
+            </motion.span>
+          </span>
+        )}
+      </AnimatePresence>
     </span>
   );
 }
