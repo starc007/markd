@@ -8,16 +8,20 @@ export function WorkspaceTree({
   folders,
   notes,
   activeId,
+  onDeleteNote,
   onOpen,
   onCreateNote,
   onCreateFolder,
+  onRenameFolder,
 }: {
   folders: FolderRecord[];
   notes: NoteRecord[];
   activeId?: string;
+  onDeleteNote: (id: string) => void;
   onOpen: (id: string) => void;
   onCreateNote: () => void;
   onCreateFolder: () => void;
+  onRenameFolder: (folder: FolderRecord, name: string) => void;
 }) {
   return (
     <div className="relative">
@@ -50,7 +54,9 @@ export function WorkspaceTree({
         folders={folders}
         notes={notes}
         activeId={activeId}
+        onDeleteNote={onDeleteNote}
         onOpen={onOpen}
+        onRenameFolder={onRenameFolder}
       />
     </div>
   );

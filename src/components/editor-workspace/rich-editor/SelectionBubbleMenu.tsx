@@ -1,12 +1,14 @@
 import {
   AlignBoxBottomLeftIcon,
   CodeIcon,
+  Delete02Icon,
   Heading01Icon,
   Heading02Icon,
   Heading03Icon,
   ImageAdd01Icon,
   LeftToRightBlockQuoteIcon,
   Link01Icon,
+  TableIcon,
   TextBoldIcon,
   TextItalicIcon,
   TextUnderlineIcon,
@@ -19,17 +21,23 @@ import { ToolbarButton } from "./ToolbarButton";
 export function SelectionBubbleMenu({
   editor,
   notes,
+  onCreatePage,
 }: {
   editor: Editor | null;
   notes: NoteRecord[];
+  onCreatePage: (title: string) => Promise<unknown>;
 }) {
   if (!editor) return null;
 
-  const insertPageLink = () => {
+  const insertPageLink = async () => {
     const fallback = notes[0]?.title ?? "Untitled";
     const title = window.prompt("Link page", fallback);
     if (!title) return;
-    editor.chain().focus().insertContent(`[[${title.trim()}]]`).run();
+    const pageTitle = title.trim();
+    if (!notes.some((note) => note.title.toLowerCase() === pageTitle.toLowerCase())) {
+      await onCreatePage(pageTitle);
+    }
+    editor.chain().focus().insertContent(`[[${pageTitle}]]`).run();
   };
 
   const setLink = () => {
@@ -59,7 +67,7 @@ export function SelectionBubbleMenu({
       editor={editor}
       shouldShow={({ editor, state }) =>
         editor.isEditable &&
-        !state.selection.empty &&
+        (!state.selection.empty || editor.isActive("table")) &&
         !editor.isActive("codeBlock")
       }
       updateDelay={80}
@@ -131,7 +139,21 @@ export function SelectionBubbleMenu({
         onClick={setLink}
       />
       <ToolbarButton icon={ImageAdd01Icon} label="Image" onClick={insertImage} />
+      {editor.isActive("table") && (
+        <>
+          <div className="mx-1 h-5 w-px bg-line-soft dark:bg-line-soft-dark" />
+          <ToolbarButton
+            icon={TableIcon}
+            label="Add row"
+            onClick={() => editor.chain().focus().addRowAfter().run()}
+          />
+          <ToolbarButton
+            icon={Delete02Icon}
+            label="Delete table"
+            onClick={() => editor.chain().focus().deleteTable().run()}
+          />
+        </>
+      )}
     </BubbleMenu>
   );
 }
-

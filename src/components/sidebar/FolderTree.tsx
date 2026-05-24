@@ -6,12 +6,16 @@ export function FolderTree({
   folders,
   notes,
   activeId,
+  onDeleteNote,
   onOpen,
+  onRenameFolder,
 }: {
   folders: FolderRecord[];
   notes: NoteRecord[];
   activeId?: string;
+  onDeleteNote: (id: string) => void;
   onOpen: (id: string) => void;
+  onRenameFolder: (folder: FolderRecord, name: string) => void;
 }) {
   const rootNotes = notes.filter((note) => !note.folderId && !note.parentId);
   const rootFolders = folders.filter((folder) => !folder.parentId);
@@ -25,7 +29,9 @@ export function FolderTree({
           folders={folders}
           notes={notes}
           activeId={activeId}
+          onDeleteNote={onDeleteNote}
           onOpen={onOpen}
+          onRenameFolder={onRenameFolder}
         />
       ))}
       {rootNotes.map((note) => (
@@ -33,6 +39,7 @@ export function FolderTree({
           key={note.id}
           note={note}
           active={note.id === activeId}
+          onDelete={onDeleteNote}
           onOpen={onOpen}
         />
       ))}

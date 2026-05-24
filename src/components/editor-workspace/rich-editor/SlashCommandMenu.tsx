@@ -37,7 +37,7 @@ interface SlashCommand {
   detail: string;
   icon: IconSvgElement;
   keywords: string;
-  run: (editor: Editor) => void;
+  run: (editor: Editor, onCreatePage: (title: string) => Promise<unknown>) => void | Promise<void>;
 }
 
 const commands: SlashCommand[] = [
@@ -132,10 +132,12 @@ const commands: SlashCommand[] = [
     detail: "Link another note",
     icon: Link01Icon,
     keywords: "page link note backlink",
-    run: (editor) => {
+    run: async (editor, onCreatePage) => {
       const title = window.prompt("Link page", "Untitled");
       if (!title) return;
-      editor.chain().focus().insertContent(`[[${title.trim()}]]`).run();
+      const pageTitle = title.trim();
+      await onCreatePage(pageTitle);
+      editor.chain().focus().insertContent(`[[${pageTitle}]]`).run();
     },
   },
   {
@@ -155,10 +157,12 @@ const commands: SlashCommand[] = [
 export function SlashCommandMenu({
   editor,
   menu,
+  onCreatePage,
   onClose,
 }: {
   editor: Editor | null;
   menu: SlashMenuState | null;
+  onCreatePage: (title: string) => Promise<unknown>;
   onClose: () => void;
 }) {
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -177,15 +181,17 @@ export function SlashCommandMenu({
   useEffect(() => {
     if (!menu || !editor) return;
 
-    const runSelected = () => {
+    const runSelected = async () => {
       const command = filteredCommands[selectedIndex];
       if (!command) return;
       editor.chain().focus().deleteRange(menu.range).run();
-      command.run(editor);
+      await command.run(editor, onCreatePage);
       onClose();
     };
 
     const onKeyDown = (event: KeyboardEvent) => {
+      if (filteredCommands.length === 0) return;
+
       if (event.key === "Escape") {
         event.preventDefault();
         onClose();
@@ -214,10 +220,10 @@ export function SlashCommandMenu({
     return () => window.removeEventListener("keydown", onKeyDown, true);
   }, [editor, filteredCommands, menu, onClose, selectedIndex]);
 
-  const runCommand = (command: SlashCommand) => {
+  const runCommand = async (command: SlashCommand) => {
     if (!editor || !menu) return;
     editor.chain().focus().deleteRange(menu.range).run();
-    command.run(editor);
+    await command.run(editor, onCreatePage);
     onClose();
   };
 
@@ -277,4 +283,3 @@ export function SlashCommandMenu({
     </AnimatePresence>
   );
 }
-

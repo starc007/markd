@@ -13,6 +13,7 @@ export function EditorPane() {
   const activeNote = useWorkspaceStore((state) => state.activeNote);
   const manifest = useWorkspaceStore((state) => state.manifest);
   const saveActiveNote = useWorkspaceStore((state) => state.saveActiveNote);
+  const createLinkedNote = useWorkspaceStore((state) => state.createLinkedNote);
   const createNote = useWorkspaceStore((state) => state.createNote);
   const saveSticky = useWorkspaceStore((state) => state.saveSticky);
   const saveBookmark = useWorkspaceStore((state) => state.saveBookmark);
@@ -73,6 +74,7 @@ export function EditorPane() {
       notes={manifest?.notes ?? []}
       title={activeNote.meta.title}
       onChange={setContent}
+      onCreatePage={createLinkedNote}
       onSave={() => saveActiveNote(content)}
     />
   );

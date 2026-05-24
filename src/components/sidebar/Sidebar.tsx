@@ -12,6 +12,8 @@ export function Sidebar() {
   const openNote = useWorkspaceStore((state) => state.openNote);
   const createNote = useWorkspaceStore((state) => state.createNote);
   const createFolder = useWorkspaceStore((state) => state.createFolder);
+  const deleteNote = useWorkspaceStore((state) => state.deleteNote);
+  const renameFolder = useWorkspaceStore((state) => state.renameFolder);
   const setCommandOpen = useWorkspaceStore((state) => state.setCommandOpen);
 
   const notes = useMemo(() => {
@@ -34,9 +36,11 @@ export function Sidebar() {
         folders={manifest?.folders ?? []}
         notes={notes}
         activeId={activeNote?.meta.id}
+        onDeleteNote={deleteNote}
         onOpen={openNote}
         onCreateNote={() => createNote()}
         onCreateFolder={() => createFolder()}
+        onRenameFolder={renameFolder}
       />
     </aside>
   );

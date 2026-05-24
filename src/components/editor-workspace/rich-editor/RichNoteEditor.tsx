@@ -16,6 +16,7 @@ export function RichNoteEditor({
   notes,
   title,
   onChange,
+  onCreatePage,
   onSave,
 }: {
   activeNoteId: string;
@@ -23,6 +24,7 @@ export function RichNoteEditor({
   notes: NoteRecord[];
   title: string;
   onChange: (content: string) => void;
+  onCreatePage: (title: string) => Promise<unknown>;
   onSave: () => void;
 }) {
   const externalContent = useRef(content);
@@ -102,13 +104,18 @@ export function RichNoteEditor({
   return (
     <main className="relative flex min-h-0 flex-1 overflow-hidden bg-editor dark:bg-editor-dark">
       <div className="min-w-0 flex-1 overflow-auto">
-        <SelectionBubbleMenu editor={editor} notes={notes} />
+        <SelectionBubbleMenu
+          editor={editor}
+          notes={notes}
+          onCreatePage={onCreatePage}
+        />
         <EditorContent editor={editor} />
       </div>
 
       <SlashCommandMenu
         editor={editor}
         menu={slashMenu}
+        onCreatePage={onCreatePage}
         onClose={() => setSlashMenu(null)}
       />
 

@@ -28,6 +28,9 @@ interface WorkspaceState {
   openNote: (id: string) => Promise<void>;
   closeNote: (id: string) => Promise<void>;
   createNote: (folderId?: string | null, parentId?: string | null) => Promise<void>;
+  createLinkedNote: (title: string) => Promise<NoteDocument>;
+  deleteNote: (id: string) => Promise<void>;
+  renameFolder: (folder: FolderRecord, name: string) => Promise<void>;
   saveActiveNote: (content: string) => Promise<void>;
   createFolder: (parentId?: string | null) => Promise<FolderRecord | null>;
   saveSticky: (sticky: Partial<StickyRecord> & Pick<StickyRecord, "content" | "color">) => Promise<void>;
@@ -115,6 +118,61 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       manifest: snapshot.manifest,
       view: "notes",
     }));
+  },
+
+  createLinkedNote: async (title) => {
+    const normalizedTitle = title.trim() || "Untitled";
+    const existing = get().manifest?.notes.find(
+      (note) => note.title.toLowerCase() === normalizedTitle.toLowerCase(),
+    );
+
+    if (existing) {
+      const note = await api.getNote(existing.id);
+      if (note) return note;
+    }
+
+    const note = await api.upsertNote({
+      title: normalizedTitle,
+      content: `# ${normalizedTitle}\n\n`,
+      folderId: null,
+      parentId: null,
+      tags: [],
+      pinned: false,
+    });
+    const snapshot = await api.loadWorkspace();
+    set({ manifest: snapshot.manifest });
+    return note;
+  },
+
+  deleteNote: async (id) => {
+    const manifest = await api.deleteNote(id);
+    set((state) => {
+      const openNotes = state.openNotes.filter((note) => note.meta.id !== id);
+      const activeNote =
+        state.activeNote?.meta.id === id
+          ? openNotes[openNotes.length - 1] ?? null
+          : state.activeNote;
+
+      return {
+        activeNote,
+        manifest,
+        openNotes,
+        view: activeNote ? "notes" : state.view,
+      };
+    });
+  },
+
+  renameFolder: async (folder, name) => {
+    const nextName = name.trim();
+    if (!nextName || nextName === folder.name) return;
+
+    await api.upsertFolder({
+      id: folder.id,
+      name: nextName,
+      parentId: folder.parentId,
+    });
+    const snapshot = await api.loadWorkspace();
+    set({ manifest: snapshot.manifest });
   },
 
   saveActiveNote: async (content) => {
