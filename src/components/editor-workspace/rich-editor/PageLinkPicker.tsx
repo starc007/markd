@@ -1,36 +1,32 @@
-import { FileEditIcon, NoteAddIcon, Search01Icon } from "@hugeicons/core-free-icons";
+import { FileEditIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { AnimatePresence, motion } from "motion/react";
-import { useMemo, useState } from "react";
-import { cx } from "@/components/ui";
 import type { NoteRecord } from "@/lib/types";
+
+export interface PagePickerState {
+  position: {
+    left: number;
+    top: number;
+  };
+  side: "top" | "bottom";
+}
 
 export function PageLinkPicker({
   notes,
-  open,
+  picker,
   onClose,
   onSelect,
 }: {
   notes: NoteRecord[];
-  open: boolean;
+  picker: PagePickerState | null;
   onClose: () => void;
   onSelect: (title: string) => void;
 }) {
-  const [query, setQuery] = useState("");
-  const results = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) return notes.slice(0, 8);
-    return notes
-      .filter((note) => note.title.toLowerCase().includes(normalized))
-      .slice(0, 8);
-  }, [notes, query]);
-  const canCreate =
-    query.trim().length > 0 &&
-    !notes.some((note) => note.title.toLowerCase() === query.trim().toLowerCase());
+  const results = notes.slice(0, 10);
 
   return (
     <AnimatePresence>
-      {open && (
+      {picker && (
         <>
           <button
             aria-label="Close page picker"
@@ -40,29 +36,20 @@ export function PageLinkPicker({
           />
           <motion.div
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="fixed left-1/2 top-[28%] z-80 w-[min(340px,calc(100vw-32px))] -translate-x-1/2 overflow-hidden rounded-2xl border border-line bg-panel/95 p-1.5 text-ink shadow-overlay backdrop-blur-[22px] dark:border-line-dark dark:bg-tooltip dark:text-tooltip-ink"
-            exit={{ opacity: 0, scale: 0.98, y: 6 }}
-            initial={{ opacity: 0, scale: 0.98, y: 6 }}
+            className="fixed z-80 w-[248px] overflow-hidden rounded-2xl border border-line bg-panel/95 p-1 text-ink shadow-overlay backdrop-blur-[22px] dark:border-line-dark dark:bg-tooltip dark:text-tooltip-ink"
+            exit={{ opacity: 0, scale: 0.98, y: picker.side === "bottom" ? -4 : 4 }}
+            initial={{ opacity: 0, scale: 0.98, y: picker.side === "bottom" ? -4 : 4 }}
+            style={{
+              left: picker.position.left,
+              top: picker.position.top,
+              transformOrigin: picker.side === "bottom" ? "top left" : "bottom left",
+            }}
             transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className="flex items-center gap-2 px-2.5 py-2">
-              <HugeiconsIcon icon={Search01Icon} size={15} color="currentColor" />
-              <input
-                autoFocus
-                className="h-8 w-full border-0 bg-transparent text-sm outline-none placeholder:text-muted dark:placeholder:text-tooltip-ink/45"
-                placeholder="Search pages..."
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Escape") onClose();
-                  if (event.key === "Enter") {
-                    const title = results[0]?.title ?? query.trim();
-                    if (title) onSelect(title);
-                  }
-                }}
-              />
+            <div className="px-2 pb-1 pt-1 text-[10px] font-medium uppercase tracking-wide text-muted dark:text-tooltip-ink/60">
+              Pages
             </div>
-            <div className="max-h-64 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="max-h-56 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {results.map((note) => (
                 <button
                   className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-sm transition-colors hover:bg-hover dark:hover:bg-tooltip-ink/10"
@@ -76,19 +63,10 @@ export function PageLinkPicker({
                   <span className="min-w-0 flex-1 truncate font-medium">{note.title}</span>
                 </button>
               ))}
-              {canCreate && (
-                <button
-                  className={cx(
-                    "flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-sm transition-colors hover:bg-hover dark:hover:bg-tooltip-ink/10",
-                  )}
-                  onClick={() => onSelect(query.trim())}
-                  type="button"
-                >
-                  <span className="grid h-7 w-7 place-items-center rounded-lg bg-panel-soft dark:bg-tooltip-ink/10">
-                    <HugeiconsIcon icon={NoteAddIcon} size={15} color="currentColor" />
-                  </span>
-                  <span className="font-medium">Create "{query.trim()}"</span>
-                </button>
+              {results.length === 0 && (
+                <div className="px-3 py-6 text-center text-sm text-muted dark:text-tooltip-ink/55">
+                  No pages yet
+                </div>
               )}
             </div>
           </motion.div>

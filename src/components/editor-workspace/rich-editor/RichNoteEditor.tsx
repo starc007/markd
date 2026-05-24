@@ -4,7 +4,7 @@ import type { NoteRecord } from "@/lib/types";
 import { BacklinksPanel } from "./BacklinksPanel";
 import { createEditorExtensions } from "./editorExtensions";
 import { htmlToMarkdown, markdownToHtml } from "./markdown";
-import { PageLinkPicker } from "./PageLinkPicker";
+import { PageLinkPicker, type PagePickerState } from "./PageLinkPicker";
 import { SelectionBubbleMenu } from "./SelectionBubbleMenu";
 import {
   SlashCommandMenu,
@@ -32,7 +32,7 @@ export function RichNoteEditor({
 }) {
   const externalContent = useRef(content);
   const [slashMenu, setSlashMenu] = useState<SlashMenuState | null>(null);
-  const [pagePickerOpen, setPagePickerOpen] = useState(false);
+  const [pagePicker, setPagePicker] = useState<PagePickerState | null>(null);
   const extensions = useMemo(() => createEditorExtensions(), []);
   const characters = content.length;
   const words = content.trim().length
@@ -127,6 +127,27 @@ export function RichNoteEditor({
     },
   });
 
+  const openPagePicker = useCallback(() => {
+    if (!editor) return;
+
+    const coords = editor.view.coordsAtPos(editor.state.selection.to);
+    const menuWidth = 248;
+    const menuHeight = 248;
+    const hasRoomBelow = window.innerHeight - coords.bottom > menuHeight + 18;
+    const hasRoomAbove = coords.top > menuHeight + 18;
+
+    setPagePicker({
+      position: {
+        left: Math.max(12, Math.min(coords.left, window.innerWidth - menuWidth - 12)),
+        top:
+          hasRoomBelow || !hasRoomAbove
+            ? coords.bottom + 8
+            : Math.max(12, coords.top - menuHeight - 8),
+      },
+      side: hasRoomBelow || !hasRoomAbove ? "bottom" : "top",
+    });
+  }, [editor]);
+
   useEffect(() => {
     if (!editor || content === externalContent.current) return;
     externalContent.current = content;
@@ -141,7 +162,7 @@ export function RichNoteEditor({
         <SelectionBubbleMenu
           editor={editor}
           notes={notes}
-          onRequestPageLink={() => setPagePickerOpen(true)}
+          onRequestPageLink={openPagePicker}
         />
         <EditorContent editor={editor} />
       </div>
@@ -150,14 +171,14 @@ export function RichNoteEditor({
         editor={editor}
         menu={slashMenu}
         onCreatePage={onCreatePage}
-        onRequestPageLink={() => setPagePickerOpen(true)}
+        onRequestPageLink={openPagePicker}
         onClose={() => setSlashMenu(null)}
       />
 
       <PageLinkPicker
         notes={notes}
-        open={pagePickerOpen}
-        onClose={() => setPagePickerOpen(false)}
+        picker={pagePicker}
+        onClose={() => setPagePicker(null)}
         onSelect={async (pageTitle) => {
           const title = pageTitle.trim();
           if (!title || !editor) return;
@@ -165,7 +186,7 @@ export function RichNoteEditor({
             await onCreatePage(title);
           }
           editor.chain().focus().insertContent(`[[${title}]]`).run();
-          setPagePickerOpen(false);
+          setPagePicker(null);
         }}
       />
 

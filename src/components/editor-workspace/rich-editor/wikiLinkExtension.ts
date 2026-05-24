@@ -20,10 +20,21 @@ export const WikiLinkExtension = Extension.create({
 
               for (const match of node.text.matchAll(wikiLinkPattern)) {
                 const index = match.index ?? 0;
+                const from = position + index;
+                const titleFrom = from + 2;
+                const titleTo = titleFrom + match[1].length;
+                const to = from + match[0].length;
+
                 decorations.push(
-                  Decoration.inline(position + index, position + index + match[0].length, {
+                  Decoration.inline(from, titleFrom, {
+                    class: "hidden",
+                  }),
+                  Decoration.inline(titleFrom, titleTo, {
                     class:
-                      "rounded-md bg-selection px-1 text-ink decoration-transparent dark:bg-selection-dark dark:text-ink-dark",
+                      "cursor-pointer underline decoration-line underline-offset-4 before:mr-1 before:inline-block before:h-3 before:w-2 before:rounded-[2px] before:border before:border-current before:align-[-1px] text-ink dark:text-ink-dark",
+                  }),
+                  Decoration.inline(titleTo, to, {
+                    class: "hidden",
                   }),
                 );
               }
