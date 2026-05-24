@@ -1,6 +1,10 @@
 import { Dialog, DialogPanel } from "@headlessui/react";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Add01Icon, FileEditIcon, Search01Icon } from "@hugeicons/core-free-icons";
+import {
+  Add01Icon,
+  FileEditIcon,
+  Search01Icon,
+} from "@hugeicons/core-free-icons";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { useWorkspaceStore } from "@/stores/workspace";
@@ -41,9 +45,14 @@ export function CommandBar() {
   return (
     <AnimatePresence>
       {open && (
-        <Dialog static open={open} onClose={() => setOpen(false)} className="relative z-70">
+        <Dialog
+          static
+          open={open}
+          onClose={() => setOpen(false)}
+          className="relative z-70"
+        >
           <motion.div
-            className="fixed inset-0 bg-overlay-backdrop dark:bg-overlay-backdrop-dark backdrop-blur-lg"
+            className="fixed inset-0 bg-overlay-backdrop backdrop-blur-lg dark:bg-overlay-backdrop-dark"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -54,43 +63,72 @@ export function CommandBar() {
               animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
               exit={{ opacity: 0, scale: 0.98, y: 10, filter: "blur(8px)" }}
               transition={{ type: "spring", stiffness: 460, damping: 36 }}
-              className="w-[min(680px,100%)] rounded-[22px] border border-line dark:border-line-dark bg-panel/85 dark:bg-panel-dark/85 p-2.5 shadow-overlay backdrop-blur-[22px]"
+              className="w-[min(520px,100%)] overflow-hidden rounded-2xl border border-line bg-panel/95 p-1.5 text-ink shadow-overlay backdrop-blur-[22px] dark:border-line-dark dark:bg-tooltip dark:text-tooltip-ink"
             >
-              <div className="flex items-center gap-2.5 border-b border-line dark:border-line-dark px-2.5 pb-3 pt-2">
-                <HugeiconsIcon icon={Search01Icon} size={18} color="currentColor" />
+              <div className="flex items-center gap-2 border-b border-line-soft px-2.5 pb-2.5 pt-2 dark:border-tooltip-ink/10">
+                <HugeiconsIcon
+                  icon={Search01Icon}
+                  size={16}
+                  color="currentColor"
+                />
                 <input
                   autoFocus
-                  className="h-[38px] w-full border-0 bg-transparent outline-none"
+                  className="h-8 w-full border-0 bg-transparent text-sm text-inherit outline-none placeholder:text-muted dark:placeholder:text-tooltip-ink/45"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Find or create..."
+                  placeholder="Search notes..."
                 />
               </div>
-              <button
-                className="relative mt-2 flex w-full items-center gap-2.5 rounded-[13px] border-0 bg-transparent p-2.5 text-left transition-colors hover:bg-hover dark:hover:bg-hover-dark"
-                onClick={() => {
-                  createNote();
-                  setOpen(false);
-                }}
-              >
-                <HugeiconsIcon icon={Add01Icon} size={18} color="currentColor" />
-                Create note
-                <kbd className="ml-auto text-xs text-muted dark:text-muted-dark">⌘N</kbd>
-              </button>
-              {results.map((note) => (
+              <div className="mt-1 max-h-[320px] overflow-y-auto">
                 <button
-                  key={note.id}
-                  className="relative flex w-full items-center gap-2.5 rounded-[13px] border-0 bg-transparent p-2.5 text-left transition-colors hover:bg-hover dark:hover:bg-hover-dark"
+                  className="relative flex w-full items-center gap-2 rounded-xl border-0 bg-transparent px-2 py-1.5 text-left text-sm transition-colors hover:bg-hover dark:hover:bg-tooltip-ink/10"
                   onClick={() => {
-                    openNote(note.id);
+                    createNote();
                     setOpen(false);
                   }}
                 >
-                  <HugeiconsIcon icon={FileEditIcon} size={18} color="currentColor" />
-                  {note.title}
-                  <small className="ml-auto max-w-[42%] truncate text-muted dark:text-muted-dark">{note.path}</small>
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-panel-soft dark:bg-tooltip-ink/10">
+                    <HugeiconsIcon
+                      icon={Add01Icon}
+                      size={15}
+                      color="currentColor"
+                    />
+                  </span>
+                  <span className="font-medium">Create note</span>
+                  <kbd className="ml-auto text-[11px] text-muted dark:text-tooltip-ink/55">
+                    ⌘N
+                  </kbd>
                 </button>
-              ))}
+                {results.map((note) => (
+                  <button
+                    key={note.id}
+                    className="relative flex w-full items-center gap-2 rounded-xl border-0 bg-transparent px-2 py-1.5 text-left text-sm transition-colors hover:bg-hover dark:hover:bg-tooltip-ink/10"
+                    onClick={() => {
+                      openNote(note.id);
+                      setOpen(false);
+                    }}
+                  >
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-panel-soft dark:bg-tooltip-ink/10">
+                      <HugeiconsIcon
+                        icon={FileEditIcon}
+                        size={15}
+                        color="currentColor"
+                      />
+                    </span>
+                    <span className="min-w-0 flex-1 truncate font-medium">
+                      {note.title}
+                    </span>
+                    <small className="ml-auto max-w-[38%] truncate text-[11px] text-muted dark:text-tooltip-ink/55">
+                      {note.path}
+                    </small>
+                  </button>
+                ))}
+                {results.length === 0 && (
+                  <div className="px-3 py-8 text-center text-sm text-muted dark:text-tooltip-ink/55">
+                    No notes found
+                  </div>
+                )}
+              </div>
             </MotionDialogPanel>
           </div>
         </Dialog>
