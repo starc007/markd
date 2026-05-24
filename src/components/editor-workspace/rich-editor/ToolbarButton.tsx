@@ -24,7 +24,7 @@ export function ToolbarButton({
         className={cx(
           "grid h-8 w-8 place-items-center rounded-lg text-muted transition-colors hover:bg-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-line disabled:pointer-events-none disabled:opacity-40 dark:text-muted-dark dark:hover:bg-hover-dark dark:hover:text-ink-dark dark:focus-visible:ring-focus-line-dark",
           active &&
-            "bg-hover text-ink dark:bg-hover-dark dark:text-ink-dark",
+            "bg-hover text-ink dark:bg-tooltip-ink/10 dark:text-tooltip-ink",
         )}
         type="button"
         onClick={onClick}

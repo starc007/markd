@@ -60,14 +60,22 @@ export function RichNoteEditor({
     const slashIndex = textBefore.lastIndexOf("/");
     const from = position - (textBefore.length - slashIndex);
     const coords = editor.view.coordsAtPos(position);
+    const menuWidth = 248;
+    const menuHeight = 264;
+    const hasRoomBelow = window.innerHeight - coords.bottom > menuHeight + 18;
+    const hasRoomAbove = coords.top > menuHeight + 18;
 
     setSlashMenu({
       query: match[1] ?? "",
       range: { from, to: position },
       position: {
-        left: Math.min(coords.left, window.innerWidth - 304),
-        top: Math.min(coords.bottom + 8, window.innerHeight - 420),
+        left: Math.max(12, Math.min(coords.left, window.innerWidth - menuWidth - 12)),
+        top:
+          hasRoomBelow || !hasRoomAbove
+            ? coords.bottom + 8
+            : Math.max(12, coords.top - menuHeight - 8),
       },
+      side: hasRoomBelow || !hasRoomAbove ? "bottom" : "top",
     });
   }, []);
 

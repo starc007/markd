@@ -72,10 +72,14 @@ export function SelectionBubbleMenu({
       }
       updateDelay={80}
       options={{
+        strategy: "fixed",
         placement: "top",
         offset: 8,
+        flip: true,
+        shift: { padding: 12 },
       }}
-      className="flex items-center gap-1 rounded-2xl border border-line bg-panel/90 p-1.5 shadow-overlay backdrop-blur-[22px] dark:border-line-dark dark:bg-panel-dark/90"
+      appendTo={() => document.body}
+      className="z-90 flex max-w-[min(420px,calc(100vw-24px))] flex-wrap items-center gap-0.5 rounded-2xl border border-line bg-panel/95 p-1 shadow-overlay backdrop-blur-[22px] dark:border-line-dark dark:bg-tooltip dark:text-tooltip-ink"
     >
       <ToolbarButton
         active={editor.isActive("heading", { level: 1 })}

@@ -29,6 +29,7 @@ export interface SlashMenuState {
     left: number;
     top: number;
   };
+  side: "top" | "bottom";
 }
 
 interface SlashCommand {
@@ -232,52 +233,54 @@ export function SlashCommandMenu({
       {menu && filteredCommands.length > 0 && (
         <motion.div
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          className="fixed z-80 w-[280px] overflow-hidden rounded-2xl border border-line bg-panel/95 p-1.5 shadow-overlay backdrop-blur-[22px] dark:border-line-dark dark:bg-panel-dark/95"
-          exit={{ opacity: 0, scale: 0.97, y: -4 }}
-          initial={{ opacity: 0, scale: 0.97, y: -4 }}
+          className="fixed z-90 w-[248px] overflow-hidden rounded-2xl border border-line bg-panel/95 p-1 shadow-overlay backdrop-blur-[22px] dark:border-line-dark dark:bg-tooltip dark:text-tooltip-ink"
+          exit={{ opacity: 0, scale: 0.97, y: menu.side === "bottom" ? -4 : 4 }}
+          initial={{ opacity: 0, scale: 0.97, y: menu.side === "bottom" ? -4 : 4 }}
           style={{
             left: menu.position.left,
             top: menu.position.top,
-            transformOrigin: "top left",
+            transformOrigin: menu.side === "bottom" ? "top left" : "bottom left",
           }}
           transition={{ duration: 0.13, ease: [0.16, 1, 0.3, 1] }}
         >
-          <div className="px-2 pb-1 pt-1 text-[11px] font-medium text-muted dark:text-muted-dark">
+          <div className="px-2 pb-1 pt-1 text-[10px] font-medium uppercase tracking-wide text-muted dark:text-tooltip-ink/60">
             Blocks
           </div>
-          {filteredCommands.map((command, index) => (
-            <button
-              className={cx(
-                "flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left transition-colors",
-                index === selectedIndex
-                  ? "bg-hover text-ink dark:bg-hover-dark dark:text-ink-dark"
-                  : "text-muted hover:bg-hover hover:text-ink dark:text-muted-dark dark:hover:bg-hover-dark dark:hover:text-ink-dark",
-              )}
-              key={command.id}
-              type="button"
-              onMouseDown={(event) => {
-                event.preventDefault();
-                runCommand(command);
-              }}
-              onMouseEnter={() => setSelectedIndex(index)}
-            >
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-panel-soft text-ink dark:bg-panel-soft-dark dark:text-ink-dark">
-                <HugeiconsIcon
-                  icon={command.icon}
-                  size={16}
-                  color="currentColor"
-                />
-              </span>
-              <span className="min-w-0">
-                <span className="block truncate text-sm font-medium">
-                  {command.label}
+          <div className="max-h-56 overflow-y-auto pr-0.5">
+            {filteredCommands.map((command, index) => (
+              <button
+                className={cx(
+                  "flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left transition-colors",
+                  index === selectedIndex
+                    ? "bg-hover text-ink dark:bg-tooltip-ink/10 dark:text-tooltip-ink"
+                    : "text-muted hover:bg-hover hover:text-ink dark:text-tooltip-ink/70 dark:hover:bg-tooltip-ink/10 dark:hover:text-tooltip-ink",
+                )}
+                key={command.id}
+                type="button"
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  runCommand(command);
+                }}
+                onMouseEnter={() => setSelectedIndex(index)}
+              >
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-panel-soft text-ink dark:bg-tooltip-ink/10 dark:text-tooltip-ink">
+                  <HugeiconsIcon
+                    icon={command.icon}
+                    size={15}
+                    color="currentColor"
+                  />
                 </span>
-                <span className="block truncate text-xs text-muted dark:text-muted-dark">
-                  {command.detail}
+                <span className="min-w-0">
+                  <span className="block truncate text-[12px] font-medium">
+                    {command.label}
+                  </span>
+                  <span className="block truncate text-[11px] text-muted dark:text-tooltip-ink/55">
+                    {command.detail}
+                  </span>
                 </span>
-              </span>
-            </button>
-          ))}
+              </button>
+            ))}
+          </div>
         </motion.div>
       )}
     </AnimatePresence>
