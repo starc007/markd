@@ -1,11 +1,5 @@
 import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  Add01Icon,
-  Cancel01Icon,
-  FolderIcon,
-  MoreVerticalIcon,
-} from "@hugeicons/core-free-icons";
-import { Button, Dropdown, DropdownItem, IconButton } from "@/components/ui";
+import { Cancel01Icon } from "@hugeicons/core-free-icons";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { cx } from "@/components/ui";
 
@@ -13,8 +7,6 @@ export function TopBar() {
   const activeNote = useWorkspaceStore((state) => state.activeNote);
   const openNotes = useWorkspaceStore((state) => state.openNotes);
   const view = useWorkspaceStore((state) => state.view);
-  const createNote = useWorkspaceStore((state) => state.createNote);
-  const createFolder = useWorkspaceStore((state) => state.createFolder);
   const openNote = useWorkspaceStore((state) => state.openNote);
   const closeNote = useWorkspaceStore((state) => state.closeNote);
   const fallbackTitle = {
@@ -74,24 +66,7 @@ export function TopBar() {
         )}
       </div>
 
-      <div className="flex items-center gap-2.5">
-        <Button onClick={() => createNote()} variant="primary">
-          <HugeiconsIcon icon={Add01Icon} size={15} color="currentColor" />
-          Note
-        </Button>
-        <Dropdown
-          label={
-            <IconButton aria-label="More">
-              <HugeiconsIcon icon={MoreVerticalIcon} size={17} color="currentColor" />
-            </IconButton>
-          }
-        >
-          <DropdownItem onClick={() => createFolder()}>
-            <HugeiconsIcon icon={FolderIcon} size={15} color="currentColor" />
-            New folder
-          </DropdownItem>
-        </Dropdown>
-      </div>
+      <div className="w-2" />
     </header>
   );
 }

@@ -22,7 +22,7 @@ export function Sidebar() {
         name={manifest?.name ?? "Draft Workspace"}
         onCreateNote={createNote}
       />
-      <SidebarNav activeView={view} onSelect={setView} />
+      <SidebarNav activeView={view} onSelect={setView} onCreateNote={createNote} />
       <WorkspaceTree
         folders={manifest?.folders ?? []}
         notes={notes}
