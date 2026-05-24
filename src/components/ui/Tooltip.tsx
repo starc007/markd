@@ -19,12 +19,12 @@ export function Tooltip({
       <ReactTooltip
         id={id}
         place={place}
-        offset={8}
-        delayShow={260}
-        delayHide={60}
+        offset={7}
+        delayShow={120}
+        delayHide={40}
         opacity={1}
-        className="!z-90 !rounded-lg !border !border-line !bg-panel/95 !px-2.5 !py-1.5 !text-xs !font-medium !text-ink !shadow-overlay !backdrop-blur-[22px] !transition !duration-150 dark:!border-line-dark dark:!bg-panel-dark/95 dark:!text-ink-dark"
-        classNameArrow="!border-line dark:!border-line-dark"
+        className="!z-90 !rounded-lg !border-0 !bg-panel/90 !px-2 !py-1 !text-[11px] !font-medium !leading-none !text-ink !shadow-overlay !backdrop-blur-[18px] !transition !duration-150 dark:!bg-panel-dark/90 dark:!text-ink-dark"
+        classNameArrow="!hidden"
       />
     </span>
   );
