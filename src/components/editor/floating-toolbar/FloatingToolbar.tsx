@@ -95,7 +95,7 @@ export function FloatingToolbar({ editor }: FloatingToolbarProps) {
         middleware: [offset(8)],
       }}
     >
-      <div className="flex items-center gap-1 bg-background border border-border rounded-lg shadow-lg p-1">
+      <div className="flex items-center gap-1 bg-background border border-border rounded-lg p-1">
         {!isInTable && (
           <>
             <ToolbarButton

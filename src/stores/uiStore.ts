@@ -71,19 +71,22 @@ export const useUIStore = create<UIStore>((set, get) => ({
 
   setView: (view: UIView | null) => {
     const { updateActiveTabId } = useTabStore.getState();
-    //set active tab to null
-    updateActiveTabId(null);
+    const nextView = view ?? UIView.None;
 
-    set({ currentView: view });
+    if (nextView !== UIView.None) {
+      updateActiveTabId(null);
+    }
+
+    set({ currentView: nextView });
     // Persist view change (preserve existing parentPath and tabs)
     const savedState = loadAppState();
     const { openTabs } = useTabStore.getState();
     saveAppState({
 
-      currentView: view ? String(view) : null,
+      currentView: String(nextView),
       parentPath: savedState.parentPath || [],
       openTabIds: openTabs.map((tab) => tab.id),
-      activeTabId: null,
+      activeTabId: nextView === UIView.None ? useTabStore.getState().activeTabId : null,
     });
   },
 

@@ -151,8 +151,6 @@ async fn save_note_to_db(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[tokio::test]
     async fn test_save_queue_deduplication() {
         // This would require mocking the database

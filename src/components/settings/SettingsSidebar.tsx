@@ -42,7 +42,7 @@ export function SettingsSidebar({
             className={cn(
               "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
               selectedSection === item.id
-                ? "bg-background text-foreground shadow-sm"
+                ? "bg-background text-foreground"
                 : "text-muted-foreground hover:text-foreground hover:bg-background/50"
             )}
           >

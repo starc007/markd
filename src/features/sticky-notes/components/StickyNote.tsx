@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   MoreVerticalIcon,
@@ -180,7 +180,7 @@ export function StickyNote({
   return (
     <>
       <motion.div
-        className="group relative flex flex-col text-left overflow-hidden border shadow-md"
+        className="group relative flex flex-col text-left overflow-hidden border"
         style={{ backgroundColor: color.bg, borderColor: color.darkBg }}
         // initial={{ opacity: 0, y: 10 }}
         // animate={{ opacity: 1, y: 0 }}

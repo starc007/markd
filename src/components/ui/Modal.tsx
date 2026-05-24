@@ -4,7 +4,7 @@ import {
   DialogTitle,
   DialogBackdrop,
 } from "@headlessui/react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../../lib/utils";
 
 interface ModalProps {
@@ -38,18 +38,18 @@ export function Modal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="fixed inset-0 bg-black/10 backdrop-blur-xs"
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="fixed inset-0 bg-black/18 backdrop-blur-md"
           />
 
           <div className="fixed inset-0 flex items-center justify-center p-4">
             <MotionPanel
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              transition={{ duration: 0.15 }}
+              initial={{ opacity: 0, scale: 0.96, y: 18, filter: "blur(8px)" }}
+              animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, scale: 0.97, y: 12, filter: "blur(6px)" }}
+              transition={{ type: "spring", stiffness: 430, damping: 34, mass: 0.8 }}
               className={cn(
-                "bg-card border border-border rounded-2xl w-full max-w-md flex flex-col",
+                "w-full max-w-md flex flex-col rounded-[28px] border border-white/45 bg-card/86 backdrop-blur-2xl shadow-lg dark:border-white/10 dark:bg-card/86",
                 title ? "px-6 pb-6" : "p-0",
                 className
               )}

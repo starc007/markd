@@ -4,6 +4,7 @@ import {
   MoreVerticalIcon,
   DeleteIcon,
   Download01Icon,
+  CheckmarkCircle01Icon,
 } from "@hugeicons/core-free-icons";
 import { save } from "@tauri-apps/plugin-dialog";
 import { useNoteStore } from "@/stores/noteStore";
@@ -44,6 +45,7 @@ export function Editor({ noteId, content }: EditorProps) {
   const hasFocusedRef = useRef<string | null>(null);
 
   const newlyCreatedNoteId = useNoteStore((state) => state.newlyCreatedNoteId);
+  const isSaving = useNoteStore((state) => state.isSaving);
   const focusMode = useUIStore((state) => state.focusMode);
   const activeTab = useTabStore((state) => state.getActiveTab());
   const { updateTabContent, updateTabTitle, getTab } = useTabStore();
@@ -320,20 +322,33 @@ export function Editor({ noteId, content }: EditorProps) {
 
   return (
     <>
-      <div className="flex-1 flex flex-col h-full overflow-hidden bg-background">
-        {/* Header with drag region - hidden in focus mode */}
+      <div className="draft-editor-surface flex-1 flex flex-col h-full overflow-hidden bg-background">
         {!focusMode && (
           <div
-            className="shrink-0 flex items-center justify-between px-4"
+            className="draft-editor-topbar shrink-0 flex items-center justify-between px-5"
             data-tauri-drag-region
           >
-            <div className="flex items-center gap-3 [-webkit-app-region:no-drag]">
-              <span className="font-medium text-muted-foreground truncate text-xs">
+            <div className="flex items-center gap-3 text-[11px] text-muted-foreground [-webkit-app-region:no-drag]">
+              <span className="font-medium tracking-[0.08em] uppercase">
+                Draft
+              </span>
+              <span className="h-1 w-1 rounded-full bg-muted-foreground/35" />
+              <span className="truncate">
                 Edited {formatRelativeTime(updatedAt)}
+              </span>
+              <span className="h-1 w-1 rounded-full bg-muted-foreground/35" />
+              <span className="inline-flex items-center gap-1.5">
+                <HugeiconsIcon
+                  icon={CheckmarkCircle01Icon}
+                  size={14}
+                  color="currentColor"
+                  strokeWidth={1.7}
+                  className={isSaving ? "opacity-35" : "text-emerald-600 dark:text-emerald-400"}
+                />
+                {isSaving ? "Saving" : "Saved"}
               </span>
             </div>
 
-            {/* Dropdown Menu */}
             <div className="[-webkit-app-region:no-drag]">
               <Dropdown>
                 <DropdownTrigger>
@@ -379,8 +394,7 @@ export function Editor({ noteId, content }: EditorProps) {
           </div>
         )}
 
-        {/* Editor Content - Notion style */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="draft-editor-scroll flex-1 overflow-y-auto">
           {!focusMode && bannerType !== "none" && (
             <Banner
               bannerType={bannerType}
@@ -389,8 +403,7 @@ export function Editor({ noteId, content }: EditorProps) {
               onBannerChange={handleBannerChange}
             />
           )}
-          <div className="max-w-[900px] mx-auto px-12 py-8">
-            {/* Title Editor */}
+          <article className="draft-editor-page mx-auto">
             <EditorTitle
               ref={titleRef}
               title={activeTab?.title || ""}
@@ -401,7 +414,6 @@ export function Editor({ noteId, content }: EditorProps) {
               noteId={noteId}
             />
 
-            {/* Content Editor */}
             <AppProvider>
               <EditorContent
                 ref={editorRef}
@@ -411,11 +423,10 @@ export function Editor({ noteId, content }: EditorProps) {
               />
             </AppProvider>
 
-            {/* Word Count Stats */}
-            <div className="mt-6 pt-4 border-t border-border/50">
+            <footer className="draft-editor-footer">
               <WordCountStats editor={editorInstance} />
-            </div>
-          </div>
+            </footer>
+          </article>
         </div>
       </div>
 

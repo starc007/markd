@@ -24,6 +24,29 @@ interface SearchResultsProps {
   onSelect: (action: string) => void;
 }
 
+function HighlightedSnippet({ snippet }: { snippet: string }) {
+  const parts = snippet.split(/(<mark>|<\/mark>)/g);
+  let highlighted = false;
+
+  return (
+    <>
+      {parts.map((part, index) => {
+        if (part === "<mark>") {
+          highlighted = true;
+          return null;
+        }
+
+        if (part === "</mark>") {
+          highlighted = false;
+          return null;
+        }
+
+        return highlighted ? <mark key={index}>{part}</mark> : part;
+      })}
+    </>
+  );
+}
+
 export function SearchResults({
   groupedResults,
   onSelect,
@@ -65,10 +88,9 @@ export function SearchResults({
                   </span>
                 </div>
                 {result.snippet && (
-                  <div
-                    className="text-[12px] text-muted-foreground truncate mt-0.5"
-                    dangerouslySetInnerHTML={{ __html: result.snippet }}
-                  />
+                  <div className="text-[12px] text-muted-foreground truncate mt-0.5">
+                    <HighlightedSnippet snippet={result.snippet} />
+                  </div>
                 )}
               </div>
             </Command.Item>
@@ -104,10 +126,9 @@ export function SearchResults({
                   </span>
                 </div>
                 {result.snippet && (
-                  <div
-                    className="text-[12px] text-muted-foreground truncate mt-0.5"
-                    dangerouslySetInnerHTML={{ __html: result.snippet }}
-                  />
+                  <div className="text-[12px] text-muted-foreground truncate mt-0.5">
+                    <HighlightedSnippet snippet={result.snippet} />
+                  </div>
                 )}
               </div>
             </Command.Item>
@@ -143,10 +164,9 @@ export function SearchResults({
                   </span>
                 </div>
                 {result.snippet && (
-                  <div
-                    className="text-[12px] text-muted-foreground truncate mt-0.5"
-                    dangerouslySetInnerHTML={{ __html: result.snippet }}
-                  />
+                  <div className="text-[12px] text-muted-foreground truncate mt-0.5">
+                    <HighlightedSnippet snippet={result.snippet} />
+                  </div>
                 )}
               </div>
             </Command.Item>

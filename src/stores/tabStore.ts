@@ -167,18 +167,19 @@ export const useTabStore = create<TabStore>((set, get) => ({
   // Update banner type for a tab
   updateTabBannerType: (tabId: string, bannerType: BannerType | "none") => {
     const { openTabs } = get();
-    const tab = openTabs.find((tab) => tab.id === tabId);
-    if (tab) {
-      tab.bannerType = bannerType;
-      set({ openTabs });
+    if (openTabs.some((tab) => tab.id === tabId)) {
+      const updatedTabs = openTabs.map((tab) =>
+        tab.id === tabId ? { ...tab, bannerType } : tab,
+      );
+      set({ openTabs: updatedTabs });
 
       // Persist tab state
       const savedState = loadAppState();
       const appState: AppState = {
         currentView: savedState.currentView ?? null,
         parentPath: savedState.parentPath ?? [],
-        openTabIds: savedState.openTabIds ?? [],
-        activeTabId: savedState.activeTabId ?? null,
+        openTabIds: updatedTabs.map((tab) => tab.id),
+        activeTabId: get().activeTabId,
       };
       saveAppState(appState);
     }

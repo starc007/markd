@@ -166,15 +166,14 @@ pub async fn update_note(
     };
 
 
-    if params.title.is_some() || params.folder_id.is_some() || true {
+    if params.title.is_some() || params.folder_id.is_some() || params.banner_type.is_some() {
         state
             .db
             .update_note_metadata(
                 &params.id,
                 params.title.as_deref(),
                 params.folder_id.as_ref().map(|f| Some(f.as_str())),
-                // Always pass banner_type (even if None) - this allows setting to NULL in DB
-                Some(params.banner_type.as_ref().map(|b| b.as_str())),
+                params.banner_type.as_ref().map(|b| Some(b.as_str())),
                 now,
             )
             .map_err(|e| format!("Failed to update note metadata: {}", e))?;

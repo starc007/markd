@@ -2,6 +2,7 @@ import { useTabStore } from "@/stores/tabStore";
 
 import { Cancel01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { motion } from "motion/react";
 
 interface TabProps {
   tabId: string;
@@ -40,20 +41,23 @@ export function Tab({ tabId, title, isActive, isDirty, onClose }: TabProps) {
   const displayTitle = title.length > 30 ? `${title.slice(0, 30)}...` : title;
 
   return (
-    <div
+    <motion.div
+      layout
+      whileTap={{ scale: 0.985 }}
+      transition={{ type: "spring", stiffness: 520, damping: 38 }}
       className={`
-        group flex items-center gap-2 px-3 py-2.5 border-b-2 transition-colors
+        group relative flex h-9 min-w-[138px] max-w-[220px] items-center gap-2 rounded-[14px] px-3 transition-colors
         ${
           isActive
-            ? "border-primary bg-background text-foreground"
-            : "border-transparent bg-muted text-muted-foreground hover:bg-muted/50"
+            ? "bg-white/72 text-foreground ring-1 ring-white/70 dark:bg-white/10 dark:ring-white/10"
+            : "bg-transparent text-muted-foreground hover:bg-white/42 dark:hover:bg-white/8"
         }
         cursor-pointer select-none
       `}
       onClick={handleClick}
       onMouseDown={handleClick}
     >
-      <span className="text-sm font-medium truncate flex-1 min-w-0">
+      <span className="text-[13px] font-medium truncate flex-1 min-w-0">
         {displayTitle}
         {isDirty && <span className="ml-1 text-primary">•</span>}
       </span>
@@ -73,6 +77,6 @@ export function Tab({ tabId, title, isActive, isDirty, onClose }: TabProps) {
           strokeWidth={1.5}
         />
       </button>
-    </div>
+    </motion.div>
   );
 }

@@ -131,7 +131,7 @@ export const Sidebar = memo(function Sidebar() {
   const currentView = useUIStore((state) => state.currentView);
 
   return (
-    <aside className="w-[280px] shrink-0 flex flex-col bg-sidebar border-r border-sidebar-border overflow-hidden relative">
+    <aside className="draft-sidebar w-[280px] shrink-0 flex flex-col bg-sidebar overflow-hidden relative">
       <div className="h-[30px] shrink-0" data-tauri-drag-region />
       <UpdateIndicator />
       <SidebarSearch onSearchClick={handleSearchClick} />

@@ -111,10 +111,9 @@ export const EditorTitle = forwardRef<EditorTitleRef, EditorTitleProps>(
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           placeholder="Untitled"
-          className="w-full outline-none border-none bg-transparent text-[36px] font-bold leading-tight placeholder:text-muted-foreground/40 resize-none overflow-hidden text-primary"
+          className="w-full outline-none border-none bg-transparent text-[42px] font-[760] leading-[1.05] placeholder:text-muted-foreground/35 resize-none overflow-hidden text-foreground"
           style={{
-            lineHeight: "1.2",
-            minHeight: "60px",
+            minHeight: "58px",
           }}
           rows={1}
         />

@@ -582,10 +582,10 @@ impl Database {
         // Cache miss - query database
         let conn = acquire_lock!(self.conn);
         let mut stmt = conn.prepare(
-            "SELECT id, title, preview, folder_id, parent_id, pinned,
-             (SELECT COUNT(*) FROM notes WHERE parent_id = notes.id AND deleted_at IS NULL) as children_count,
-             deleted_at, created_at, updated_at
-             FROM notes WHERE id = ?1",
+            "SELECT n.id, n.title, n.preview, n.folder_id, n.parent_id, n.pinned,
+             (SELECT COUNT(*) FROM notes child WHERE child.parent_id = n.id AND child.deleted_at IS NULL) as children_count,
+             n.deleted_at, n.created_at, n.updated_at
+             FROM notes n WHERE n.id = ?1",
         )?;
 
         let mut rows = stmt.query(params![id])?;

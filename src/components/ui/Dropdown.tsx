@@ -5,8 +5,10 @@ import {
   MenuItem,
   Portal,
 } from "@headlessui/react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
+
+const MotionMenuItems = motion.create(MenuItems);
 
 // Dropdown Root
 interface DropdownProps {
@@ -53,20 +55,20 @@ export function DropdownContent({
   return (
     <Portal>
       <AnimatePresence>
-        <MenuItems
-          as={motion.div}
-          anchor={{ to: "bottom", gap: 4, padding: 16 }}
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
+        <MotionMenuItems
+          anchor={{ to: "bottom", gap: 8, padding: 16 }}
+          initial={{ opacity: 0, scale: 0.96, y: -4, filter: "blur(6px)" }}
+          animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
+          exit={{ opacity: 0, scale: 0.98, y: -3, filter: "blur(4px)" }}
+          transition={{ type: "spring", stiffness: 520, damping: 38, mass: 0.75 }}
           className={cn(
-            "w-44 bg-card border border-border rounded-xl shadow-lg z-50 py-1 overflow-hidden focus:outline-none",
+            "z-50 w-48 overflow-hidden rounded-2xl border border-white/45 bg-card/82 py-1.5 shadow-lg backdrop-blur-2xl focus:outline-none dark:border-white/10 dark:bg-card/84",
             align === "end" ? "origin-top-right" : "origin-top-left",
             className
           )}
         >
           {children}
-        </MenuItems>
+        </MotionMenuItems>
       </AnimatePresence>
     </Portal>
   );
@@ -89,13 +91,13 @@ export function DropdownItem({
   className,
 }: DropdownItemProps) {
   const baseStyles =
-    "w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors text-left";
+    "w-full flex items-center gap-2.5 px-3 py-2.5 text-[13px] transition-colors text-left";
   const variantStyles = {
     default: "text-foreground",
     destructive: "text-destructive",
   };
   const focusStyles = {
-    default: "bg-accent",
+    default: "bg-accent/80",
     destructive: "bg-destructive/10",
   };
 
