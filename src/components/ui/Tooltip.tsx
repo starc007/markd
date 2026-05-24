@@ -127,7 +127,7 @@ export function Tooltip({
                 transformOrigin: origin[place],
                 willChange: "transform, opacity, filter",
               }}
-              className="block whitespace-nowrap rounded-lg bg-panel px-2 py-1 text-[11px] font-medium leading-none text-ink shadow-overlay dark:bg-panel-dark dark:text-ink-dark"
+              className="block whitespace-nowrap rounded-lg bg-tooltip px-2 py-1 text-[11px] font-medium leading-none text-tooltip-ink shadow-tooltip dark:bg-tooltip-dark dark:text-tooltip-ink-dark"
             >
               {label}
             </motion.span>
