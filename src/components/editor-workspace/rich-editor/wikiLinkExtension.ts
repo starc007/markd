@@ -31,7 +31,7 @@ export const WikiLinkExtension = Extension.create({
                   }),
                   Decoration.inline(titleFrom, titleTo, {
                     class:
-                      "cursor-pointer underline decoration-line underline-offset-4 before:mr-1 before:inline-block before:h-3 before:w-2 before:rounded-[2px] before:border before:border-current before:align-[-1px] text-ink dark:text-ink-dark",
+                      "cursor-pointer underline decoration-line underline-offset-4 before:mr-1 before:inline-block before:h-3 before:w-2 before:rounded-[2px] before:border before:border-current before:align-[-1px] before:content-[''] text-ink dark:text-ink-dark",
                   }),
                   Decoration.inline(titleTo, to, {
                     class: "hidden",

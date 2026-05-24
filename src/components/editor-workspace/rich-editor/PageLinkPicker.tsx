@@ -1,9 +1,11 @@
 import { FileEditIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useState } from "react";
 import type { NoteRecord } from "@/lib/types";
 
 export interface PagePickerState {
+  insertAt: number;
   position: {
     left: number;
     top: number;
@@ -23,6 +25,43 @@ export function PageLinkPicker({
   onSelect: (title: string) => void;
 }) {
   const results = notes.slice(0, 10);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [picker]);
+
+  useEffect(() => {
+    if (!picker) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setActiveIndex((index) => Math.min(index + 1, Math.max(results.length - 1, 0)));
+        return;
+      }
+
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        setActiveIndex((index) => Math.max(index - 1, 0));
+        return;
+      }
+
+      if (event.key === "Enter" && results[activeIndex]) {
+        event.preventDefault();
+        onSelect(results[activeIndex].title);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown, true);
+    return () => document.removeEventListener("keydown", handleKeyDown, true);
+  }, [activeIndex, onClose, onSelect, picker, results]);
 
   return (
     <AnimatePresence>
@@ -52,9 +91,11 @@ export function PageLinkPicker({
             <div className="max-h-56 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {results.map((note) => (
                 <button
-                  className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-sm transition-colors hover:bg-hover dark:hover:bg-tooltip-ink/10"
+                  className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-sm transition-colors hover:bg-hover data-[active=true]:bg-hover dark:hover:bg-tooltip-ink/10 dark:data-[active=true]:bg-tooltip-ink/10"
+                  data-active={results[activeIndex]?.id === note.id}
                   key={note.id}
                   onClick={() => onSelect(note.title)}
+                  onMouseDown={(event) => event.preventDefault()}
                   type="button"
                 >
                   <span className="grid h-7 w-7 place-items-center rounded-lg bg-panel-soft dark:bg-tooltip-ink/10">
