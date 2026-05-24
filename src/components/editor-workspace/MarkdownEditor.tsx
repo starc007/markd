@@ -15,7 +15,7 @@ export function MarkdownEditor({
   return (
     <main className="relative overflow-auto bg-panel px-[clamp(36px,9vw,128px)] pb-[clamp(34px,8vw,88px)] pt-4 dark:bg-panel-dark">
       <textarea
-        className="min-h-[calc(100vh-104px)] w-full resize-none border-0 bg-transparent text-[17px] leading-[1.72] text-ink outline-none selection:bg-hover dark:text-ink-dark dark:selection:bg-hover-dark"
+        className="min-h-[calc(100vh-104px)] w-full resize-none border-0 bg-transparent text-[17px] leading-[1.72] text-ink outline-none selection:bg-selection dark:text-ink-dark dark:selection:bg-selection-dark"
         value={content}
         spellCheck
         onChange={(event) => onChange(event.target.value)}
