@@ -18,14 +18,16 @@
   --color-panel-dark: #1f1f1d;
   --color-panel-soft: #f4f1eb;
   --color-panel-soft-dark: #252421;
+  --color-editor: #fffdf9;
+  --color-editor-dark: #262522;
   --color-tooltip: #20201d;
   --color-tooltip-dark: #f4f0e8;
   --color-tooltip-ink: #fbfaf8;
   --color-tooltip-ink-dark: #20201d;
   --color-hover: #efebe4;
   --color-hover-dark: #2b2a27;
-  --color-selection: #dcd4c8;
-  --color-selection-dark: #514c44;
+  --color-selection: #d8cfc1;
+  --color-selection-dark: #70685d;
   --color-press: #ded8cf;
   --color-press-dark: #373530;
   --color-focus-line: #c8c0b4;
