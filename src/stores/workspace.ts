@@ -73,10 +73,11 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     if (!note) return;
     set((state) => ({
       activeNote: note,
-      openNotes: [
-        ...state.openNotes.filter((item) => item.meta.id !== note.meta.id),
-        note,
-      ],
+      openNotes: state.openNotes.some((item) => item.meta.id === note.meta.id)
+        ? state.openNotes.map((item) =>
+            item.meta.id === note.meta.id ? note : item,
+          )
+        : [...state.openNotes, note],
       view: "notes",
     }));
   },
