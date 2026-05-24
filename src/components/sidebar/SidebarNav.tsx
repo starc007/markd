@@ -1,4 +1,4 @@
-import { Add01Icon } from "@hugeicons/core-free-icons";
+import { Add01Icon, Search01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { motion } from "motion/react";
 import { cx } from "@/components/ui";
@@ -9,10 +9,12 @@ export function SidebarNav({
   activeView,
   onSelect,
   onCreateNote,
+  onSearch,
 }: {
   activeView: ViewMode;
   onSelect: (view: ViewMode) => void;
   onCreateNote: () => void;
+  onSearch: () => void;
 }) {
   return (
     <nav className="relative mb-6 grid gap-0.5">
@@ -22,6 +24,13 @@ export function SidebarNav({
       >
         <HugeiconsIcon icon={Add01Icon} size={17} color="currentColor" />
         <span>New note</span>
+      </button>
+      <button
+        onClick={onSearch}
+        className="relative flex min-h-8 w-full items-center gap-2 rounded-lg border-0 bg-transparent px-2 py-1.5 text-left text-sm font-medium text-sidebar-ink-soft transition-colors hover:bg-sidebar-active dark:text-sidebar-ink-soft-dark dark:hover:bg-sidebar-active-dark"
+      >
+        <HugeiconsIcon icon={Search01Icon} size={17} color="currentColor" />
+        <span>Search</span>
       </button>
       {sidebarNavigation.map((item) => (
         <button
