@@ -17,6 +17,7 @@ interface WorkspaceState {
   rootPath: string;
   manifest: WorkspaceManifest | null;
   activeNote: NoteDocument | null;
+  openNotes: NoteDocument[];
   view: ViewMode;
   commandOpen: boolean;
   theme: "light" | "dark";
@@ -25,6 +26,7 @@ interface WorkspaceState {
   setCommandOpen: (open: boolean) => void;
   setTheme: (theme: "light" | "dark") => void;
   openNote: (id: string) => Promise<void>;
+  closeNote: (id: string) => Promise<void>;
   createNote: (folderId?: string | null, parentId?: string | null) => Promise<void>;
   saveActiveNote: (content: string) => Promise<void>;
   createFolder: (parentId?: string | null) => Promise<FolderRecord | null>;
@@ -38,6 +40,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   rootPath: "",
   manifest: null,
   activeNote: null,
+  openNotes: [],
   view: "notes",
   commandOpen: false,
   theme: "light",
@@ -52,6 +55,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       rootPath: snapshot.rootPath,
       manifest: snapshot.manifest,
       activeNote: snapshot.activeNote,
+      openNotes: snapshot.activeNote ? [snapshot.activeNote] : [],
       theme,
     });
   },
@@ -66,7 +70,29 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   openNote: async (id) => {
     const note = await api.getNote(id);
-    if (note) set({ activeNote: note, view: "notes" });
+    if (!note) return;
+    set((state) => ({
+      activeNote: note,
+      openNotes: [
+        ...state.openNotes.filter((item) => item.meta.id !== note.meta.id),
+        note,
+      ],
+      view: "notes",
+    }));
+  },
+
+  closeNote: async (id) => {
+    const state = get();
+    const nextOpenNotes = state.openNotes.filter((note) => note.meta.id !== id);
+    const isActive = state.activeNote?.meta.id === id;
+    const nextActive = isActive
+      ? nextOpenNotes[nextOpenNotes.length - 1] ?? null
+      : state.activeNote;
+    set({
+      openNotes: nextOpenNotes,
+      activeNote: nextActive,
+      view: nextActive ? "notes" : state.view,
+    });
   },
 
   createNote: async (folderId = null, parentId = null) => {
@@ -78,8 +104,16 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       tags: [],
       pinned: false,
     });
-    await get().hydrate();
-    set({ activeNote: note, view: "notes" });
+    const snapshot = await api.loadWorkspace();
+    set((state) => ({
+      activeNote: note,
+      openNotes: [
+        ...state.openNotes.filter((item) => item.meta.id !== note.meta.id),
+        note,
+      ],
+      manifest: snapshot.manifest,
+      view: "notes",
+    }));
   },
 
   saveActiveNote: async (content) => {
@@ -97,7 +131,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         pinned: current.meta.pinned,
       });
       const snapshot = await api.loadWorkspace();
-      set({ activeNote: note, manifest: snapshot.manifest, saving: false });
+      set((state) => ({
+        activeNote: note,
+        openNotes: state.openNotes.map((item) =>
+          item.meta.id === note.meta.id ? note : item,
+        ),
+        manifest: snapshot.manifest,
+        saving: false,
+      }));
     } catch (error) {
       set({ saving: false });
       toast.error(String(error));

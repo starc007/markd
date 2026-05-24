@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import { useWorkspaceStore } from "@/stores/workspace";
-import { SearchButton } from "./SearchButton";
 import { SidebarNav } from "./SidebarNav";
 import { WorkspaceHeader } from "./WorkspaceHeader";
 import { WorkspaceTree } from "./WorkspaceTree";
@@ -12,7 +11,6 @@ export function Sidebar() {
   const setView = useWorkspaceStore((state) => state.setView);
   const openNote = useWorkspaceStore((state) => state.openNote);
   const createNote = useWorkspaceStore((state) => state.createNote);
-  const setCommandOpen = useWorkspaceStore((state) => state.setCommandOpen);
 
   const notes = useMemo(() => {
     return manifest?.notes ?? [];
@@ -24,7 +22,6 @@ export function Sidebar() {
         name={manifest?.name ?? "Draft Workspace"}
         onCreateNote={createNote}
       />
-      <SearchButton onClick={() => setCommandOpen(true)} />
       <SidebarNav activeView={view} onSelect={setView} />
       <WorkspaceTree
         folders={manifest?.folders ?? []}

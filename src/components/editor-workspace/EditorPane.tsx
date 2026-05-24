@@ -11,6 +11,7 @@ import { TodoBoard } from "./TodoBoard";
 export function EditorPane() {
   const view = useWorkspaceStore((state) => state.view);
   const activeNote = useWorkspaceStore((state) => state.activeNote);
+  const saving = useWorkspaceStore((state) => state.saving);
   const manifest = useWorkspaceStore((state) => state.manifest);
   const saveActiveNote = useWorkspaceStore((state) => state.saveActiveNote);
   const createNote = useWorkspaceStore((state) => state.createNote);
@@ -65,6 +66,7 @@ export function EditorPane() {
       content={content}
       onChange={setContent}
       onSave={() => saveActiveNote(content)}
+      saving={saving}
     />
   );
 }
