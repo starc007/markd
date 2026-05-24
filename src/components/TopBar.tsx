@@ -33,7 +33,7 @@ export function TopBar() {
                 className={cx(
                   "group flex h-9 max-w-[220px] items-center gap-2 rounded-t-xl px-3 text-sm text-muted transition-colors dark:text-muted-dark",
                   active &&
-                    " bg-editor text-ink dark:bg-editor-dark dark:text-ink-dark",
+                    " bg-tab-active text-ink dark:bg-tab-active-dark dark:text-ink-dark",
                 )}
                 onClick={() => openNote(note.meta.id)}
               >

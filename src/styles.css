@@ -34,6 +34,8 @@
   --color-primary-hover-dark: #ded8cf;
   --color-tabbar: #f0ede7;
   --color-tabbar-dark: #1f1f1d;
+  --color-tab-active: #ffffff;
+  --color-tab-active-dark: #34322d;
   --color-focus-line: #c8c0b4;
   --color-focus-line-dark: #5d574f;
   --color-overlay-backdrop: rgb(0 0 0 / 0.15);

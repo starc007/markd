@@ -6,7 +6,6 @@ import {
   NoteRemoveIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { motion } from "motion/react";
 import { cx, Dropdown, DropdownItem } from "@/components/ui";
 import { timeAgo } from "@/lib/format";
 import type { NoteRecord } from "@/lib/types";
@@ -30,15 +29,10 @@ export function NoteRow({
     <div
       className={cx(
         "group relative flex min-h-8 w-full items-center gap-1 rounded-lg text-sm font-medium text-sidebar-ink-row transition-colors hover:bg-sidebar-active dark:text-sidebar-ink-row-dark dark:hover:bg-sidebar-active-dark",
-        active && "text-sidebar-ink-strong dark:text-sidebar-ink-strong-dark",
+        active &&
+          "bg-sidebar-active text-sidebar-ink-strong dark:bg-sidebar-active-dark dark:text-sidebar-ink-strong-dark",
       )}
     >
-      {active && (
-        <motion.span
-          layoutId="note-pill"
-          className="absolute inset-0 -z-10 rounded-lg bg-sidebar-active dark:bg-sidebar-active-dark"
-        />
-      )}
       <button
         className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-1.5 text-left"
         onClick={() => onOpen(note.id)}
