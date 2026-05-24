@@ -176,8 +176,10 @@ fn write_manifest(root: &Path, manifest: &WorkspaceManifest) -> Result<(), Strin
 fn ensure_workspace() -> Result<(PathBuf, WorkspaceManifest), String> {
     let root = workspace_root()?;
     fs::create_dir_all(root.join("notes")).map_err(|e| format!("Failed to create notes: {e}"))?;
-    fs::create_dir_all(root.join("stickies")).map_err(|e| format!("Failed to create stickies: {e}"))?;
-    fs::create_dir_all(root.join("bookmarks")).map_err(|e| format!("Failed to create bookmarks: {e}"))?;
+    fs::create_dir_all(root.join("stickies"))
+        .map_err(|e| format!("Failed to create stickies: {e}"))?;
+    fs::create_dir_all(root.join("bookmarks"))
+        .map_err(|e| format!("Failed to create bookmarks: {e}"))?;
 
     let manifest_path = root.join(MANIFEST_FILE);
     if manifest_path.exists() {
@@ -326,17 +328,75 @@ fn delete_note(id: String) -> Result<WorkspaceManifest, String> {
     Ok(manifest)
 }
 
+fn collect_child_folder_ids(
+    manifest: &WorkspaceManifest,
+    folder_id: &str,
+    output: &mut Vec<String>,
+) {
+    output.push(folder_id.to_string());
+    let child_ids = manifest
+        .folders
+        .iter()
+        .filter(|folder| folder.parent_id.as_deref() == Some(folder_id))
+        .map(|folder| folder.id.clone())
+        .collect::<Vec<_>>();
+
+    for child_id in child_ids {
+        collect_child_folder_ids(manifest, &child_id, output);
+    }
+}
+
+#[tauri::command]
+fn delete_folder(id: String) -> Result<WorkspaceManifest, String> {
+    let (root, mut manifest) = ensure_workspace()?;
+    let mut folder_ids = Vec::new();
+    collect_child_folder_ids(&manifest, &id, &mut folder_ids);
+
+    for note in manifest.notes.iter().filter(|note| {
+        note.folder_id
+            .as_ref()
+            .is_some_and(|folder_id| folder_ids.contains(folder_id))
+    }) {
+        let _ = fs::remove_file(root.join(&note.path));
+    }
+
+    manifest.notes.retain(|note| {
+        !note
+            .folder_id
+            .as_ref()
+            .is_some_and(|folder_id| folder_ids.contains(folder_id))
+    });
+    manifest.bookmarks.retain(|bookmark| {
+        !bookmark
+            .folder_id
+            .as_ref()
+            .is_some_and(|folder_id| folder_ids.contains(folder_id))
+    });
+    manifest
+        .folders
+        .retain(|folder| !folder_ids.contains(&folder.id));
+    manifest.updated_at = now();
+    write_manifest(&root, &manifest)?;
+    Ok(manifest)
+}
+
 #[tauri::command]
 fn upsert_folder(input: UpsertFolderRequest) -> Result<FolderRecord, String> {
     let (root, mut manifest) = ensure_workspace()?;
     let timestamp = now();
     let id = input.id.unwrap_or_else(|| Uuid::new_v4().to_string());
-    let existing = manifest.folders.iter().find(|folder| folder.id == id).cloned();
+    let existing = manifest
+        .folders
+        .iter()
+        .find(|folder| folder.id == id)
+        .cloned();
     let record = FolderRecord {
         id: id.clone(),
         name: input.name,
         parent_id: input.parent_id,
-        created_at: existing.map(|folder| folder.created_at).unwrap_or(timestamp),
+        created_at: existing
+            .map(|folder| folder.created_at)
+            .unwrap_or(timestamp),
         updated_at: timestamp,
     };
     manifest.folders.retain(|folder| folder.id != id);
@@ -351,12 +411,18 @@ fn upsert_sticky(input: UpsertStickyRequest) -> Result<StickyRecord, String> {
     let (root, mut manifest) = ensure_workspace()?;
     let timestamp = now();
     let id = input.id.unwrap_or_else(|| Uuid::new_v4().to_string());
-    let existing = manifest.stickies.iter().find(|sticky| sticky.id == id).cloned();
+    let existing = manifest
+        .stickies
+        .iter()
+        .find(|sticky| sticky.id == id)
+        .cloned();
     let record = StickyRecord {
         id: id.clone(),
         content: input.content,
         color: input.color,
-        created_at: existing.map(|sticky| sticky.created_at).unwrap_or(timestamp),
+        created_at: existing
+            .map(|sticky| sticky.created_at)
+            .unwrap_or(timestamp),
         updated_at: timestamp,
     };
     manifest.stickies.retain(|sticky| sticky.id != id);
@@ -371,14 +437,20 @@ fn upsert_bookmark(input: UpsertBookmarkRequest) -> Result<BookmarkRecord, Strin
     let (root, mut manifest) = ensure_workspace()?;
     let timestamp = now();
     let id = input.id.unwrap_or_else(|| Uuid::new_v4().to_string());
-    let existing = manifest.bookmarks.iter().find(|bookmark| bookmark.id == id).cloned();
+    let existing = manifest
+        .bookmarks
+        .iter()
+        .find(|bookmark| bookmark.id == id)
+        .cloned();
     let record = BookmarkRecord {
         id: id.clone(),
         title: input.title,
         url: input.url,
         folder_id: input.folder_id,
         tags: input.tags,
-        created_at: existing.map(|bookmark| bookmark.created_at).unwrap_or(timestamp),
+        created_at: existing
+            .map(|bookmark| bookmark.created_at)
+            .unwrap_or(timestamp),
         updated_at: timestamp,
     };
     manifest.bookmarks.retain(|bookmark| bookmark.id != id);
@@ -406,6 +478,7 @@ pub fn run() {
             get_note,
             upsert_note,
             delete_note,
+            delete_folder,
             upsert_folder,
             upsert_sticky,
             upsert_bookmark,

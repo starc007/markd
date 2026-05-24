@@ -29,6 +29,7 @@ interface WorkspaceState {
   closeNote: (id: string) => Promise<void>;
   createNote: (folderId?: string | null, parentId?: string | null) => Promise<void>;
   createLinkedNote: (title: string) => Promise<NoteDocument>;
+  deleteFolder: (id: string) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   renameFolder: (folder: FolderRecord, name: string) => Promise<void>;
   saveActiveNote: (content: string) => Promise<void>;
@@ -152,6 +153,27 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         state.activeNote?.meta.id === id
           ? openNotes[openNotes.length - 1] ?? null
           : state.activeNote;
+
+      return {
+        activeNote,
+        manifest,
+        openNotes,
+        view: activeNote ? "notes" : state.view,
+      };
+    });
+  },
+
+  deleteFolder: async (id) => {
+    const manifest = await api.deleteFolder(id);
+    set((state) => {
+      const noteIds = new Set(manifest.notes.map((note) => note.id));
+      const openNotes = state.openNotes.filter((note) =>
+        noteIds.has(note.meta.id),
+      );
+      const activeNote =
+        state.activeNote && noteIds.has(state.activeNote.meta.id)
+          ? state.activeNote
+          : openNotes[openNotes.length - 1] ?? null;
 
       return {
         activeNote,

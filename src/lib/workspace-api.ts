@@ -32,6 +32,10 @@ export function deleteNote(id: string) {
   return invoke<WorkspaceManifest>("delete_note", { id });
 }
 
+export function deleteFolder(id: string) {
+  return invoke<WorkspaceManifest>("delete_folder", { id });
+}
+
 export function upsertFolder(input: {
   id?: string;
   name: string;

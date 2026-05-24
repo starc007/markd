@@ -1,4 +1,5 @@
 import {
+  FolderRemoveIcon,
   FolderIcon,
   MoreHorizontalIcon,
   PencilEdit01Icon,
@@ -14,6 +15,7 @@ export function FolderNode({
   notes,
   activeId,
   onDeleteNote,
+  onDeleteFolder,
   onOpen,
   onRenameFolder,
 }: {
@@ -22,8 +24,9 @@ export function FolderNode({
   notes: NoteRecord[];
   activeId?: string;
   onDeleteNote: (id: string) => void;
+  onDeleteFolder: (folder: FolderRecord) => void;
   onOpen: (id: string) => void;
-  onRenameFolder: (folder: FolderRecord, name: string) => void;
+  onRenameFolder: (folder: FolderRecord) => void;
 }) {
   const childFolders = folders.filter((item) => item.parentId === folder.id);
   const childNotes = notes.filter(
@@ -41,8 +44,9 @@ export function FolderNode({
               aria-label={`Options for ${folder.name}`}
               className="grid h-6 w-6 place-items-center rounded-md text-sidebar-ink-muted opacity-0 transition-opacity hover:bg-sidebar-active hover:text-sidebar-ink-strong group-hover:opacity-100 data-[open]:opacity-100 dark:text-sidebar-ink-muted-dark dark:hover:bg-sidebar-active-dark dark:hover:text-sidebar-ink-strong-dark"
               onClick={(event) => event.stopPropagation()}
-              type="button"
-            >
+            type="button"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
               <HugeiconsIcon
                 icon={MoreHorizontalIcon}
                 size={15}
@@ -52,10 +56,7 @@ export function FolderNode({
           }
         >
           <DropdownItem
-            onClick={() => {
-              const name = window.prompt("Folder name", folder.name);
-              if (name) onRenameFolder(folder, name);
-            }}
+            onClick={() => onRenameFolder(folder)}
           >
             <HugeiconsIcon
               icon={PencilEdit01Icon}
@@ -63,6 +64,14 @@ export function FolderNode({
               color="currentColor"
             />
             Rename folder
+          </DropdownItem>
+          <DropdownItem onClick={() => onDeleteFolder(folder)}>
+            <HugeiconsIcon
+              icon={FolderRemoveIcon}
+              size={15}
+              color="currentColor"
+            />
+            Delete folder
           </DropdownItem>
         </Dropdown>
       </summary>
@@ -75,6 +84,7 @@ export function FolderNode({
             notes={notes}
             activeId={activeId}
             onDeleteNote={onDeleteNote}
+            onDeleteFolder={onDeleteFolder}
             onOpen={onOpen}
             onRenameFolder={onRenameFolder}
           />

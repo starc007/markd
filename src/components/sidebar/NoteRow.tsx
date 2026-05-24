@@ -1,7 +1,7 @@
 import {
-  Delete02Icon,
   FileEditIcon,
   MoreHorizontalIcon,
+  NoteRemoveIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { motion } from "motion/react";
@@ -60,12 +60,8 @@ export function NoteRow({
           </button>
         }
       >
-        <DropdownItem
-          onClick={() => {
-            if (window.confirm(`Delete "${note.title}"?`)) onDelete(note.id);
-          }}
-        >
-          <HugeiconsIcon icon={Delete02Icon} size={15} color="currentColor" />
+        <DropdownItem onClick={() => onDelete(note.id)}>
+          <HugeiconsIcon icon={NoteRemoveIcon} size={15} color="currentColor" />
           Delete note
         </DropdownItem>
       </Dropdown>
