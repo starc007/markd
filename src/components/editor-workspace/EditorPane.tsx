@@ -12,6 +12,7 @@ export function EditorPane() {
   const view = useWorkspaceStore((state) => state.view);
   const activeNote = useWorkspaceStore((state) => state.activeNote);
   const manifest = useWorkspaceStore((state) => state.manifest);
+  const openNote = useWorkspaceStore((state) => state.openNote);
   const saveActiveNote = useWorkspaceStore((state) => state.saveActiveNote);
   const createLinkedNote = useWorkspaceStore((state) => state.createLinkedNote);
   const createNote = useWorkspaceStore((state) => state.createNote);
@@ -75,6 +76,7 @@ export function EditorPane() {
       title={activeNote.meta.title}
       onChange={setContent}
       onCreatePage={createLinkedNote}
+      onOpenPage={openNote}
       onSave={() => saveActiveNote(content)}
     />
   );

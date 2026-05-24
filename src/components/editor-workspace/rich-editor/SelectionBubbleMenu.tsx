@@ -20,25 +20,13 @@ import { ToolbarButton } from "./ToolbarButton";
 
 export function SelectionBubbleMenu({
   editor,
-  notes,
-  onCreatePage,
+  onRequestPageLink,
 }: {
   editor: Editor | null;
   notes: NoteRecord[];
-  onCreatePage: (title: string) => Promise<unknown>;
+  onRequestPageLink: () => void;
 }) {
   if (!editor) return null;
-
-  const insertPageLink = async () => {
-    const fallback = notes[0]?.title ?? "Untitled";
-    const title = window.prompt("Link page", fallback);
-    if (!title) return;
-    const pageTitle = title.trim();
-    if (!notes.some((note) => note.title.toLowerCase() === pageTitle.toLowerCase())) {
-      await onCreatePage(pageTitle);
-    }
-    editor.chain().focus().insertContent(`[[${pageTitle}]]`).run();
-  };
 
   const setLink = () => {
     const previousUrl = editor.getAttributes("link").href as string | undefined;
@@ -134,7 +122,7 @@ export function SelectionBubbleMenu({
       <ToolbarButton
         icon={AlignBoxBottomLeftIcon}
         label="Page link"
-        onClick={insertPageLink}
+        onClick={onRequestPageLink}
       />
       <ToolbarButton
         active={editor.isActive("link")}

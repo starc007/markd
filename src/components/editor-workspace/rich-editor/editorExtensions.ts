@@ -10,6 +10,7 @@ import TaskList from "@tiptap/extension-task-list";
 import Typography from "@tiptap/extension-typography";
 import Underline from "@tiptap/extension-underline";
 import StarterKit from "@tiptap/starter-kit";
+import { WikiLinkExtension } from "./wikiLinkExtension";
 
 export function createEditorExtensions() {
   return [
@@ -18,6 +19,7 @@ export function createEditorExtensions() {
     }),
     Underline,
     Typography,
+    WikiLinkExtension,
     Link.configure({
       autolink: true,
       defaultProtocol: "https",
