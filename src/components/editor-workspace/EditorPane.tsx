@@ -3,7 +3,7 @@ import { extractTodos } from "@/lib/format";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { BookmarkBoard } from "./BookmarkBoard";
 import { EmptyEditorState } from "./EmptyEditorState";
-import { MarkdownEditor } from "./MarkdownEditor";
+import { RichNoteEditor } from "./rich-editor";
 import { SettingsBoard } from "./SettingsBoard";
 import { StickyBoard } from "./StickyBoard";
 import { TodoBoard } from "./TodoBoard";
@@ -67,8 +67,11 @@ export function EditorPane() {
   }
 
   return (
-    <MarkdownEditor
+    <RichNoteEditor
+      activeNoteId={activeNote.meta.id}
       content={content}
+      notes={manifest?.notes ?? []}
+      title={activeNote.meta.title}
       onChange={setContent}
       onSave={() => saveActiveNote(content)}
     />
