@@ -1,50 +1,33 @@
-import { forwardRef } from "react";
-import { cn } from "../../lib/utils";
+import { motion, type HTMLMotionProps } from "motion/react";
+import { cx } from "./utils";
 
-type ButtonVariant = "primary" | "secondary" | "ghost" | "destructive";
-type ButtonSize = "sm" | "md" | "lg" | "icon";
+export function Button({
+  children,
+  variant = "soft",
+  className,
+  ...props
+}: HTMLMotionProps<"button"> & {
+  variant?: "soft" | "primary" | "ghost";
+}) {
+  const variantClass = {
+    soft: "border-[#dedbd3] bg-transparent hover:bg-[#e9eee6] dark:border-[#34322e] dark:hover:bg-[#2a3029]",
+    primary:
+      "border-[#191817] bg-[#191817] text-[#f6f5f2] hover:bg-[#2a2926] dark:border-[#f4f1ea] dark:bg-[#f4f1ea] dark:text-[#171716]",
+    ghost:
+      "border-transparent bg-transparent hover:bg-[#e9eee6] dark:hover:bg-[#2a3029]",
+  }[variant];
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: ButtonVariant;
-  size?: ButtonSize;
-  children: React.ReactNode;
+  return (
+    <motion.button
+      whileTap={{ scale: 0.98 }}
+      className={cx(
+        "inline-flex min-h-[34px] items-center justify-center gap-2 rounded-[14px] border px-3 text-sm transition-colors",
+        variantClass,
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </motion.button>
+  );
 }
-
-const variantStyles: Record<ButtonVariant, string> = {
-  primary: "bg-primary text-primary-foreground hover:bg-primary/90",
-  secondary:
-    "bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border",
-  ghost: "text-muted-foreground hover:text-foreground hover:bg-accent",
-  destructive: "bg-destructive text-white hover:bg-destructive/90",
-};
-
-const sizeStyles: Record<ButtonSize, string> = {
-  sm: "px-3 py-1.5 text-xs",
-  md: "px-4 py-2 text-sm",
-  lg: "px-6 py-3 text-base",
-  icon: "p-2",
-};
-
-export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  (
-    { variant = "primary", size = "md", className, children, ...props },
-    ref
-  ) => {
-    return (
-      <button
-        ref={ref}
-        className={cn(
-          "inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-colors disabled:opacity-50 disabled:pointer-events-none",
-          variantStyles[variant],
-          sizeStyles[size],
-          className
-        )}
-        {...props}
-      >
-        {children}
-      </button>
-    );
-  }
-);
-
-Button.displayName = "Button";
