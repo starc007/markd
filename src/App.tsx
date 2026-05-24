@@ -29,9 +29,9 @@ export default function App() {
   }
 
   return (
-    <div className="grid h-screen grid-cols-[280px_minmax(0,1fr)] overflow-hidden bg-canvas text-ink dark:bg-canvas-dark dark:text-ink-dark max-[860px]:grid-cols-1">
+    <div className="grid h-screen min-h-0 grid-cols-[280px_minmax(0,1fr)] overflow-hidden bg-canvas text-ink dark:bg-canvas-dark dark:text-ink-dark max-[860px]:grid-cols-1">
       <Sidebar />
-      <section className="grid min-w-0 grid-rows-[auto_minmax(0,1fr)]">
+      <section className="grid h-screen min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden">
         <TopBar />
         <EditorPane />
       </section>
