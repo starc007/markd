@@ -23,7 +23,7 @@ export function WorkspaceTree({
   onDeleteNote: (id: string) => void;
   onDeleteFolder: (folder: FolderRecord) => void;
   onCreateFolderInside: (parentId: string) => void;
-  onCreateNoteInside: (folderId: string) => void;
+  onCreateNoteInside: (folderId: string | null, parentId?: string | null) => void;
   onOpen: (id: string) => void;
   onCreateNote: () => void;
   onCreateFolder: () => void;

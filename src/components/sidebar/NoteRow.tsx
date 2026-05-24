@@ -1,6 +1,8 @@
 import {
   FileEditIcon,
+  FolderAddIcon,
   MoreHorizontalIcon,
+  NoteAddIcon,
   NoteRemoveIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -12,11 +14,15 @@ import type { NoteRecord } from "@/lib/types";
 export function NoteRow({
   note,
   active,
+  onCreateFolder,
+  onCreateNote,
   onDelete,
   onOpen,
 }: {
   note: NoteRecord;
   active: boolean;
+  onCreateFolder?: (note: NoteRecord) => void;
+  onCreateNote?: (note: NoteRecord) => void;
   onDelete: (id: string) => void;
   onOpen: (id: string) => void;
 }) {
@@ -60,6 +66,18 @@ export function NoteRow({
           </button>
         }
       >
+        {onCreateNote && (
+          <DropdownItem onClick={() => onCreateNote(note)}>
+            <HugeiconsIcon icon={NoteAddIcon} size={15} color="currentColor" />
+            New note inside
+          </DropdownItem>
+        )}
+        {onCreateFolder && (
+          <DropdownItem onClick={() => onCreateFolder(note)}>
+            <HugeiconsIcon icon={FolderAddIcon} size={15} color="currentColor" />
+            New folder inside
+          </DropdownItem>
+        )}
         <DropdownItem onClick={() => onDelete(note.id)}>
           <HugeiconsIcon icon={NoteRemoveIcon} size={15} color="currentColor" />
           Delete note

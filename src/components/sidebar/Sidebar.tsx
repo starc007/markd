@@ -76,7 +76,9 @@ export function Sidebar() {
           onOpen={openNote}
           onCreateNote={() => createNote()}
           onCreateFolder={() => createFolder()}
-          onCreateNoteInside={(folderId) => createNote(folderId)}
+          onCreateNoteInside={(folderId, parentId = null) =>
+            createNote(folderId, parentId)
+          }
           onCreateFolderInside={(parentId) => createFolder(parentId)}
           onRenameFolder={(folder) => {
             setFolderToRename(folder);

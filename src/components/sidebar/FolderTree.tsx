@@ -1,6 +1,6 @@
 import type { FolderRecord, NoteRecord } from "@/lib/types";
 import { FolderNode } from "./FolderNode";
-import { NoteRow } from "./NoteRow";
+import { NoteNode } from "./NoteNode";
 
 export function FolderTree({
   folders,
@@ -19,7 +19,7 @@ export function FolderTree({
   onDeleteNote: (id: string) => void;
   onDeleteFolder: (folder: FolderRecord) => void;
   onCreateFolder: (parentId: string) => void;
-  onCreateNote: (folderId: string) => void;
+  onCreateNote: (folderId: string | null, parentId?: string | null) => void;
   onOpen: (id: string) => void;
   onRenameFolder: (folder: FolderRecord) => void;
 }) {
@@ -44,12 +44,18 @@ export function FolderTree({
         />
       ))}
       {rootNotes.map((note) => (
-        <NoteRow
+        <NoteNode
           key={note.id}
           note={note}
-          active={note.id === activeId}
-          onDelete={onDeleteNote}
+          folders={folders}
+          notes={notes}
+          activeId={activeId}
+          onCreateFolder={onCreateFolder}
+          onCreateNote={onCreateNote}
+          onDeleteFolder={onDeleteFolder}
+          onDeleteNote={onDeleteNote}
           onOpen={onOpen}
+          onRenameFolder={onRenameFolder}
         />
       ))}
     </div>

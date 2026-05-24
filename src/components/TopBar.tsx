@@ -19,7 +19,7 @@ export function TopBar() {
 
   return (
     <header
-      className="flex h-12 items-center justify-between bg-panel/70 px-2 backdrop-blur-[22px] dark:border-line-soft-dark dark:bg-panel-dark/70"
+      className="flex h-12 items-center justify-between bg-tabbar/85 px-2 backdrop-blur-[22px] dark:border-line-soft-dark dark:bg-tabbar-dark/80"
       data-tauri-drag-region
     >
       <div className="flex min-w-0 flex-1 items-end gap-1 self-end overflow-x-auto">
@@ -33,7 +33,7 @@ export function TopBar() {
                 className={cx(
                   "group flex h-9 max-w-[220px] items-center gap-2 rounded-t-xl px-3 text-sm text-muted transition-colors dark:text-muted-dark",
                   active &&
-                    " bg-canvas text-ink dark:bg-canvas-dark dark:text-ink-dark",
+                    " bg-editor text-ink dark:bg-editor-dark dark:text-ink-dark",
                 )}
                 onClick={() => openNote(note.meta.id)}
               >

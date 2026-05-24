@@ -7,6 +7,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { cx } from "@/components/ui";
 import { useWorkspaceStore } from "@/stores/workspace";
 
@@ -51,35 +52,32 @@ export function CommandBar() {
     setSelectedIndex(0);
   }, [open, query]);
 
-  useEffect(() => {
-    if (!open) return;
+  const runSelected = () => {
+    if (selectedIndex === 0) {
+      createNote();
+    } else {
+      const note = results[selectedIndex - 1];
+      if (note) openNote(note.id);
+    }
+    setOpen(false);
+  };
 
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "ArrowDown") {
-        event.preventDefault();
-        setSelectedIndex((index) => (index + 1) % actionCount);
-      }
+  const onSearchKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setSelectedIndex((index) => (index + 1) % actionCount);
+    }
 
-      if (event.key === "ArrowUp") {
-        event.preventDefault();
-        setSelectedIndex((index) => (index - 1 + actionCount) % actionCount);
-      }
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setSelectedIndex((index) => (index - 1 + actionCount) % actionCount);
+    }
 
-      if (event.key === "Enter") {
-        event.preventDefault();
-        if (selectedIndex === 0) {
-          createNote();
-        } else {
-          const note = results[selectedIndex - 1];
-          if (note) openNote(note.id);
-        }
-        setOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", onKey, true);
-    return () => window.removeEventListener("keydown", onKey, true);
-  }, [actionCount, createNote, open, openNote, results, selectedIndex, setOpen]);
+    if (event.key === "Enter") {
+      event.preventDefault();
+      runSelected();
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -115,6 +113,7 @@ export function CommandBar() {
                   className="h-8 w-full border-0 bg-transparent text-sm text-inherit outline-none placeholder:text-muted dark:placeholder:text-tooltip-ink/45"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
+                  onKeyDown={onSearchKeyDown}
                   placeholder="Search notes..."
                 />
               </div>

@@ -27,9 +27,13 @@
   --color-hover: #efebe4;
   --color-hover-dark: #2b2a27;
   --color-selection: #d8cfc1;
-  --color-selection-dark: #70685d;
+  --color-selection-dark: #526f8c;
   --color-press: #ded8cf;
   --color-press-dark: #373530;
+  --color-primary-hover: #393630;
+  --color-primary-hover-dark: #ded8cf;
+  --color-tabbar: #f0ede7;
+  --color-tabbar-dark: #1f1f1d;
   --color-focus-line: #c8c0b4;
   --color-focus-line-dark: #5d574f;
   --color-overlay-backdrop: rgb(0 0 0 / 0.15);

@@ -9,7 +9,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Dropdown, DropdownItem } from "@/components/ui";
 import type { FolderRecord, NoteRecord } from "@/lib/types";
-import { NoteRow } from "./NoteRow";
+import { NoteNode } from "./NoteNode";
 
 export function FolderNode({
   folder,
@@ -30,7 +30,7 @@ export function FolderNode({
   onDeleteNote: (id: string) => void;
   onDeleteFolder: (folder: FolderRecord) => void;
   onCreateFolder: (parentId: string) => void;
-  onCreateNote: (folderId: string) => void;
+  onCreateNote: (folderId: string | null, parentId?: string | null) => void;
   onOpen: (id: string) => void;
   onRenameFolder: (folder: FolderRecord) => void;
 }) {
@@ -104,12 +104,18 @@ export function FolderNode({
           />
         ))}
         {childNotes.map((note) => (
-          <NoteRow
+          <NoteNode
             key={note.id}
             note={note}
-            active={note.id === activeId}
-            onDelete={onDeleteNote}
+            folders={folders}
+            notes={notes}
+            activeId={activeId}
+            onCreateFolder={onCreateFolder}
+            onCreateNote={onCreateNote}
+            onDeleteFolder={onDeleteFolder}
+            onDeleteNote={onDeleteNote}
             onOpen={onOpen}
+            onRenameFolder={onRenameFolder}
           />
         ))}
       </div>
