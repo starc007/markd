@@ -11,6 +11,7 @@ export function Sidebar() {
   const setView = useWorkspaceStore((state) => state.setView);
   const openNote = useWorkspaceStore((state) => state.openNote);
   const createNote = useWorkspaceStore((state) => state.createNote);
+  const createFolder = useWorkspaceStore((state) => state.createFolder);
   const setCommandOpen = useWorkspaceStore((state) => state.setCommandOpen);
 
   const notes = useMemo(() => {
@@ -34,6 +35,8 @@ export function Sidebar() {
         notes={notes}
         activeId={activeNote?.meta.id}
         onOpen={openNote}
+        onCreateNote={() => createNote()}
+        onCreateFolder={() => createFolder()}
       />
     </aside>
   );
