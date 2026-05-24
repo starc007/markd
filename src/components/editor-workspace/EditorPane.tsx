@@ -35,11 +35,18 @@ export function EditorPane() {
   }, [activeNote, content, saveActiveNote]);
 
   if (view === "stickies") {
-    return <StickyBoard stickies={manifest?.stickies ?? []} onSave={saveSticky} />;
+    return (
+      <StickyBoard stickies={manifest?.stickies ?? []} onSave={saveSticky} />
+    );
   }
 
   if (view === "bookmarks") {
-    return <BookmarkBoard bookmarks={manifest?.bookmarks ?? []} onSave={saveBookmark} />;
+    return (
+      <BookmarkBoard
+        bookmarks={manifest?.bookmarks ?? []}
+        onSave={saveBookmark}
+      />
+    );
   }
 
   if (view === "todos") {

@@ -19,20 +19,21 @@ export function TopBar() {
 
   return (
     <header
-      className="flex h-12 items-center justify-between border-b border-line-soft bg-panel/70 px-2 backdrop-blur-[22px] dark:border-line-soft-dark dark:bg-panel-dark/70"
+      className="flex h-12 items-center justify-between bg-panel/70 px-2 backdrop-blur-[22px] dark:border-line-soft-dark dark:bg-panel-dark/70"
       data-tauri-drag-region
     >
       <div className="flex min-w-0 flex-1 items-end gap-1 self-end overflow-x-auto">
         {openNotes.length > 0 ? (
           openNotes.map((note) => {
-            const active = activeNote?.meta.id === note.meta.id && view === "notes";
+            const active =
+              activeNote?.meta.id === note.meta.id && view === "notes";
             return (
               <button
                 key={note.meta.id}
                 className={cx(
-                  "group flex h-9 max-w-[220px] items-center gap-2 rounded-t-xl border border-transparent px-3 text-sm text-muted transition-colors hover:bg-hover dark:text-muted-dark dark:hover:bg-hover-dark",
+                  "group flex h-9 max-w-[220px] items-center gap-2 rounded-t-xl px-3 text-sm text-muted transition-colors dark:text-muted-dark",
                   active &&
-                    "border-line-soft bg-canvas text-ink dark:border-line-soft-dark dark:bg-canvas-dark dark:text-ink-dark",
+                    " bg-canvas text-ink dark:bg-canvas-dark dark:text-ink-dark",
                 )}
                 onClick={() => openNote(note.meta.id)}
               >
@@ -54,7 +55,11 @@ export function TopBar() {
                   }}
                   aria-label={`Close ${note.meta.title}`}
                 >
-                  <HugeiconsIcon icon={Cancel01Icon} size={13} color="currentColor" />
+                  <HugeiconsIcon
+                    icon={Cancel01Icon}
+                    size={13}
+                    color="currentColor"
+                  />
                 </span>
               </button>
             );
