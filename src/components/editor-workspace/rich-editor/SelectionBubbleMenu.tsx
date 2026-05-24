@@ -1,22 +1,22 @@
 import {
   AlignBoxBottomLeftIcon,
   CodeIcon,
+  Heading01Icon,
+  Heading02Icon,
+  Heading03Icon,
   ImageAdd01Icon,
   LeftToRightBlockQuoteIcon,
-  LeftToRightListBulletIcon,
-  LeftToRightListNumberIcon,
   Link01Icon,
-  TableIcon,
-  Task01Icon,
   TextBoldIcon,
   TextItalicIcon,
   TextUnderlineIcon,
 } from "@hugeicons/core-free-icons";
 import type { Editor } from "@tiptap/react";
+import { BubbleMenu } from "@tiptap/react/menus";
 import type { NoteRecord } from "@/lib/types";
 import { ToolbarButton } from "./ToolbarButton";
 
-export function EditorToolbar({
+export function SelectionBubbleMenu({
   editor,
   notes,
 }: {
@@ -54,22 +54,40 @@ export function EditorToolbar({
     editor.chain().focus().setImage({ src: url.trim() }).run();
   };
 
-  const insertTable = () => {
-    editor
-      .chain()
-      .focus()
-      .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
-      .run();
-  };
-
   return (
-    <div className="sticky top-0 z-20 flex items-center gap-1 overflow-x-auto border-b border-line-soft bg-editor/85 px-[clamp(18px,5vw,64px)] py-2 backdrop-blur-[22px] dark:border-line-soft-dark dark:bg-editor-dark/85">
+    <BubbleMenu
+      editor={editor}
+      shouldShow={({ editor, state }) =>
+        editor.isEditable &&
+        !state.selection.empty &&
+        !editor.isActive("codeBlock")
+      }
+      updateDelay={80}
+      options={{
+        placement: "top",
+        offset: 8,
+      }}
+      className="flex items-center gap-1 rounded-2xl border border-line bg-panel/90 p-1.5 shadow-overlay backdrop-blur-[22px] dark:border-line-dark dark:bg-panel-dark/90"
+    >
       <ToolbarButton
         active={editor.isActive("heading", { level: 1 })}
-        icon={TextBoldIcon}
-        label="Heading"
+        icon={Heading01Icon}
+        label="Heading 1"
         onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
       />
+      <ToolbarButton
+        active={editor.isActive("heading", { level: 2 })}
+        icon={Heading02Icon}
+        label="Heading 2"
+        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+      />
+      <ToolbarButton
+        active={editor.isActive("heading", { level: 3 })}
+        icon={Heading03Icon}
+        label="Heading 3"
+        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+      />
+      <div className="mx-1 h-5 w-px bg-line-soft dark:bg-line-soft-dark" />
       <ToolbarButton
         active={editor.isActive("bold")}
         icon={TextBoldIcon}
@@ -89,22 +107,10 @@ export function EditorToolbar({
         onClick={() => editor.chain().focus().toggleUnderline().run()}
       />
       <ToolbarButton
-        active={editor.isActive("bulletList")}
-        icon={LeftToRightListBulletIcon}
-        label="Bullet list"
-        onClick={() => editor.chain().focus().toggleBulletList().run()}
-      />
-      <ToolbarButton
-        active={editor.isActive("orderedList")}
-        icon={LeftToRightListNumberIcon}
-        label="Numbered list"
-        onClick={() => editor.chain().focus().toggleOrderedList().run()}
-      />
-      <ToolbarButton
-        active={editor.isActive("taskList")}
-        icon={Task01Icon}
-        label="Task list"
-        onClick={() => editor.chain().focus().toggleTaskList().run()}
+        active={editor.isActive("code")}
+        icon={CodeIcon}
+        label="Inline code"
+        onClick={() => editor.chain().focus().toggleCode().run()}
       />
       <ToolbarButton
         active={editor.isActive("blockquote")}
@@ -112,14 +118,12 @@ export function EditorToolbar({
         label="Quote"
         onClick={() => editor.chain().focus().toggleBlockquote().run()}
       />
-      <ToolbarButton
-        active={editor.isActive("codeBlock")}
-        icon={CodeIcon}
-        label="Code block"
-        onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-      />
       <div className="mx-1 h-5 w-px bg-line-soft dark:bg-line-soft-dark" />
-      <ToolbarButton icon={AlignBoxBottomLeftIcon} label="Page link" onClick={insertPageLink} />
+      <ToolbarButton
+        icon={AlignBoxBottomLeftIcon}
+        label="Page link"
+        onClick={insertPageLink}
+      />
       <ToolbarButton
         active={editor.isActive("link")}
         icon={Link01Icon}
@@ -127,7 +131,7 @@ export function EditorToolbar({
         onClick={setLink}
       />
       <ToolbarButton icon={ImageAdd01Icon} label="Image" onClick={insertImage} />
-      <ToolbarButton icon={TableIcon} label="Table" onClick={insertTable} />
-    </div>
+    </BubbleMenu>
   );
 }
+
