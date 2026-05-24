@@ -26,7 +26,7 @@ export function WorkspaceTree({
           Workspace
         </div>
         <div className="flex items-center gap-0.5">
-          <Tooltip label="New note" place="bottom">
+          <Tooltip label="New note" place="right">
             <button
               className="grid h-6 w-6 place-items-center rounded-md text-sidebar-ink-muted transition-colors hover:bg-sidebar-active hover:text-sidebar-ink-strong dark:text-sidebar-ink-muted-dark dark:hover:bg-sidebar-active-dark dark:hover:text-sidebar-ink-strong-dark"
               onClick={onCreateNote}
@@ -35,7 +35,7 @@ export function WorkspaceTree({
               <HugeiconsIcon icon={NoteAddIcon} size={15} color="currentColor" />
             </button>
           </Tooltip>
-          <Tooltip label="New folder" place="bottom">
+          <Tooltip label="New folder" place="right">
             <button
               className="grid h-6 w-6 place-items-center rounded-md text-sidebar-ink-muted transition-colors hover:bg-sidebar-active hover:text-sidebar-ink-strong dark:text-sidebar-ink-muted-dark dark:hover:bg-sidebar-active-dark dark:hover:text-sidebar-ink-strong-dark"
               onClick={onCreateFolder}
