@@ -1,5 +1,6 @@
 import { FolderAddIcon, NoteAddIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { Tooltip } from "@/components/ui";
 import type { FolderRecord, NoteRecord } from "@/lib/types";
 import { FolderTree } from "./FolderTree";
 
@@ -25,22 +26,24 @@ export function WorkspaceTree({
           Workspace
         </div>
         <div className="flex items-center gap-0.5">
-          <button
-            className="grid h-6 w-6 place-items-center rounded-md text-sidebar-ink-muted transition-colors hover:bg-sidebar-active hover:text-sidebar-ink-strong dark:text-sidebar-ink-muted-dark dark:hover:bg-sidebar-active-dark dark:hover:text-sidebar-ink-strong-dark"
-            onClick={onCreateNote}
-            aria-label="New note"
-            title="New note"
-          >
-            <HugeiconsIcon icon={NoteAddIcon} size={15} color="currentColor" />
-          </button>
-          <button
-            className="grid h-6 w-6 place-items-center rounded-md text-sidebar-ink-muted transition-colors hover:bg-sidebar-active hover:text-sidebar-ink-strong dark:text-sidebar-ink-muted-dark dark:hover:bg-sidebar-active-dark dark:hover:text-sidebar-ink-strong-dark"
-            onClick={onCreateFolder}
-            aria-label="New folder"
-            title="New folder"
-          >
-            <HugeiconsIcon icon={FolderAddIcon} size={15} color="currentColor" />
-          </button>
+          <Tooltip label="New note" place="bottom">
+            <button
+              className="grid h-6 w-6 place-items-center rounded-md text-sidebar-ink-muted transition-colors hover:bg-sidebar-active hover:text-sidebar-ink-strong dark:text-sidebar-ink-muted-dark dark:hover:bg-sidebar-active-dark dark:hover:text-sidebar-ink-strong-dark"
+              onClick={onCreateNote}
+              aria-label="New note"
+            >
+              <HugeiconsIcon icon={NoteAddIcon} size={15} color="currentColor" />
+            </button>
+          </Tooltip>
+          <Tooltip label="New folder" place="bottom">
+            <button
+              className="grid h-6 w-6 place-items-center rounded-md text-sidebar-ink-muted transition-colors hover:bg-sidebar-active hover:text-sidebar-ink-strong dark:text-sidebar-ink-muted-dark dark:hover:bg-sidebar-active-dark dark:hover:text-sidebar-ink-strong-dark"
+              onClick={onCreateFolder}
+              aria-label="New folder"
+            >
+              <HugeiconsIcon icon={FolderAddIcon} size={15} color="currentColor" />
+            </button>
+          </Tooltip>
         </div>
       </div>
       <FolderTree
