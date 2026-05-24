@@ -23,7 +23,7 @@ export function Modal({
       {open && (
         <Dialog static open={open} onClose={onClose} className="relative z-70">
           <motion.div
-            className="fixed inset-0 bg-black/15 backdrop-blur-lg"
+            className="fixed inset-0 bg-overlay-backdrop backdrop-blur-lg"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -35,7 +35,7 @@ export function Modal({
               animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
               exit={{ opacity: 0, scale: 0.97, y: 10, filter: "blur(8px)" }}
               transition={{ type: "spring", stiffness: 430, damping: 34 }}
-              className="w-[min(520px,100%)] rounded-[22px] border border-[#dedbd3] bg-white/85 p-[18px] shadow-[0_18px_50px_#00000024] backdrop-blur-[22px] dark:border-[#34322e] dark:bg-[#22211e]/85"
+              className="w-[min(520px,100%)] rounded-[22px] border border-line bg-panel/85 p-[18px] shadow-overlay backdrop-blur-[22px]"
             >
               <div className="flex items-center justify-between">
                 <DialogTitle>{title}</DialogTitle>

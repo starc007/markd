@@ -4,10 +4,10 @@ import { HugeiconsIcon } from "@hugeicons/react";
 export function SearchButton({ onClick }: { onClick: () => void }) {
   return (
     <button
-      className="relative mb-1.5 flex min-h-11 w-full items-center gap-2.5 rounded-[13px] border-0 bg-transparent px-3.5 py-[7px] text-left text-[21px] font-medium text-[#cfcfcf]"
+      className="relative mb-1 flex min-h-8 w-full items-center gap-2 rounded-lg border-0 bg-transparent px-2 py-1.5 text-left text-sm font-medium text-sidebar-ink-soft transition-colors hover:bg-sidebar-active"
       onClick={onClick}
     >
-      <HugeiconsIcon icon={Search01Icon} size={27} color="currentColor" />
+      <HugeiconsIcon icon={Search01Icon} size={17} color="currentColor" />
       <span>Search</span>
     </button>
   );

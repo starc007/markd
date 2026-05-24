@@ -3,7 +3,6 @@ import { useWorkspaceStore } from "@/stores/workspace";
 import { SearchButton } from "./SearchButton";
 import { SidebarFooter } from "./SidebarFooter";
 import { SidebarNav } from "./SidebarNav";
-import { TrafficLights } from "./TrafficLights";
 import { WorkspaceHeader } from "./WorkspaceHeader";
 import { WorkspaceTree } from "./WorkspaceTree";
 
@@ -27,8 +26,7 @@ export function Sidebar() {
   }, [manifest?.notes, query]);
 
   return (
-    <aside className="relative flex min-h-screen flex-col overflow-hidden bg-[#1f1f1f] p-4 pb-[18px] text-[#d8d8d8] backdrop-blur-[28px] before:pointer-events-none before:absolute before:inset-0 before:bg-white/[0.07] max-[860px]:hidden">
-      <TrafficLights />
+    <aside className="relative flex min-h-screen flex-col overflow-hidden border-r border-sidebar-divider bg-sidebar px-3 pb-4 pt-10 text-sidebar-ink max-[860px]:hidden">
       <WorkspaceHeader
         name={manifest?.name ?? "Draft Workspace"}
         onCreateNote={createNote}

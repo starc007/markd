@@ -20,12 +20,10 @@ interface WorkspaceState {
   view: ViewMode;
   query: string;
   commandOpen: boolean;
-  theme: "light" | "dark";
   hydrate: () => Promise<void>;
   setView: (view: ViewMode) => void;
   setQuery: (query: string) => void;
   setCommandOpen: (open: boolean) => void;
-  setTheme: (theme: "light" | "dark") => void;
   openNote: (id: string) => Promise<void>;
   createNote: (folderId?: string | null, parentId?: string | null) => Promise<void>;
   saveActiveNote: (content: string) => Promise<void>;
@@ -43,7 +41,6 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   view: "notes",
   query: "",
   commandOpen: false,
-  theme: "light",
 
   hydrate: async () => {
     const snapshot = await api.loadWorkspace();
@@ -58,10 +55,6 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   setView: (view) => set({ view }),
   setQuery: (query) => set({ query }),
   setCommandOpen: (commandOpen) => set({ commandOpen }),
-  setTheme: (theme) => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
-    set({ theme });
-  },
 
   openNote: async (id) => {
     const note = await api.getNote(id);

@@ -4,10 +4,10 @@ import type { StickyRecord } from "@/lib/types";
 import { Board } from "./Board";
 
 const stickyColors: Record<string, string> = {
-  mint: "bg-[#e4f3e8] dark:bg-[#22362b]",
-  rose: "bg-[#f8e4e4] dark:bg-[#3a2828]",
-  butter: "bg-[#f7f4dc] dark:bg-[#393621]",
-  sky: "bg-[#e1edf7] dark:bg-[#223140]",
+  mint: "bg-sticky-mint",
+  rose: "bg-sticky-rose",
+  butter: "bg-sticky-butter",
+  sky: "bg-sticky-sky",
 };
 
 export function StickyBoard({
@@ -26,7 +26,7 @@ export function StickyBoard({
           <textarea
             key={sticky.id}
             className={cx(
-              "min-h-[180px] resize-y rounded-[22px] border border-[#dedbd3] p-4 text-[#191817] outline-none transition-colors focus:border-[#b9b5ac] dark:border-[#34322e] dark:text-[#f4f1ea] dark:focus:border-[#565148]",
+              "min-h-[180px] resize-y rounded-[22px] border border-line p-4 text-ink outline-none transition-colors focus:border-focus-line",
               stickyColors[sticky.color] ?? stickyColors.butter,
             )}
             defaultValue={sticky.content}
@@ -34,7 +34,7 @@ export function StickyBoard({
           />
         ))}
         <button
-          className="min-h-[180px] rounded-[22px] border border-dashed border-[#dedbd3] bg-transparent p-4 text-left text-sm text-[#6f6b64] transition-colors hover:bg-[#e9eee6] dark:border-[#34322e] dark:text-[#aaa39a] dark:hover:bg-[#2a3029]"
+          className="min-h-[180px] rounded-[22px] border border-dashed border-line bg-transparent p-4 text-left text-sm text-muted transition-colors hover:bg-hover"
           onClick={() => onSave({ content: "New thought", color: "rose" })}
         >
           Add sticky

@@ -17,20 +17,20 @@ export function NoteRow({
   return (
     <button
       className={cx(
-        "relative flex min-h-11 w-full items-center gap-2.5 rounded-[13px] border-0 bg-transparent px-3.5 py-2 text-left text-[19px] font-medium text-[#d7d7d7]",
-        active && "text-[#f3f3f3]",
+        "relative flex min-h-8 w-full items-center gap-2 rounded-lg border-0 bg-transparent px-2 py-1.5 text-left text-sm font-medium text-sidebar-ink-row transition-colors hover:bg-sidebar-active",
+        active && "text-sidebar-ink-strong",
       )}
       onClick={() => onOpen(note.id)}
     >
       {active && (
         <motion.span
           layoutId="note-pill"
-          className="absolute inset-0 -z-10 rounded-[13px] bg-[#3a3a3a]"
+          className="absolute inset-0 -z-10 rounded-lg bg-sidebar-active"
         />
       )}
-      <HugeiconsIcon icon={FileEditIcon} size={22} color="currentColor" />
+      <HugeiconsIcon icon={FileEditIcon} size={16} color="currentColor" />
       <span className="min-w-0 flex-1 truncate">{note.title}</span>
-      <small className="text-[17px] font-medium text-[#9c9c9c]">
+      <small className="text-xs font-medium text-sidebar-ink-row-muted">
         {timeAgo(note.updatedAt)}
       </small>
     </button>

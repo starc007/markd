@@ -10,7 +10,7 @@ export function IconButton({
     <motion.button
       whileTap={{ scale: 0.94 }}
       className={cx(
-        "inline-flex h-[34px] w-[34px] items-center justify-center rounded-[14px] border border-[#dedbd3] bg-transparent transition-colors hover:bg-[#e9eee6] dark:border-[#34322e] dark:hover:bg-[#2a3029]",
+        "inline-flex h-[34px] w-[34px] items-center justify-center rounded-[14px] border border-line bg-transparent transition-colors hover:bg-hover",
         className,
       )}
       {...props}

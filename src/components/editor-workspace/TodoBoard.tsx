@@ -17,11 +17,11 @@ export function TodoBoard({ todos }: { todos: TodoListItem[] }) {
         {todos.map((todo) => (
           <label
             key={`${todo.note.id}-${todo.line}`}
-            className="flex items-center gap-3 rounded-[18px] border border-[#dedbd3] p-3.5 dark:border-[#34322e]"
+            className="flex items-center gap-3 rounded-[18px] border border-line p-3.5"
           >
             <input type="checkbox" checked={todo.done} readOnly />
             <span>{todo.text}</span>
-            <small className="ml-auto text-[#6f6b64] dark:text-[#aaa39a]">
+            <small className="ml-auto text-muted">
               {todo.note.title}
             </small>
           </label>

@@ -14,14 +14,14 @@ export function Board({
 }) {
   return (
     <motion.main
-      className="overflow-auto rounded-3xl border border-[#dedbd3] bg-transparent p-[clamp(26px,6vw,72px)] dark:border-[#34322e]"
+      className="overflow-auto bg-panel p-[clamp(32px,6vw,72px)]"
       initial={{ opacity: 0, y: 8, filter: "blur(8px)" }}
       animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
       transition={{ type: "spring", stiffness: 360, damping: 34 }}
     >
       <div className="mb-6 flex items-center gap-2.5">
         <HugeiconsIcon icon={icon} size={22} color="currentColor" />
-        <h1 className="m-0 text-[34px] font-semibold">{title}</h1>
+        <h1 className="m-0 text-2xl font-semibold">{title}</h1>
       </div>
       {children}
     </motion.main>

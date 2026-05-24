@@ -23,11 +23,11 @@ export function FolderNode({
 
   return (
     <details open>
-      <summary className="flex cursor-pointer items-center gap-2 px-3.5 py-2 text-[19px] font-medium text-[#b8b8b8]">
-        <HugeiconsIcon icon={FolderIcon} size={15} color="currentColor" />
+      <summary className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium text-sidebar-folder transition-colors hover:bg-sidebar-active">
+        <HugeiconsIcon icon={FolderIcon} size={16} color="currentColor" />
         {folder.name}
       </summary>
-      <div className="ml-[18px] pl-2.5">
+      <div className="ml-3 border-l border-sidebar-divider pl-2">
         {childFolders.map((child) => (
           <FolderNode
             key={child.id}

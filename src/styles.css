@@ -1,1 +1,38 @@
 @import "tailwindcss";
+
+@theme {
+  --color-canvas: #fbfaf8;
+  --color-ink: #20201d;
+  --color-muted: #77736b;
+  --color-muted-soft: #9a958c;
+  --color-line: #e4e0d8;
+  --color-line-soft: #efebe4;
+  --color-panel: #ffffff;
+  --color-panel-soft: #f4f1eb;
+  --color-hover: #efebe4;
+  --color-press: #ded8cf;
+  --color-focus-line: #c8c0b4;
+  --color-overlay-backdrop: rgb(0 0 0 / 0.15);
+  --color-sidebar: #f7f5f0;
+  --color-sidebar-ink: #3f3d39;
+  --color-sidebar-ink-strong: #24231f;
+  --color-sidebar-ink-soft: #5f5b53;
+  --color-sidebar-ink-muted: #8c867c;
+  --color-sidebar-ink-faint: #9b958c;
+  --color-sidebar-ink-row: #45413b;
+  --color-sidebar-ink-row-muted: #958f86;
+  --color-sidebar-folder: #726d65;
+  --color-sidebar-active: #ebe6dc;
+  --color-sidebar-field: #ffffff;
+  --color-sidebar-field-ink: #393631;
+  --color-sidebar-logo-bg: #20201d;
+  --color-sidebar-divider: #e6e1d8;
+  --color-traffic-red: #ff5f57;
+  --color-traffic-yellow: #febc2e;
+  --color-traffic-green: #28c840;
+  --color-sticky-mint: #e4f3e8;
+  --color-sticky-rose: #f8e4e4;
+  --color-sticky-butter: #f7f4dc;
+  --color-sticky-sky: #e1edf7;
+  --shadow-overlay: 0 18px 50px rgb(0 0 0 / 0.14);
+}
