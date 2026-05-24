@@ -15,8 +15,8 @@ export function MarkdownEditor({
   onSave: () => void;
 }) {
   return (
-    <main className="overflow-auto bg-panel px-[clamp(36px,9vw,128px)] py-[clamp(34px,8vw,88px)]">
-      <div className="mb-5 flex items-center justify-between gap-2.5 text-xs text-muted">
+    <main className="overflow-auto bg-panel dark:bg-panel-dark px-[clamp(36px,9vw,128px)] py-[clamp(34px,8vw,88px)]">
+      <div className="mb-5 flex items-center justify-between gap-2.5 text-xs text-muted dark:text-muted-dark">
         <span className="flex items-center gap-2.5">
           <HugeiconsIcon icon={Calendar03Icon} size={14} color="currentColor" />
           Updated {timeAgo(note.meta.updatedAt)}
@@ -24,7 +24,7 @@ export function MarkdownEditor({
         <span>{note.meta.path}</span>
       </div>
       <textarea
-        className="min-h-[calc(100vh-190px)] w-full resize-none border-0 bg-transparent text-[17px] leading-[1.72] text-ink outline-none selection:bg-hover"
+        className="min-h-[calc(100vh-190px)] w-full resize-none border-0 bg-transparent text-[17px] leading-[1.72] text-ink outline-none selection:bg-hover dark:text-ink-dark dark:selection:bg-hover-dark"
         value={content}
         spellCheck
         onChange={(event) => onChange(event.target.value)}

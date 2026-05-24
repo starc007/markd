@@ -10,11 +10,11 @@ export function Button({
   variant?: "soft" | "primary" | "ghost";
 }) {
   const variantClass = {
-    soft: "border-line bg-transparent hover:bg-hover",
+    soft: "border-line bg-transparent hover:bg-hover dark:border-line-dark dark:hover:bg-hover-dark",
     primary:
-      "border-ink bg-ink text-canvas hover:bg-press",
+      "border-ink bg-ink text-canvas hover:bg-press dark:border-ink-dark dark:bg-ink-dark dark:text-canvas-dark dark:hover:bg-press-dark",
     ghost:
-      "border-transparent bg-transparent hover:bg-hover",
+      "border-transparent bg-transparent hover:bg-hover dark:hover:bg-hover-dark",
   }[variant];
 
   return (

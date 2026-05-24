@@ -2,6 +2,7 @@ import {
   Bookmark01Icon,
   FileEditIcon,
   Home01Icon,
+  Settings02Icon,
   StickyNote01Icon,
   Task01Icon,
 } from "@hugeicons/core-free-icons";
@@ -16,4 +17,5 @@ export const sidebarNavigation: Array<{
   { id: "todos", label: "Tasks", icon: Task01Icon },
   { id: "stickies", label: "Sticky notes", icon: StickyNote01Icon },
   { id: "bookmarks", label: "Bookmarks", icon: Bookmark01Icon },
+  { id: "settings", label: "Settings", icon: Settings02Icon },
 ];

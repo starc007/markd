@@ -21,7 +21,7 @@ export function Dropdown({
           animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
           exit={{ opacity: 0, scale: 0.98, y: -4, filter: "blur(6px)" }}
           transition={{ type: "spring", stiffness: 520, damping: 40 }}
-          className="z-80 rounded-[22px] border border-line bg-panel/85 p-1.5 shadow-overlay backdrop-blur-[22px]"
+          className="z-80 rounded-[22px] border border-line dark:border-line-dark bg-panel/85 dark:bg-panel-dark/85 p-1.5 shadow-overlay backdrop-blur-[22px]"
         >
           {children}
         </MotionMenuItems>

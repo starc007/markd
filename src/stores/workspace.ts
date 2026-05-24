@@ -18,12 +18,12 @@ interface WorkspaceState {
   manifest: WorkspaceManifest | null;
   activeNote: NoteDocument | null;
   view: ViewMode;
-  query: string;
   commandOpen: boolean;
+  theme: "light" | "dark";
   hydrate: () => Promise<void>;
   setView: (view: ViewMode) => void;
-  setQuery: (query: string) => void;
   setCommandOpen: (open: boolean) => void;
+  setTheme: (theme: "light" | "dark") => void;
   openNote: (id: string) => Promise<void>;
   createNote: (folderId?: string | null, parentId?: string | null) => Promise<void>;
   saveActiveNote: (content: string) => Promise<void>;
@@ -39,22 +39,30 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   manifest: null,
   activeNote: null,
   view: "notes",
-  query: "",
   commandOpen: false,
+  theme: "light",
 
   hydrate: async () => {
     const snapshot = await api.loadWorkspace();
+    const theme =
+      window.localStorage.getItem("draft-theme") === "dark" ? "dark" : "light";
+    document.documentElement.classList.toggle("dark", theme === "dark");
     set({
       ready: true,
       rootPath: snapshot.rootPath,
       manifest: snapshot.manifest,
       activeNote: snapshot.activeNote,
+      theme,
     });
   },
 
   setView: (view) => set({ view }),
-  setQuery: (query) => set({ query }),
   setCommandOpen: (commandOpen) => set({ commandOpen }),
+  setTheme: (theme) => {
+    window.localStorage.setItem("draft-theme", theme);
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    set({ theme });
+  },
 
   openNote: async (id) => {
     const note = await api.getNote(id);

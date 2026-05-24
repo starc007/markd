@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import { extractTodos } from "@/lib/format";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { BookmarkBoard } from "./BookmarkBoard";
 import { EmptyEditorState } from "./EmptyEditorState";
 import { MarkdownEditor } from "./MarkdownEditor";
+import { SettingsBoard } from "./SettingsBoard";
 import { StickyBoard } from "./StickyBoard";
 import { TodoBoard } from "./TodoBoard";
 
@@ -51,6 +51,10 @@ export function EditorPane() {
     return <TodoBoard todos={todos} />;
   }
 
+  if (view === "settings") {
+    return <SettingsBoard />;
+  }
+
   if (!activeNote) {
     return <EmptyEditorState onCreateNote={createNote} />;
   }
@@ -60,10 +64,7 @@ export function EditorPane() {
       note={activeNote}
       content={content}
       onChange={setContent}
-      onSave={() => {
-        saveActiveNote(content);
-        toast.success("File saved");
-      }}
+      onSave={() => saveActiveNote(content)}
     />
   );
 }

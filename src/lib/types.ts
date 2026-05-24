@@ -1,4 +1,4 @@
-export type ViewMode = "notes" | "todos" | "stickies" | "bookmarks";
+export type ViewMode = "notes" | "todos" | "stickies" | "bookmarks" | "settings";
 
 export interface WorkspaceManifest {
   version: number;

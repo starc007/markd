@@ -21,20 +21,21 @@ export function TopBar() {
     todos: "Tasks",
     stickies: "Sticky notes",
     bookmarks: "Bookmarks",
+    settings: "Settings",
   }[view];
 
   return (
     <header
-      className="flex h-14 items-center justify-between border-b border-line-soft bg-panel/70 px-5 backdrop-blur-[22px]"
+      className="flex h-14 items-center justify-between border-b border-line-soft dark:border-line-soft-dark bg-panel/70 dark:bg-panel-dark/70 px-5 backdrop-blur-[22px]"
       data-tauri-drag-region
     >
       <div className="flex min-w-0 items-center gap-2.5">
         <strong className="truncate text-sm font-semibold">{title}</strong>
-        <span className="hidden text-sm text-muted sm:inline">/ Draft</span>
+        <span className="hidden text-sm text-muted dark:text-muted-dark sm:inline">/ Draft</span>
       </div>
 
       <div className="flex items-center gap-2.5">
-        <span className="hidden items-center gap-1.5 text-xs text-muted sm:flex">
+        <span className="hidden items-center gap-1.5 text-xs text-muted dark:text-muted-dark sm:flex">
           <HugeiconsIcon icon={CheckmarkCircle01Icon} size={15} color="currentColor" />
           {saving ? "Saving" : "Saved"}
         </span>

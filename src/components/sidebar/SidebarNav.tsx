@@ -18,14 +18,14 @@ export function SidebarNav({
           key={item.id}
           onClick={() => onSelect(item.id)}
           className={cx(
-            "relative flex min-h-8 w-full items-center gap-2 rounded-lg border-0 bg-transparent px-2 py-1.5 text-left text-sm font-medium text-sidebar-ink-soft transition-colors hover:bg-sidebar-active",
-            activeView === item.id && "text-sidebar-ink-strong",
+            "relative flex min-h-8 w-full items-center gap-2 rounded-lg border-0 bg-transparent px-2 py-1.5 text-left text-sm font-medium text-sidebar-ink-soft transition-colors hover:bg-sidebar-active dark:text-sidebar-ink-soft-dark dark:hover:bg-sidebar-active-dark",
+            activeView === item.id && "text-sidebar-ink-strong dark:text-sidebar-ink-strong-dark",
           )}
         >
           {activeView === item.id && (
             <motion.span
               layoutId="nav-pill"
-              className="absolute inset-0 -z-10 rounded-lg bg-sidebar-active"
+              className="absolute inset-0 -z-10 rounded-lg bg-sidebar-active dark:bg-sidebar-active-dark"
             />
           )}
           <HugeiconsIcon icon={item.icon} size={17} color="currentColor" />

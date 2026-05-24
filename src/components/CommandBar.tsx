@@ -43,7 +43,7 @@ export function CommandBar() {
       {open && (
         <Dialog static open={open} onClose={() => setOpen(false)} className="relative z-70">
           <motion.div
-            className="fixed inset-0 bg-overlay-backdrop backdrop-blur-lg"
+            className="fixed inset-0 bg-overlay-backdrop dark:bg-overlay-backdrop-dark backdrop-blur-lg"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -54,9 +54,9 @@ export function CommandBar() {
               animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
               exit={{ opacity: 0, scale: 0.98, y: 10, filter: "blur(8px)" }}
               transition={{ type: "spring", stiffness: 460, damping: 36 }}
-              className="w-[min(680px,100%)] rounded-[22px] border border-line bg-panel/85 p-2.5 shadow-overlay backdrop-blur-[22px]"
+              className="w-[min(680px,100%)] rounded-[22px] border border-line dark:border-line-dark bg-panel/85 dark:bg-panel-dark/85 p-2.5 shadow-overlay backdrop-blur-[22px]"
             >
-              <div className="flex items-center gap-2.5 border-b border-line px-2.5 pb-3 pt-2">
+              <div className="flex items-center gap-2.5 border-b border-line dark:border-line-dark px-2.5 pb-3 pt-2">
                 <HugeiconsIcon icon={Search01Icon} size={18} color="currentColor" />
                 <input
                   autoFocus
@@ -67,7 +67,7 @@ export function CommandBar() {
                 />
               </div>
               <button
-                className="relative mt-2 flex w-full items-center gap-2.5 rounded-[13px] border-0 bg-transparent p-2.5 text-left transition-colors hover:bg-hover"
+                className="relative mt-2 flex w-full items-center gap-2.5 rounded-[13px] border-0 bg-transparent p-2.5 text-left transition-colors hover:bg-hover dark:hover:bg-hover-dark"
                 onClick={() => {
                   createNote();
                   setOpen(false);
@@ -75,12 +75,12 @@ export function CommandBar() {
               >
                 <HugeiconsIcon icon={Add01Icon} size={18} color="currentColor" />
                 Create note
-                <kbd className="ml-auto text-xs text-muted">⌘N</kbd>
+                <kbd className="ml-auto text-xs text-muted dark:text-muted-dark">⌘N</kbd>
               </button>
               {results.map((note) => (
                 <button
                   key={note.id}
-                  className="relative flex w-full items-center gap-2.5 rounded-[13px] border-0 bg-transparent p-2.5 text-left transition-colors hover:bg-hover"
+                  className="relative flex w-full items-center gap-2.5 rounded-[13px] border-0 bg-transparent p-2.5 text-left transition-colors hover:bg-hover dark:hover:bg-hover-dark"
                   onClick={() => {
                     openNote(note.id);
                     setOpen(false);
@@ -88,7 +88,7 @@ export function CommandBar() {
                 >
                   <HugeiconsIcon icon={FileEditIcon} size={18} color="currentColor" />
                   {note.title}
-                  <small className="ml-auto max-w-[42%] truncate text-muted">{note.path}</small>
+                  <small className="ml-auto max-w-[42%] truncate text-muted dark:text-muted-dark">{note.path}</small>
                 </button>
               ))}
             </MotionDialogPanel>
