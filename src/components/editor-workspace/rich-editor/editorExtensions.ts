@@ -1,6 +1,7 @@
 import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
+import { Extension } from "@tiptap/core";
 import { Table } from "@tiptap/extension-table";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
@@ -12,8 +13,23 @@ import Underline from "@tiptap/extension-underline";
 import StarterKit from "@tiptap/starter-kit";
 import { WikiLinkExtension } from "./wikiLinkExtension";
 
+const FormattingShortcuts = Extension.create({
+  name: "formattingShortcuts",
+  priority: 1000,
+
+  addKeyboardShortcuts() {
+    return {
+      "Mod-b": () => this.editor.commands.toggleBold(),
+      "Mod-B": () => this.editor.commands.toggleBold(),
+      "Mod-i": () => this.editor.commands.toggleItalic(),
+      "Mod-I": () => this.editor.commands.toggleItalic(),
+    };
+  },
+});
+
 export function createEditorExtensions() {
   return [
+    FormattingShortcuts,
     StarterKit.configure({
       link: false,
     }),
@@ -49,6 +65,7 @@ export function createEditorExtensions() {
 
 export function createStickyEditorExtensions() {
   return [
+    FormattingShortcuts,
     StarterKit.configure({
       blockquote: false,
       code: false,

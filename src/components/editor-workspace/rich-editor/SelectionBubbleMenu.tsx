@@ -9,8 +9,6 @@ import {
   LeftToRightBlockQuoteIcon,
   Link01Icon,
   TableIcon,
-  TextBoldIcon,
-  TextItalicIcon,
   TextUnderlineIcon,
 } from "@hugeicons/core-free-icons";
 import type { Editor } from "@tiptap/react";
@@ -88,18 +86,6 @@ export function SelectionBubbleMenu({
         onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
       />
       <div className="mx-1 h-5 w-px bg-line-soft dark:bg-line-soft-dark" />
-      <ToolbarButton
-        active={editor.isActive("bold")}
-        icon={TextBoldIcon}
-        label="Bold"
-        onClick={() => editor.chain().focus().toggleBold().run()}
-      />
-      <ToolbarButton
-        active={editor.isActive("italic")}
-        icon={TextItalicIcon}
-        label="Italic"
-        onClick={() => editor.chain().focus().toggleItalic().run()}
-      />
       <ToolbarButton
         active={editor.isActive("underline")}
         icon={TextUnderlineIcon}

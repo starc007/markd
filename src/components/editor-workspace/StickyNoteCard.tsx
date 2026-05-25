@@ -2,8 +2,6 @@ import {
   CheckListIcon,
   Delete02Icon,
   Link02Icon,
-  TextBoldIcon,
-  TextItalicIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { EditorContent, useEditor } from "@tiptap/react";
@@ -63,24 +61,6 @@ export function StickyNoteCard({
     <div className="group relative">
       <div className="absolute right-2 top-2 z-10 flex items-center rounded-xl bg-panel/70 p-0.5 opacity-0 backdrop-blur-[18px] transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 dark:bg-panel-dark/70">
         <StickyToolButton
-          label="Bold"
-          icon={TextBoldIcon}
-          isActive={editor?.isActive("bold")}
-          onClick={() => {
-            editor?.chain().focus().toggleBold().run();
-            saveNow();
-          }}
-        />
-        <StickyToolButton
-          label="Italic"
-          icon={TextItalicIcon}
-          isActive={editor?.isActive("italic")}
-          onClick={() => {
-            editor?.chain().focus().toggleItalic().run();
-            saveNow();
-          }}
-        />
-        <StickyToolButton
           label="Link"
           icon={Link02Icon}
           isActive={editor?.isActive("link")}
@@ -126,7 +106,7 @@ function StickyToolButton({
   label,
   onClick,
 }: {
-  icon: typeof TextBoldIcon;
+  icon: typeof Link02Icon;
   isActive?: boolean;
   label: string;
   onClick: () => void;
