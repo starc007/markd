@@ -78,6 +78,23 @@ function normalizeTaskListHtml(html: string) {
   return template.innerHTML;
 }
 
+export function isLikelyMarkdown(value: string) {
+  const text = value.trim();
+  if (!text) return false;
+
+  return [
+    /^#{1,6}\s+\S/m,
+    /^>\s+\S/m,
+    /^[-*+]\s+\S/m,
+    /^\d+\.\s+\S/m,
+    /^[-*+]\s+\[( |x|X)\]\s+\S/m,
+    /^```[\s\S]*```/m,
+    /^\|.+\|\n\|[-:\s|]+\|/m,
+    /\[[^\]]+\]\([^)]+\)/,
+    /(^|\s)(\*\*|__)[^\n]+(\*\*|__)(\s|$)/,
+  ].some((pattern) => pattern.test(text));
+}
+
 export function markdownToHtml(markdown: string) {
   const html = marked(markdown, {
     async: false,
