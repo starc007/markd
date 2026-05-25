@@ -1,3 +1,5 @@
+export { AnimatedTabs } from "./AnimatedTabs";
+export type { AnimatedTabItem } from "./AnimatedTabs";
 export { Button } from "./Button";
 export { ConfirmModal } from "./ConfirmModal";
 export { Dropdown } from "./Dropdown";
