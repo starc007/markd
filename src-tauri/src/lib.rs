@@ -160,6 +160,35 @@ fn note_path(id: &str, title: &str) -> String {
     format!("notes/{}-{}.md", slugify(title), &id[..8.min(id.len())])
 }
 
+fn rename_note_file_if_needed(
+    root: &Path,
+    existing: Option<&NoteRecord>,
+    id: &str,
+    title: &str,
+) -> Result<String, String> {
+    let next_path = note_path(id, title);
+    let Some(existing_note) = existing else {
+        return Ok(next_path);
+    };
+
+    if existing_note.path == next_path {
+        return Ok(existing_note.path.clone());
+    }
+
+    let old_path = root.join(&existing_note.path);
+    let new_path = root.join(&next_path);
+    if old_path.exists() {
+        if let Some(parent) = new_path.parent() {
+            fs::create_dir_all(parent)
+                .map_err(|e| format!("Failed to create note directory: {e}"))?;
+        }
+        fs::rename(&old_path, &new_path)
+            .map_err(|e| format!("Failed to rename note file: {e}"))?;
+    }
+
+    Ok(next_path)
+}
+
 fn yaml_string(value: &str) -> String {
     format!("\"{}\"", value.replace('\\', "\\\\").replace('"', "\\\""))
 }
@@ -487,10 +516,7 @@ fn upsert_note(input: UpsertNoteRequest) -> Result<NoteDocument, String> {
     let timestamp = now();
     let id = input.id.unwrap_or_else(|| Uuid::new_v4().to_string());
     let existing = manifest.notes.iter().find(|note| note.id == id).cloned();
-    let path = existing
-        .as_ref()
-        .map(|note| note.path.clone())
-        .unwrap_or_else(|| note_path(&id, &input.title));
+    let path = rename_note_file_if_needed(&root, existing.as_ref(), &id, &input.title)?;
 
     let record = NoteRecord {
         id: id.clone(),
