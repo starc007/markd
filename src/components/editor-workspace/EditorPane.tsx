@@ -16,6 +16,7 @@ export function EditorPane() {
   const manifest = useWorkspaceStore((state) => state.manifest);
   const openNote = useWorkspaceStore((state) => state.openNote);
   const saveActiveNote = useWorkspaceStore((state) => state.saveActiveNote);
+  const saveActiveTitle = useWorkspaceStore((state) => state.saveActiveTitle);
   const createLinkedNote = useWorkspaceStore((state) => state.createLinkedNote);
   const createNote = useWorkspaceStore((state) => state.createNote);
   const saveSticky = useWorkspaceStore((state) => state.saveSticky);
@@ -24,14 +25,21 @@ export function EditorPane() {
   const deleteBookmark = useWorkspaceStore((state) => state.deleteBookmark);
   const toggleTodo = useWorkspaceStore((state) => state.toggleTodo);
   const [content, setContent] = useState(activeNote?.content ?? "");
+  const [title, setTitle] = useState(activeNote?.meta.title ?? "");
   const [todoItems, setTodoItems] = useState<
     Array<ReturnType<typeof extractTodos>[number] & { note: NoteRecord }>
   >([]);
   const timeoutRef = useRef<number | null>(null);
+  const titleTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     setContent(activeNote?.content ?? "");
+    setTitle(activeNote?.meta.title ?? "");
   }, [activeNote?.meta.id, activeNote?.content]);
+
+  useEffect(() => {
+    setTitle(activeNote?.meta.title ?? "");
+  }, [activeNote?.meta.id, activeNote?.meta.title]);
 
   useEffect(() => {
     if (!activeNote || content === activeNote.content) return;
@@ -43,6 +51,17 @@ export function EditorPane() {
       if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
     };
   }, [activeNote, content, saveActiveNote]);
+
+  useEffect(() => {
+    if (!activeNote || title === activeNote.meta.title) return;
+    if (titleTimeoutRef.current) window.clearTimeout(titleTimeoutRef.current);
+    titleTimeoutRef.current = window.setTimeout(() => {
+      saveActiveTitle(title, content);
+    }, 240);
+    return () => {
+      if (titleTimeoutRef.current) window.clearTimeout(titleTimeoutRef.current);
+    };
+  }, [activeNote, content, saveActiveTitle, title]);
 
   useEffect(() => {
     if (view !== "todos" || !manifest) return;
@@ -113,11 +132,13 @@ export function EditorPane() {
       activeNoteId={activeNote.meta.id}
       content={content}
       notes={manifest?.notes ?? []}
-      title={activeNote.meta.title}
+      title={title}
       onChange={setContent}
       onCreatePage={createLinkedNote}
       onOpenPage={openNote}
       onSave={() => saveActiveNote(content)}
+      onTitleChange={setTitle}
+      onTitleSave={() => saveActiveTitle(title, content)}
     />
   );
 }

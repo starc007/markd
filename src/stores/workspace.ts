@@ -9,7 +9,6 @@ import type {
   WorkspaceManifest,
 } from "@/lib/types";
 import * as api from "@/lib/workspace-api";
-import { titleFromMarkdown } from "@/lib/format";
 
 interface WorkspaceState {
   ready: boolean;
@@ -33,6 +32,7 @@ interface WorkspaceState {
   deleteNote: (id: string) => Promise<void>;
   renameFolder: (folder: FolderRecord, name: string) => Promise<void>;
   saveActiveNote: (content: string) => Promise<void>;
+  saveActiveTitle: (title: string, content?: string) => Promise<void>;
   toggleTodo: (noteId: string, line: number, done: boolean) => Promise<void>;
   createFolder: (parentId?: string | null) => Promise<FolderRecord | null>;
   saveSticky: (sticky: Partial<StickyRecord> & Pick<StickyRecord, "content" | "color">) => Promise<void>;
@@ -106,7 +106,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   createNote: async (folderId = null, parentId = null) => {
     const note = await api.upsertNote({
       title: "Untitled",
-      content: "# Untitled\n\nStart writing...",
+      content: "",
       folderId,
       parentId,
       tags: [],
@@ -137,7 +137,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
     const note = await api.upsertNote({
       title: normalizedTitle,
-      content: `# ${normalizedTitle}\n\n`,
+      content: "",
       folderId: null,
       parentId: null,
       tags: [],
@@ -207,8 +207,41 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     try {
       const note = await api.upsertNote({
         id: current.meta.id,
-        title: titleFromMarkdown(content),
+        title: current.meta.title,
         content,
+        folderId: current.meta.folderId,
+        parentId: current.meta.parentId,
+        tags: current.meta.tags,
+        pinned: current.meta.pinned,
+      });
+      const snapshot = await api.loadWorkspace();
+      set((state) => ({
+        activeNote: note,
+        openNotes: state.openNotes.map((item) =>
+          item.meta.id === note.meta.id ? note : item,
+        ),
+        manifest: snapshot.manifest,
+        saving: false,
+      }));
+    } catch (error) {
+      set({ saving: false });
+      toast.error(String(error));
+    }
+  },
+
+  saveActiveTitle: async (title, content) => {
+    const current = get().activeNote;
+    if (!current) return;
+    const nextTitle = title.trim() || "Untitled";
+    const nextContent = content ?? current.content;
+    if (nextTitle === current.meta.title && nextContent === current.content) return;
+
+    set({ saving: true });
+    try {
+      const note = await api.upsertNote({
+        id: current.meta.id,
+        title: nextTitle,
+        content: nextContent,
         folderId: current.meta.folderId,
         parentId: current.meta.parentId,
         tags: current.meta.tags,
@@ -248,7 +281,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       .join("\n");
     const note = await api.upsertNote({
       id: current.meta.id,
-      title: titleFromMarkdown(content),
+      title: current.meta.title,
       content,
       folderId: current.meta.folderId,
       parentId: current.meta.parentId,
