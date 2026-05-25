@@ -17,6 +17,7 @@ interface WorkspaceState {
   manifest: WorkspaceManifest | null;
   activeNote: NoteDocument | null;
   openNotes: NoteDocument[];
+  noteIdPendingTitleSelection: string | null;
   view: ViewMode;
   commandOpen: boolean;
   theme: "light" | "dark";
@@ -24,6 +25,7 @@ interface WorkspaceState {
   setView: (view: ViewMode) => void;
   setCommandOpen: (open: boolean) => void;
   setTheme: (theme: "light" | "dark") => void;
+  clearPendingTitleSelection: () => void;
   openNote: (id: string) => Promise<void>;
   closeNote: (id: string) => Promise<void>;
   createNote: (folderId?: string | null, parentId?: string | null) => Promise<void>;
@@ -48,6 +50,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   manifest: null,
   activeNote: null,
   openNotes: [],
+  noteIdPendingTitleSelection: null,
   view: "notes",
   commandOpen: false,
   theme: "light",
@@ -69,6 +72,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   setView: (view) => set({ view }),
   setCommandOpen: (commandOpen) => set({ commandOpen }),
+  clearPendingTitleSelection: () => set({ noteIdPendingTitleSelection: null }),
   setTheme: (theme) => {
     window.localStorage.setItem("draft-theme", theme);
     document.documentElement.classList.toggle("dark", theme === "dark");
@@ -120,6 +124,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         note,
       ],
       manifest: snapshot.manifest,
+      noteIdPendingTitleSelection: note.meta.id,
       view: "notes",
     }));
   },

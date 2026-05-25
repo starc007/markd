@@ -14,7 +14,13 @@ export function EditorPane() {
   const view = useWorkspaceStore((state) => state.view);
   const activeNote = useWorkspaceStore((state) => state.activeNote);
   const manifest = useWorkspaceStore((state) => state.manifest);
+  const noteIdPendingTitleSelection = useWorkspaceStore(
+    (state) => state.noteIdPendingTitleSelection,
+  );
   const openNote = useWorkspaceStore((state) => state.openNote);
+  const clearPendingTitleSelection = useWorkspaceStore(
+    (state) => state.clearPendingTitleSelection,
+  );
   const saveActiveNote = useWorkspaceStore((state) => state.saveActiveNote);
   const saveActiveTitle = useWorkspaceStore((state) => state.saveActiveTitle);
   const createLinkedNote = useWorkspaceStore((state) => state.createLinkedNote);
@@ -133,10 +139,12 @@ export function EditorPane() {
       content={content}
       notes={manifest?.notes ?? []}
       title={title}
+      shouldSelectTitle={noteIdPendingTitleSelection === activeNote.meta.id}
       onChange={setContent}
       onCreatePage={createLinkedNote}
       onOpenPage={openNote}
       onSave={() => saveActiveNote(content)}
+      onTitleSelected={clearPendingTitleSelection}
       onTitleChange={setTitle}
       onTitleSave={() => saveActiveTitle(title, content)}
     />

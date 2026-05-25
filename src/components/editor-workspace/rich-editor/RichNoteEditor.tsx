@@ -16,26 +16,31 @@ export function RichNoteEditor({
   activeNoteId,
   content,
   notes,
+  shouldSelectTitle,
   title,
   onChange,
   onCreatePage,
   onOpenPage,
   onSave,
   onTitleChange,
+  onTitleSelected,
   onTitleSave,
 }: {
   activeNoteId: string;
   content: string;
   notes: NoteRecord[];
+  shouldSelectTitle: boolean;
   title: string;
   onChange: (content: string) => void;
   onCreatePage: (title: string) => Promise<unknown>;
   onOpenPage: (id: string) => Promise<void>;
   onSave: () => void;
   onTitleChange: (title: string) => void;
+  onTitleSelected: () => void;
   onTitleSave: () => void;
 }) {
   const externalContent = useRef(content);
+  const titleInputRef = useRef<HTMLInputElement | null>(null);
   const [slashMenu, setSlashMenu] = useState<SlashMenuState | null>(null);
   const [pagePicker, setPagePicker] = useState<PagePickerState | null>(null);
   const extensions = useMemo(() => createEditorExtensions(), []);
@@ -175,6 +180,16 @@ export function RichNoteEditor({
     });
   }, [content, editor]);
 
+  useEffect(() => {
+    if (!shouldSelectTitle) return;
+
+    window.requestAnimationFrame(() => {
+      titleInputRef.current?.focus();
+      titleInputRef.current?.select();
+      onTitleSelected();
+    });
+  }, [onTitleSelected, shouldSelectTitle]);
+
   return (
     <main className="relative flex h-full min-h-0 overflow-hidden bg-editor dark:bg-editor-dark">
       <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -190,6 +205,7 @@ export function RichNoteEditor({
               }
             }}
             placeholder="Untitled"
+            ref={titleInputRef}
             value={title}
           />
         </div>
