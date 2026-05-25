@@ -46,3 +46,30 @@ export function createEditorExtensions() {
     }),
   ];
 }
+
+export function createStickyEditorExtensions() {
+  return [
+    StarterKit.configure({
+      blockquote: false,
+      code: false,
+      codeBlock: false,
+      heading: false,
+      horizontalRule: false,
+      link: false,
+      orderedList: false,
+    }),
+    Link.configure({
+      autolink: true,
+      defaultProtocol: "https",
+      openOnClick: false,
+      protocols: ["http", "https", "mailto"],
+    }),
+    TaskList,
+    TaskItem.configure({
+      nested: true,
+    }),
+    Placeholder.configure({
+      placeholder: "Quick thought, link, or task...",
+    }),
+  ];
+}
