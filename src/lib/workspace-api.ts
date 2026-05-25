@@ -52,6 +52,10 @@ export function upsertSticky(input: {
   return invoke<StickyRecord>("upsert_sticky", { input });
 }
 
+export function deleteSticky(id: string) {
+  return invoke<WorkspaceManifest>("delete_sticky", { id });
+}
+
 export function upsertBookmark(input: {
   id?: string;
   title: string;
@@ -60,6 +64,10 @@ export function upsertBookmark(input: {
   tags: string[];
 }) {
   return invoke<BookmarkRecord>("upsert_bookmark", { input });
+}
+
+export function deleteBookmark(id: string) {
+  return invoke<WorkspaceManifest>("delete_bookmark", { id });
 }
 
 export function revealWorkspacePath() {

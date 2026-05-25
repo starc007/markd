@@ -24,9 +24,9 @@ export function Board({
       transition={{ type: "spring", stiffness: 360, damping: 34 }}
     >
       <div className="mx-auto grid w-full max-w-[920px] gap-6">
-        <header className="flex items-start justify-between gap-6 border-b border-line-soft pb-5 dark:border-line-soft-dark">
+        <header className="flex items-start justify-between gap-6 border-b border-line-soft/80 pb-5 dark:border-line-soft-dark/80">
           <div className="flex min-w-0 items-start gap-3">
-            <div className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-xl border border-line bg-panel-soft text-muted dark:border-line-dark dark:bg-panel-soft-dark dark:text-muted-dark">
+            <div className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-panel-soft text-muted dark:bg-panel-soft-dark dark:text-muted-dark">
               <HugeiconsIcon icon={icon} size={17} color="currentColor" />
             </div>
             <div className="min-w-0">

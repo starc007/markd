@@ -14,8 +14,8 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex min-h-52 flex-col items-center justify-center rounded-2xl border border-dashed border-line bg-panel-soft/60 px-6 py-10 text-center dark:border-line-dark dark:bg-panel-soft-dark/60">
-      <div className="grid h-9 w-9 place-items-center rounded-xl border border-line bg-panel text-muted dark:border-line-dark dark:bg-panel-dark dark:text-muted-dark">
+    <div className="flex min-h-52 flex-col items-center justify-center rounded-2xl border border-dashed border-line-soft bg-panel-soft/60 px-6 py-10 text-center dark:border-line-soft-dark dark:bg-panel-soft-dark/60">
+      <div className="grid h-9 w-9 place-items-center rounded-xl bg-panel text-muted dark:bg-panel-dark dark:text-muted-dark">
         <HugeiconsIcon icon={icon} size={17} color="currentColor" />
       </div>
       <h2 className="mb-0 mt-4 text-sm font-semibold text-ink dark:text-ink-dark">

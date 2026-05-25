@@ -1,4 +1,8 @@
-import { CheckmarkSquare02Icon, Task01Icon } from "@hugeicons/core-free-icons";
+import {
+  ArrowUpRight01Icon,
+  CheckmarkSquare02Icon,
+  Task01Icon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { EmptyState, cx } from "@/components/ui";
 import type { NoteRecord } from "@/lib/types";
@@ -11,7 +15,15 @@ export interface TodoListItem {
   text: string;
 }
 
-export function TodoBoard({ todos }: { todos: TodoListItem[] }) {
+export function TodoBoard({
+  todos,
+  onOpenNote,
+  onToggle,
+}: {
+  todos: TodoListItem[];
+  onOpenNote: (id: string) => Promise<void>;
+  onToggle: (noteId: string, line: number, done: boolean) => Promise<void>;
+}) {
   const openTodos = todos.filter((todo) => !todo.done).length;
   const doneTodos = todos.length - openTodos;
 
@@ -35,13 +47,18 @@ export function TodoBoard({ todos }: { todos: TodoListItem[] }) {
           description="Add a task list in any note and it will appear here automatically."
         />
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-line bg-panel dark:border-line-dark dark:bg-panel-dark">
+        <div className="overflow-hidden rounded-2xl border border-line-soft bg-panel dark:border-line-soft-dark dark:bg-panel-dark">
         {todos.map((todo) => (
-          <label
+          <div
             key={`${todo.note.id}-${todo.line}`}
-            className="group flex items-center gap-3 border-b border-line-soft px-3 py-2.5 last:border-b-0 hover:bg-hover dark:border-line-soft-dark dark:hover:bg-hover-dark"
+            className="group flex items-center gap-3 border-b border-line-soft/80 px-3 py-2.5 last:border-b-0 hover:bg-hover dark:border-line-soft-dark/80 dark:hover:bg-hover-dark"
           >
-            <span className="relative grid h-5 w-5 shrink-0 place-items-center">
+            <button
+              aria-label={todo.done ? "Mark task open" : "Mark task done"}
+              className="relative grid h-5 w-5 shrink-0 place-items-center"
+              onClick={() => onToggle(todo.note.id, todo.line, !todo.done)}
+              type="button"
+            >
               <input
                 type="checkbox"
                 checked={todo.done}
@@ -53,20 +70,36 @@ export function TodoBoard({ todos }: { todos: TodoListItem[] }) {
                   <span className="h-2 w-1 rotate-45 border-b-2 border-r-2 border-panel dark:border-panel-dark" />
                 )}
               </span>
-            </span>
-            <span
+            </button>
+            <button
+              className="min-w-0 flex-1 text-left"
+              onClick={() => onOpenNote(todo.note.id)}
+              type="button"
+            >
+              <span
               className={cx(
                 "min-w-0 flex-1 truncate text-sm text-ink dark:text-ink-dark",
                 todo.done && "text-muted line-through dark:text-muted-dark",
               )}
+              >
+                {todo.text}
+              </span>
+            </button>
+            <button
+              className="inline-flex max-w-[220px] shrink-0 items-center gap-1 rounded-full bg-panel-soft px-2 py-0.5 text-xs font-medium text-muted transition-colors hover:text-ink dark:bg-panel-soft-dark dark:text-muted-dark dark:hover:text-ink-dark"
+              onClick={() => onOpenNote(todo.note.id)}
+              type="button"
             >
-              {todo.text}
-            </span>
-            <small className="inline-flex max-w-[220px] shrink-0 items-center gap-1 rounded-full bg-panel-soft px-2 py-0.5 text-xs font-medium text-muted dark:bg-panel-soft-dark dark:text-muted-dark">
               <HugeiconsIcon icon={Task01Icon} size={12} color="currentColor" />
               <span className="truncate">{todo.note.title}</span>
-            </small>
-          </label>
+              <HugeiconsIcon
+                icon={ArrowUpRight01Icon}
+                size={11}
+                color="currentColor"
+                className="opacity-0 transition-opacity group-hover:opacity-100"
+              />
+            </button>
+          </div>
         ))}
         </div>
       )}

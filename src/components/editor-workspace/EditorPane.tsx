@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { extractTodos } from "@/lib/format";
+import type { NoteRecord } from "@/lib/types";
+import * as api from "@/lib/workspace-api";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { BookmarkBoard } from "./BookmarkBoard";
 import { EmptyEditorState } from "./EmptyEditorState";
@@ -17,8 +19,14 @@ export function EditorPane() {
   const createLinkedNote = useWorkspaceStore((state) => state.createLinkedNote);
   const createNote = useWorkspaceStore((state) => state.createNote);
   const saveSticky = useWorkspaceStore((state) => state.saveSticky);
+  const deleteSticky = useWorkspaceStore((state) => state.deleteSticky);
   const saveBookmark = useWorkspaceStore((state) => state.saveBookmark);
+  const deleteBookmark = useWorkspaceStore((state) => state.deleteBookmark);
+  const toggleTodo = useWorkspaceStore((state) => state.toggleTodo);
   const [content, setContent] = useState(activeNote?.content ?? "");
+  const [todoItems, setTodoItems] = useState<
+    Array<ReturnType<typeof extractTodos>[number] & { note: NoteRecord }>
+  >([]);
   const timeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -36,9 +44,39 @@ export function EditorPane() {
     };
   }, [activeNote, content, saveActiveNote]);
 
+  useEffect(() => {
+    if (view !== "todos" || !manifest) return;
+
+    let cancelled = false;
+    Promise.all(
+      manifest.notes.map(async (note) => {
+        if (activeNote?.meta.id === note.id) {
+          return { note, content };
+        }
+        const document = await api.getNote(note.id);
+        return { note, content: document?.content ?? "" };
+      }),
+    ).then((documents) => {
+      if (cancelled) return;
+      setTodoItems(
+        documents.flatMap(({ note, content }) =>
+          extractTodos(content).map((todo) => ({ ...todo, note })),
+        ),
+      );
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeNote?.meta.id, content, manifest, view]);
+
   if (view === "stickies") {
     return (
-      <StickyBoard stickies={manifest?.stickies ?? []} onSave={saveSticky} />
+      <StickyBoard
+        stickies={manifest?.stickies ?? []}
+        onDelete={deleteSticky}
+        onSave={saveSticky}
+      />
     );
   }
 
@@ -46,18 +84,20 @@ export function EditorPane() {
     return (
       <BookmarkBoard
         bookmarks={manifest?.bookmarks ?? []}
+        onDelete={deleteBookmark}
         onSave={saveBookmark}
       />
     );
   }
 
   if (view === "todos") {
-    const todos = (manifest?.notes ?? []).flatMap((note) => {
-      if (activeNote?.meta.id !== note.id) return [];
-      return extractTodos(content).map((todo) => ({ ...todo, note }));
-    });
-
-    return <TodoBoard todos={todos} />;
+    return (
+      <TodoBoard
+        todos={todoItems}
+        onOpenNote={openNote}
+        onToggle={toggleTodo}
+      />
+    );
   }
 
   if (view === "settings") {

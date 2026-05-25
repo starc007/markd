@@ -33,9 +33,12 @@ interface WorkspaceState {
   deleteNote: (id: string) => Promise<void>;
   renameFolder: (folder: FolderRecord, name: string) => Promise<void>;
   saveActiveNote: (content: string) => Promise<void>;
+  toggleTodo: (noteId: string, line: number, done: boolean) => Promise<void>;
   createFolder: (parentId?: string | null) => Promise<FolderRecord | null>;
   saveSticky: (sticky: Partial<StickyRecord> & Pick<StickyRecord, "content" | "color">) => Promise<void>;
+  deleteSticky: (id: string) => Promise<void>;
   saveBookmark: (bookmark: Partial<BookmarkRecord> & Pick<BookmarkRecord, "title" | "url">) => Promise<void>;
+  deleteBookmark: (id: string) => Promise<void>;
 }
 
 export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
@@ -226,6 +229,43 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }
   },
 
+  toggleTodo: async (noteId, line, done) => {
+    const current = await api.getNote(noteId);
+    if (!current) return;
+
+    const lines = current.content.split("\n");
+    const target = lines[line];
+    if (!target) return;
+
+    const nextLine = target.replace(
+      /^(\s*-\s+\[)( |x|X)(\]\s+.*)$/,
+      `$1${done ? "x" : " "}$3`,
+    );
+    if (nextLine === target) return;
+
+    const content = lines
+      .map((item, index) => (index === line ? nextLine : item))
+      .join("\n");
+    const note = await api.upsertNote({
+      id: current.meta.id,
+      title: titleFromMarkdown(content),
+      content,
+      folderId: current.meta.folderId,
+      parentId: current.meta.parentId,
+      tags: current.meta.tags,
+      pinned: current.meta.pinned,
+    });
+    const snapshot = await api.loadWorkspace();
+
+    set((state) => ({
+      activeNote: state.activeNote?.meta.id === note.meta.id ? note : state.activeNote,
+      openNotes: state.openNotes.map((item) =>
+        item.meta.id === note.meta.id ? note : item,
+      ),
+      manifest: snapshot.manifest,
+    }));
+  },
+
   createFolder: async (parentId = null) => {
     const folder = await api.upsertFolder({ name: "New Folder", parentId });
     await get().hydrate();
@@ -241,6 +281,11 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     await get().hydrate();
   },
 
+  deleteSticky: async (id) => {
+    const manifest = await api.deleteSticky(id);
+    set({ manifest });
+  },
+
   saveBookmark: async (bookmark) => {
     await api.upsertBookmark({
       id: bookmark.id,
@@ -250,5 +295,10 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       tags: bookmark.tags ?? [],
     });
     await get().hydrate();
+  },
+
+  deleteBookmark: async (id) => {
+    const manifest = await api.deleteBookmark(id);
+    set({ manifest });
   },
 }));

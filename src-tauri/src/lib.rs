@@ -433,6 +433,15 @@ fn upsert_sticky(input: UpsertStickyRequest) -> Result<StickyRecord, String> {
 }
 
 #[tauri::command]
+fn delete_sticky(id: String) -> Result<WorkspaceManifest, String> {
+    let (root, mut manifest) = ensure_workspace()?;
+    manifest.stickies.retain(|sticky| sticky.id != id);
+    manifest.updated_at = now();
+    write_manifest(&root, &manifest)?;
+    Ok(manifest)
+}
+
+#[tauri::command]
 fn upsert_bookmark(input: UpsertBookmarkRequest) -> Result<BookmarkRecord, String> {
     let (root, mut manifest) = ensure_workspace()?;
     let timestamp = now();
@@ -461,6 +470,15 @@ fn upsert_bookmark(input: UpsertBookmarkRequest) -> Result<BookmarkRecord, Strin
 }
 
 #[tauri::command]
+fn delete_bookmark(id: String) -> Result<WorkspaceManifest, String> {
+    let (root, mut manifest) = ensure_workspace()?;
+    manifest.bookmarks.retain(|bookmark| bookmark.id != id);
+    manifest.updated_at = now();
+    write_manifest(&root, &manifest)?;
+    Ok(manifest)
+}
+
+#[tauri::command]
 fn reveal_workspace_path() -> Result<String, String> {
     let (root, _) = ensure_workspace()?;
     Ok(root.to_string_lossy().to_string())
@@ -481,7 +499,9 @@ pub fn run() {
             delete_folder,
             upsert_folder,
             upsert_sticky,
+            delete_sticky,
             upsert_bookmark,
+            delete_bookmark,
             reveal_workspace_path,
         ])
         .run(tauri::generate_context!())
