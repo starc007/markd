@@ -28,19 +28,27 @@ export function NoteRow({
   return (
     <div
       className={cx(
-        "group relative flex min-h-8 w-full items-center gap-1 rounded-lg text-sm font-medium text-sidebar-ink-row transition-colors hover:bg-sidebar-active dark:text-sidebar-ink-row-dark dark:hover:bg-sidebar-active-dark",
+        "group relative grid min-h-8 w-full grid-cols-[minmax(0,1fr)_42px_28px] items-center rounded-lg text-sm font-medium text-sidebar-ink-row transition-colors hover:bg-sidebar-active dark:text-sidebar-ink-row-dark dark:hover:bg-sidebar-active-dark",
         active &&
           "bg-sidebar-active text-sidebar-ink-strong dark:bg-sidebar-active-dark dark:text-sidebar-ink-strong-dark",
       )}
     >
       <button
-        className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-1.5 text-left"
+        className="flex min-w-0 items-center gap-2 rounded-lg py-1.5 pl-2 pr-1 text-left"
         onClick={() => onOpen(note.id)}
         type="button"
       >
-        <HugeiconsIcon icon={FileEditIcon} size={16} color="currentColor" />
+        <span className="shrink-0">
+          <HugeiconsIcon icon={FileEditIcon} size={16} color="currentColor" />
+        </span>
         <span className="min-w-0 flex-1 truncate">{note.title}</span>
-        <small className="text-xs font-medium text-sidebar-ink-row-muted dark:text-sidebar-ink-row-muted-dark">
+      </button>
+      <button
+        className="min-w-0 py-1.5 text-right"
+        onClick={() => onOpen(note.id)}
+        type="button"
+      >
+        <small className="block truncate text-xs font-medium text-sidebar-ink-row-muted dark:text-sidebar-ink-row-muted-dark">
           {timeAgo(note.updatedAt)}
         </small>
       </button>
@@ -48,7 +56,7 @@ export function NoteRow({
         label={
           <button
             aria-label={`Options for ${note.title}`}
-            className="mr-1 grid h-6 w-6 place-items-center rounded-md text-sidebar-ink-muted opacity-0 transition-opacity hover:bg-sidebar-active hover:text-sidebar-ink-strong group-hover:opacity-100 data-[open]:opacity-100 dark:text-sidebar-ink-muted-dark dark:hover:bg-sidebar-active-dark dark:hover:text-sidebar-ink-strong-dark"
+            className="mx-1 grid h-6 w-6 place-items-center rounded-md text-sidebar-ink-muted opacity-0 transition-opacity hover:bg-sidebar-active hover:text-sidebar-ink-strong group-hover:opacity-100 data-[open]:opacity-100 dark:text-sidebar-ink-muted-dark dark:hover:bg-sidebar-active-dark dark:hover:text-sidebar-ink-strong-dark"
             onClick={(event) => event.stopPropagation()}
             type="button"
           >
