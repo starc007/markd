@@ -32,7 +32,7 @@ pub struct FolderRecord {
     pub updated_at: i64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NoteRecord {
     pub id: String,
@@ -160,6 +160,199 @@ fn note_path(id: &str, title: &str) -> String {
     format!("notes/{}-{}.md", slugify(title), &id[..8.min(id.len())])
 }
 
+fn yaml_string(value: &str) -> String {
+    format!("\"{}\"", value.replace('\\', "\\\\").replace('"', "\\\""))
+}
+
+fn yaml_optional_string(value: &Option<String>) -> String {
+    value
+        .as_ref()
+        .map(|item| yaml_string(item))
+        .unwrap_or_else(|| "null".to_string())
+}
+
+fn yaml_string_array(values: &[String]) -> String {
+    format!(
+        "[{}]",
+        values
+            .iter()
+            .map(|value| yaml_string(value))
+            .collect::<Vec<_>>()
+            .join(", ")
+    )
+}
+
+fn parse_yaml_string(value: &str) -> String {
+    let trimmed = value.trim();
+    if trimmed.len() >= 2 && trimmed.starts_with('"') && trimmed.ends_with('"') {
+        let inner = &trimmed[1..trimmed.len() - 1];
+        let mut output = String::new();
+        let mut escaped = false;
+
+        for ch in inner.chars() {
+            if escaped {
+                output.push(ch);
+                escaped = false;
+            } else if ch == '\\' {
+                escaped = true;
+            } else {
+                output.push(ch);
+            }
+        }
+
+        output
+    } else {
+        trimmed.to_string()
+    }
+}
+
+fn parse_yaml_optional_string(value: Option<&String>) -> Option<String> {
+    value.and_then(|item| {
+        let trimmed = item.trim();
+        if trimmed == "null" || trimmed.is_empty() {
+            None
+        } else {
+            Some(parse_yaml_string(trimmed))
+        }
+    })
+}
+
+fn parse_yaml_string_array(value: Option<&String>) -> Vec<String> {
+    let Some(raw) = value else {
+        return Vec::new();
+    };
+    let trimmed = raw.trim();
+    if !trimmed.starts_with('[') || !trimmed.ends_with(']') {
+        return Vec::new();
+    }
+
+    trimmed[1..trimmed.len() - 1]
+        .split(',')
+        .map(parse_yaml_string)
+        .map(|item| item.trim().to_string())
+        .filter(|item| !item.is_empty())
+        .collect()
+}
+
+fn note_frontmatter(record: &NoteRecord) -> String {
+    [
+        "---".to_string(),
+        format!("id: {}", yaml_string(&record.id)),
+        format!("title: {}", yaml_string(&record.title)),
+        format!("folderId: {}", yaml_optional_string(&record.folder_id)),
+        format!("parentId: {}", yaml_optional_string(&record.parent_id)),
+        format!("tags: {}", yaml_string_array(&record.tags)),
+        format!("pinned: {}", record.pinned),
+        format!("createdAt: {}", record.created_at),
+        format!("updatedAt: {}", record.updated_at),
+        "---".to_string(),
+    ]
+    .join("\n")
+}
+
+fn split_frontmatter(raw: &str) -> Option<(std::collections::HashMap<String, String>, String)> {
+    let rest = raw.strip_prefix("---\n")?;
+    let (frontmatter, body) = rest.split_once("\n---")?;
+    let body = body.strip_prefix('\n').unwrap_or(body).to_string();
+    let values = frontmatter
+        .lines()
+        .filter_map(|line| {
+            let (key, value) = line.split_once(':')?;
+            Some((key.trim().to_string(), value.trim().to_string()))
+        })
+        .collect::<std::collections::HashMap<_, _>>();
+
+    Some((values, body))
+}
+
+fn note_record_from_frontmatter(
+    fallback: &NoteRecord,
+    values: &std::collections::HashMap<String, String>,
+) -> NoteRecord {
+    NoteRecord {
+        id: values
+            .get("id")
+            .map(|value| parse_yaml_string(value))
+            .unwrap_or_else(|| fallback.id.clone()),
+        title: values
+            .get("title")
+            .map(|value| parse_yaml_string(value))
+            .filter(|value| !value.trim().is_empty())
+            .unwrap_or_else(|| fallback.title.clone()),
+        path: fallback.path.clone(),
+        folder_id: parse_yaml_optional_string(values.get("folderId"))
+            .or_else(|| fallback.folder_id.clone()),
+        parent_id: parse_yaml_optional_string(values.get("parentId"))
+            .or_else(|| fallback.parent_id.clone()),
+        tags: {
+            let tags = parse_yaml_string_array(values.get("tags"));
+            if tags.is_empty() {
+                fallback.tags.clone()
+            } else {
+                tags
+            }
+        },
+        pinned: values
+            .get("pinned")
+            .and_then(|value| value.parse::<bool>().ok())
+            .unwrap_or(fallback.pinned),
+        created_at: values
+            .get("createdAt")
+            .and_then(|value| value.parse::<i64>().ok())
+            .unwrap_or(fallback.created_at),
+        updated_at: values
+            .get("updatedAt")
+            .and_then(|value| value.parse::<i64>().ok())
+            .unwrap_or(fallback.updated_at),
+    }
+}
+
+fn read_note_file(root: &Path, note: &NoteRecord) -> (NoteRecord, String, bool) {
+    let raw = fs::read_to_string(root.join(&note.path)).unwrap_or_default();
+    if let Some((values, body)) = split_frontmatter(&raw) {
+        (note_record_from_frontmatter(note, &values), body, true)
+    } else {
+        (note.clone(), raw, false)
+    }
+}
+
+fn write_note_file(root: &Path, record: &NoteRecord, content: &str) -> Result<(), String> {
+    let body = content.trim_start_matches('\n');
+    let raw = if body.is_empty() {
+        format!("{}\n", note_frontmatter(record))
+    } else {
+        format!("{}\n{}\n", note_frontmatter(record), body)
+    };
+
+    fs::write(root.join(&record.path), raw).map_err(|e| format!("Failed to write note file: {e}"))
+}
+
+fn sync_note_frontmatter(root: &Path, manifest: &mut WorkspaceManifest) -> Result<(), String> {
+    let mut changed = false;
+    let notes = manifest
+        .notes
+        .iter()
+        .map(|note| {
+            let (record, content, has_frontmatter) = read_note_file(root, note);
+            if !has_frontmatter {
+                write_note_file(root, &record, &content)?;
+                changed = true;
+            }
+            if &record != note {
+                changed = true;
+            }
+            Ok(record)
+        })
+        .collect::<Result<Vec<_>, String>>()?;
+
+    manifest.notes = notes;
+    if changed {
+        write_manifest(root, manifest)?;
+    }
+
+    Ok(())
+}
+
 fn read_manifest(root: &Path) -> Result<WorkspaceManifest, String> {
     let path = root.join(MANIFEST_FILE);
     let raw = fs::read_to_string(&path).map_err(|e| format!("Failed to read manifest: {e}"))?;
@@ -183,7 +376,9 @@ fn ensure_workspace() -> Result<(PathBuf, WorkspaceManifest), String> {
 
     let manifest_path = root.join(MANIFEST_FILE);
     if manifest_path.exists() {
-        return Ok((root.clone(), read_manifest(&root)?));
+        let mut manifest = read_manifest(&root)?;
+        sync_note_frontmatter(&root, &mut manifest)?;
+        return Ok((root.clone(), manifest));
     }
 
     let timestamp = now();
@@ -235,19 +430,26 @@ fn ensure_workspace() -> Result<(PathBuf, WorkspaceManifest), String> {
         }],
     };
 
-    fs::write(
-        root.join(&note_file),
-        "# Welcome to Draft\n\nThis is a file-first writing workspace.\n\n- [ ] Capture ideas quickly\n- [ ] Organize notes into folders and nested files\n- [ ] Let AI agents read and update the workspace safely\n\n```agent-access\nDocuments/Draft/Workspace\n```\n",
-    )
-    .map_err(|e| format!("Failed to write welcome note: {e}"))?;
+    write_note_file(
+        &root,
+        manifest
+            .notes
+            .first()
+            .ok_or("Welcome note record missing")?,
+        "This is a file-first writing workspace.\n\n- [ ] Capture ideas quickly\n- [ ] Organize notes into folders and nested files\n- [ ] Let AI agents read and update the workspace safely\n\n```agent-access\nDocuments/Draft/Workspace\n```\n",
+    )?;
     write_manifest(&root, &manifest)?;
     Ok((root, manifest))
 }
 
 fn read_note(root: &Path, note: &NoteRecord) -> Result<NoteDocument, String> {
-    let content = fs::read_to_string(root.join(&note.path)).unwrap_or_default();
+    let (record, content, has_frontmatter) = read_note_file(root, note);
+    if !has_frontmatter || &record != note {
+        write_note_file(root, &record, &content)?;
+    }
+
     Ok(NoteDocument {
-        meta: note.clone(),
+        meta: record,
         content,
     })
 }
@@ -290,9 +492,6 @@ fn upsert_note(input: UpsertNoteRequest) -> Result<NoteDocument, String> {
         .map(|note| note.path.clone())
         .unwrap_or_else(|| note_path(&id, &input.title));
 
-    fs::write(root.join(&path), input.content.clone())
-        .map_err(|e| format!("Failed to write note file: {e}"))?;
-
     let record = NoteRecord {
         id: id.clone(),
         title: input.title,
@@ -301,9 +500,14 @@ fn upsert_note(input: UpsertNoteRequest) -> Result<NoteDocument, String> {
         parent_id: input.parent_id,
         tags: input.tags,
         pinned: input.pinned,
-        created_at: existing.map(|note| note.created_at).unwrap_or(timestamp),
+        created_at: existing
+            .as_ref()
+            .map(|note| note.created_at)
+            .unwrap_or(timestamp),
         updated_at: timestamp,
     };
+
+    write_note_file(&root, &record, &input.content)?;
 
     manifest.notes.retain(|note| note.id != id);
     manifest.notes.insert(0, record.clone());
