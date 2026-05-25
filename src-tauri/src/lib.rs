@@ -50,6 +50,8 @@ pub struct NoteRecord {
 #[serde(rename_all = "camelCase")]
 pub struct StickyRecord {
     pub id: String,
+    #[serde(default)]
+    pub path: String,
     pub content: String,
     pub color: String,
     pub created_at: i64,
@@ -158,6 +160,10 @@ fn slugify(value: &str) -> String {
 
 fn note_path(id: &str, title: &str) -> String {
     format!("notes/{}-{}.md", slugify(title), &id[..8.min(id.len())])
+}
+
+fn sticky_path(id: &str) -> String {
+    format!("stickies/sticky-{}.md", &id[..8.min(id.len())])
 }
 
 fn rename_note_file_if_needed(
@@ -382,6 +388,113 @@ fn sync_note_frontmatter(root: &Path, manifest: &mut WorkspaceManifest) -> Resul
     Ok(())
 }
 
+fn sticky_frontmatter(record: &StickyRecord) -> String {
+    [
+        "---".to_string(),
+        format!("id: {}", yaml_string(&record.id)),
+        format!("color: {}", yaml_string(&record.color)),
+        format!("createdAt: {}", record.created_at),
+        format!("updatedAt: {}", record.updated_at),
+        "---".to_string(),
+    ]
+    .join("\n")
+}
+
+fn sticky_record_from_frontmatter(
+    fallback: &StickyRecord,
+    values: &std::collections::HashMap<String, String>,
+) -> StickyRecord {
+    StickyRecord {
+        id: values
+            .get("id")
+            .map(|value| parse_yaml_string(value))
+            .unwrap_or_else(|| fallback.id.clone()),
+        path: if fallback.path.is_empty() {
+            sticky_path(&fallback.id)
+        } else {
+            fallback.path.clone()
+        },
+        content: fallback.content.clone(),
+        color: values
+            .get("color")
+            .map(|value| parse_yaml_string(value))
+            .filter(|value| !value.trim().is_empty())
+            .unwrap_or_else(|| fallback.color.clone()),
+        created_at: values
+            .get("createdAt")
+            .and_then(|value| value.parse::<i64>().ok())
+            .unwrap_or(fallback.created_at),
+        updated_at: values
+            .get("updatedAt")
+            .and_then(|value| value.parse::<i64>().ok())
+            .unwrap_or(fallback.updated_at),
+    }
+}
+
+fn read_sticky_file(root: &Path, sticky: &StickyRecord) -> (StickyRecord, String, bool) {
+    let path = if sticky.path.is_empty() {
+        sticky_path(&sticky.id)
+    } else {
+        sticky.path.clone()
+    };
+    let fallback = StickyRecord {
+        path: path.clone(),
+        ..sticky.clone()
+    };
+    let raw = fs::read_to_string(root.join(&path)).unwrap_or_default();
+    if let Some((values, body)) = split_frontmatter(&raw) {
+        let mut record = sticky_record_from_frontmatter(&fallback, &values);
+        record.content = body.clone();
+        (record, body, true)
+    } else {
+        (fallback.clone(), fallback.content.clone(), false)
+    }
+}
+
+fn write_sticky_file(root: &Path, record: &StickyRecord, content: &str) -> Result<(), String> {
+    let body = content.trim_start_matches('\n');
+    let raw = if body.is_empty() {
+        format!("{}\n", sticky_frontmatter(record))
+    } else {
+        format!("{}\n{}\n", sticky_frontmatter(record), body)
+    };
+
+    fs::write(root.join(&record.path), raw)
+        .map_err(|e| format!("Failed to write sticky file: {e}"))
+}
+
+fn sync_sticky_files(root: &Path, manifest: &mut WorkspaceManifest) -> Result<(), String> {
+    let mut changed = false;
+    let stickies = manifest
+        .stickies
+        .iter()
+        .map(|sticky| {
+            let (record, content, has_frontmatter) = read_sticky_file(root, sticky);
+            if !has_frontmatter {
+                write_sticky_file(root, &record, &content)?;
+                changed = true;
+            }
+            if record.id != sticky.id
+                || record.path != sticky.path
+                || record.content != sticky.content
+                || record.color != sticky.color
+                || record.created_at != sticky.created_at
+                || record.updated_at != sticky.updated_at
+            {
+                changed = true;
+            }
+            Ok(record)
+        })
+        .collect::<Result<Vec<_>, String>>()?;
+
+    manifest.stickies = stickies;
+    if changed {
+        write_manifest(root, manifest)?;
+    }
+
+    Ok(())
+}
+
 fn read_manifest(root: &Path) -> Result<WorkspaceManifest, String> {
     let path = root.join(MANIFEST_FILE);
     let raw = fs::read_to_string(&path).map_err(|e| format!("Failed to read manifest: {e}"))?;
@@ -407,6 +520,7 @@ fn ensure_workspace() -> Result<(PathBuf, WorkspaceManifest), String> {
     if manifest_path.exists() {
         let mut manifest = read_manifest(&root)?;
         sync_note_frontmatter(&root, &mut manifest)?;
+        sync_sticky_files(&root, &mut manifest)?;
         return Ok((root.clone(), manifest));
     }
 
@@ -442,7 +556,8 @@ fn ensure_workspace() -> Result<(PathBuf, WorkspaceManifest), String> {
             updated_at: timestamp,
         }],
         stickies: vec![StickyRecord {
-            id: sticky_id,
+            id: sticky_id.clone(),
+            path: sticky_path(&sticky_id),
             content: "Everything in this workspace is plain files. Agents can edit notes directly in Documents/Draft/Workspace.".to_string(),
             color: "mint".to_string(),
             created_at: timestamp,
@@ -466,6 +581,18 @@ fn ensure_workspace() -> Result<(PathBuf, WorkspaceManifest), String> {
             .first()
             .ok_or("Welcome note record missing")?,
         "This is a file-first writing workspace.\n\n- [ ] Capture ideas quickly\n- [ ] Organize notes into folders and nested files\n- [ ] Let AI agents read and update the workspace safely\n\n```agent-access\nDocuments/Draft/Workspace\n```\n",
+    )?;
+    write_sticky_file(
+        &root,
+        manifest
+            .stickies
+            .first()
+            .ok_or("Welcome sticky record missing")?,
+        manifest
+            .stickies
+            .first()
+            .map(|sticky| sticky.content.as_str())
+            .ok_or("Welcome sticky content missing")?,
     )?;
     write_manifest(&root, &manifest)?;
     Ok((root, manifest))
@@ -646,15 +773,27 @@ fn upsert_sticky(input: UpsertStickyRequest) -> Result<StickyRecord, String> {
         .iter()
         .find(|sticky| sticky.id == id)
         .cloned();
+    let path = existing
+        .as_ref()
+        .map(|sticky| {
+            if sticky.path.is_empty() {
+                sticky_path(&id)
+            } else {
+                sticky.path.clone()
+            }
+        })
+        .unwrap_or_else(|| sticky_path(&id));
     let record = StickyRecord {
         id: id.clone(),
-        content: input.content,
+        path,
+        content: input.content.clone(),
         color: input.color,
         created_at: existing
             .map(|sticky| sticky.created_at)
             .unwrap_or(timestamp),
         updated_at: timestamp,
     };
+    write_sticky_file(&root, &record, &input.content)?;
     manifest.stickies.retain(|sticky| sticky.id != id);
     manifest.stickies.push(record.clone());
     manifest.updated_at = timestamp;
@@ -665,6 +804,14 @@ fn upsert_sticky(input: UpsertStickyRequest) -> Result<StickyRecord, String> {
 #[tauri::command]
 fn delete_sticky(id: String) -> Result<WorkspaceManifest, String> {
     let (root, mut manifest) = ensure_workspace()?;
+    if let Some(sticky) = manifest.stickies.iter().find(|sticky| sticky.id == id) {
+        let path = if sticky.path.is_empty() {
+            sticky_path(&sticky.id)
+        } else {
+            sticky.path.clone()
+        };
+        let _ = fs::remove_file(root.join(path));
+    }
     manifest.stickies.retain(|sticky| sticky.id != id);
     manifest.updated_at = now();
     write_manifest(&root, &manifest)?;

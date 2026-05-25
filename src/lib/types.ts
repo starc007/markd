@@ -39,6 +39,7 @@ export interface NoteDocument {
 
 export interface StickyRecord {
   id: string;
+  path: string;
   content: string;
   color: string;
   createdAt: number;
