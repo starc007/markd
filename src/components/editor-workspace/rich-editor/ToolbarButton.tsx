@@ -28,6 +28,7 @@ export function ToolbarButton({
         )}
         type="button"
         onClick={onClick}
+        onMouseDown={(event) => event.preventDefault()}
       >
         <HugeiconsIcon icon={icon} size={16} color="currentColor" />
       </button>
