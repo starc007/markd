@@ -14,6 +14,7 @@ import {
 import type { Editor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import type { NoteRecord } from "@/lib/types";
+import { promptForUrlLink } from "./linkCommands";
 import { ToolbarButton } from "./ToolbarButton";
 
 export function SelectionBubbleMenu({
@@ -25,22 +26,6 @@ export function SelectionBubbleMenu({
   onRequestPageLink: () => void;
 }) {
   if (!editor) return null;
-
-  const setLink = () => {
-    const previousUrl = editor.getAttributes("link").href as string | undefined;
-    const url = window.prompt("Paste URL", previousUrl ?? "https://");
-    if (url === null) return;
-    if (url.trim() === "") {
-      editor.chain().focus().extendMarkRange("link").unsetLink().run();
-      return;
-    }
-    editor
-      .chain()
-      .focus()
-      .extendMarkRange("link")
-      .setLink({ href: url.trim() })
-      .run();
-  };
 
   const insertImage = () => {
     const url = window.prompt("Image URL", "https://");
@@ -114,7 +99,7 @@ export function SelectionBubbleMenu({
         active={editor.isActive("link")}
         icon={Link01Icon}
         label="URL link"
-        onClick={setLink}
+        onClick={() => promptForUrlLink(editor)}
       />
       <ToolbarButton icon={ImageAdd01Icon} label="Image" onClick={insertImage} />
       {editor.isActive("table") && (

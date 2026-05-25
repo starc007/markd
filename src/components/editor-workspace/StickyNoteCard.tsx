@@ -9,6 +9,7 @@ import { useEffect, useRef } from "react";
 import { cx } from "@/components/ui";
 import type { StickyRecord } from "@/lib/types";
 import { createStickyEditorExtensions } from "./rich-editor/editorExtensions";
+import { promptForUrlLink } from "./rich-editor/linkCommands";
 import { htmlToMarkdown, markdownToHtml } from "./rich-editor/markdown";
 
 export function StickyNoteCard({
@@ -66,16 +67,9 @@ export function StickyNoteCard({
           isActive={editor?.isActive("link")}
           onClick={() => {
             if (!editor) return;
-            const existing = editor.getAttributes("link").href;
-            const href = window.prompt("Link URL", existing || "https://");
-            if (href === null) return;
-            if (!href.trim()) {
-              editor.chain().focus().unsetLink().run();
+            if (promptForUrlLink(editor)) {
               saveNow();
-              return;
             }
-            editor.chain().focus().extendMarkRange("link").setLink({ href }).run();
-            saveNow();
           }}
         />
         <StickyToolButton

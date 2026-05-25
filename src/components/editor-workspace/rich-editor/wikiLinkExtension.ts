@@ -4,6 +4,16 @@ import { Decoration, DecorationSet } from "@tiptap/pm/view";
 
 const wikiLinkPattern = /\[\[([^\]]+)\]\]/g;
 
+function createDocumentIcon() {
+  const icon = document.createElement("span");
+  icon.setAttribute("aria-hidden", "true");
+  icon.className =
+    "mr-1 inline-flex h-3.5 w-3.5 items-center justify-center align-[-2px] text-muted dark:text-muted-dark";
+  icon.innerHTML =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.75h6.35L18 8.4v11.85H7z"/><path d="M13.25 3.95V8.5H18"/><path d="M9.5 12.25h5"/><path d="M9.5 15.5h4"/></svg>';
+  return icon;
+}
+
 export const WikiLinkExtension = Extension.create({
   name: "wikiLink",
 
@@ -29,9 +39,12 @@ export const WikiLinkExtension = Extension.create({
                   Decoration.inline(from, titleFrom, {
                     class: "hidden",
                   }),
+                  Decoration.widget(titleFrom, createDocumentIcon, {
+                    side: -1,
+                  }),
                   Decoration.inline(titleFrom, titleTo, {
                     class:
-                      "cursor-pointer underline decoration-line underline-offset-4 before:mr-1 before:inline-block before:h-3 before:w-2 before:rounded-[2px] before:border before:border-current before:align-[-1px] before:content-[''] text-ink dark:text-ink-dark",
+                      "cursor-pointer rounded-md text-ink underline decoration-line underline-offset-4 transition-colors hover:text-muted dark:text-ink-dark dark:hover:text-muted-dark",
                   }),
                   Decoration.inline(titleTo, to, {
                     class: "hidden",
