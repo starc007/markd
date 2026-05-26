@@ -14,7 +14,7 @@ export function DropdownItem({
       {({ focus }) => (
         <button
           className={cx(
-            "relative flex w-full items-center gap-2 rounded-xl border-0 bg-transparent px-2 py-1.5 text-left leading-none text-inherit hover:bg-hover dark:hover:bg-tooltip-ink/10",
+            "relative flex w-full items-center gap-2 rounded-lg border-0 bg-transparent px-2 py-1.5 text-left leading-none text-inherit hover:bg-hover dark:hover:bg-tooltip-ink/10",
             focus && "bg-hover dark:bg-tooltip-ink/10",
           )}
           onClick={(event) => {
