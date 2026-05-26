@@ -24,7 +24,7 @@ function getWikiLinkAtPosition(doc: ProseMirrorNode, position: number) {
     const start = match.index ?? 0;
     const end = start + match[0].length;
 
-    if (offset >= start && offset <= end) {
+    if (offset >= start && offset < end) {
       return {
         title: match[1].trim(),
         to: blockStart + end,

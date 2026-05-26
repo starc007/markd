@@ -2,6 +2,8 @@ import { marked } from "marked";
 import TurndownService from "turndown";
 
 const turndown = new TurndownService({
+  blankReplacement: (_content, node) =>
+    node.nodeName === "P" ? "\n\n&nbsp;\n\n" : "",
   bulletListMarker: "-",
   codeBlockStyle: "fenced",
   headingStyle: "atx",
@@ -78,6 +80,25 @@ function normalizeTaskListHtml(html: string) {
   return template.innerHTML;
 }
 
+function normalizeEmptyParagraphHtml(html: string) {
+  if (typeof document === "undefined") return html;
+
+  const template = document.createElement("template");
+  template.innerHTML = html;
+
+  template.content.querySelectorAll("p").forEach((paragraph) => {
+    if (paragraph.innerHTML.trim() === "&nbsp;") {
+      paragraph.replaceChildren();
+    }
+  });
+
+  return template.innerHTML;
+}
+
+function preserveWikiLinks(markdown: string) {
+  return markdown.replace(/\\\[\\\[([^\n]*?)\\\]\\\]/g, "[[$1]]");
+}
+
 export function isLikelyMarkdown(value: string) {
   const text = value.trim();
   if (!text) return false;
@@ -101,9 +122,9 @@ export function markdownToHtml(markdown: string) {
     breaks: true,
     gfm: true,
   });
-  return normalizeTaskListHtml(html);
+  return normalizeTaskListHtml(normalizeEmptyParagraphHtml(html));
 }
 
 export function htmlToMarkdown(html: string) {
-  return turndown.turndown(html).trimEnd();
+  return preserveWikiLinks(turndown.turndown(html).trimEnd());
 }
