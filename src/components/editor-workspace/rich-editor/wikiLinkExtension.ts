@@ -8,9 +8,9 @@ function createDocumentIcon() {
   const icon = document.createElement("span");
   icon.setAttribute("aria-hidden", "true");
   icon.className =
-    "mr-1 inline-flex h-3.5 w-3.5 items-center justify-center align-[-2px] text-muted dark:text-muted-dark";
+    "mr-1 inline-flex h-4 w-4 items-center justify-center align-[-3px] text-ink dark:text-ink-dark";
   icon.innerHTML =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.75h6.35L18 8.4v11.85H7z"/><path d="M13.25 3.95V8.5H18"/><path d="M9.5 12.25h5"/><path d="M9.5 15.5h4"/></svg>';
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.75h6.25L19 7.5v12.75a1 1 0 0 1-1 1H8a3 3 0 0 1-3-3V5.75a3 3 0 0 1 3-3Z"/><path d="M14 3v4.75h4.75"/><path d="M8.25 12.25h7.5"/><path d="M8.25 15.75h5.5"/></svg>';
   return icon;
 }
 
@@ -44,7 +44,7 @@ export const WikiLinkExtension = Extension.create({
                   }),
                   Decoration.inline(titleFrom, titleTo, {
                     class:
-                      "cursor-pointer rounded-md text-ink underline decoration-line underline-offset-4 transition-colors hover:text-muted dark:text-ink-dark dark:hover:text-muted-dark",
+                      "cursor-pointer whitespace-normal text-ink underline decoration-line underline-offset-4 transition-colors hover:text-muted dark:text-ink-dark dark:hover:text-muted-dark",
                   }),
                   Decoration.inline(titleTo, to, {
                     class: "hidden",

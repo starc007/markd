@@ -9,12 +9,13 @@ import {
   LeftToRightBlockQuoteIcon,
   Link01Icon,
   TableIcon,
+  TextStrikethroughIcon,
   TextUnderlineIcon,
 } from "@hugeicons/core-free-icons";
 import type { Editor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import type { NoteRecord } from "@/lib/types";
-import { promptForUrlLink } from "./linkCommands";
+import { promptForImageUrl, promptForUrlLink } from "./linkCommands";
 import { ToolbarButton } from "./ToolbarButton";
 
 export function SelectionBubbleMenu({
@@ -26,12 +27,6 @@ export function SelectionBubbleMenu({
   onRequestPageLink: () => void;
 }) {
   if (!editor) return null;
-
-  const insertImage = () => {
-    const url = window.prompt("Image URL", "https://");
-    if (!url) return;
-    editor.chain().focus().setImage({ src: url.trim() }).run();
-  };
 
   return (
     <BubbleMenu
@@ -78,6 +73,12 @@ export function SelectionBubbleMenu({
         onClick={() => editor.chain().focus().toggleUnderline().run()}
       />
       <ToolbarButton
+        active={editor.isActive("strike")}
+        icon={TextStrikethroughIcon}
+        label="Strikethrough"
+        onClick={() => editor.chain().focus().toggleStrike().run()}
+      />
+      <ToolbarButton
         active={editor.isActive("code")}
         icon={CodeIcon}
         label="Inline code"
@@ -101,7 +102,11 @@ export function SelectionBubbleMenu({
         label="URL link"
         onClick={() => promptForUrlLink(editor)}
       />
-      <ToolbarButton icon={ImageAdd01Icon} label="Image" onClick={insertImage} />
+      <ToolbarButton
+        icon={ImageAdd01Icon}
+        label="Image"
+        onClick={() => promptForImageUrl(editor)}
+      />
       {editor.isActive("table") && (
         <>
           <div className="mx-1 h-5 w-px bg-line-soft dark:bg-line-soft-dark" />

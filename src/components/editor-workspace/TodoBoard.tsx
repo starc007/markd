@@ -1,6 +1,7 @@
 import {
   ArrowUpRight01Icon,
   CheckmarkSquare02Icon,
+  Delete02Icon,
   Task01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -23,10 +24,12 @@ export interface TodoListItem {
 
 export function TodoBoard({
   todos,
+  onDelete,
   onOpenNote,
   onToggle,
 }: {
   todos: TodoListItem[];
+  onDelete: (noteId: string, line: number) => Promise<void>;
   onOpenNote: (id: string) => Promise<void>;
   onToggle: (noteId: string, line: number, done: boolean) => Promise<void>;
 }) {
@@ -94,7 +97,7 @@ export function TodoBoard({
               >
                 <button
                   aria-label={todo.done ? "Mark task open" : "Mark task done"}
-                  className="relative grid h-5 w-5 shrink-0 place-items-center"
+                  className="relative grid h-6 w-6 shrink-0 place-items-center"
                   onClick={() => onToggle(todo.note.id, todo.line, !todo.done)}
                   type="button"
                 >
@@ -102,9 +105,9 @@ export function TodoBoard({
                     type="checkbox"
                     checked={todo.done}
                     readOnly
-                    className="peer absolute inset-0 h-5 w-5 cursor-default opacity-0"
+                    className="peer absolute inset-0 h-6 w-6 cursor-default opacity-0"
                   />
-                  <span className="grid h-4 w-4 place-items-center rounded-[5px] border border-line bg-panel transition-colors peer-checked:border-ink peer-checked:bg-ink dark:border-line-dark dark:bg-panel-dark dark:peer-checked:border-ink-dark dark:peer-checked:bg-ink-dark">
+                  <span className="grid h-[18px] w-[18px] place-items-center rounded-md border border-line bg-panel transition-colors peer-checked:border-ink peer-checked:bg-ink dark:border-line-dark dark:bg-panel-dark dark:peer-checked:border-ink-dark dark:peer-checked:bg-ink-dark">
                     {todo.done && (
                       <span className="h-2 w-1 rotate-45 border-b-2 border-r-2 border-panel dark:border-panel-dark" />
                     )}
@@ -136,6 +139,18 @@ export function TodoBoard({
                     size={11}
                     color="currentColor"
                     className="opacity-0 transition-opacity group-hover:opacity-100"
+                  />
+                </button>
+                <button
+                  aria-label="Delete task"
+                  className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-muted opacity-0 transition-colors hover:bg-hover hover:text-ink group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-line dark:text-muted-dark dark:hover:bg-hover-dark dark:hover:text-ink-dark dark:focus-visible:ring-focus-line-dark"
+                  onClick={() => onDelete(todo.note.id, todo.line)}
+                  type="button"
+                >
+                  <HugeiconsIcon
+                    icon={Delete02Icon}
+                    size={14}
+                    color="currentColor"
                   />
                 </button>
               </div>

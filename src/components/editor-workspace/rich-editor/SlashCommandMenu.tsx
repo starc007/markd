@@ -18,6 +18,7 @@ import type { Editor } from "@tiptap/react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { cx } from "@/components/ui/utils";
+import { promptForImageUrl } from "./linkCommands";
 
 export interface SlashMenuState {
   query: string;
@@ -145,11 +146,7 @@ const commands: SlashCommand[] = [
     detail: "Embed from URL",
     icon: ImageAdd01Icon,
     keywords: "image picture media url",
-    run: (editor) => {
-      const url = window.prompt("Image URL", "https://");
-      if (!url) return;
-      editor.chain().focus().setImage({ src: url.trim() }).run();
-    },
+    run: (editor) => promptForImageUrl(editor),
   },
 ];
 

@@ -30,6 +30,7 @@ export function EditorPane() {
   const saveBookmark = useWorkspaceStore((state) => state.saveBookmark);
   const deleteBookmark = useWorkspaceStore((state) => state.deleteBookmark);
   const toggleTodo = useWorkspaceStore((state) => state.toggleTodo);
+  const deleteTodo = useWorkspaceStore((state) => state.deleteTodo);
   const [content, setContent] = useState(activeNote?.content ?? "");
   const [title, setTitle] = useState(activeNote?.meta.title ?? "");
   const [todoItems, setTodoItems] = useState<
@@ -119,6 +120,7 @@ export function EditorPane() {
     return (
       <TodoBoard
         todos={todoItems}
+        onDelete={deleteTodo}
         onOpenNote={openNote}
         onToggle={toggleTodo}
       />

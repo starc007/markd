@@ -19,7 +19,7 @@ export function TopBar() {
 
   return (
     <header
-      className="flex h-12 items-center justify-between bg-tabbar/85 px-2 backdrop-blur-[22px] dark:border-line-soft-dark dark:bg-tabbar-dark/80"
+      className="relative z-50 flex h-12 shrink-0 items-center justify-between bg-tabbar/95 px-2 backdrop-blur-[22px] dark:bg-tabbar-dark/95"
       data-tauri-drag-region
     >
       <div className="flex min-w-0 flex-1 items-end gap-1 self-end overflow-x-auto">

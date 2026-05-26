@@ -36,3 +36,20 @@ export function promptForUrlLink(editor: Editor) {
   chain.extendMarkRange("link").setLink({ href: url }).run();
   return true;
 }
+
+export function promptForImageUrl(editor: Editor) {
+  const { from, to } = editor.state.selection;
+  const href = window.prompt("Image URL", "https://");
+  if (href === null) return false;
+
+  const url = normalizeUrl(href);
+  if (!url) return false;
+
+  editor
+    .chain()
+    .focus()
+    .setTextSelection({ from, to })
+    .setImage({ src: url })
+    .run();
+  return true;
+}

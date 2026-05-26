@@ -36,6 +36,7 @@ interface WorkspaceState {
   saveActiveNote: (content: string) => Promise<void>;
   saveActiveTitle: (title: string, content?: string) => Promise<void>;
   toggleTodo: (noteId: string, line: number, done: boolean) => Promise<void>;
+  deleteTodo: (noteId: string, line: number) => Promise<void>;
   createFolder: (parentId?: string | null) => Promise<FolderRecord | null>;
   saveSticky: (sticky: Partial<StickyRecord> & Pick<StickyRecord, "content" | "color">) => Promise<void>;
   deleteSticky: (id: string) => Promise<void>;
@@ -297,6 +298,36 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
     set((state) => ({
       activeNote: state.activeNote?.meta.id === note.meta.id ? note : state.activeNote,
+      openNotes: state.openNotes.map((item) =>
+        item.meta.id === note.meta.id ? note : item,
+      ),
+      manifest: snapshot.manifest,
+    }));
+  },
+
+  deleteTodo: async (noteId, line) => {
+    const current = await api.getNote(noteId);
+    if (!current) return;
+
+    const lines = current.content.split("\n");
+    const target = lines[line];
+    if (!target || !/^(\s*-\s+\[)( |x|X)(\]\s+.*)$/.test(target)) return;
+
+    const content = lines.filter((_, index) => index !== line).join("\n");
+    const note = await api.upsertNote({
+      id: current.meta.id,
+      title: current.meta.title,
+      content,
+      folderId: current.meta.folderId,
+      parentId: current.meta.parentId,
+      tags: current.meta.tags,
+      pinned: current.meta.pinned,
+    });
+    const snapshot = await api.loadWorkspace();
+
+    set((state) => ({
+      activeNote:
+        state.activeNote?.meta.id === note.meta.id ? note : state.activeNote,
       openNotes: state.openNotes.map((item) =>
         item.meta.id === note.meta.id ? note : item,
       ),
