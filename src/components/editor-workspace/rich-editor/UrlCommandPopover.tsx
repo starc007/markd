@@ -66,9 +66,7 @@ export function UrlCommandPopover({
     if (!selected || Array.isArray(selected)) return;
 
     const relativePath = await api.importImageAsset(selected);
-    const displaySrc = convertFileSrc(
-      `${workspaceRoot.replace(/\/$/, "")}/${relativePath}`,
-    );
+    const displaySrc = convertFileSrc(selected);
     const didApply = applyImageAsset(
       editor,
       displaySrc,
