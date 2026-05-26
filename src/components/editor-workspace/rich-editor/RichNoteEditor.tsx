@@ -3,7 +3,6 @@ import { DOMParser as ProseMirrorDOMParser } from "@tiptap/pm/model";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { NoteRecord } from "@/lib/types";
 import { BacklinksPanel } from "./BacklinksPanel";
-import { BlockHandle } from "./BlockHandle";
 import { createEditorExtensions } from "./editorExtensions";
 import { htmlToMarkdown, isLikelyMarkdown, markdownToHtml } from "./markdown";
 import { PageLinkPicker, type PagePickerState } from "./PageLinkPicker";
@@ -267,8 +266,6 @@ export function RichNoteEditor({
         />
         <EditorContent editor={editor} />
       </div>
-
-      <BlockHandle editor={editor} />
 
       <SlashCommandMenu
         editor={editor}
