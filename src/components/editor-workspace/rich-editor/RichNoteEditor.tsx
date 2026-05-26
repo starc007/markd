@@ -1,5 +1,6 @@
 import { EditorContent, useEditor } from "@tiptap/react";
 import { DOMParser as ProseMirrorDOMParser } from "@tiptap/pm/model";
+import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { TextSelection } from "@tiptap/pm/state";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { NoteRecord } from "@/lib/types";
@@ -10,6 +11,34 @@ import { PageLinkPicker, type PagePickerState } from "./PageLinkPicker";
 import { SelectionBubbleMenu } from "./SelectionBubbleMenu";
 import { SlashCommandMenu, type SlashMenuState } from "./SlashCommandMenu";
 import { UrlCommandPopover, type UrlCommandState } from "./UrlCommandPopover";
+
+const wikiLinkPattern = /\[\[([^\]]+)\]\]/g;
+
+function getWikiLinkAtPosition(doc: ProseMirrorNode, position: number) {
+  const resolved = doc.resolve(position);
+  const text = resolved.parent.textBetween(0, resolved.parent.content.size);
+  const offset = resolved.parentOffset;
+  const blockStart = resolved.start();
+
+  for (const match of text.matchAll(wikiLinkPattern)) {
+    const start = match.index ?? 0;
+    const end = start + match[0].length;
+
+    if (offset >= start && offset <= end) {
+      return {
+        title: match[1].trim(),
+        to: blockStart + end,
+      };
+    }
+  }
+
+  return null;
+}
+
+function getPositionAfterWikiLink(doc: ProseMirrorNode, tokenTo: number) {
+  const nextChar = doc.textBetween(tokenTo, tokenTo + 1);
+  return /\s/.test(nextChar) ? tokenTo + 1 : tokenTo;
+}
 
 export function RichNoteEditor({
   activeNoteId,
@@ -119,42 +148,69 @@ export function RichNoteEditor({
         view.dispatch(view.state.tr.replaceSelection(slice).scrollIntoView());
         return true;
       },
-      handleClick(view, position, event) {
-        const resolved = view.state.doc.resolve(position);
-        const text = resolved.parent.textBetween(
-          0,
-          resolved.parent.content.size,
-        );
-        const offset = resolved.parentOffset;
-        const target = event.target as HTMLElement | null;
-        const clickedWikiLink = target?.closest("[data-wiki-link]");
+      handleKeyDown(view, event) {
+        const { selection } = view.state;
+        if (!selection.empty) return false;
 
-        for (const match of text.matchAll(/\[\[([^\]]+)\]\]/g)) {
-          const start = match.index ?? 0;
-          const end = start + match[0].length;
-          if (offset >= start && offset <= end) {
-            const title = match[1].trim();
-            if (clickedWikiLink) {
-              const note = notes.find(
-                (item) => item.title.toLowerCase() === title.toLowerCase(),
-              );
-              if (note) {
-                onOpenPage(note.id);
-              }
-              return true;
-            }
+        const token = getWikiLinkAtPosition(view.state.doc, selection.from);
+        if (!token) return false;
 
-            const tokenEnd = resolved.start() + end;
-            view.dispatch(
-              view.state.tr.setSelection(
-                TextSelection.create(view.state.doc, tokenEnd),
-              ),
-            );
-            return true;
-          }
+        const nextPosition = getPositionAfterWikiLink(view.state.doc, token.to);
+
+        if (event.key === "Enter") {
+          view.dispatch(
+            view.state.tr.setSelection(
+              TextSelection.create(view.state.doc, nextPosition),
+            ),
+          );
+          return false;
         }
 
-        return false;
+        const isPrintableKey =
+          event.key.length === 1 &&
+          !event.altKey &&
+          !event.ctrlKey &&
+          !event.metaKey;
+
+        if (!isPrintableKey) return false;
+
+        event.preventDefault();
+        view.dispatch(
+          view.state.tr
+            .insertText(event.key, nextPosition, nextPosition)
+            .setSelection(
+              TextSelection.create(view.state.doc, nextPosition + 1),
+            )
+            .scrollIntoView(),
+        );
+        return true;
+      },
+      handleClick(view, position, event) {
+        const target = event.target as HTMLElement | null;
+        const clickedWikiLink = target?.closest("[data-wiki-link]");
+        const token = getWikiLinkAtPosition(view.state.doc, position);
+
+        if (!token) return false;
+
+        if (clickedWikiLink) {
+          const note = notes.find(
+            (item) => item.title.toLowerCase() === token.title.toLowerCase(),
+          );
+          if (note) {
+            onOpenPage(note.id);
+          }
+          return true;
+        }
+
+        view.dispatch(
+          view.state.tr.setSelection(
+            TextSelection.create(
+              view.state.doc,
+              getPositionAfterWikiLink(view.state.doc, token.to),
+            ),
+          ),
+        );
+        return true;
       },
     },
     extensions,
@@ -307,8 +363,8 @@ export function RichNoteEditor({
             .chain()
             .focus()
             .deleteRange(pagePicker.range)
-            .insertContent(`[[${title}]]`)
-            .setTextSelection(pagePicker.range.from + title.length + 4)
+            .insertContent(`[[${title}]] `)
+            .setTextSelection(pagePicker.range.from + title.length + 5)
             .run();
           setPagePicker(null);
         }}
