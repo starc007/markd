@@ -12,8 +12,7 @@ const turndown = new TurndownService({
 
 turndown.addRule("taskListItems", {
   filter: (node) =>
-    node.nodeName === "LI" &&
-    (node as HTMLElement).dataset.type === "taskItem",
+    node.nodeName === "LI" && (node as HTMLElement).dataset.type === "taskItem",
   replacement: (content, node) => {
     const element = node as HTMLElement;
     const checked = element.getAttribute("data-checked") === "true";
@@ -124,15 +123,17 @@ function normalizeWorkspaceImageHtml(html: string, workspaceRoot?: string) {
   const template = document.createElement("template");
   template.innerHTML = html;
 
-  template.content.querySelectorAll<HTMLImageElement>("img").forEach((image) => {
-    const src = image.getAttribute("src");
-    if (!src || isRemoteImageSource(src)) return;
+  template.content
+    .querySelectorAll<HTMLImageElement>("img")
+    .forEach((image) => {
+      const src = image.getAttribute("src");
+      if (!src || isRemoteImageSource(src)) return;
 
-    const relativePath = decodeURIComponent(src);
-    const absolutePath = `${workspaceRoot.replace(/\/$/, "")}/${relativePath}`;
-    image.setAttribute("data-workspace-src", relativePath);
-    image.setAttribute("src", convertFileSrc(absolutePath));
-  });
+      const relativePath = decodeURIComponent(src);
+      const absolutePath = `${workspaceRoot.replace(/\/$/, "")}/${relativePath}`;
+      image.setAttribute("data-workspace-src", relativePath);
+      image.setAttribute("src", convertFileSrc(absolutePath));
+    });
 
   return template.innerHTML;
 }
@@ -165,7 +166,10 @@ export function markdownToHtml(markdown: string, workspaceRoot?: string) {
     gfm: true,
   });
   return normalizeTaskListHtml(
-    normalizeWorkspaceImageHtml(normalizeEmptyParagraphHtml(html), workspaceRoot),
+    normalizeWorkspaceImageHtml(
+      normalizeEmptyParagraphHtml(html),
+      workspaceRoot,
+    ),
   );
 }
 

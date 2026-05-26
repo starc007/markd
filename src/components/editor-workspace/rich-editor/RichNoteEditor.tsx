@@ -314,7 +314,7 @@ export function RichNoteEditor({
   return (
     <main className="relative flex h-full min-h-0 overflow-hidden bg-editor dark:bg-editor-dark">
       <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <div className="px-[clamp(36px,9vw,128px)] pt-4">
+        <div className="px-[clamp(36px,9vw,128px)] pt-16">
           <input
             className="block w-full rounded-xl border-0 bg-transparent p-0 text-[40px] font-semibold leading-tight text-ink caret-ink outline-none placeholder:text-muted transition-colors focus-visible:ring-2 focus-visible:ring-focus-line/40 dark:text-ink-dark dark:caret-ink-dark dark:placeholder:text-muted-dark dark:focus-visible:ring-focus-line-dark/40"
             onBlur={onTitleSave}

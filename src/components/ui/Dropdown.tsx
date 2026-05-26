@@ -42,7 +42,7 @@ export function DropdownItem({
       {({ focus }) => (
         <button
           className={cx(
-            "group flex min-h-8 w-full items-center gap-2 rounded-[10px] border-0 bg-transparent px-2.5 py-1.5 text-left leading-none text-inherit outline-none transition-[background-color,color,transform] duration-150 hover:translate-x-0.5 hover:bg-hover/80 hover:text-ink focus-visible:ring-2 focus-visible:ring-focus-line dark:hover:bg-tooltip-ink/10 dark:hover:text-ink-dark dark:focus-visible:ring-focus-line-dark",
+            "group flex min-h-8 w-full items-center gap-2 rounded-[10px] border-0 bg-transparent px-2.5 py-1.5 text-left leading-none text-inherit outline-none  duration-300 transition-all hover:translate-x-0.5 hover:bg-hover/80 hover:text-ink focus-visible:ring-2 focus-visible:ring-focus-line dark:hover:bg-tooltip-ink/10 dark:hover:text-ink-dark dark:focus-visible:ring-focus-line-dark",
             focus &&
               "translate-x-0.5 bg-hover/80 text-ink dark:bg-tooltip-ink/10 dark:text-ink-dark",
           )}
