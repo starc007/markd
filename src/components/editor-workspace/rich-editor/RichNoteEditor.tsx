@@ -230,6 +230,8 @@ export function RichNoteEditor({
   const openPagePicker = useCallback(() => {
     if (!editor) return;
 
+    setSlashMenu(null);
+    setUrlCommand(null);
     const coords = editor.view.coordsAtPos(editor.state.selection.to);
     const menuWidth = 248;
     const menuHeight = 248;
