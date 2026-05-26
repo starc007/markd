@@ -70,6 +70,30 @@ export function EditorPane() {
     saveActiveNote(contentRef.current);
   }, [activeNote, saveActiveNote]);
 
+  const handleToggleTodo = useCallback(
+    async (noteId: string, line: number, done: boolean) => {
+      setTodoItems((items) =>
+        items.map((item) =>
+          item.note.id === noteId && item.line === line
+            ? { ...item, done }
+            : item,
+        ),
+      );
+      await toggleTodo(noteId, line, done);
+    },
+    [toggleTodo],
+  );
+
+  const handleDeleteTodo = useCallback(
+    async (noteId: string, line: number) => {
+      setTodoItems((items) =>
+        items.filter((item) => item.note.id !== noteId || item.line !== line),
+      );
+      await deleteTodo(noteId, line);
+    },
+    [deleteTodo],
+  );
+
   useEffect(() => {
     if (!activeNote || title === activeNote.meta.title) return;
     if (titleTimeoutRef.current) window.clearTimeout(titleTimeoutRef.current);
@@ -131,9 +155,9 @@ export function EditorPane() {
     return (
       <TodoBoard
         todos={todoItems}
-        onDelete={deleteTodo}
+        onDelete={handleDeleteTodo}
         onOpenNote={openNote}
-        onToggle={toggleTodo}
+        onToggle={handleToggleTodo}
       />
     );
   }

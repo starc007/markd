@@ -33,7 +33,6 @@ export function TodoBoard({
   onOpenNote: (id: string) => Promise<void>;
   onToggle: (noteId: string, line: number, done: boolean) => Promise<void>;
 }) {
-  const [activePageId, setActivePageId] = useState("all");
   const [activeStatus, setActiveStatus] = useState("open");
   const openTodos = todos.filter((todo) => !todo.done).length;
   const doneTodos = todos.length - openTodos;
@@ -45,36 +44,19 @@ export function TodoBoard({
     ],
     [doneTodos, openTodos, todos.length],
   );
-  const pageTabs = useMemo<AnimatedTabItem[]>(() => {
-    const pages = new Map<string, { label: string; count: number }>();
-
-    for (const todo of todos) {
-      const current = pages.get(todo.note.id);
-      pages.set(todo.note.id, {
-        label: todo.note.title,
-        count: (current?.count ?? 0) + 1,
-      });
-    }
-
-    return [
-      { id: "all", label: "All", count: todos.length },
-      ...Array.from(pages, ([id, item]) => ({ id, ...item })),
-    ];
-  }, [todos]);
   const visibleTodos = todos.filter((todo) => {
-    const matchesPage = activePageId === "all" || todo.note.id === activePageId;
-    const matchesStatus =
+    return (
       activeStatus === "all" ||
       (activeStatus === "open" && !todo.done) ||
-      (activeStatus === "done" && todo.done);
-    return matchesPage && matchesStatus;
+      (activeStatus === "done" && todo.done)
+    );
   });
 
   useEffect(() => {
-    if (!pageTabs.some((tab) => tab.id === activePageId)) {
-      setActivePageId("all");
+    if (activeStatus === "open" && openTodos === 0 && todos.length > 0) {
+      setActiveStatus("all");
     }
-  }, [activePageId, pageTabs]);
+  }, [activeStatus, openTodos, todos.length]);
 
   return (
     <Board
@@ -101,11 +83,6 @@ export function TodoBoard({
             items={statusTabs}
             value={activeStatus}
             onChange={setActiveStatus}
-          />
-          <AnimatedTabs
-            items={pageTabs}
-            value={activePageId}
-            onChange={setActivePageId}
           />
           <div className="overflow-hidden rounded-2xl bg-panel ring-1 ring-line-soft/70 dark:bg-panel-dark dark:ring-line-soft-dark/70">
             {visibleTodos.map((todo) => (
