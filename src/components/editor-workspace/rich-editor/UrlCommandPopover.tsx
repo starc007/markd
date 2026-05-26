@@ -1,9 +1,12 @@
 import { ImageAdd01Icon, Link01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { convertFileSrc } from "@tauri-apps/api/core";
+import { open } from "@tauri-apps/plugin-dialog";
 import type { Editor } from "@tiptap/react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
-import { applyImageUrl, applyUrlLink } from "./linkCommands";
+import * as api from "@/lib/workspace-api";
+import { applyImageAsset, applyImageUrl, applyUrlLink } from "./linkCommands";
 
 export interface UrlCommandState {
   mode: "link" | "image";
@@ -15,10 +18,12 @@ export interface UrlCommandState {
 
 export function UrlCommandPopover({
   editor,
+  workspaceRoot,
   state,
   onClose,
 }: {
   editor: Editor | null;
+  workspaceRoot: string;
   state: UrlCommandState | null;
   onClose: () => void;
 }) {
@@ -46,6 +51,34 @@ export function UrlCommandPopover({
     if (didApply) onClose();
   };
 
+  const uploadImage = async () => {
+    if (!editor || !workspaceRoot || state.mode !== "image") return;
+
+    const selected = await open({
+      multiple: false,
+      filters: [
+        {
+          name: "Images",
+          extensions: ["png", "jpg", "jpeg", "gif", "webp", "avif", "svg"],
+        },
+      ],
+    });
+    if (!selected || Array.isArray(selected)) return;
+
+    const relativePath = await api.importImageAsset(selected);
+    const displaySrc = convertFileSrc(
+      `${workspaceRoot.replace(/\/$/, "")}/${relativePath}`,
+    );
+    const didApply = applyImageAsset(
+      editor,
+      displaySrc,
+      relativePath,
+      state.selection.from,
+      state.selection.to,
+    );
+    if (didApply) onClose();
+  };
+
   return (
     <AnimatePresence>
       <button
@@ -56,7 +89,7 @@ export function UrlCommandPopover({
       />
       <motion.form
         animate={{ scale: 1, y: 0 }}
-        className="fixed z-90 flex w-[290px] items-center gap-2 rounded-2xl border border-line bg-panel/95 p-1.5 shadow-overlay backdrop-blur-[22px] dark:border-line-dark dark:bg-tooltip"
+        className="fixed z-90 flex w-[350px] items-center gap-2 rounded-2xl border border-line bg-panel/95 p-1.5 shadow-overlay backdrop-blur-[22px] dark:border-line-dark dark:bg-tooltip"
         exit={{ scale: 0.98, y: state.side === "bottom" ? -6 : 6 }}
         initial={{ scale: 0.98, y: state.side === "bottom" ? -6 : 6 }}
         onSubmit={(event) => {
@@ -92,6 +125,15 @@ export function UrlCommandPopover({
           type="url"
           value={value}
         />
+        {state.mode === "image" && (
+          <button
+            className="h-8 rounded-xl px-3 text-xs font-medium text-muted transition-colors duration-150 hover:bg-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-line dark:text-tooltip-ink/65 dark:hover:bg-tooltip-ink/10 dark:hover:text-tooltip-ink dark:focus-visible:ring-focus-line-dark"
+            onClick={uploadImage}
+            type="button"
+          >
+            Upload
+          </button>
+        )}
         <button
           className="h-8 rounded-xl bg-ink px-3 text-xs font-medium text-panel transition-transform duration-150 hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-line dark:bg-tooltip-ink dark:text-tooltip"
           type="submit"

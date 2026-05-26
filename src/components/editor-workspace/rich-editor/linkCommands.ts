@@ -53,6 +53,30 @@ export function applyImageUrl(editor: Editor, href: string, from: number, to: nu
   return true;
 }
 
+export function applyImageAsset(
+  editor: Editor,
+  displaySrc: string,
+  workspaceSrc: string,
+  from: number,
+  to: number,
+) {
+  if (!displaySrc || !workspaceSrc) return false;
+
+  editor
+    .chain()
+    .focus()
+    .setTextSelection({ from, to })
+    .insertContent({
+      type: "image",
+      attrs: {
+        src: displaySrc,
+        workspaceSrc,
+      },
+    })
+    .run();
+  return true;
+}
+
 export function promptForUrlLink(editor: Editor) {
   const { from, to, empty } = editor.state.selection;
   const previousUrl = editor.getAttributes("link").href as string | undefined;

@@ -166,6 +166,22 @@ fn sticky_path(id: &str) -> String {
     format!("stickies/sticky-{}.md", &id[..8.min(id.len())])
 }
 
+fn asset_path(source_path: &Path) -> String {
+    let id = Uuid::new_v4().to_string();
+    let stem = source_path
+        .file_stem()
+        .and_then(|value| value.to_str())
+        .map(slugify)
+        .unwrap_or_else(|| "image".to_string());
+    let extension = source_path
+        .extension()
+        .and_then(|value| value.to_str())
+        .map(|value| value.to_ascii_lowercase())
+        .unwrap_or_else(|| "png".to_string());
+
+    format!("assets/{}-{}.{}", stem, &id[..8.min(id.len())], extension)
+}
+
 fn rename_note_file_if_needed(
     root: &Path,
     existing: Option<&NoteRecord>,
@@ -188,8 +204,7 @@ fn rename_note_file_if_needed(
             fs::create_dir_all(parent)
                 .map_err(|e| format!("Failed to create note directory: {e}"))?;
         }
-        fs::rename(&old_path, &new_path)
-            .map_err(|e| format!("Failed to rename note file: {e}"))?;
+        fs::rename(&old_path, &new_path).map_err(|e| format!("Failed to rename note file: {e}"))?;
     }
 
     Ok(next_path)
@@ -459,8 +474,7 @@ fn write_sticky_file(root: &Path, record: &StickyRecord, content: &str) -> Resul
         format!("{}\n{}\n", sticky_frontmatter(record), body)
     };
 
-    fs::write(root.join(&record.path), raw)
-        .map_err(|e| format!("Failed to write sticky file: {e}"))
+    fs::write(root.join(&record.path), raw).map_err(|e| format!("Failed to write sticky file: {e}"))
 }
 
 fn sync_sticky_files(root: &Path, manifest: &mut WorkspaceManifest) -> Result<(), String> {
@@ -515,6 +529,7 @@ fn ensure_workspace() -> Result<(PathBuf, WorkspaceManifest), String> {
         .map_err(|e| format!("Failed to create stickies: {e}"))?;
     fs::create_dir_all(root.join("bookmarks"))
         .map_err(|e| format!("Failed to create bookmarks: {e}"))?;
+    fs::create_dir_all(root.join("assets")).map_err(|e| format!("Failed to create assets: {e}"))?;
 
     let manifest_path = root.join(MANIFEST_FILE);
     if manifest_path.exists() {
@@ -861,6 +876,34 @@ fn reveal_workspace_path() -> Result<String, String> {
     Ok(root.to_string_lossy().to_string())
 }
 
+#[tauri::command]
+fn import_image_asset(source_path: String) -> Result<String, String> {
+    let (root, _) = ensure_workspace()?;
+    let source = PathBuf::from(source_path);
+    if !source.exists() {
+        return Err("Image file does not exist".to_string());
+    }
+
+    let extension = source
+        .extension()
+        .and_then(|value| value.to_str())
+        .map(|value| value.to_ascii_lowercase())
+        .unwrap_or_default();
+    let allowed = ["png", "jpg", "jpeg", "gif", "webp", "avif", "svg"];
+    if !allowed.contains(&extension.as_str()) {
+        return Err("Unsupported image type".to_string());
+    }
+
+    let relative_path = asset_path(&source);
+    let destination = root.join(&relative_path);
+    if let Some(parent) = destination.parent() {
+        fs::create_dir_all(parent).map_err(|e| format!("Failed to create assets: {e}"))?;
+    }
+    fs::copy(&source, &destination).map_err(|e| format!("Failed to import image: {e}"))?;
+
+    Ok(relative_path)
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
@@ -880,6 +923,7 @@ pub fn run() {
             upsert_bookmark,
             delete_bookmark,
             reveal_workspace_path,
+            import_image_asset,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

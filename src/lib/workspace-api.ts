@@ -73,3 +73,7 @@ export function deleteBookmark(id: string) {
 export function revealWorkspacePath() {
   return invoke<string>("reveal_workspace_path");
 }
+
+export function importImageAsset(sourcePath: string) {
+  return invoke<string>("import_image_asset", { sourcePath });
+}

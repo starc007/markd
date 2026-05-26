@@ -14,6 +14,7 @@ export function EditorPane() {
   const view = useWorkspaceStore((state) => state.view);
   const activeNote = useWorkspaceStore((state) => state.activeNote);
   const manifest = useWorkspaceStore((state) => state.manifest);
+  const rootPath = useWorkspaceStore((state) => state.rootPath);
   const noteIdPendingTitleSelection = useWorkspaceStore(
     (state) => state.noteIdPendingTitleSelection,
   );
@@ -141,6 +142,7 @@ export function EditorPane() {
       content={content}
       notes={manifest?.notes ?? []}
       title={title}
+      workspaceRoot={rootPath}
       shouldSelectTitle={noteIdPendingTitleSelection === activeNote.meta.id}
       onChange={setContent}
       onCreatePage={createLinkedNote}

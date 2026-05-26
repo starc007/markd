@@ -13,6 +13,22 @@ import Underline from "@tiptap/extension-underline";
 import StarterKit from "@tiptap/starter-kit";
 import { WikiLinkExtension } from "./wikiLinkExtension";
 
+const WorkspaceImage = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      workspaceSrc: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-workspace-src"),
+        renderHTML: (attributes) =>
+          attributes.workspaceSrc
+            ? { "data-workspace-src": attributes.workspaceSrc }
+            : {},
+      },
+    };
+  },
+});
+
 const FormattingShortcuts = Extension.create({
   name: "formattingShortcuts",
   priority: 1000,
@@ -42,7 +58,7 @@ export function createEditorExtensions() {
       openOnClick: false,
       protocols: ["http", "https", "mailto"],
     }),
-    Image.configure({
+    WorkspaceImage.configure({
       allowBase64: true,
       inline: false,
     }),

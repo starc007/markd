@@ -46,6 +46,7 @@ export function RichNoteEditor({
   notes,
   shouldSelectTitle,
   title,
+  workspaceRoot,
   onChange,
   onCreatePage,
   onOpenPage,
@@ -59,6 +60,7 @@ export function RichNoteEditor({
   notes: NoteRecord[];
   shouldSelectTitle: boolean;
   title: string;
+  workspaceRoot: string;
   onChange: (content: string) => void;
   onCreatePage: (title: string) => Promise<unknown>;
   onOpenPage: (id: string) => Promise<void>;
@@ -129,7 +131,7 @@ export function RichNoteEditor({
   );
 
   const editor = useEditor({
-    content: markdownToHtml(content),
+    content: markdownToHtml(content, workspaceRoot),
     editorProps: {
       attributes: {
         class:
@@ -263,7 +265,7 @@ export function RichNoteEditor({
 
       const { from, to } = editor.state.selection;
       const coords = editor.view.coordsAtPos(to);
-      const menuWidth = 290;
+      const menuWidth = 350;
       const menuHeight = 52;
       const hasRoomBelow = window.innerHeight - coords.bottom > menuHeight + 18;
       const hasRoomAbove = coords.top > menuHeight + 18;
@@ -294,10 +296,10 @@ export function RichNoteEditor({
   useEffect(() => {
     if (!editor || content === externalContent.current) return;
     externalContent.current = content;
-    editor.commands.setContent(markdownToHtml(content), {
+    editor.commands.setContent(markdownToHtml(content, workspaceRoot), {
       emitUpdate: false,
     });
-  }, [content, editor]);
+  }, [content, editor, workspaceRoot]);
 
   useEffect(() => {
     if (!shouldSelectTitle) return;
@@ -375,6 +377,7 @@ export function RichNoteEditor({
       <UrlCommandPopover
         editor={editor}
         state={urlCommand}
+        workspaceRoot={workspaceRoot}
         onClose={() => setUrlCommand(null)}
       />
 
