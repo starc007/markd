@@ -74,16 +74,16 @@ export function PageLinkPicker({
             type="button"
           />
           <motion.div
-            animate={{ opacity: 1, scale: 1, y: 0 }}
+            animate={{ scale: 1, y: 0 }}
             className="fixed z-80 w-[248px] overflow-hidden rounded-2xl border border-line bg-panel/95 p-1 text-ink shadow-overlay backdrop-blur-[22px] dark:border-line-dark dark:bg-tooltip dark:text-tooltip-ink"
-            exit={{ opacity: 0, scale: 0.98, y: picker.side === "bottom" ? -4 : 4 }}
-            initial={{ opacity: 0, scale: 0.98, y: picker.side === "bottom" ? -4 : 4 }}
+            exit={{ scale: 0.98, y: picker.side === "bottom" ? -6 : 6 }}
+            initial={{ scale: 0.98, y: picker.side === "bottom" ? -6 : 6 }}
             style={{
               left: picker.position.left,
               top: picker.position.top,
               transformOrigin: picker.side === "bottom" ? "top left" : "bottom left",
             }}
-            transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
           >
             <div className="px-2 pb-1 pt-1 text-[10px] font-medium uppercase tracking-wide text-muted dark:text-tooltip-ink/60">
               Pages
@@ -91,7 +91,7 @@ export function PageLinkPicker({
             <div className="max-h-56 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {results.map((note) => (
                 <button
-                  className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-sm transition-colors hover:bg-hover data-[active=true]:bg-hover dark:hover:bg-tooltip-ink/10 dark:data-[active=true]:bg-tooltip-ink/10"
+                  className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-sm transition-[background-color,color,transform] duration-150 hover:translate-x-0.5 hover:bg-hover data-[active=true]:translate-x-0.5 data-[active=true]:bg-hover dark:hover:bg-tooltip-ink/10 dark:data-[active=true]:bg-tooltip-ink/10"
                   data-active={results[activeIndex]?.id === note.id}
                   key={note.id}
                   onClick={() => onSelect(note.title)}

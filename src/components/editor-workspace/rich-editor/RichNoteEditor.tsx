@@ -3,11 +3,16 @@ import { DOMParser as ProseMirrorDOMParser } from "@tiptap/pm/model";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { NoteRecord } from "@/lib/types";
 import { BacklinksPanel } from "./BacklinksPanel";
+import { BlockHandle } from "./BlockHandle";
 import { createEditorExtensions } from "./editorExtensions";
 import { htmlToMarkdown, isLikelyMarkdown, markdownToHtml } from "./markdown";
 import { PageLinkPicker, type PagePickerState } from "./PageLinkPicker";
 import { SelectionBubbleMenu } from "./SelectionBubbleMenu";
 import { SlashCommandMenu, type SlashMenuState } from "./SlashCommandMenu";
+import {
+  UrlCommandPopover,
+  type UrlCommandState,
+} from "./UrlCommandPopover";
 
 export function RichNoteEditor({
   activeNoteId,
@@ -40,6 +45,7 @@ export function RichNoteEditor({
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const [slashMenu, setSlashMenu] = useState<SlashMenuState | null>(null);
   const [pagePicker, setPagePicker] = useState<PagePickerState | null>(null);
+  const [urlCommand, setUrlCommand] = useState<UrlCommandState | null>(null);
   const extensions = useMemo(() => createEditorExtensions(), []);
   const characters = content.length;
   const words = content.trim().length
@@ -181,6 +187,40 @@ export function RichNoteEditor({
     });
   }, [editor]);
 
+  const openUrlCommand = useCallback(
+    (mode: UrlCommandState["mode"]) => {
+      if (!editor) return;
+
+      const { from, to } = editor.state.selection;
+      const coords = editor.view.coordsAtPos(to);
+      const menuWidth = 290;
+      const menuHeight = 52;
+      const hasRoomBelow = window.innerHeight - coords.bottom > menuHeight + 18;
+      const hasRoomAbove = coords.top > menuHeight + 18;
+
+      setUrlCommand({
+        mode,
+        selection: { from, to },
+        value:
+          mode === "link"
+            ? (editor.getAttributes("link").href as string | undefined)
+            : undefined,
+        position: {
+          left: Math.max(
+            12,
+            Math.min(coords.left, window.innerWidth - menuWidth - 12),
+          ),
+          top:
+            hasRoomBelow || !hasRoomAbove
+              ? coords.bottom + 8
+              : Math.max(12, coords.top - menuHeight - 8),
+        },
+        side: hasRoomBelow || !hasRoomAbove ? "bottom" : "top",
+      });
+    },
+    [editor],
+  );
+
   useEffect(() => {
     if (!editor || content === externalContent.current) return;
     externalContent.current = content;
@@ -204,7 +244,7 @@ export function RichNoteEditor({
       <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <div className="px-[clamp(36px,9vw,128px)] pt-4">
           <input
-            className="block w-full border-0 bg-transparent p-0 text-[40px] font-semibold leading-tight text-ink caret-ink outline-none placeholder:text-muted dark:text-ink-dark dark:caret-ink-dark dark:placeholder:text-muted-dark"
+            className="block w-full rounded-xl border-0 bg-transparent p-0 text-[40px] font-semibold leading-tight text-ink caret-ink outline-none placeholder:text-muted transition-colors focus-visible:ring-2 focus-visible:ring-focus-line/40 dark:text-ink-dark dark:caret-ink-dark dark:placeholder:text-muted-dark dark:focus-visible:ring-focus-line-dark/40"
             onBlur={onTitleSave}
             onChange={(event) => onTitleChange(event.target.value)}
             onKeyDown={(event) => {
@@ -222,15 +262,20 @@ export function RichNoteEditor({
           editor={editor}
           notes={notes}
           onRequestPageLink={openPagePicker}
+          onRequestUrlImage={() => openUrlCommand("image")}
+          onRequestUrlLink={() => openUrlCommand("link")}
         />
         <EditorContent editor={editor} />
       </div>
+
+      <BlockHandle editor={editor} />
 
       <SlashCommandMenu
         editor={editor}
         menu={slashMenu}
         onCreatePage={onCreatePage}
         onRequestPageLink={openPagePicker}
+        onRequestUrlImage={() => openUrlCommand("image")}
         onClose={() => setSlashMenu(null)}
       />
 
@@ -256,6 +301,12 @@ export function RichNoteEditor({
             .run();
           setPagePicker(null);
         }}
+      />
+
+      <UrlCommandPopover
+        editor={editor}
+        state={urlCommand}
+        onClose={() => setUrlCommand(null)}
       />
 
       <BacklinksPanel
