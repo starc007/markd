@@ -17,17 +17,31 @@ export function applyUrlLink(editor: Editor, href: string, from: number, to: num
   }
 
   if (from === to) {
+    const label = url.replace(/^https?:\/\//i, "");
     chain
-      .insertContent({
-        type: "text",
-        text: url.replace(/^https?:\/\//i, ""),
-        marks: [{ type: "link", attrs: { href: url } }],
-      })
+      .insertContent([
+        {
+          type: "text",
+          text: label,
+          marks: [{ type: "link", attrs: { href: url } }],
+        },
+        {
+          type: "text",
+          text: " ",
+        },
+      ])
+      .setTextSelection(from + label.length + 1)
+      .unsetMark("link")
       .run();
     return true;
   }
 
-  chain.extendMarkRange("link").setLink({ href: url }).run();
+  chain
+    .extendMarkRange("link")
+    .setLink({ href: url })
+    .setTextSelection(to)
+    .unsetMark("link")
+    .run();
   return true;
 }
 
