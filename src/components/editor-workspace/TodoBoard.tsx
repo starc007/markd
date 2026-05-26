@@ -1,6 +1,7 @@
 import {
   ArrowUpRight01Icon,
   CheckmarkSquare02Icon,
+  Delete02Icon,
   Task01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -23,42 +24,39 @@ export interface TodoListItem {
 
 export function TodoBoard({
   todos,
-  onOpenNote,
+  onDelete,
+  onOpenTodo,
   onToggle,
 }: {
   todos: TodoListItem[];
-  onOpenNote: (id: string) => Promise<void>;
+  onDelete: (noteId: string, line: number) => Promise<void>;
+  onOpenTodo: (todo: TodoListItem) => Promise<void>;
   onToggle: (noteId: string, line: number, done: boolean) => Promise<void>;
 }) {
-  const [activePageId, setActivePageId] = useState("all");
+  const [activeStatus, setActiveStatus] = useState("open");
   const openTodos = todos.filter((todo) => !todo.done).length;
   const doneTodos = todos.length - openTodos;
-  const pageTabs = useMemo<AnimatedTabItem[]>(() => {
-    const pages = new Map<string, { label: string; count: number }>();
-
-    for (const todo of todos) {
-      const current = pages.get(todo.note.id);
-      pages.set(todo.note.id, {
-        label: todo.note.title,
-        count: (current?.count ?? 0) + 1,
-      });
-    }
-
-    return [
+  const statusTabs = useMemo<AnimatedTabItem[]>(
+    () => [
+      { id: "open", label: "Open", count: openTodos },
       { id: "all", label: "All", count: todos.length },
-      ...Array.from(pages, ([id, item]) => ({ id, ...item })),
-    ];
-  }, [todos]);
-  const visibleTodos =
-    activePageId === "all"
-      ? todos
-      : todos.filter((todo) => todo.note.id === activePageId);
+      { id: "done", label: "Done", count: doneTodos },
+    ],
+    [doneTodos, openTodos, todos.length],
+  );
+  const visibleTodos = todos.filter((todo) => {
+    return (
+      activeStatus === "all" ||
+      (activeStatus === "open" && !todo.done) ||
+      (activeStatus === "done" && todo.done)
+    );
+  });
 
   useEffect(() => {
-    if (!pageTabs.some((tab) => tab.id === activePageId)) {
-      setActivePageId("all");
+    if (activeStatus === "open" && openTodos === 0 && todos.length > 0) {
+      setActiveStatus("all");
     }
-  }, [activePageId, pageTabs]);
+  }, [activeStatus, openTodos, todos.length]);
 
   return (
     <Board
@@ -82,19 +80,22 @@ export function TodoBoard({
       ) : (
         <div className="grid gap-3">
           <AnimatedTabs
-            items={pageTabs}
-            value={activePageId}
-            onChange={setActivePageId}
+            items={statusTabs}
+            value={activeStatus}
+            onChange={setActiveStatus}
           />
-          <div className="overflow-hidden rounded-2xl border border-line-soft bg-panel dark:border-line-soft-dark dark:bg-panel-dark">
+          <div className="overflow-hidden rounded-2xl bg-panel ring-1 ring-line-soft/70 dark:bg-panel-dark dark:ring-line-soft-dark/70">
             {visibleTodos.map((todo) => (
               <div
                 key={`${todo.note.id}-${todo.line}`}
-                className="group flex items-center gap-3 border-b border-line-soft/80 px-3 py-2.5 last:border-b-0 hover:bg-hover dark:border-line-soft-dark/80 dark:hover:bg-hover-dark"
+                className={cx(
+                  "group flex items-center gap-3 border-b border-line-soft/60 px-3 py-2.5 transition-colors last:border-b-0 hover:bg-hover dark:border-line-soft-dark/60 dark:hover:bg-hover-dark",
+                  todo.done && "bg-panel-soft/35 dark:bg-panel-soft-dark/25",
+                )}
               >
                 <button
                   aria-label={todo.done ? "Mark task open" : "Mark task done"}
-                  className="relative grid h-5 w-5 shrink-0 place-items-center"
+                  className="relative grid h-7 w-7 shrink-0 place-items-center rounded-lg transition-transform duration-150 hover:scale-105"
                   onClick={() => onToggle(todo.note.id, todo.line, !todo.done)}
                   type="button"
                 >
@@ -102,31 +103,38 @@ export function TodoBoard({
                     type="checkbox"
                     checked={todo.done}
                     readOnly
-                    className="peer absolute inset-0 h-5 w-5 cursor-default opacity-0"
+                    className="peer absolute inset-0 h-7 w-7 cursor-pointer opacity-0"
                   />
-                  <span className="grid h-4 w-4 place-items-center rounded-[5px] border border-line bg-panel transition-colors peer-checked:border-ink peer-checked:bg-ink dark:border-line-dark dark:bg-panel-dark dark:peer-checked:border-ink-dark dark:peer-checked:bg-ink-dark">
-                    {todo.done && (
-                      <span className="h-2 w-1 rotate-45 border-b-2 border-r-2 border-panel dark:border-panel-dark" />
-                    )}
+                  <span className="grid h-5 w-5 place-items-center rounded-[7px] border border-line bg-panel transition-[background-color,border-color,transform] duration-150 peer-checked:border-ink peer-checked:bg-ink dark:border-line-dark dark:bg-panel-dark dark:peer-checked:border-ink-dark dark:peer-checked:bg-ink-dark">
+                    <span
+                      className={cx(
+                        "h-2.5 w-1.5 translate-y-[-1px] rotate-45 border-b-2 border-r-2 border-panel opacity-0 transition-opacity duration-150 dark:border-panel-dark",
+                        todo.done && "opacity-100",
+                      )}
+                    />
                   </span>
                 </button>
                 <button
                   className="min-w-0 flex-1 text-left"
-                  onClick={() => onOpenNote(todo.note.id)}
+                  onClick={() => onOpenTodo(todo)}
                   type="button"
                 >
                   <span
                     className={cx(
-                      "min-w-0 flex-1 truncate text-sm text-ink dark:text-ink-dark",
-                      todo.done && "text-muted line-through dark:text-muted-dark",
+                      "block min-w-0 truncate text-sm text-ink transition-colors duration-200 dark:text-ink-dark",
+                      todo.done &&
+                        "text-muted line-through decoration-line/80 dark:text-muted-dark",
                     )}
                   >
                     {todo.text}
                   </span>
+                  <span className="mt-0.5 block text-[11px] text-muted dark:text-muted-dark">
+                    Line {todo.line + 1}
+                  </span>
                 </button>
                 <button
                   className="inline-flex max-w-[220px] shrink-0 items-center gap-1 rounded-full bg-panel-soft px-2 py-0.5 text-xs font-medium text-muted transition-colors hover:text-ink dark:bg-panel-soft-dark dark:text-muted-dark dark:hover:text-ink-dark"
-                  onClick={() => onOpenNote(todo.note.id)}
+                  onClick={() => onOpenTodo(todo)}
                   type="button"
                 >
                   <HugeiconsIcon icon={Task01Icon} size={12} color="currentColor" />
@@ -138,8 +146,25 @@ export function TodoBoard({
                     className="opacity-0 transition-opacity group-hover:opacity-100"
                   />
                 </button>
+                <button
+                  aria-label="Delete task"
+                  className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-muted opacity-0 transition-colors hover:bg-hover hover:text-ink group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-line dark:text-muted-dark dark:hover:bg-hover-dark dark:hover:text-ink-dark dark:focus-visible:ring-focus-line-dark"
+                  onClick={() => onDelete(todo.note.id, todo.line)}
+                  type="button"
+                >
+                  <HugeiconsIcon
+                    icon={Delete02Icon}
+                    size={14}
+                    color="currentColor"
+                  />
+                </button>
               </div>
             ))}
+            {visibleTodos.length === 0 && (
+              <div className="px-4 py-8 text-center text-sm text-muted dark:text-muted-dark">
+                No tasks match this filter.
+              </div>
+            )}
           </div>
         </div>
       )}

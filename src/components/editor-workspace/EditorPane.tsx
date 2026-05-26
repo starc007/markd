@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { extractTodos } from "@/lib/format";
 import type { NoteRecord } from "@/lib/types";
 import * as api from "@/lib/workspace-api";
@@ -14,6 +14,7 @@ export function EditorPane() {
   const view = useWorkspaceStore((state) => state.view);
   const activeNote = useWorkspaceStore((state) => state.activeNote);
   const manifest = useWorkspaceStore((state) => state.manifest);
+  const rootPath = useWorkspaceStore((state) => state.rootPath);
   const noteIdPendingTitleSelection = useWorkspaceStore(
     (state) => state.noteIdPendingTitleSelection,
   );
@@ -30,44 +31,96 @@ export function EditorPane() {
   const saveBookmark = useWorkspaceStore((state) => state.saveBookmark);
   const deleteBookmark = useWorkspaceStore((state) => state.deleteBookmark);
   const toggleTodo = useWorkspaceStore((state) => state.toggleTodo);
-  const [content, setContent] = useState(activeNote?.content ?? "");
+  const deleteTodo = useWorkspaceStore((state) => state.deleteTodo);
   const [title, setTitle] = useState(activeNote?.meta.title ?? "");
   const [todoItems, setTodoItems] = useState<
     Array<ReturnType<typeof extractTodos>[number] & { note: NoteRecord }>
   >([]);
+  const [taskFocus, setTaskFocus] = useState<{
+    line: number;
+    noteId: string;
+    text: string;
+  } | null>(null);
+  const contentRef = useRef(activeNote?.content ?? "");
   const timeoutRef = useRef<number | null>(null);
   const titleTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
-    setContent(activeNote?.content ?? "");
+    contentRef.current = activeNote?.content ?? "";
     setTitle(activeNote?.meta.title ?? "");
-  }, [activeNote?.meta.id, activeNote?.content]);
+    if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+    if (titleTimeoutRef.current) window.clearTimeout(titleTimeoutRef.current);
+  }, [activeNote?.meta.id]);
 
   useEffect(() => {
     setTitle(activeNote?.meta.title ?? "");
   }, [activeNote?.meta.id, activeNote?.meta.title]);
 
-  useEffect(() => {
-    if (!activeNote || content === activeNote.content) return;
-    if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
-    timeoutRef.current = window.setTimeout(() => {
-      saveActiveNote(content);
-    }, 240);
-    return () => {
+  const handleContentChange = useCallback(
+    (nextContent: string) => {
+      contentRef.current = nextContent;
+      if (!activeNote || nextContent === activeNote.content) return;
+
       if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
-    };
-  }, [activeNote, content, saveActiveNote]);
+      timeoutRef.current = window.setTimeout(() => {
+        saveActiveNote(contentRef.current);
+      }, 360);
+    },
+    [activeNote, saveActiveNote],
+  );
+
+  const handleImmediateSave = useCallback(() => {
+    if (!activeNote || contentRef.current === activeNote.content) return;
+    if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+    saveActiveNote(contentRef.current);
+  }, [activeNote, saveActiveNote]);
+
+  const handleToggleTodo = useCallback(
+    async (noteId: string, line: number, done: boolean) => {
+      setTodoItems((items) =>
+        items.map((item) =>
+          item.note.id === noteId && item.line === line
+            ? { ...item, done }
+            : item,
+        ),
+      );
+      await toggleTodo(noteId, line, done);
+    },
+    [toggleTodo],
+  );
+
+  const handleDeleteTodo = useCallback(
+    async (noteId: string, line: number) => {
+      setTodoItems((items) =>
+        items.filter((item) => item.note.id !== noteId || item.line !== line),
+      );
+      await deleteTodo(noteId, line);
+    },
+    [deleteTodo],
+  );
+
+  const handleOpenTodo = useCallback(
+    async (todo: ReturnType<typeof extractTodos>[number] & { note: NoteRecord }) => {
+      setTaskFocus({
+        line: todo.line,
+        noteId: todo.note.id,
+        text: todo.text,
+      });
+      await openNote(todo.note.id);
+    },
+    [openNote],
+  );
 
   useEffect(() => {
     if (!activeNote || title === activeNote.meta.title) return;
     if (titleTimeoutRef.current) window.clearTimeout(titleTimeoutRef.current);
     titleTimeoutRef.current = window.setTimeout(() => {
-      saveActiveTitle(title, content);
-    }, 240);
+      saveActiveTitle(title, contentRef.current);
+    }, 360);
     return () => {
       if (titleTimeoutRef.current) window.clearTimeout(titleTimeoutRef.current);
     };
-  }, [activeNote, content, saveActiveTitle, title]);
+  }, [activeNote, saveActiveTitle, title]);
 
   useEffect(() => {
     if (view !== "todos" || !manifest) return;
@@ -76,7 +129,7 @@ export function EditorPane() {
     Promise.all(
       manifest.notes.map(async (note) => {
         if (activeNote?.meta.id === note.id) {
-          return { note, content };
+          return { note, content: contentRef.current };
         }
         const document = await api.getNote(note.id);
         return { note, content: document?.content ?? "" };
@@ -93,7 +146,7 @@ export function EditorPane() {
     return () => {
       cancelled = true;
     };
-  }, [activeNote?.meta.id, content, manifest, view]);
+  }, [activeNote?.meta.id, manifest, view]);
 
   if (view === "stickies") {
     return (
@@ -119,8 +172,9 @@ export function EditorPane() {
     return (
       <TodoBoard
         todos={todoItems}
-        onOpenNote={openNote}
-        onToggle={toggleTodo}
+        onDelete={handleDeleteTodo}
+        onOpenTodo={handleOpenTodo}
+        onToggle={handleToggleTodo}
       />
     );
   }
@@ -136,17 +190,23 @@ export function EditorPane() {
   return (
     <RichNoteEditor
       activeNoteId={activeNote.meta.id}
-      content={content}
+      content={activeNote.content}
       notes={manifest?.notes ?? []}
       title={title}
+      workspaceRoot={rootPath}
       shouldSelectTitle={noteIdPendingTitleSelection === activeNote.meta.id}
-      onChange={setContent}
+      taskFocus={
+        taskFocus?.noteId === activeNote.meta.id
+          ? { line: taskFocus.line, text: taskFocus.text }
+          : null
+      }
+      onChange={handleContentChange}
       onCreatePage={createLinkedNote}
       onOpenPage={openNote}
-      onSave={() => saveActiveNote(content)}
+      onSave={handleImmediateSave}
       onTitleSelected={clearPendingTitleSelection}
       onTitleChange={setTitle}
-      onTitleSave={() => saveActiveTitle(title, content)}
+      onTitleSave={() => saveActiveTitle(title, contentRef.current)}
     />
   );
 }

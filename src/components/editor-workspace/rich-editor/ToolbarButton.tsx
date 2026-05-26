@@ -22,7 +22,7 @@ export function ToolbarButton({
         aria-label={label}
         disabled={disabled}
         className={cx(
-          "grid h-8 w-8 place-items-center rounded-lg text-muted transition-colors hover:bg-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-line disabled:pointer-events-none disabled:opacity-40 dark:text-muted-dark dark:hover:bg-hover-dark dark:hover:text-ink-dark dark:focus-visible:ring-focus-line-dark",
+          "grid h-8 w-8 place-items-center rounded-lg text-muted transition-[background-color,color,transform] duration-150 hover:scale-[1.04] hover:bg-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-line disabled:pointer-events-none disabled:opacity-40 dark:text-muted-dark dark:hover:bg-hover-dark dark:hover:text-ink-dark dark:focus-visible:ring-focus-line-dark",
           active &&
             "bg-hover text-ink dark:bg-tooltip-ink/10 dark:text-tooltip-ink",
         )}

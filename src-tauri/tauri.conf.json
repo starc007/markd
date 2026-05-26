@@ -17,6 +17,7 @@
         "height": 800,
         "minWidth": 800,
         "minHeight": 600,
+        "maximized": true,
         "titleBarStyle": "Overlay",
         "hiddenTitle": true,
         "decorations": true,
@@ -24,7 +25,11 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["$DOCUMENT/Draft/Workspace/assets/**"]
+      }
     }
   },
   "bundle": {

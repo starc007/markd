@@ -10,6 +10,18 @@ import type {
 } from "@/lib/types";
 import * as api from "@/lib/workspace-api";
 
+const OPEN_TABS_KEY = "draft-open-tabs";
+
+function persistOpenTabs(openNotes: NoteDocument[], activeNote: NoteDocument | null) {
+  window.localStorage.setItem(
+    OPEN_TABS_KEY,
+    JSON.stringify({
+      activeId: activeNote?.meta.id ?? null,
+      ids: openNotes.map((note) => note.meta.id),
+    }),
+  );
+}
+
 interface WorkspaceState {
   ready: boolean;
   saving: boolean;
@@ -36,6 +48,7 @@ interface WorkspaceState {
   saveActiveNote: (content: string) => Promise<void>;
   saveActiveTitle: (title: string, content?: string) => Promise<void>;
   toggleTodo: (noteId: string, line: number, done: boolean) => Promise<void>;
+  deleteTodo: (noteId: string, line: number) => Promise<void>;
   createFolder: (parentId?: string | null) => Promise<FolderRecord | null>;
   saveSticky: (sticky: Partial<StickyRecord> & Pick<StickyRecord, "content" | "color">) => Promise<void>;
   deleteSticky: (id: string) => Promise<void>;
@@ -59,13 +72,27 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const snapshot = await api.loadWorkspace();
     const theme =
       window.localStorage.getItem("draft-theme") === "dark" ? "dark" : "light";
+    const savedTabs = JSON.parse(
+      window.localStorage.getItem(OPEN_TABS_KEY) || "null",
+    ) as { activeId?: string | null; ids?: string[] } | null;
+    const validIds = new Set(snapshot.manifest.notes.map((note) => note.id));
+    const tabIds = (savedTabs?.ids ?? [])
+      .filter((id) => validIds.has(id))
+      .slice(0, 12);
+    const openNotes = (
+      await Promise.all(tabIds.map((id) => api.getNote(id)))
+    ).filter(Boolean) as NoteDocument[];
+    const activeNote =
+      openNotes.find((note) => note.meta.id === savedTabs?.activeId) ??
+      openNotes[0] ??
+      snapshot.activeNote;
     document.documentElement.classList.toggle("dark", theme === "dark");
     set({
       ready: true,
       rootPath: snapshot.rootPath,
       manifest: snapshot.manifest,
-      activeNote: snapshot.activeNote,
-      openNotes: snapshot.activeNote ? [snapshot.activeNote] : [],
+      activeNote,
+      openNotes: openNotes.length ? openNotes : snapshot.activeNote ? [snapshot.activeNote] : [],
       theme,
     });
   },
@@ -80,6 +107,15 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
 
   openNote: async (id) => {
+    const existing = get().openNotes.find((note) => note.meta.id === id);
+    if (existing) {
+      set((state) => {
+        persistOpenTabs(state.openNotes, existing);
+        return { activeNote: existing, view: "notes" };
+      });
+      return;
+    }
+
     const note = await api.getNote(id);
     if (!note) return;
     set((state) => ({
@@ -91,6 +127,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         : [...state.openNotes, note],
       view: "notes",
     }));
+    persistOpenTabs(get().openNotes, note);
   },
 
   closeNote: async (id) => {
@@ -105,6 +142,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       activeNote: nextActive,
       view: nextActive ? "notes" : state.view,
     });
+    persistOpenTabs(nextOpenNotes, nextActive);
   },
 
   createNote: async (folderId = null, parentId = null) => {
@@ -127,6 +165,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       noteIdPendingTitleSelection: note.meta.id,
       view: "notes",
     }));
+    persistOpenTabs(get().openNotes, note);
   },
 
   createLinkedNote: async (title) => {
@@ -219,15 +258,23 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         tags: current.meta.tags,
         pinned: current.meta.pinned,
       });
-      const snapshot = await api.loadWorkspace();
       set((state) => ({
         activeNote: note,
         openNotes: state.openNotes.map((item) =>
           item.meta.id === note.meta.id ? note : item,
         ),
-        manifest: snapshot.manifest,
+        manifest: state.manifest
+          ? {
+              ...state.manifest,
+              updatedAt: note.meta.updatedAt,
+              notes: state.manifest.notes.map((item) =>
+                item.id === note.meta.id ? note.meta : item,
+              ),
+            }
+          : state.manifest,
         saving: false,
       }));
+      persistOpenTabs(get().openNotes, note);
     } catch (error) {
       set({ saving: false });
       toast.error(String(error));
@@ -252,15 +299,23 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         tags: current.meta.tags,
         pinned: current.meta.pinned,
       });
-      const snapshot = await api.loadWorkspace();
       set((state) => ({
         activeNote: note,
         openNotes: state.openNotes.map((item) =>
           item.meta.id === note.meta.id ? note : item,
         ),
-        manifest: snapshot.manifest,
+        manifest: state.manifest
+          ? {
+              ...state.manifest,
+              updatedAt: note.meta.updatedAt,
+              notes: state.manifest.notes.map((item) =>
+                item.id === note.meta.id ? note.meta : item,
+              ),
+            }
+          : state.manifest,
         saving: false,
       }));
+      persistOpenTabs(get().openNotes, note);
     } catch (error) {
       set({ saving: false });
       toast.error(String(error));
@@ -297,6 +352,36 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
     set((state) => ({
       activeNote: state.activeNote?.meta.id === note.meta.id ? note : state.activeNote,
+      openNotes: state.openNotes.map((item) =>
+        item.meta.id === note.meta.id ? note : item,
+      ),
+      manifest: snapshot.manifest,
+    }));
+  },
+
+  deleteTodo: async (noteId, line) => {
+    const current = await api.getNote(noteId);
+    if (!current) return;
+
+    const lines = current.content.split("\n");
+    const target = lines[line];
+    if (!target || !/^(\s*-\s+\[)( |x|X)(\]\s+.*)$/.test(target)) return;
+
+    const content = lines.filter((_, index) => index !== line).join("\n");
+    const note = await api.upsertNote({
+      id: current.meta.id,
+      title: current.meta.title,
+      content,
+      folderId: current.meta.folderId,
+      parentId: current.meta.parentId,
+      tags: current.meta.tags,
+      pinned: current.meta.pinned,
+    });
+    const snapshot = await api.loadWorkspace();
+
+    set((state) => ({
+      activeNote:
+        state.activeNote?.meta.id === note.meta.id ? note : state.activeNote,
       openNotes: state.openNotes.map((item) =>
         item.meta.id === note.meta.id ? note : item,
       ),

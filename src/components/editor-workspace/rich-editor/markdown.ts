@@ -1,7 +1,10 @@
+import { convertFileSrc } from "@tauri-apps/api/core";
 import { marked } from "marked";
 import TurndownService from "turndown";
 
 const turndown = new TurndownService({
+  blankReplacement: (_content, node) =>
+    node.nodeName === "P" ? "\n\n&nbsp;\n\n" : "",
   bulletListMarker: "-",
   codeBlockStyle: "fenced",
   headingStyle: "atx",
@@ -9,8 +12,7 @@ const turndown = new TurndownService({
 
 turndown.addRule("taskListItems", {
   filter: (node) =>
-    node.nodeName === "LI" &&
-    (node as HTMLElement).dataset.type === "taskItem",
+    node.nodeName === "LI" && (node as HTMLElement).dataset.type === "taskItem",
   replacement: (content, node) => {
     const element = node as HTMLElement;
     const checked = element.getAttribute("data-checked") === "true";
@@ -42,6 +44,24 @@ turndown.addRule("tables", {
       .join(" | ");
 
     return `\n\n${markdownRows[0]}\n${divider}\n${markdownRows.slice(1).join("\n")}\n\n`;
+  },
+});
+
+turndown.addRule("workspaceImages", {
+  filter: "img",
+  replacement: (_content, node) => {
+    const element = node as HTMLImageElement;
+    const src =
+      element.getAttribute("data-workspace-src") ??
+      element.getAttribute("src") ??
+      "";
+    if (!src) return "";
+
+    const alt = element.getAttribute("alt")?.replace(/[\[\]]/g, "") ?? "";
+    const title = element.getAttribute("title");
+    const titlePart = title ? ` "${title.replace(/"/g, '\\"')}"` : "";
+
+    return `![${alt}](${src}${titlePart})`;
   },
 });
 
@@ -78,6 +98,50 @@ function normalizeTaskListHtml(html: string) {
   return template.innerHTML;
 }
 
+function normalizeEmptyParagraphHtml(html: string) {
+  if (typeof document === "undefined") return html;
+
+  const template = document.createElement("template");
+  template.innerHTML = html;
+
+  template.content.querySelectorAll("p").forEach((paragraph) => {
+    if (paragraph.innerHTML.trim() === "&nbsp;") {
+      paragraph.replaceChildren();
+    }
+  });
+
+  return template.innerHTML;
+}
+
+function isRemoteImageSource(src: string) {
+  return /^(?:[a-z][a-z0-9+.-]*:|#|\/)/i.test(src);
+}
+
+function normalizeWorkspaceImageHtml(html: string, workspaceRoot?: string) {
+  if (typeof document === "undefined" || !workspaceRoot) return html;
+
+  const template = document.createElement("template");
+  template.innerHTML = html;
+
+  template.content
+    .querySelectorAll<HTMLImageElement>("img")
+    .forEach((image) => {
+      const src = image.getAttribute("src");
+      if (!src || isRemoteImageSource(src)) return;
+
+      const relativePath = decodeURIComponent(src);
+      const absolutePath = `${workspaceRoot.replace(/\/$/, "")}/${relativePath}`;
+      image.setAttribute("data-workspace-src", relativePath);
+      image.setAttribute("src", convertFileSrc(absolutePath));
+    });
+
+  return template.innerHTML;
+}
+
+function preserveWikiLinks(markdown: string) {
+  return markdown.replace(/\\\[\\\[([^\n]*?)\\\]\\\]/g, "[[$1]]");
+}
+
 export function isLikelyMarkdown(value: string) {
   const text = value.trim();
   if (!text) return false;
@@ -95,15 +159,20 @@ export function isLikelyMarkdown(value: string) {
   ].some((pattern) => pattern.test(text));
 }
 
-export function markdownToHtml(markdown: string) {
+export function markdownToHtml(markdown: string, workspaceRoot?: string) {
   const html = marked(markdown, {
     async: false,
     breaks: true,
     gfm: true,
   });
-  return normalizeTaskListHtml(html);
+  return normalizeTaskListHtml(
+    normalizeWorkspaceImageHtml(
+      normalizeEmptyParagraphHtml(html),
+      workspaceRoot,
+    ),
+  );
 }
 
 export function htmlToMarkdown(html: string) {
-  return turndown.turndown(html).trimEnd();
+  return preserveWikiLinks(turndown.turndown(html).trimEnd());
 }

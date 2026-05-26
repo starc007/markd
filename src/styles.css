@@ -2,6 +2,20 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  min-width: 100vw;
+  min-height: 100dvh;
+}
+
 @theme {
   --color-canvas: #fbfaf8;
   --color-canvas-dark: #191918;
