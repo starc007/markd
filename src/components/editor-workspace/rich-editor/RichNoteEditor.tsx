@@ -171,7 +171,10 @@ export function RichNoteEditor({
     const hasRoomAbove = coords.top > menuHeight + 18;
 
     setPagePicker({
-      insertAt: editor.state.selection.to,
+      range: {
+        from: editor.state.selection.from,
+        to: editor.state.selection.to,
+      },
       position: {
         left: Math.max(
           12,
@@ -293,8 +296,9 @@ export function RichNoteEditor({
           editor
             .chain()
             .focus()
-            .setTextSelection(pagePicker.insertAt)
+            .deleteRange(pagePicker.range)
             .insertContent(`[[${title}]]`)
+            .setTextSelection(pagePicker.range.from + title.length + 4)
             .run();
           setPagePicker(null);
         }}

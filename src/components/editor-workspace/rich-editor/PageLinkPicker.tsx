@@ -5,7 +5,10 @@ import { useEffect, useState } from "react";
 import type { NoteRecord } from "@/lib/types";
 
 export interface PagePickerState {
-  insertAt: number;
+  range: {
+    from: number;
+    to: number;
+  };
   position: {
     left: number;
     top: number;
@@ -25,10 +28,10 @@ export function PageLinkPicker({
   onSelect: (title: string) => void;
 }) {
   const results = notes.slice(0, 10);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(-1);
 
   useEffect(() => {
-    setActiveIndex(0);
+    setActiveIndex(-1);
   }, [picker]);
 
   useEffect(() => {
@@ -43,7 +46,9 @@ export function PageLinkPicker({
 
       if (event.key === "ArrowDown") {
         event.preventDefault();
-        setActiveIndex((index) => Math.min(index + 1, Math.max(results.length - 1, 0)));
+        setActiveIndex((index) =>
+          Math.min(index + 1, Math.max(results.length - 1, 0)),
+        );
         return;
       }
 
@@ -53,9 +58,11 @@ export function PageLinkPicker({
         return;
       }
 
-      if (event.key === "Enter" && results[activeIndex]) {
+      if (event.key === "Enter") {
         event.preventDefault();
-        onSelect(results[activeIndex].title);
+        if (activeIndex >= 0 && results[activeIndex]) {
+          onSelect(results[activeIndex].title);
+        }
       }
     };
 
@@ -89,13 +96,14 @@ export function PageLinkPicker({
               Pages
             </div>
             <div className="max-h-56 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {results.map((note) => (
+              {results.map((note, index) => (
                 <button
                   className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-sm transition-[background-color,color,transform] duration-150 hover:translate-x-0.5 hover:bg-hover data-[active=true]:translate-x-0.5 data-[active=true]:bg-hover dark:hover:bg-tooltip-ink/10 dark:data-[active=true]:bg-tooltip-ink/10"
                   data-active={results[activeIndex]?.id === note.id}
                   key={note.id}
                   onClick={() => onSelect(note.title)}
                   onMouseDown={(event) => event.preventDefault()}
+                  onMouseEnter={() => setActiveIndex(index)}
                   type="button"
                 >
                   <span className="grid h-7 w-7 place-items-center rounded-lg bg-panel-soft dark:bg-tooltip-ink/10">
