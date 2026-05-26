@@ -19,27 +19,67 @@ interface BlockHandlePosition {
 export function BlockHandle({ editor }: { editor: Editor | null }) {
   const [position, setPosition] = useState<BlockHandlePosition | null>(null);
   const [active, setActive] = useState(false);
+  const [pinned, setPinned] = useState(false);
 
-  const updatePosition = useCallback(() => {
+  const measurePosition = useCallback(() => {
     if (!editor || !editor.isFocused || !editor.state.selection.empty) {
-      setActive(false);
-      setPosition(null);
-      return;
+      return null;
     }
 
     try {
       const { $from } = editor.state.selection;
       const coords = editor.view.coordsAtPos($from.start($from.depth));
-      setPosition({
+      const nextPosition = {
         left: Math.max(8, coords.left - 42),
         top: Math.max(56, coords.top - 4),
-      });
-      setActive(true);
+      };
+      return nextPosition;
     } catch {
-      setActive(false);
-      setPosition(null);
+      return null;
     }
   }, [editor]);
+
+  const hide = useCallback(() => {
+    if (pinned) return;
+    setActive(false);
+    setPosition(null);
+  }, [pinned]);
+
+  const updatePosition = useCallback(() => {
+    const nextPosition = measurePosition();
+    if (!nextPosition) {
+      hide();
+      return;
+    }
+    if (active || pinned) {
+      setPosition(nextPosition);
+    }
+  }, [active, hide, measurePosition, pinned]);
+
+  const handlePointerMove = useCallback(
+    (event: MouseEvent) => {
+      if (pinned) return;
+      const nextPosition = measurePosition();
+      if (!nextPosition) {
+        hide();
+        return;
+      }
+
+      const nearGutter =
+        event.clientX >= nextPosition.left - 12 &&
+        event.clientX <= nextPosition.left + 40 &&
+        event.clientY >= nextPosition.top - 12 &&
+        event.clientY <= nextPosition.top + 44;
+
+      if (nearGutter) {
+        setPosition(nextPosition);
+        setActive(true);
+      } else if (active) {
+        hide();
+      }
+    },
+    [active, hide, measurePosition, pinned],
+  );
 
   useEffect(() => {
     if (!editor) return;
@@ -49,6 +89,7 @@ export function BlockHandle({ editor }: { editor: Editor | null }) {
     editor.on("focus", updatePosition);
     editor.on("blur", updatePosition);
     document.addEventListener("scroll", updatePosition, true);
+    document.addEventListener("mousemove", handlePointerMove);
     window.addEventListener("resize", updatePosition);
 
     return () => {
@@ -57,9 +98,10 @@ export function BlockHandle({ editor }: { editor: Editor | null }) {
       editor.off("focus", updatePosition);
       editor.off("blur", updatePosition);
       document.removeEventListener("scroll", updatePosition, true);
+      document.removeEventListener("mousemove", handlePointerMove);
       window.removeEventListener("resize", updatePosition);
     };
-  }, [editor, updatePosition]);
+  }, [editor, handlePointerMove, updatePosition]);
 
   const deleteBlock = () => {
     if (!editor) return;
@@ -82,6 +124,12 @@ export function BlockHandle({ editor }: { editor: Editor | null }) {
           initial={{ scale: 0.96, x: -4 }}
           style={{ left: position.left, top: position.top }}
           transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          onMouseEnter={() => setPinned(true)}
+          onMouseLeave={() => {
+            setPinned(false);
+            setActive(false);
+            setPosition(null);
+          }}
         >
           <span className="grid h-7 w-5 place-items-center text-muted dark:text-tooltip-ink/60">
             <HugeiconsIcon icon={DragDropVerticalIcon} size={14} color="currentColor" />
