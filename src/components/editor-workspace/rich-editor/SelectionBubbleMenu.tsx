@@ -160,6 +160,21 @@ export function SelectionBubbleMenu({
             onClick={() => editor.chain().focus().addRowAfter().run()}
           />
           <ToolbarButton
+            icon={TableIcon}
+            label="Add column"
+            onClick={() => editor.chain().focus().addColumnAfter().run()}
+          />
+          <ToolbarButton
+            icon={Delete02Icon}
+            label="Delete row"
+            onClick={() => editor.chain().focus().deleteRow().run()}
+          />
+          <ToolbarButton
+            icon={Delete02Icon}
+            label="Delete column"
+            onClick={() => editor.chain().focus().deleteColumn().run()}
+          />
+          <ToolbarButton
             icon={Delete02Icon}
             label="Delete table"
             onClick={() => editor.chain().focus().deleteTable().run()}

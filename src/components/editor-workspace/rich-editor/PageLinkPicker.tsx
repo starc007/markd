@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import type { NoteRecord } from "@/lib/types";
 
 export interface PagePickerState {
+  query?: string;
   range: {
     from: number;
     to: number;
@@ -27,7 +28,10 @@ export function PageLinkPicker({
   onClose: () => void;
   onSelect: (title: string) => void;
 }) {
-  const results = notes.slice(0, 10);
+  const query = picker?.query?.trim().toLowerCase() ?? "";
+  const results = notes
+    .filter((note) => !query || note.title.toLowerCase().includes(query))
+    .slice(0, 10);
   const [activeIndex, setActiveIndex] = useState(-1);
 
   useEffect(() => {

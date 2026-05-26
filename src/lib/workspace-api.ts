@@ -77,3 +77,7 @@ export function revealWorkspacePath() {
 export function importImageAsset(sourcePath: string) {
   return invoke<string>("import_image_asset", { sourcePath });
 }
+
+export function saveImageAsset(input: { bytes: number[]; fileName: string }) {
+  return invoke<string>("save_image_asset", { input });
+}

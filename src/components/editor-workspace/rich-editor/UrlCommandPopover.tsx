@@ -1,12 +1,11 @@
 import { ImageAdd01Icon, Link01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { convertFileSrc } from "@tauri-apps/api/core";
-import { open } from "@tauri-apps/plugin-dialog";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import type { Editor } from "@tiptap/react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
-import * as api from "@/lib/workspace-api";
-import { applyImageAsset, applyImageUrl, applyUrlLink } from "./linkCommands";
+import { insertImagePath, pickImageFile } from "./imageAssets";
+import { applyImageUrl, applyUrlLink } from "./linkCommands";
 
 export interface UrlCommandState {
   mode: "link" | "image";
@@ -51,29 +50,29 @@ export function UrlCommandPopover({
     if (didApply) onClose();
   };
 
+  const removeLink = () => {
+    if (!editor || state.mode !== "link") return;
+    editor
+      .chain()
+      .focus()
+      .setTextSelection(state.selection)
+      .extendMarkRange("link")
+      .unsetLink()
+      .run();
+    onClose();
+  };
+
   const uploadImage = async () => {
     if (!editor || !workspaceRoot || state.mode !== "image") return;
 
-    const selected = await open({
-      multiple: false,
-      filters: [
-        {
-          name: "Images",
-          extensions: ["png", "jpg", "jpeg", "gif", "webp", "avif", "svg"],
-        },
-      ],
-    });
-    if (!selected || Array.isArray(selected)) return;
+    const selected = await pickImageFile();
+    if (!selected) return;
 
-    const relativePath = await api.importImageAsset(selected);
-    const displaySrc = convertFileSrc(selected);
-    const didApply = applyImageAsset(
+    const didApply = await insertImagePath({
       editor,
-      displaySrc,
-      relativePath,
-      state.selection.from,
-      state.selection.to,
-    );
+      path: selected,
+      range: state.selection,
+    });
     if (didApply) onClose();
   };
 
@@ -131,6 +130,24 @@ export function UrlCommandPopover({
           >
             Upload
           </button>
+        )}
+        {state.mode === "link" && state.value && (
+          <>
+            <button
+              className="h-8 rounded-xl px-3 text-xs font-medium text-muted transition-colors duration-150 hover:bg-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-line dark:text-tooltip-ink/65 dark:hover:bg-tooltip-ink/10 dark:hover:text-tooltip-ink dark:focus-visible:ring-focus-line-dark"
+              onClick={() => openUrl(state.value ?? value)}
+              type="button"
+            >
+              Open
+            </button>
+            <button
+              className="h-8 rounded-xl px-3 text-xs font-medium text-muted transition-colors duration-150 hover:bg-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-line dark:text-tooltip-ink/65 dark:hover:bg-tooltip-ink/10 dark:hover:text-tooltip-ink dark:focus-visible:ring-focus-line-dark"
+              onClick={removeLink}
+              type="button"
+            >
+              Remove
+            </button>
+          </>
         )}
         <button
           className="h-8 rounded-xl bg-ink px-3 text-xs font-medium text-panel transition-transform duration-150 hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-line dark:bg-tooltip-ink dark:text-tooltip"

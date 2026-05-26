@@ -25,12 +25,12 @@ export interface TodoListItem {
 export function TodoBoard({
   todos,
   onDelete,
-  onOpenNote,
+  onOpenTodo,
   onToggle,
 }: {
   todos: TodoListItem[];
   onDelete: (noteId: string, line: number) => Promise<void>;
-  onOpenNote: (id: string) => Promise<void>;
+  onOpenTodo: (todo: TodoListItem) => Promise<void>;
   onToggle: (noteId: string, line: number, done: boolean) => Promise<void>;
 }) {
   const [activeStatus, setActiveStatus] = useState("open");
@@ -116,7 +116,7 @@ export function TodoBoard({
                 </button>
                 <button
                   className="min-w-0 flex-1 text-left"
-                  onClick={() => onOpenNote(todo.note.id)}
+                  onClick={() => onOpenTodo(todo)}
                   type="button"
                 >
                   <span
@@ -134,7 +134,7 @@ export function TodoBoard({
                 </button>
                 <button
                   className="inline-flex max-w-[220px] shrink-0 items-center gap-1 rounded-full bg-panel-soft px-2 py-0.5 text-xs font-medium text-muted transition-colors hover:text-ink dark:bg-panel-soft-dark dark:text-muted-dark dark:hover:text-ink-dark"
-                  onClick={() => onOpenNote(todo.note.id)}
+                  onClick={() => onOpenTodo(todo)}
                   type="button"
                 >
                   <HugeiconsIcon icon={Task01Icon} size={12} color="currentColor" />

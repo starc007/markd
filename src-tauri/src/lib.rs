@@ -123,6 +123,13 @@ pub struct UpsertBookmarkRequest {
     pub tags: Vec<String>,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveImageAssetRequest {
+    pub bytes: Vec<u8>,
+    pub file_name: String,
+}
+
 fn workspace_root() -> Result<PathBuf, String> {
     let documents = dirs::document_dir().ok_or("Documents directory not found")?;
     Ok(documents.join(APP_DIR).join(WORKSPACE_DIR))
@@ -904,6 +911,20 @@ fn import_image_asset(source_path: String) -> Result<String, String> {
     Ok(relative_path)
 }
 
+#[tauri::command]
+fn save_image_asset(input: SaveImageAssetRequest) -> Result<String, String> {
+    let (root, _) = ensure_workspace()?;
+    let source = PathBuf::from(&input.file_name);
+    let relative_path = asset_path(&source);
+    let destination = root.join(&relative_path);
+    if let Some(parent) = destination.parent() {
+        fs::create_dir_all(parent).map_err(|e| format!("Failed to create assets: {e}"))?;
+    }
+    fs::write(&destination, input.bytes).map_err(|e| format!("Failed to save image: {e}"))?;
+
+    Ok(relative_path)
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
@@ -924,6 +945,7 @@ pub fn run() {
             delete_bookmark,
             reveal_workspace_path,
             import_image_asset,
+            save_image_asset,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

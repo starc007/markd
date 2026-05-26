@@ -36,6 +36,11 @@ export function EditorPane() {
   const [todoItems, setTodoItems] = useState<
     Array<ReturnType<typeof extractTodos>[number] & { note: NoteRecord }>
   >([]);
+  const [taskFocus, setTaskFocus] = useState<{
+    line: number;
+    noteId: string;
+    text: string;
+  } | null>(null);
   const contentRef = useRef(activeNote?.content ?? "");
   const timeoutRef = useRef<number | null>(null);
   const titleTimeoutRef = useRef<number | null>(null);
@@ -92,6 +97,18 @@ export function EditorPane() {
       await deleteTodo(noteId, line);
     },
     [deleteTodo],
+  );
+
+  const handleOpenTodo = useCallback(
+    async (todo: ReturnType<typeof extractTodos>[number] & { note: NoteRecord }) => {
+      setTaskFocus({
+        line: todo.line,
+        noteId: todo.note.id,
+        text: todo.text,
+      });
+      await openNote(todo.note.id);
+    },
+    [openNote],
   );
 
   useEffect(() => {
@@ -156,7 +173,7 @@ export function EditorPane() {
       <TodoBoard
         todos={todoItems}
         onDelete={handleDeleteTodo}
-        onOpenNote={openNote}
+        onOpenTodo={handleOpenTodo}
         onToggle={handleToggleTodo}
       />
     );
@@ -178,6 +195,11 @@ export function EditorPane() {
       title={title}
       workspaceRoot={rootPath}
       shouldSelectTitle={noteIdPendingTitleSelection === activeNote.meta.id}
+      taskFocus={
+        taskFocus?.noteId === activeNote.meta.id
+          ? { line: taskFocus.line, text: taskFocus.text }
+          : null
+      }
       onChange={handleContentChange}
       onCreatePage={createLinkedNote}
       onOpenPage={openNote}
