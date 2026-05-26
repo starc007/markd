@@ -447,7 +447,7 @@ export function RichNoteEditor({
   }, [editor, taskFocus]);
 
   return (
-    <main className="relative flex h-full min-h-0 overflow-hidden bg-editor dark:bg-editor-dark">
+    <main className="relative flex h-full min-h-0 overflow-hidden bg-editor dark:bg-editor-dark mt-16">
       <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <div className="px-[clamp(36px,9vw,128px)] pt-16">
           <input
