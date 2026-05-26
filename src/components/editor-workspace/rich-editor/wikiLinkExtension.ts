@@ -7,6 +7,7 @@ const wikiLinkPattern = /\[\[([^\]]+)\]\]/g;
 function createDocumentIcon() {
   const icon = document.createElement("span");
   icon.setAttribute("aria-hidden", "true");
+  icon.setAttribute("data-wiki-link", "true");
   icon.className =
     "mr-1 inline-flex h-4 w-4 items-center justify-center align-[-3px] text-ink dark:text-ink-dark";
   icon.innerHTML =
@@ -45,6 +46,8 @@ export const WikiLinkExtension = Extension.create({
                   Decoration.inline(titleFrom, titleTo, {
                     class:
                       "cursor-pointer whitespace-normal text-ink underline decoration-line underline-offset-4 transition-colors hover:text-muted dark:text-ink-dark dark:hover:text-muted-dark",
+                    "data-wiki-link": "true",
+                    "data-wiki-link-title": match[1],
                   }),
                   Decoration.inline(titleTo, to, {
                     class: "hidden",

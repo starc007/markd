@@ -1,5 +1,6 @@
 import { EditorContent, useEditor } from "@tiptap/react";
 import { DOMParser as ProseMirrorDOMParser } from "@tiptap/pm/model";
+import { TextSelection } from "@tiptap/pm/state";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { NoteRecord } from "@/lib/types";
 import { BacklinksPanel } from "./BacklinksPanel";
@@ -8,10 +9,7 @@ import { htmlToMarkdown, isLikelyMarkdown, markdownToHtml } from "./markdown";
 import { PageLinkPicker, type PagePickerState } from "./PageLinkPicker";
 import { SelectionBubbleMenu } from "./SelectionBubbleMenu";
 import { SlashCommandMenu, type SlashMenuState } from "./SlashCommandMenu";
-import {
-  UrlCommandPopover,
-  type UrlCommandState,
-} from "./UrlCommandPopover";
+import { UrlCommandPopover, type UrlCommandState } from "./UrlCommandPopover";
 
 export function RichNoteEditor({
   activeNoteId,
@@ -121,25 +119,37 @@ export function RichNoteEditor({
         view.dispatch(view.state.tr.replaceSelection(slice).scrollIntoView());
         return true;
       },
-      handleClick(view, position) {
+      handleClick(view, position, event) {
         const resolved = view.state.doc.resolve(position);
         const text = resolved.parent.textBetween(
           0,
           resolved.parent.content.size,
         );
         const offset = resolved.parentOffset;
+        const target = event.target as HTMLElement | null;
+        const clickedWikiLink = target?.closest("[data-wiki-link]");
 
         for (const match of text.matchAll(/\[\[([^\]]+)\]\]/g)) {
           const start = match.index ?? 0;
           const end = start + match[0].length;
           if (offset >= start && offset <= end) {
             const title = match[1].trim();
-            const note = notes.find(
-              (item) => item.title.toLowerCase() === title.toLowerCase(),
-            );
-            if (note) {
-              onOpenPage(note.id);
+            if (clickedWikiLink) {
+              const note = notes.find(
+                (item) => item.title.toLowerCase() === title.toLowerCase(),
+              );
+              if (note) {
+                onOpenPage(note.id);
+              }
+              return true;
             }
+
+            const tokenEnd = resolved.start() + end;
+            view.dispatch(
+              view.state.tr.setSelection(
+                TextSelection.create(view.state.doc, tokenEnd),
+              ),
+            );
             return true;
           }
         }
