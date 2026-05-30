@@ -53,7 +53,7 @@ export function TopBar() {
                     />
                   )}
                   <button
-                    className="relative z-10 flex h-full min-w-0 flex-1 items-center px-3 pr-1 text-left outline-none transition-[color,transform] duration-150 hover:translate-y-[-1px] focus-visible:ring-2 focus-visible:ring-focus-line dark:focus-visible:ring-focus-line-dark"
+                    className="relative z-10 flex h-full min-w-0 flex-1 items-center px-3 pr-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-focus-line dark:focus-visible:ring-focus-line-dark"
                     onClick={() => openNote(note.meta.id)}
                     type="button"
                   >

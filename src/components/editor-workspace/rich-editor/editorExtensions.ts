@@ -74,7 +74,7 @@ export function createEditorExtensions() {
     TableCell,
     Placeholder.configure({
       placeholder:
-        "Write, link pages with [[Page]], paste URLs, add tables, tasks, and images...",
+        "Start writing your note... Use [[double brackets]] to link to other pages.",
     }),
   ];
 }

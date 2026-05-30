@@ -282,7 +282,12 @@ export function RichNoteEditor({
         const clickedUrlLink = target?.closest("a");
         if (clickedUrlLink && editor) {
           event.preventDefault();
-          editor.chain().focus().setTextSelection(position).extendMarkRange("link").run();
+          editor
+            .chain()
+            .focus()
+            .setTextSelection(position)
+            .extendMarkRange("link")
+            .run();
           const { from, to } = editor.state.selection;
           const coords = view.coordsAtPos(position);
           setUrlCommand({
@@ -290,7 +295,10 @@ export function RichNoteEditor({
             selection: { from, to },
             value: clickedUrlLink.getAttribute("href") ?? undefined,
             position: {
-              left: Math.max(12, Math.min(coords.left, window.innerWidth - 350 - 12)),
+              left: Math.max(
+                12,
+                Math.min(coords.left, window.innerWidth - 350 - 12),
+              ),
               top: coords.bottom + 8,
             },
             side: "bottom",
@@ -447,11 +455,11 @@ export function RichNoteEditor({
   }, [editor, taskFocus]);
 
   return (
-    <main className="relative flex h-full min-h-0 overflow-hidden bg-editor dark:bg-editor-dark mt-16">
+    <main className="relative flex h-full min-h-0 overflow-hidden bg-editor dark:bg-editor-dark">
       <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <div className="px-[clamp(36px,9vw,128px)] pt-16">
           <input
-            className="block w-full rounded-xl border-0 bg-transparent p-0 text-[40px] font-semibold leading-tight text-ink caret-ink outline-none placeholder:text-muted transition-colors focus-visible:ring-2 focus-visible:ring-focus-line/40 dark:text-ink-dark dark:caret-ink-dark dark:placeholder:text-muted-dark dark:focus-visible:ring-focus-line-dark/40"
+            className="block w-full rounded-xl border-0 bg-transparent p-0 text-[40px] font-semibold leading-tight text-ink caret-ink outline-none placeholder:text-muted transition-colors dark:text-ink-dark dark:caret-ink-dark dark:placeholder:text-muted-dark dark:focus-visible:ring-focus-line-dark/40"
             onBlur={onTitleSave}
             onChange={(event) => onTitleChange(event.target.value)}
             onKeyDown={(event) => {

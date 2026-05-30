@@ -92,7 +92,8 @@ export function PageLinkPicker({
             style={{
               left: picker.position.left,
               top: picker.position.top,
-              transformOrigin: picker.side === "bottom" ? "top left" : "bottom left",
+              transformOrigin:
+                picker.side === "bottom" ? "top left" : "bottom left",
             }}
             transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
           >
@@ -102,7 +103,7 @@ export function PageLinkPicker({
             <div className="max-h-56 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {results.map((note, index) => (
                 <button
-                  className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-sm transition-[background-color,color,transform] duration-150 hover:translate-x-0.5 hover:bg-hover data-[active=true]:translate-x-0.5 data-[active=true]:bg-hover dark:hover:bg-tooltip-ink/10 dark:data-[active=true]:bg-tooltip-ink/10"
+                  className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-sm hover:bg-hover data-[active=true]:translate-x-0.5 data-[active=true]:bg-hover dark:hover:bg-tooltip-ink/10 dark:data-[active=true]:bg-tooltip-ink/10"
                   data-active={results[activeIndex]?.id === note.id}
                   key={note.id}
                   onClick={() => onSelect(note.title)}
@@ -111,9 +112,15 @@ export function PageLinkPicker({
                   type="button"
                 >
                   <span className="grid h-7 w-7 place-items-center rounded-lg bg-panel-soft dark:bg-tooltip-ink/10">
-                    <HugeiconsIcon icon={FileEditIcon} size={15} color="currentColor" />
+                    <HugeiconsIcon
+                      icon={FileEditIcon}
+                      size={15}
+                      color="currentColor"
+                    />
                   </span>
-                  <span className="min-w-0 flex-1 truncate font-medium">{note.title}</span>
+                  <span className="min-w-0 flex-1 truncate font-medium">
+                    {note.title}
+                  </span>
                 </button>
               ))}
               {results.length === 0 && (
