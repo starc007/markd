@@ -40,15 +40,14 @@
     "@tiptap/extension-task-list": "^3.23.6",
     "@tiptap/extension-typography": "^3.23.6",
     "@tiptap/extension-underline": "^3.23.6",
+    "@tiptap/markdown": "3.23.6",
     "@tiptap/react": "^3.23.6",
     "@tiptap/starter-kit": "^3.23.6",
-    "marked": "^18.0.4",
     "motion": "^12.40.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "sonner": "^2.0.7",
     "tailwindcss": "^4.1.18",
-    "turndown": "^7.2.4",
     "zustand": "^5.0.9"
   },
   "devDependencies": {
@@ -56,7 +55,6 @@
     "@types/node": "^25.0.3",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
-    "@types/turndown": "^5.0.6",
     "@vitejs/plugin-react": "^4.6.0",
     "typescript": "~5.8.3",
     "vite": "^7.0.4"

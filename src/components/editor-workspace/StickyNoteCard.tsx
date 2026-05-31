@@ -5,12 +5,15 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { EditorContent, useEditor } from "@tiptap/react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cx } from "@/components/ui";
 import type { StickyRecord } from "@/lib/types";
 import { createStickyEditorExtensions } from "./rich-editor/editorExtensions";
-import { promptForUrlLink } from "./rich-editor/linkCommands";
-import { htmlToMarkdown, markdownToHtml } from "./rich-editor/markdown";
+import { preserveWikiLinks } from "./rich-editor/markdown";
+import {
+  UrlCommandPopover,
+  type UrlCommandState,
+} from "./rich-editor/UrlCommandPopover";
 
 export function StickyNoteCard({
   className,
@@ -26,8 +29,10 @@ export function StickyNoteCard({
   ) => void;
 }) {
   const contentRef = useRef(sticky.content);
+  const [urlCommand, setUrlCommand] = useState<UrlCommandState | null>(null);
   const editor = useEditor({
-    content: markdownToHtml(sticky.content),
+    content: sticky.content,
+    contentType: "markdown",
     editorProps: {
       attributes: {
         class:
@@ -40,22 +45,39 @@ export function StickyNoteCard({
       onSave({ ...sticky, content: contentRef.current });
     },
     onUpdate: ({ editor }) => {
-      contentRef.current = htmlToMarkdown(editor.getHTML());
+      contentRef.current = preserveWikiLinks(editor.getMarkdown());
     },
   });
 
   useEffect(() => {
     if (!editor || sticky.content === contentRef.current) return;
     contentRef.current = sticky.content;
-    editor.commands.setContent(markdownToHtml(sticky.content), {
+    editor.commands.setContent(sticky.content, {
+      contentType: "markdown",
       emitUpdate: false,
     });
   }, [editor, sticky.content]);
 
   const saveNow = () => {
     if (!editor) return;
-    contentRef.current = htmlToMarkdown(editor.getHTML());
+    contentRef.current = preserveWikiLinks(editor.getMarkdown());
     onSave({ ...sticky, content: contentRef.current });
+  };
+
+  const openLinkEditor = () => {
+    if (!editor) return;
+    const { from, to } = editor.state.selection;
+    const coords = editor.view.coordsAtPos(to);
+    setUrlCommand({
+      mode: "link",
+      selection: { from, to },
+      value: editor.getAttributes("link").href,
+      position: {
+        left: Math.max(12, Math.min(coords.left, window.innerWidth - 350 - 12)),
+        top: coords.bottom + 8,
+      },
+      side: "bottom",
+    });
   };
 
   return (
@@ -65,12 +87,7 @@ export function StickyNoteCard({
           label="Link"
           icon={Link02Icon}
           isActive={editor?.isActive("link")}
-          onClick={() => {
-            if (!editor) return;
-            if (promptForUrlLink(editor)) {
-              saveNow();
-            }
-          }}
+          onClick={openLinkEditor}
         />
         <StickyToolButton
           label="Todo"
@@ -90,6 +107,15 @@ export function StickyNoteCard({
       <div className={cx("rounded-2xl", className)}>
         <EditorContent editor={editor} />
       </div>
+      <UrlCommandPopover
+        editor={editor}
+        state={urlCommand}
+        workspaceRoot=""
+        onClose={() => {
+          setUrlCommand(null);
+          saveNow();
+        }}
+      />
     </div>
   );
 }

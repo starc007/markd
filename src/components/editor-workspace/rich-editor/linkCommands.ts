@@ -76,21 +76,3 @@ export function applyImageAsset(
     .run();
   return true;
 }
-
-export function promptForUrlLink(editor: Editor) {
-  const { from, to, empty } = editor.state.selection;
-  const previousUrl = editor.getAttributes("link").href as string | undefined;
-  const href = window.prompt("Link URL", previousUrl ?? "https://");
-
-  if (href === null) return false;
-
-  return applyUrlLink(editor, href, from, empty ? from : to);
-}
-
-export function promptForImageUrl(editor: Editor) {
-  const { from, to } = editor.state.selection;
-  const href = window.prompt("Image URL", "https://");
-  if (href === null) return false;
-
-  return applyImageUrl(editor, href, from, to);
-}

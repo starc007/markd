@@ -1,7 +1,9 @@
+import { convertFileSrc } from "@tauri-apps/api/core";
 import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import { Extension } from "@tiptap/core";
+import { Markdown } from "@tiptap/markdown";
 import { Table } from "@tiptap/extension-table";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
@@ -13,7 +15,12 @@ import Underline from "@tiptap/extension-underline";
 import StarterKit from "@tiptap/starter-kit";
 import { WikiLinkExtension } from "./wikiLinkExtension";
 
-const WorkspaceImage = Image.extend({
+function isRemoteImageSource(src: string) {
+  return /^(?:[a-z][a-z0-9+.-]*:|#|\/)/i.test(src);
+}
+
+const WorkspaceImage = (workspaceRoot?: string) =>
+  Image.extend({
   addAttributes() {
     return {
       ...this.parent?.(),
@@ -26,6 +33,31 @@ const WorkspaceImage = Image.extend({
             : {},
       },
     };
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    const workspaceSrc = HTMLAttributes.workspaceSrc ?? HTMLAttributes.src;
+    const src =
+      workspaceRoot && workspaceSrc && !isRemoteImageSource(workspaceSrc)
+        ? convertFileSrc(`${workspaceRoot.replace(/\/$/, "")}/${workspaceSrc}`)
+        : HTMLAttributes.src;
+
+    return [
+      "img",
+      {
+        ...HTMLAttributes,
+        src,
+        "data-workspace-src": workspaceSrc,
+      },
+    ];
+  },
+
+  renderMarkdown: (node) => {
+    const src = node.attrs?.workspaceSrc ?? node.attrs?.src ?? "";
+    const alt = node.attrs?.alt ?? "";
+    const title = node.attrs?.title ?? "";
+
+    return title ? `![${alt}](${src} "${title}")` : `![${alt}](${src})`;
   },
 });
 
@@ -43,9 +75,15 @@ const FormattingShortcuts = Extension.create({
   },
 });
 
-export function createEditorExtensions() {
+export function createEditorExtensions(workspaceRoot?: string) {
   return [
     FormattingShortcuts,
+    Markdown.configure({
+      markedOptions: {
+        breaks: true,
+        gfm: true,
+      },
+    }),
     StarterKit.configure({
       link: false,
     }),
@@ -58,7 +96,7 @@ export function createEditorExtensions() {
       openOnClick: false,
       protocols: ["http", "https", "mailto"],
     }),
-    WorkspaceImage.configure({
+    WorkspaceImage(workspaceRoot).configure({
       allowBase64: true,
       inline: false,
     }),
@@ -82,6 +120,12 @@ export function createEditorExtensions() {
 export function createStickyEditorExtensions() {
   return [
     FormattingShortcuts,
+    Markdown.configure({
+      markedOptions: {
+        breaks: true,
+        gfm: true,
+      },
+    }),
     StarterKit.configure({
       blockquote: false,
       code: false,

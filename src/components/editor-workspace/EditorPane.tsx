@@ -46,11 +46,17 @@ export function EditorPane() {
   const titleTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
+    const note = activeNote;
     contentRef.current = activeNote?.content ?? "";
     setTitle(activeNote?.meta.title ?? "");
     if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
     if (titleTimeoutRef.current) window.clearTimeout(titleTimeoutRef.current);
-  }, [activeNote?.meta.id]);
+    return () => {
+      if (!note || contentRef.current === note.content) return;
+      if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+      saveActiveNote(contentRef.current, note.meta.id);
+    };
+  }, [activeNote?.meta.id, saveActiveNote]);
 
   useEffect(() => {
     setTitle(activeNote?.meta.title ?? "");
@@ -63,7 +69,7 @@ export function EditorPane() {
 
       if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
       timeoutRef.current = window.setTimeout(() => {
-        saveActiveNote(contentRef.current);
+        saveActiveNote(contentRef.current, activeNote.meta.id);
       }, 360);
     },
     [activeNote, saveActiveNote],
@@ -72,7 +78,7 @@ export function EditorPane() {
   const handleImmediateSave = useCallback(() => {
     if (!activeNote || contentRef.current === activeNote.content) return;
     if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
-    saveActiveNote(contentRef.current);
+    saveActiveNote(contentRef.current, activeNote.meta.id);
   }, [activeNote, saveActiveNote]);
 
   const handleToggleTodo = useCallback(
@@ -115,7 +121,7 @@ export function EditorPane() {
     if (!activeNote || title === activeNote.meta.title) return;
     if (titleTimeoutRef.current) window.clearTimeout(titleTimeoutRef.current);
     titleTimeoutRef.current = window.setTimeout(() => {
-      saveActiveTitle(title, contentRef.current);
+      saveActiveTitle(title, contentRef.current, activeNote.meta.id);
     }, 360);
     return () => {
       if (titleTimeoutRef.current) window.clearTimeout(titleTimeoutRef.current);
@@ -206,7 +212,9 @@ export function EditorPane() {
       onSave={handleImmediateSave}
       onTitleSelected={clearPendingTitleSelection}
       onTitleChange={setTitle}
-      onTitleSave={() => saveActiveTitle(title, contentRef.current)}
+      onTitleSave={() =>
+        saveActiveTitle(title, contentRef.current, activeNote.meta.id)
+      }
     />
   );
 }

@@ -45,8 +45,8 @@ interface WorkspaceState {
   deleteFolder: (id: string) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   renameFolder: (folder: FolderRecord, name: string) => Promise<void>;
-  saveActiveNote: (content: string) => Promise<void>;
-  saveActiveTitle: (title: string, content?: string) => Promise<void>;
+  saveActiveNote: (content: string, noteId?: string) => Promise<void>;
+  saveActiveTitle: (title: string, content?: string, noteId?: string) => Promise<void>;
   toggleTodo: (noteId: string, line: number, done: boolean) => Promise<void>;
   deleteTodo: (noteId: string, line: number) => Promise<void>;
   createFolder: (parentId?: string | null) => Promise<FolderRecord | null>;
@@ -244,8 +244,12 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     set({ manifest: snapshot.manifest });
   },
 
-  saveActiveNote: async (content) => {
-    const current = get().activeNote;
+  saveActiveNote: async (content, noteId) => {
+    const current =
+      noteId
+        ? get().openNotes.find((note) => note.meta.id === noteId) ??
+          (get().activeNote?.meta.id === noteId ? get().activeNote : null)
+        : get().activeNote;
     if (!current) return;
     set({ saving: true });
     try {
@@ -259,7 +263,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         pinned: current.meta.pinned,
       });
       set((state) => ({
-        activeNote: note,
+        activeNote:
+          state.activeNote?.meta.id === note.meta.id ? note : state.activeNote,
         openNotes: state.openNotes.map((item) =>
           item.meta.id === note.meta.id ? note : item,
         ),
@@ -274,15 +279,19 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
           : state.manifest,
         saving: false,
       }));
-      persistOpenTabs(get().openNotes, note);
+      persistOpenTabs(get().openNotes, get().activeNote);
     } catch (error) {
       set({ saving: false });
       toast.error(String(error));
     }
   },
 
-  saveActiveTitle: async (title, content) => {
-    const current = get().activeNote;
+  saveActiveTitle: async (title, content, noteId) => {
+    const current =
+      noteId
+        ? get().openNotes.find((note) => note.meta.id === noteId) ??
+          (get().activeNote?.meta.id === noteId ? get().activeNote : null)
+        : get().activeNote;
     if (!current) return;
     const nextTitle = title.trim() || "Untitled";
     const nextContent = content ?? current.content;
@@ -300,7 +309,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         pinned: current.meta.pinned,
       });
       set((state) => ({
-        activeNote: note,
+        activeNote:
+          state.activeNote?.meta.id === note.meta.id ? note : state.activeNote,
         openNotes: state.openNotes.map((item) =>
           item.meta.id === note.meta.id ? note : item,
         ),
@@ -315,7 +325,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
           : state.manifest,
         saving: false,
       }));
-      persistOpenTabs(get().openNotes, note);
+      persistOpenTabs(get().openNotes, get().activeNote);
     } catch (error) {
       set({ saving: false });
       toast.error(String(error));

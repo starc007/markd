@@ -1,5 +1,4 @@
 import { EditorContent, useEditor } from "@tiptap/react";
-import { DOMParser as ProseMirrorDOMParser } from "@tiptap/pm/model";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { TextSelection } from "@tiptap/pm/state";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -7,7 +6,7 @@ import type { NoteRecord } from "@/lib/types";
 import { BacklinksPanel } from "./BacklinksPanel";
 import { createEditorExtensions } from "./editorExtensions";
 import { insertImageFile } from "./imageAssets";
-import { htmlToMarkdown, isLikelyMarkdown, markdownToHtml } from "./markdown";
+import { isLikelyMarkdown, preserveWikiLinks } from "./markdown";
 import { PageLinkPicker, type PagePickerState } from "./PageLinkPicker";
 import { SelectionBubbleMenu } from "./SelectionBubbleMenu";
 import { SlashCommandMenu, type SlashMenuState } from "./SlashCommandMenu";
@@ -77,7 +76,10 @@ export function RichNoteEditor({
   const [slashMenu, setSlashMenu] = useState<SlashMenuState | null>(null);
   const [pagePicker, setPagePicker] = useState<PagePickerState | null>(null);
   const [urlCommand, setUrlCommand] = useState<UrlCommandState | null>(null);
-  const extensions = useMemo(() => createEditorExtensions(), []);
+  const extensions = useMemo(
+    () => createEditorExtensions(workspaceRoot),
+    [workspaceRoot],
+  );
   const characters = content.length;
   const words = content.trim().length
     ? content.trim().split(/\s+/).filter(Boolean).length
@@ -184,7 +186,8 @@ export function RichNoteEditor({
   );
 
   const editor = useEditor({
-    content: markdownToHtml(content, workspaceRoot),
+    content,
+    contentType: "markdown",
     editorProps: {
       attributes: {
         class:
@@ -212,12 +215,7 @@ export function RichNoteEditor({
         if (!markdown || !isLikelyMarkdown(markdown)) return false;
 
         event.preventDefault();
-        const container = document.createElement("div");
-        container.innerHTML = markdownToHtml(markdown, workspaceRoot);
-        const slice = ProseMirrorDOMParser.fromSchema(
-          view.state.schema,
-        ).parseSlice(container);
-        view.dispatch(view.state.tr.replaceSelection(slice).scrollIntoView());
+        editor?.chain().focus().insertContent(markdown, { contentType: "markdown" }).run();
         return true;
       },
       handleDrop(view, event) {
@@ -336,7 +334,7 @@ export function RichNoteEditor({
     immediatelyRender: false,
     onBlur: onSave,
     onUpdate: ({ editor }) => {
-      const markdown = htmlToMarkdown(editor.getHTML());
+      const markdown = preserveWikiLinks(editor.getMarkdown());
       externalContent.current = markdown;
       onChange(markdown);
       updateSlashMenu(editor);
@@ -413,7 +411,8 @@ export function RichNoteEditor({
   useEffect(() => {
     if (!editor || content === externalContent.current) return;
     externalContent.current = content;
-    editor.commands.setContent(markdownToHtml(content, workspaceRoot), {
+    editor.commands.setContent(content, {
+      contentType: "markdown",
       emitUpdate: false,
     });
   }, [content, editor, workspaceRoot]);

@@ -1,12 +1,15 @@
 use chrono::Utc;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use uuid::Uuid;
 
 const APP_DIR: &str = "Draft";
 const WORKSPACE_DIR: &str = "Workspace";
-const MANIFEST_FILE: &str = "manifest.json";
+const LEGACY_MANIFEST_FILE: &str = "manifest.json";
+const FOLDER_META_FILE: &str = ".folder.yml";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -130,6 +133,98 @@ pub struct SaveImageAssetRequest {
     pub file_name: String,
 }
 
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct NoteFrontmatter {
+    id: Option<String>,
+    title: Option<String>,
+    folder_id: Option<String>,
+    parent_id: Option<String>,
+    tags: Option<Vec<String>>,
+    pinned: Option<bool>,
+    created_at: Option<i64>,
+    updated_at: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct NoteFrontmatterOut {
+    id: String,
+    title: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    folder_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    parent_id: Option<String>,
+    tags: Vec<String>,
+    pinned: bool,
+    created_at: i64,
+    updated_at: i64,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct FolderFrontmatter {
+    id: Option<String>,
+    name: Option<String>,
+    parent_id: Option<String>,
+    created_at: Option<i64>,
+    updated_at: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct FolderFrontmatterOut {
+    id: String,
+    name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    parent_id: Option<String>,
+    created_at: i64,
+    updated_at: i64,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct StickyFrontmatter {
+    id: Option<String>,
+    color: Option<String>,
+    created_at: Option<i64>,
+    updated_at: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct StickyFrontmatterOut {
+    id: String,
+    color: String,
+    created_at: i64,
+    updated_at: i64,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct BookmarkFrontmatter {
+    id: Option<String>,
+    title: Option<String>,
+    url: Option<String>,
+    folder_id: Option<String>,
+    tags: Option<Vec<String>>,
+    created_at: Option<i64>,
+    updated_at: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct BookmarkFrontmatterOut {
+    id: String,
+    title: String,
+    url: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    folder_id: Option<String>,
+    tags: Vec<String>,
+    created_at: i64,
+    updated_at: i64,
+}
+
 fn workspace_root() -> Result<PathBuf, String> {
     let documents = dirs::document_dir().ok_or("Documents directory not found")?;
     Ok(documents.join(APP_DIR).join(WORKSPACE_DIR))
@@ -165,12 +260,24 @@ fn slugify(value: &str) -> String {
     }
 }
 
-fn note_path(id: &str, title: &str) -> String {
-    format!("notes/{}-{}.md", slugify(title), &id[..8.min(id.len())])
+fn path_slug_id(title: &str, id: &str) -> String {
+    format!("{}-{}", slugify(title), &id[..8.min(id.len())])
+}
+
+fn note_path_in(base: &str, id: &str, title: &str) -> String {
+    if base.is_empty() {
+        format!("notes/{}.md", path_slug_id(title, id))
+    } else {
+        format!("notes/{}/{}.md", base, path_slug_id(title, id))
+    }
 }
 
 fn sticky_path(id: &str) -> String {
     format!("stickies/sticky-{}.md", &id[..8.min(id.len())])
+}
+
+fn bookmark_path(id: &str, title: &str) -> String {
+    format!("bookmarks/{}-{}.md", slugify(title), &id[..8.min(id.len())])
 }
 
 fn asset_path(source_path: &Path) -> String {
@@ -189,440 +296,236 @@ fn asset_path(source_path: &Path) -> String {
     format!("assets/{}-{}.{}", stem, &id[..8.min(id.len())], extension)
 }
 
-fn rename_note_file_if_needed(
-    root: &Path,
-    existing: Option<&NoteRecord>,
-    id: &str,
-    title: &str,
-) -> Result<String, String> {
-    let next_path = note_path(id, title);
-    let Some(existing_note) = existing else {
-        return Ok(next_path);
-    };
-
-    if existing_note.path == next_path {
-        return Ok(existing_note.path.clone());
-    }
-
-    let old_path = root.join(&existing_note.path);
-    let new_path = root.join(&next_path);
-    if old_path.exists() {
-        if let Some(parent) = new_path.parent() {
-            fs::create_dir_all(parent)
-                .map_err(|e| format!("Failed to create note directory: {e}"))?;
-        }
-        fs::rename(&old_path, &new_path).map_err(|e| format!("Failed to rename note file: {e}"))?;
-    }
-
-    Ok(next_path)
+fn relative_path(root: &Path, path: &Path) -> Result<String, String> {
+    path.strip_prefix(root)
+        .map_err(|e| format!("Failed to resolve workspace path: {e}"))
+        .map(|value| value.to_string_lossy().replace('\\', "/"))
 }
 
-fn yaml_string(value: &str) -> String {
-    format!("\"{}\"", value.replace('\\', "\\\\").replace('"', "\\\""))
+fn folder_id_from_rel(rel: &str) -> String {
+    format!("folder:{}", rel.trim_matches('/'))
 }
 
-fn yaml_optional_string(value: &Option<String>) -> String {
-    value
-        .as_ref()
-        .map(|item| yaml_string(item))
-        .unwrap_or_else(|| "null".to_string())
+fn rel_from_folder_id(id: &str) -> Option<String> {
+    id.strip_prefix("folder:")
+        .map(|value| value.trim_matches('/').to_string())
+        .filter(|value| !value.is_empty())
 }
 
-fn yaml_string_array(values: &[String]) -> String {
-    format!(
-        "[{}]",
-        values
-            .iter()
-            .map(|value| yaml_string(value))
-            .collect::<Vec<_>>()
-            .join(", ")
-    )
-}
-
-fn parse_yaml_string(value: &str) -> String {
-    let trimmed = value.trim();
-    if trimmed.len() >= 2 && trimmed.starts_with('"') && trimmed.ends_with('"') {
-        let inner = &trimmed[1..trimmed.len() - 1];
-        let mut output = String::new();
-        let mut escaped = false;
-
-        for ch in inner.chars() {
-            if escaped {
-                output.push(ch);
-                escaped = false;
-            } else if ch == '\\' {
-                escaped = true;
-            } else {
-                output.push(ch);
-            }
-        }
-
-        output
-    } else {
-        trimmed.to_string()
-    }
-}
-
-fn parse_yaml_optional_string(value: Option<&String>) -> Option<String> {
-    value.and_then(|item| {
-        let trimmed = item.trim();
-        if trimmed == "null" || trimmed.is_empty() {
-            None
-        } else {
-            Some(parse_yaml_string(trimmed))
-        }
-    })
-}
-
-fn parse_yaml_string_array(value: Option<&String>) -> Vec<String> {
-    let Some(raw) = value else {
-        return Vec::new();
-    };
-    let trimmed = raw.trim();
-    if !trimmed.starts_with('[') || !trimmed.ends_with(']') {
-        return Vec::new();
-    }
-
-    trimmed[1..trimmed.len() - 1]
-        .split(',')
-        .map(parse_yaml_string)
-        .map(|item| item.trim().to_string())
-        .filter(|item| !item.is_empty())
-        .collect()
-}
-
-fn note_frontmatter(record: &NoteRecord) -> String {
-    [
-        "---".to_string(),
-        format!("id: {}", yaml_string(&record.id)),
-        format!("title: {}", yaml_string(&record.title)),
-        format!("folderId: {}", yaml_optional_string(&record.folder_id)),
-        format!("parentId: {}", yaml_optional_string(&record.parent_id)),
-        format!("tags: {}", yaml_string_array(&record.tags)),
-        format!("pinned: {}", record.pinned),
-        format!("createdAt: {}", record.created_at),
-        format!("updatedAt: {}", record.updated_at),
-        "---".to_string(),
-    ]
-    .join("\n")
-}
-
-fn split_frontmatter(raw: &str) -> Option<(std::collections::HashMap<String, String>, String)> {
+fn split_frontmatter<T: DeserializeOwned>(raw: &str) -> Option<(T, String)> {
     let rest = raw.strip_prefix("---\n")?;
     let (frontmatter, body) = rest.split_once("\n---")?;
     let body = body.strip_prefix('\n').unwrap_or(body).to_string();
-    let values = frontmatter
-        .lines()
-        .filter_map(|line| {
-            let (key, value) = line.split_once(':')?;
-            Some((key.trim().to_string(), value.trim().to_string()))
-        })
-        .collect::<std::collections::HashMap<_, _>>();
-
+    let values = serde_yaml::from_str::<T>(frontmatter).ok()?;
     Some((values, body))
 }
 
-fn note_record_from_frontmatter(
-    fallback: &NoteRecord,
-    values: &std::collections::HashMap<String, String>,
-) -> NoteRecord {
-    NoteRecord {
-        id: values
-            .get("id")
-            .map(|value| parse_yaml_string(value))
-            .unwrap_or_else(|| fallback.id.clone()),
-        title: values
-            .get("title")
-            .map(|value| parse_yaml_string(value))
-            .filter(|value| !value.trim().is_empty())
-            .unwrap_or_else(|| fallback.title.clone()),
-        path: fallback.path.clone(),
-        folder_id: parse_yaml_optional_string(values.get("folderId"))
-            .or_else(|| fallback.folder_id.clone()),
-        parent_id: parse_yaml_optional_string(values.get("parentId"))
-            .or_else(|| fallback.parent_id.clone()),
-        tags: {
-            let tags = parse_yaml_string_array(values.get("tags"));
-            if tags.is_empty() {
-                fallback.tags.clone()
-            } else {
-                tags
-            }
-        },
-        pinned: values
-            .get("pinned")
-            .and_then(|value| value.parse::<bool>().ok())
-            .unwrap_or(fallback.pinned),
-        created_at: values
-            .get("createdAt")
-            .and_then(|value| value.parse::<i64>().ok())
-            .unwrap_or(fallback.created_at),
-        updated_at: values
-            .get("updatedAt")
-            .and_then(|value| value.parse::<i64>().ok())
-            .unwrap_or(fallback.updated_at),
+fn write_frontmatter<T: Serialize>(meta: &T, body: &str) -> Result<String, String> {
+    let yaml = serde_yaml::to_string(meta).map_err(|e| format!("Failed to serialize YAML: {e}"))?;
+    let body = body.trim_start_matches('\n');
+    if body.is_empty() {
+        Ok(format!("---\n{}---\n", yaml))
+    } else {
+        Ok(format!("---\n{}---\n{}\n", yaml, body))
     }
 }
 
-fn read_note_file(root: &Path, note: &NoteRecord) -> (NoteRecord, String, bool) {
-    let raw = fs::read_to_string(root.join(&note.path)).unwrap_or_default();
-    if let Some((values, body)) = split_frontmatter(&raw) {
-        (note_record_from_frontmatter(note, &values), body, true)
-    } else {
-        (note.clone(), raw, false)
+fn read_to_string(path: &Path) -> Result<String, String> {
+    fs::read_to_string(path).map_err(|e| format!("Failed to read {}: {e}", path.display()))
+}
+
+fn ensure_dirs(root: &Path) -> Result<(), String> {
+    for dir in ["notes", "stickies", "bookmarks", "assets"] {
+        fs::create_dir_all(root.join(dir)).map_err(|e| format!("Failed to create {dir}: {e}"))?;
     }
+    Ok(())
+}
+
+fn walk_files(root: &Path, output: &mut Vec<PathBuf>) -> Result<(), String> {
+    if !root.exists() {
+        return Ok(());
+    }
+
+    for entry in fs::read_dir(root).map_err(|e| format!("Failed to read directory: {e}"))? {
+        let path = entry
+            .map_err(|e| format!("Failed to read directory entry: {e}"))?
+            .path();
+        if path.is_dir() {
+            walk_files(&path, output)?;
+        } else {
+            output.push(path);
+        }
+    }
+
+    Ok(())
+}
+
+fn walk_dirs(root: &Path, output: &mut Vec<PathBuf>) -> Result<(), String> {
+    if !root.exists() {
+        return Ok(());
+    }
+
+    for entry in fs::read_dir(root).map_err(|e| format!("Failed to read directory: {e}"))? {
+        let path = entry
+            .map_err(|e| format!("Failed to read directory entry: {e}"))?
+            .path();
+        if path.is_dir() {
+            output.push(path.clone());
+            walk_dirs(&path, output)?;
+        }
+    }
+
+    Ok(())
+}
+
+fn title_from_file(path: &Path) -> String {
+    path.file_stem()
+        .and_then(|value| value.to_str())
+        .unwrap_or("Untitled")
+        .rsplit_once('-')
+        .map(|(title, suffix)| {
+            if suffix.len() == 8 && suffix.chars().all(|ch| ch.is_ascii_hexdigit()) {
+                title
+            } else {
+                path.file_stem()
+                    .and_then(|value| value.to_str())
+                    .unwrap_or("Untitled")
+            }
+        })
+        .unwrap_or_else(|| {
+            path.file_stem()
+                .and_then(|value| value.to_str())
+                .unwrap_or("Untitled")
+        })
+        .split('-')
+        .filter(|part| !part.is_empty())
+        .map(|part| {
+            let mut chars = part.chars();
+            chars
+                .next()
+                .map(|first| first.to_ascii_uppercase().to_string() + chars.as_str())
+                .unwrap_or_default()
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn note_stem_rel(note: &NoteRecord) -> String {
+    note.path
+        .strip_prefix("notes/")
+        .unwrap_or(&note.path)
+        .strip_suffix(".md")
+        .unwrap_or(&note.path)
+        .to_string()
+}
+
+fn folder_path_for_id(root: &Path, id: &str) -> Option<PathBuf> {
+    if let Some(rel) = rel_from_folder_id(id) {
+        return Some(root.join("notes").join(rel));
+    }
+
+    let mut dirs = Vec::new();
+    walk_dirs(&root.join("notes"), &mut dirs).ok()?;
+    dirs.into_iter().find(|dir| {
+        let raw = fs::read_to_string(dir.join(FOLDER_META_FILE)).ok();
+        raw.and_then(|value| split_frontmatter::<FolderFrontmatter>(&value).map(|(meta, _)| meta))
+            .and_then(|meta| meta.id)
+            .is_some_and(|value| value == id)
+    })
+}
+
+fn folder_rel_for_parent(
+    root: &Path,
+    manifest: &WorkspaceManifest,
+    parent_id: Option<&str>,
+) -> String {
+    let Some(parent_id) = parent_id else {
+        return String::new();
+    };
+
+    if let Some(folder_path) = folder_path_for_id(root, parent_id) {
+        return folder_path
+            .strip_prefix(root.join("notes"))
+            .map(|value| value.to_string_lossy().trim_matches('/').to_string())
+            .unwrap_or_default();
+    }
+
+    manifest
+        .notes
+        .iter()
+        .find(|note| note.id == parent_id)
+        .map(note_stem_rel)
+        .unwrap_or_default()
 }
 
 fn write_note_file(root: &Path, record: &NoteRecord, content: &str) -> Result<(), String> {
-    let body = content.trim_start_matches('\n');
-    let raw = if body.is_empty() {
-        format!("{}\n", note_frontmatter(record))
-    } else {
-        format!("{}\n{}\n", note_frontmatter(record), body)
+    let meta = NoteFrontmatterOut {
+        id: record.id.clone(),
+        title: record.title.clone(),
+        folder_id: record.folder_id.clone(),
+        parent_id: record.parent_id.clone(),
+        tags: record.tags.clone(),
+        pinned: record.pinned,
+        created_at: record.created_at,
+        updated_at: record.updated_at,
     };
-
-    fs::write(root.join(&record.path), raw).map_err(|e| format!("Failed to write note file: {e}"))
-}
-
-fn sync_note_frontmatter(root: &Path, manifest: &mut WorkspaceManifest) -> Result<(), String> {
-    let mut changed = false;
-    let notes = manifest
-        .notes
-        .iter()
-        .map(|note| {
-            let (record, content, has_frontmatter) = read_note_file(root, note);
-            if !has_frontmatter {
-                write_note_file(root, &record, &content)?;
-                changed = true;
-            }
-            if &record != note {
-                changed = true;
-            }
-            Ok(record)
-        })
-        .collect::<Result<Vec<_>, String>>()?;
-
-    manifest.notes = notes;
-    if changed {
-        write_manifest(root, manifest)?;
+    let raw = write_frontmatter(&meta, content)?;
+    let path = root.join(&record.path);
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|e| format!("Failed to create note directory: {e}"))?;
     }
-
-    Ok(())
+    fs::write(&path, raw).map_err(|e| format!("Failed to write note file: {e}"))
 }
 
-fn sticky_frontmatter(record: &StickyRecord) -> String {
-    [
-        "---".to_string(),
-        format!("id: {}", yaml_string(&record.id)),
-        format!("color: {}", yaml_string(&record.color)),
-        format!("createdAt: {}", record.created_at),
-        format!("updatedAt: {}", record.updated_at),
-        "---".to_string(),
-    ]
-    .join("\n")
-}
-
-fn sticky_record_from_frontmatter(
-    fallback: &StickyRecord,
-    values: &std::collections::HashMap<String, String>,
-) -> StickyRecord {
-    StickyRecord {
-        id: values
-            .get("id")
-            .map(|value| parse_yaml_string(value))
-            .unwrap_or_else(|| fallback.id.clone()),
-        path: if fallback.path.is_empty() {
-            sticky_path(&fallback.id)
-        } else {
-            fallback.path.clone()
-        },
-        content: fallback.content.clone(),
-        color: values
-            .get("color")
-            .map(|value| parse_yaml_string(value))
-            .filter(|value| !value.trim().is_empty())
-            .unwrap_or_else(|| fallback.color.clone()),
-        created_at: values
-            .get("createdAt")
-            .and_then(|value| value.parse::<i64>().ok())
-            .unwrap_or(fallback.created_at),
-        updated_at: values
-            .get("updatedAt")
-            .and_then(|value| value.parse::<i64>().ok())
-            .unwrap_or(fallback.updated_at),
-    }
-}
-
-fn read_sticky_file(root: &Path, sticky: &StickyRecord) -> (StickyRecord, String, bool) {
-    let path = if sticky.path.is_empty() {
-        sticky_path(&sticky.id)
-    } else {
-        sticky.path.clone()
-    };
-    let fallback = StickyRecord {
-        path: path.clone(),
-        ..sticky.clone()
-    };
-    let raw = fs::read_to_string(root.join(&path)).unwrap_or_default();
-    if let Some((values, body)) = split_frontmatter(&raw) {
-        let mut record = sticky_record_from_frontmatter(&fallback, &values);
-        record.content = body.clone();
-        (record, body, true)
-    } else {
-        (fallback.clone(), fallback.content.clone(), false)
-    }
-}
-
-fn write_sticky_file(root: &Path, record: &StickyRecord, content: &str) -> Result<(), String> {
-    let body = content.trim_start_matches('\n');
-    let raw = if body.is_empty() {
-        format!("{}\n", sticky_frontmatter(record))
-    } else {
-        format!("{}\n{}\n", sticky_frontmatter(record), body)
-    };
-
-    fs::write(root.join(&record.path), raw).map_err(|e| format!("Failed to write sticky file: {e}"))
-}
-
-fn sync_sticky_files(root: &Path, manifest: &mut WorkspaceManifest) -> Result<(), String> {
-    let mut changed = false;
-    let stickies = manifest
-        .stickies
-        .iter()
-        .map(|sticky| {
-            let (record, content, has_frontmatter) = read_sticky_file(root, sticky);
-            if !has_frontmatter {
-                write_sticky_file(root, &record, &content)?;
-                changed = true;
-            }
-            if record.id != sticky.id
-                || record.path != sticky.path
-                || record.content != sticky.content
-                || record.color != sticky.color
-                || record.created_at != sticky.created_at
-                || record.updated_at != sticky.updated_at
-            {
-                changed = true;
-            }
-            Ok(record)
-        })
-        .collect::<Result<Vec<_>, String>>()?;
-
-    manifest.stickies = stickies;
-    if changed {
-        write_manifest(root, manifest)?;
-    }
-
-    Ok(())
-}
-
-fn read_manifest(root: &Path) -> Result<WorkspaceManifest, String> {
-    let path = root.join(MANIFEST_FILE);
-    let raw = fs::read_to_string(&path).map_err(|e| format!("Failed to read manifest: {e}"))?;
-    serde_json::from_str(&raw).map_err(|e| format!("Failed to parse manifest: {e}"))
-}
-
-fn write_manifest(root: &Path, manifest: &WorkspaceManifest) -> Result<(), String> {
-    let path = root.join(MANIFEST_FILE);
-    let raw = serde_json::to_string_pretty(manifest)
-        .map_err(|e| format!("Failed to serialize manifest: {e}"))?;
-    fs::write(path, raw).map_err(|e| format!("Failed to write manifest: {e}"))
-}
-
-fn ensure_workspace() -> Result<(PathBuf, WorkspaceManifest), String> {
-    let root = workspace_root()?;
-    fs::create_dir_all(root.join("notes")).map_err(|e| format!("Failed to create notes: {e}"))?;
-    fs::create_dir_all(root.join("stickies"))
-        .map_err(|e| format!("Failed to create stickies: {e}"))?;
-    fs::create_dir_all(root.join("bookmarks"))
-        .map_err(|e| format!("Failed to create bookmarks: {e}"))?;
-    fs::create_dir_all(root.join("assets")).map_err(|e| format!("Failed to create assets: {e}"))?;
-
-    let manifest_path = root.join(MANIFEST_FILE);
-    if manifest_path.exists() {
-        let mut manifest = read_manifest(&root)?;
-        sync_note_frontmatter(&root, &mut manifest)?;
-        sync_sticky_files(&root, &mut manifest)?;
-        return Ok((root.clone(), manifest));
-    }
-
+fn read_note_file(
+    root: &Path,
+    path: &Path,
+    notes_by_stem: &HashMap<String, String>,
+    note_ids_by_path: &HashMap<String, String>,
+) -> Result<NoteDocument, String> {
+    let raw = read_to_string(path)?;
     let timestamp = now();
-    let folder_id = Uuid::new_v4().to_string();
-    let note_id = Uuid::new_v4().to_string();
-    let sticky_id = Uuid::new_v4().to_string();
-    let bookmark_id = Uuid::new_v4().to_string();
-    let note_file = note_path(&note_id, "Welcome to Draft");
+    let rel_path = relative_path(root, path)?;
+    let dir_rel = path
+        .parent()
+        .and_then(|parent| parent.strip_prefix(root.join("notes")).ok())
+        .map(|value| value.to_string_lossy().trim_matches('/').to_string())
+        .unwrap_or_default();
+    let derived_parent_id = notes_by_stem.get(&dir_rel).cloned();
+    let derived_folder_id = if derived_parent_id.is_some() || dir_rel.is_empty() {
+        None
+    } else {
+        Some(folder_id_from_rel(&dir_rel))
+    };
+    let fallback_title = title_from_file(path);
 
-    let manifest = WorkspaceManifest {
-        version: 1,
-        workspace_id: Uuid::new_v4().to_string(),
-        name: "Draft Workspace".to_string(),
-        created_at: timestamp,
-        updated_at: timestamp,
-        folders: vec![FolderRecord {
-            id: folder_id.clone(),
-            name: "Writing".to_string(),
-            parent_id: None,
-            created_at: timestamp,
-            updated_at: timestamp,
-        }],
-        notes: vec![NoteRecord {
-            id: note_id.clone(),
-            title: "Welcome to Draft".to_string(),
-            path: note_file.clone(),
-            folder_id: Some(folder_id.clone()),
-            parent_id: None,
-            tags: vec!["start".to_string()],
-            pinned: true,
-            created_at: timestamp,
-            updated_at: timestamp,
-        }],
-        stickies: vec![StickyRecord {
-            id: sticky_id.clone(),
-            path: sticky_path(&sticky_id),
-            content: "Everything in this workspace is plain files. Agents can edit notes directly in Documents/Draft/Workspace.".to_string(),
-            color: "mint".to_string(),
-            created_at: timestamp,
-            updated_at: timestamp,
-        }],
-        bookmarks: vec![BookmarkRecord {
-            id: bookmark_id,
-            title: "beUI motion reference".to_string(),
-            url: "https://beui.saura3h.xyz".to_string(),
-            folder_id: Some(folder_id),
-            tags: vec!["ui".to_string(), "motion".to_string()],
-            created_at: timestamp,
-            updated_at: timestamp,
-        }],
+    let (frontmatter, content, has_frontmatter) =
+        if let Some((frontmatter, content)) = split_frontmatter::<NoteFrontmatter>(&raw) {
+            (frontmatter, content, true)
+        } else {
+            (NoteFrontmatter::default(), raw, false)
+        };
+
+    let created_at = frontmatter.created_at.unwrap_or(timestamp);
+    let record = NoteRecord {
+        id: frontmatter
+            .id
+            .or_else(|| note_ids_by_path.get(&rel_path).cloned())
+            .unwrap_or_else(|| Uuid::new_v4().to_string()),
+        title: frontmatter
+            .title
+            .filter(|value| !value.trim().is_empty())
+            .unwrap_or(fallback_title),
+        path: rel_path,
+        folder_id: frontmatter.folder_id.or(derived_folder_id),
+        parent_id: frontmatter.parent_id.or(derived_parent_id),
+        tags: frontmatter.tags.unwrap_or_default(),
+        pinned: frontmatter.pinned.unwrap_or(false),
+        created_at,
+        updated_at: frontmatter.updated_at.unwrap_or(created_at),
     };
 
-    write_note_file(
-        &root,
-        manifest
-            .notes
-            .first()
-            .ok_or("Welcome note record missing")?,
-        "This is a file-first writing workspace.\n\n- [ ] Capture ideas quickly\n- [ ] Organize notes into folders and nested files\n- [ ] Let AI agents read and update the workspace safely\n\n```agent-access\nDocuments/Draft/Workspace\n```\n",
-    )?;
-    write_sticky_file(
-        &root,
-        manifest
-            .stickies
-            .first()
-            .ok_or("Welcome sticky record missing")?,
-        manifest
-            .stickies
-            .first()
-            .map(|sticky| sticky.content.as_str())
-            .ok_or("Welcome sticky content missing")?,
-    )?;
-    write_manifest(&root, &manifest)?;
-    Ok((root, manifest))
-}
-
-fn read_note(root: &Path, note: &NoteRecord) -> Result<NoteDocument, String> {
-    let (record, content, has_frontmatter) = read_note_file(root, note);
-    if !has_frontmatter || &record != note {
+    if !has_frontmatter {
         write_note_file(root, &record, &content)?;
     }
 
@@ -632,14 +535,528 @@ fn read_note(root: &Path, note: &NoteRecord) -> Result<NoteDocument, String> {
     })
 }
 
+fn write_folder_meta(root: &Path, folder: &FolderRecord) -> Result<(), String> {
+    let folder_path = folder_path_for_id(root, &folder.id)
+        .unwrap_or_else(|| root.join("notes").join(slugify(&folder.name)))
+        .to_path_buf();
+    write_folder_meta_at(&folder_path, folder)
+}
+
+fn write_folder_meta_at(folder_path: &Path, folder: &FolderRecord) -> Result<(), String> {
+    let path = folder_path.join(FOLDER_META_FILE);
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|e| format!("Failed to create folder: {e}"))?;
+    }
+    let raw = write_frontmatter(
+        &FolderFrontmatterOut {
+            id: folder.id.clone(),
+            name: folder.name.clone(),
+            parent_id: folder.parent_id.clone(),
+            created_at: folder.created_at,
+            updated_at: folder.updated_at,
+        },
+        "",
+    )?;
+    fs::write(path, raw).map_err(|e| format!("Failed to write folder metadata: {e}"))
+}
+
+fn write_sticky_file(root: &Path, record: &StickyRecord, content: &str) -> Result<(), String> {
+    let raw = write_frontmatter(
+        &StickyFrontmatterOut {
+            id: record.id.clone(),
+            color: record.color.clone(),
+            created_at: record.created_at,
+            updated_at: record.updated_at,
+        },
+        content,
+    )?;
+    let path = root.join(&record.path);
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|e| format!("Failed to create stickies: {e}"))?;
+    }
+    fs::write(path, raw).map_err(|e| format!("Failed to write sticky file: {e}"))
+}
+
+fn read_sticky_file(root: &Path, path: &Path) -> Result<StickyRecord, String> {
+    let raw = read_to_string(path)?;
+    let timestamp = now();
+    let rel_path = relative_path(root, path)?;
+    let fallback_id = path
+        .file_stem()
+        .and_then(|value| value.to_str())
+        .map(|value| value.trim_start_matches("sticky-").to_string())
+        .filter(|value| !value.is_empty())
+        .unwrap_or_else(|| Uuid::new_v4().to_string());
+    let (frontmatter, content, has_frontmatter) =
+        if let Some((frontmatter, content)) = split_frontmatter::<StickyFrontmatter>(&raw) {
+            (frontmatter, content, true)
+        } else {
+            (StickyFrontmatter::default(), raw, false)
+        };
+    let created_at = frontmatter.created_at.unwrap_or(timestamp);
+    let record = StickyRecord {
+        id: frontmatter.id.unwrap_or(fallback_id),
+        path: rel_path,
+        content,
+        color: frontmatter.color.unwrap_or_else(|| "butter".to_string()),
+        created_at,
+        updated_at: frontmatter.updated_at.unwrap_or(created_at),
+    };
+    if !has_frontmatter {
+        write_sticky_file(root, &record, &record.content)?;
+    }
+    Ok(record)
+}
+
+fn write_bookmark_file(root: &Path, record: &BookmarkRecord) -> Result<(), String> {
+    let raw = write_frontmatter(
+        &BookmarkFrontmatterOut {
+            id: record.id.clone(),
+            title: record.title.clone(),
+            url: record.url.clone(),
+            folder_id: record.folder_id.clone(),
+            tags: record.tags.clone(),
+            created_at: record.created_at,
+            updated_at: record.updated_at,
+        },
+        "",
+    )?;
+    let path = root.join(bookmark_path(&record.id, &record.title));
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|e| format!("Failed to create bookmarks: {e}"))?;
+    }
+    fs::write(path, raw).map_err(|e| format!("Failed to write bookmark file: {e}"))
+}
+
+fn read_bookmark_file(_root: &Path, path: &Path) -> Result<Option<BookmarkRecord>, String> {
+    let raw = read_to_string(path)?;
+    let timestamp = now();
+    let Some((frontmatter, _)) = split_frontmatter::<BookmarkFrontmatter>(&raw) else {
+        return Ok(None);
+    };
+    let Some(url) = frontmatter.url.filter(|value| !value.trim().is_empty()) else {
+        return Ok(None);
+    };
+    let created_at = frontmatter.created_at.unwrap_or(timestamp);
+    Ok(Some(BookmarkRecord {
+        id: frontmatter.id.unwrap_or_else(|| Uuid::new_v4().to_string()),
+        title: frontmatter
+            .title
+            .filter(|value| !value.trim().is_empty())
+            .unwrap_or_else(|| title_from_file(path)),
+        url,
+        folder_id: frontmatter.folder_id,
+        tags: frontmatter.tags.unwrap_or_default(),
+        created_at,
+        updated_at: frontmatter.updated_at.unwrap_or(created_at),
+    }))
+}
+
+fn scan_notes(root: &Path) -> Result<Vec<NoteDocument>, String> {
+    let mut paths = Vec::new();
+    walk_files(&root.join("notes"), &mut paths)?;
+    paths.retain(|path| {
+        path.extension().and_then(|value| value.to_str()) == Some("md")
+            && path.file_name().and_then(|value| value.to_str()) != Some(FOLDER_META_FILE)
+    });
+    paths.sort();
+
+    let mut stems = HashMap::new();
+    let mut ids_by_path = HashMap::new();
+    for path in &paths {
+        let rel = relative_path(root, path)?;
+        let raw = read_to_string(path)?;
+        let id = split_frontmatter::<NoteFrontmatter>(&raw)
+            .and_then(|(meta, _)| meta.id)
+            .unwrap_or_else(|| Uuid::new_v4().to_string());
+        ids_by_path.insert(rel.clone(), id.clone());
+        stems.insert(
+            rel.strip_prefix("notes/")
+                .unwrap_or(&rel)
+                .strip_suffix(".md")
+                .unwrap_or(&rel)
+                .to_string(),
+            id,
+        );
+    }
+
+    let mut documents = Vec::new();
+    for path in &paths {
+        let document = read_note_file(root, path, &stems, &ids_by_path)?;
+        documents.push(document);
+    }
+
+    documents.sort_by(|a, b| {
+        b.meta
+            .pinned
+            .cmp(&a.meta.pinned)
+            .then_with(|| a.meta.path.cmp(&b.meta.path))
+    });
+    Ok(documents)
+}
+
+fn scan_folders(root: &Path, notes: &[NoteRecord]) -> Result<Vec<FolderRecord>, String> {
+    let note_namespace_dirs = notes.iter().map(note_stem_rel).collect::<HashSet<_>>();
+    let note_id_by_namespace = notes
+        .iter()
+        .map(|note| (note_stem_rel(note), note.id.clone()))
+        .collect::<HashMap<_, _>>();
+    let mut dirs = Vec::new();
+    walk_dirs(&root.join("notes"), &mut dirs)?;
+    dirs.sort();
+
+    let mut folders = Vec::new();
+    let timestamp = now();
+    for dir in dirs {
+        let rel = dir
+            .strip_prefix(root.join("notes"))
+            .map(|value| value.to_string_lossy().trim_matches('/').to_string())
+            .unwrap_or_default();
+        if rel.is_empty() || note_namespace_dirs.contains(&rel) {
+            continue;
+        }
+
+        let meta_path = dir.join(FOLDER_META_FILE);
+        let meta = fs::read_to_string(&meta_path)
+            .ok()
+            .and_then(|raw| split_frontmatter::<FolderFrontmatter>(&raw).map(|(meta, _)| meta));
+        let parent_rel = Path::new(&rel)
+            .parent()
+            .map(|value| value.to_string_lossy().trim_matches('/').to_string())
+            .filter(|value| !value.is_empty());
+        let derived_parent = parent_rel
+            .as_ref()
+            .and_then(|value| note_id_by_namespace.get(value).cloned())
+            .or_else(|| parent_rel.map(|value| folder_id_from_rel(&value)));
+        let created_at = meta
+            .as_ref()
+            .and_then(|value| value.created_at)
+            .unwrap_or(timestamp);
+        let name = meta
+            .as_ref()
+            .and_then(|value| value.name.clone())
+            .filter(|value| !value.trim().is_empty())
+            .unwrap_or_else(|| {
+                dir.file_name()
+                    .and_then(|value| value.to_str())
+                    .unwrap_or("Folder")
+                    .to_string()
+            });
+        folders.push(FolderRecord {
+            id: meta
+                .as_ref()
+                .and_then(|value| value.id.clone())
+                .unwrap_or_else(|| folder_id_from_rel(&rel)),
+            name,
+            parent_id: meta
+                .as_ref()
+                .and_then(|value| value.parent_id.clone())
+                .or(derived_parent),
+            created_at,
+            updated_at: meta
+                .as_ref()
+                .and_then(|value| value.updated_at)
+                .unwrap_or(created_at),
+        });
+    }
+
+    Ok(folders)
+}
+
+fn scan_workspace(root: &Path) -> Result<WorkspaceManifest, String> {
+    let note_documents = scan_notes(root)?;
+    let notes = note_documents
+        .into_iter()
+        .map(|document| document.meta)
+        .collect::<Vec<_>>();
+    let folders = scan_folders(root, &notes)?;
+
+    let mut sticky_paths = Vec::new();
+    walk_files(&root.join("stickies"), &mut sticky_paths)?;
+    sticky_paths.retain(|path| path.extension().and_then(|value| value.to_str()) == Some("md"));
+    sticky_paths.sort();
+    let mut stickies = sticky_paths
+        .iter()
+        .map(|path| read_sticky_file(root, path))
+        .collect::<Result<Vec<_>, _>>()?;
+    stickies.sort_by(|a, b| b.updated_at.cmp(&a.updated_at));
+
+    let mut bookmark_paths = Vec::new();
+    walk_files(&root.join("bookmarks"), &mut bookmark_paths)?;
+    bookmark_paths.retain(|path| path.extension().and_then(|value| value.to_str()) == Some("md"));
+    bookmark_paths.sort();
+    let mut bookmarks = bookmark_paths
+        .iter()
+        .filter_map(|path| read_bookmark_file(root, path).transpose())
+        .collect::<Result<Vec<_>, _>>()?;
+    bookmarks.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+
+    let timestamps = notes
+        .iter()
+        .map(|note| note.updated_at)
+        .chain(folders.iter().map(|folder| folder.updated_at))
+        .chain(stickies.iter().map(|sticky| sticky.updated_at))
+        .chain(bookmarks.iter().map(|bookmark| bookmark.updated_at))
+        .collect::<Vec<_>>();
+    let created_at = timestamps.iter().min().copied().unwrap_or_else(now);
+    let updated_at = timestamps.iter().max().copied().unwrap_or(created_at);
+
+    Ok(WorkspaceManifest {
+        version: 2,
+        workspace_id: "filesystem".to_string(),
+        name: "Draft Workspace".to_string(),
+        created_at,
+        updated_at,
+        folders,
+        notes,
+        stickies,
+        bookmarks,
+    })
+}
+
+fn migrate_legacy_manifest(root: &Path) -> Result<(), String> {
+    let path = root.join(LEGACY_MANIFEST_FILE);
+    if !path.exists() {
+        return Ok(());
+    }
+
+    let raw = read_to_string(&path)?;
+    let manifest: WorkspaceManifest =
+        serde_json::from_str(&raw).map_err(|e| format!("Failed to parse legacy manifest: {e}"))?;
+    let folder_by_id = manifest
+        .folders
+        .iter()
+        .map(|folder| (folder.id.clone(), folder.clone()))
+        .collect::<HashMap<_, _>>();
+    let mut folder_rel_by_id = HashMap::new();
+
+    fn folder_rel(
+        id: &str,
+        folder_by_id: &HashMap<String, FolderRecord>,
+        cache: &mut HashMap<String, String>,
+    ) -> String {
+        if let Some(value) = cache.get(id) {
+            return value.clone();
+        }
+        let Some(folder) = folder_by_id.get(id) else {
+            return String::new();
+        };
+        let parent = folder
+            .parent_id
+            .as_ref()
+            .map(|parent_id| folder_rel(parent_id, folder_by_id, cache))
+            .unwrap_or_default();
+        let rel = if parent.is_empty() {
+            slugify(&folder.name)
+        } else {
+            format!("{}/{}", parent, slugify(&folder.name))
+        };
+        cache.insert(id.to_string(), rel.clone());
+        rel
+    }
+
+    for folder in &manifest.folders {
+        let rel = folder_rel(&folder.id, &folder_by_id, &mut folder_rel_by_id);
+        let next_id = folder_id_from_rel(&rel);
+        let parent_id = folder
+            .parent_id
+            .as_ref()
+            .and_then(|id| folder_rel_by_id.get(id))
+            .map(|rel| folder_id_from_rel(rel));
+        let record = FolderRecord {
+            id: next_id,
+            name: folder.name.clone(),
+            parent_id,
+            created_at: folder.created_at,
+            updated_at: folder.updated_at,
+        };
+        fs::create_dir_all(root.join("notes").join(&rel))
+            .map_err(|e| format!("Failed to migrate folder: {e}"))?;
+        write_folder_meta(root, &record)?;
+    }
+
+    for note in &manifest.notes {
+        let (_, content, _) = {
+            let old_path = root.join(&note.path);
+            if old_path.exists() {
+                let raw = read_to_string(&old_path)?;
+                if let Some((meta, body)) = split_frontmatter::<NoteFrontmatter>(&raw) {
+                    (meta, body, true)
+                } else {
+                    (NoteFrontmatter::default(), raw, false)
+                }
+            } else {
+                (NoteFrontmatter::default(), String::new(), false)
+            }
+        };
+        let base = note
+            .folder_id
+            .as_ref()
+            .and_then(|id| folder_rel_by_id.get(id).cloned())
+            .unwrap_or_default();
+        let new_folder_id = if base.is_empty() {
+            None
+        } else {
+            Some(folder_id_from_rel(&base))
+        };
+        let record = NoteRecord {
+            id: note.id.clone(),
+            title: note.title.clone(),
+            path: note_path_in(&base, &note.id, &note.title),
+            folder_id: new_folder_id,
+            parent_id: note.parent_id.clone(),
+            tags: note.tags.clone(),
+            pinned: note.pinned,
+            created_at: note.created_at,
+            updated_at: note.updated_at,
+        };
+        write_note_file(root, &record, &content)?;
+        if note.path != record.path {
+            let _ = fs::remove_file(root.join(&note.path));
+        }
+    }
+
+    for sticky in &manifest.stickies {
+        let path = if sticky.path.is_empty() {
+            sticky_path(&sticky.id)
+        } else {
+            sticky.path.clone()
+        };
+        let record = StickyRecord {
+            path,
+            ..sticky.clone()
+        };
+        write_sticky_file(root, &record, &sticky.content)?;
+    }
+
+    for bookmark in &manifest.bookmarks {
+        let mut record = bookmark.clone();
+        record.folder_id = record
+            .folder_id
+            .as_ref()
+            .and_then(|id| folder_rel_by_id.get(id))
+            .map(|rel| folder_id_from_rel(rel));
+        write_bookmark_file(root, &record)?;
+    }
+
+    fs::remove_file(path).map_err(|e| format!("Failed to remove legacy manifest: {e}"))?;
+    Ok(())
+}
+
+fn ensure_workspace() -> Result<(PathBuf, WorkspaceManifest), String> {
+    let root = workspace_root()?;
+    ensure_dirs(&root)?;
+    migrate_legacy_manifest(&root)?;
+
+    let mut manifest = scan_workspace(&root)?;
+    if manifest.notes.is_empty() {
+        let timestamp = now();
+        let folder_rel = "writing";
+        let folder = FolderRecord {
+            id: folder_id_from_rel(folder_rel),
+            name: "Writing".to_string(),
+            parent_id: None,
+            created_at: timestamp,
+            updated_at: timestamp,
+        };
+        fs::create_dir_all(root.join("notes").join(folder_rel))
+            .map_err(|e| format!("Failed to create welcome folder: {e}"))?;
+        write_folder_meta(&root, &folder)?;
+
+        let note_id = Uuid::new_v4().to_string();
+        let note = NoteRecord {
+            id: note_id.clone(),
+            title: "Welcome to Draft".to_string(),
+            path: note_path_in(folder_rel, &note_id, "Welcome to Draft"),
+            folder_id: Some(folder.id.clone()),
+            parent_id: None,
+            tags: vec!["start".to_string()],
+            pinned: true,
+            created_at: timestamp,
+            updated_at: timestamp,
+        };
+        write_note_file(
+            &root,
+            &note,
+            "This is a file-first writing workspace.\n\n- [ ] Capture ideas quickly\n- [ ] Organize notes into folders and nested files\n- [ ] Let AI agents read and update the workspace safely\n\n```agent-access\nDocuments/Draft/Workspace\n```\n",
+        )?;
+
+        let sticky_id = Uuid::new_v4().to_string();
+        let sticky = StickyRecord {
+            id: sticky_id.clone(),
+            path: sticky_path(&sticky_id),
+            content: "Everything in this workspace is plain files. Agents can edit notes directly in Documents/Draft/Workspace.".to_string(),
+            color: "mint".to_string(),
+            created_at: timestamp,
+            updated_at: timestamp,
+        };
+        write_sticky_file(&root, &sticky, &sticky.content)?;
+
+        let bookmark = BookmarkRecord {
+            id: Uuid::new_v4().to_string(),
+            title: "beUI motion reference".to_string(),
+            url: "https://beui.saura3h.xyz".to_string(),
+            folder_id: Some(folder.id),
+            tags: vec!["ui".to_string(), "motion".to_string()],
+            created_at: timestamp,
+            updated_at: timestamp,
+        };
+        write_bookmark_file(&root, &bookmark)?;
+        manifest = scan_workspace(&root)?;
+    }
+
+    Ok((root, manifest))
+}
+
+fn get_note_document(
+    root: &Path,
+    manifest: &WorkspaceManifest,
+    id: &str,
+) -> Result<Option<NoteDocument>, String> {
+    let Some(note) = manifest.notes.iter().find(|note| note.id == id) else {
+        return Ok(None);
+    };
+    let raw = read_to_string(&root.join(&note.path))?;
+    let content = split_frontmatter::<NoteFrontmatter>(&raw)
+        .map(|(_, body)| body)
+        .unwrap_or(raw);
+    Ok(Some(NoteDocument {
+        meta: note.clone(),
+        content,
+    }))
+}
+
+fn note_base_rel(
+    root: &Path,
+    manifest: &WorkspaceManifest,
+    folder_id: Option<&str>,
+    parent_id: Option<&str>,
+) -> String {
+    if let Some(parent_id) = parent_id {
+        if let Some(parent) = manifest.notes.iter().find(|note| note.id == parent_id) {
+            return note_stem_rel(parent);
+        }
+    }
+    folder_id
+        .and_then(|id| folder_path_for_id(root, id))
+        .and_then(|path| {
+            path.strip_prefix(root.join("notes"))
+                .ok()
+                .map(|value| value.to_path_buf())
+        })
+        .map(|value| value.to_string_lossy().trim_matches('/').to_string())
+        .unwrap_or_default()
+}
+
 #[tauri::command]
 fn load_workspace() -> Result<WorkspaceSnapshot, String> {
     let (root, manifest) = ensure_workspace()?;
     let active_note = manifest
         .notes
         .first()
-        .map(|note| read_note(&root, note))
-        .transpose()?;
+        .map(|note| get_note_document(&root, &manifest, &note.id))
+        .transpose()?
+        .flatten();
 
     Ok(WorkspaceSnapshot {
         root_path: root.to_string_lossy().to_string(),
@@ -651,26 +1068,26 @@ fn load_workspace() -> Result<WorkspaceSnapshot, String> {
 #[tauri::command]
 fn get_note(id: String) -> Result<Option<NoteDocument>, String> {
     let (root, manifest) = ensure_workspace()?;
-    manifest
-        .notes
-        .iter()
-        .find(|note| note.id == id)
-        .map(|note| read_note(&root, note))
-        .transpose()
+    get_note_document(&root, &manifest, &id)
 }
 
 #[tauri::command]
 fn upsert_note(input: UpsertNoteRequest) -> Result<NoteDocument, String> {
-    let (root, mut manifest) = ensure_workspace()?;
+    let (root, manifest) = ensure_workspace()?;
     let timestamp = now();
     let id = input.id.unwrap_or_else(|| Uuid::new_v4().to_string());
     let existing = manifest.notes.iter().find(|note| note.id == id).cloned();
-    let path = rename_note_file_if_needed(&root, existing.as_ref(), &id, &input.title)?;
-
+    let base = note_base_rel(
+        &root,
+        &manifest,
+        input.folder_id.as_deref(),
+        input.parent_id.as_deref(),
+    );
+    let path = note_path_in(&base, &id, &input.title);
     let record = NoteRecord {
         id: id.clone(),
         title: input.title,
-        path,
+        path: path.clone(),
         folder_id: input.folder_id,
         parent_id: input.parent_id,
         tags: input.tags,
@@ -681,14 +1098,12 @@ fn upsert_note(input: UpsertNoteRequest) -> Result<NoteDocument, String> {
             .unwrap_or(timestamp),
         updated_at: timestamp,
     };
-
     write_note_file(&root, &record, &input.content)?;
-
-    manifest.notes.retain(|note| note.id != id);
-    manifest.notes.insert(0, record.clone());
-    manifest.updated_at = timestamp;
-    write_manifest(&root, &manifest)?;
-
+    if let Some(existing) = existing {
+        if existing.path != path {
+            let _ = fs::remove_file(root.join(existing.path));
+        }
+    }
     Ok(NoteDocument {
         meta: record,
         content: input.content,
@@ -697,14 +1112,15 @@ fn upsert_note(input: UpsertNoteRequest) -> Result<NoteDocument, String> {
 
 #[tauri::command]
 fn delete_note(id: String) -> Result<WorkspaceManifest, String> {
-    let (root, mut manifest) = ensure_workspace()?;
+    let (root, manifest) = ensure_workspace()?;
     if let Some(note) = manifest.notes.iter().find(|note| note.id == id) {
         let _ = fs::remove_file(root.join(&note.path));
+        let child_dir = root.join("notes").join(note_stem_rel(note));
+        if child_dir.exists() {
+            let _ = fs::remove_dir_all(child_dir);
+        }
     }
-    manifest.notes.retain(|note| note.id != id);
-    manifest.updated_at = now();
-    write_manifest(&root, &manifest)?;
-    Ok(manifest)
+    scan_workspace(&root)
 }
 
 fn collect_child_folder_ids(
@@ -719,7 +1135,6 @@ fn collect_child_folder_ids(
         .filter(|folder| folder.parent_id.as_deref() == Some(folder_id))
         .map(|folder| folder.id.clone())
         .collect::<Vec<_>>();
-
     for child_id in child_ids {
         collect_child_folder_ids(manifest, &child_id, output);
     }
@@ -727,50 +1142,62 @@ fn collect_child_folder_ids(
 
 #[tauri::command]
 fn delete_folder(id: String) -> Result<WorkspaceManifest, String> {
-    let (root, mut manifest) = ensure_workspace()?;
-    let mut folder_ids = Vec::new();
-    collect_child_folder_ids(&manifest, &id, &mut folder_ids);
-
-    for note in manifest.notes.iter().filter(|note| {
-        note.folder_id
-            .as_ref()
-            .is_some_and(|folder_id| folder_ids.contains(folder_id))
-    }) {
-        let _ = fs::remove_file(root.join(&note.path));
+    let (root, manifest) = ensure_workspace()?;
+    let mut ids = Vec::new();
+    collect_child_folder_ids(&manifest, &id, &mut ids);
+    if let Some(path) = folder_path_for_id(&root, &id) {
+        let _ = fs::remove_dir_all(path);
     }
-
-    manifest.notes.retain(|note| {
-        !note
+    for bookmark in manifest.bookmarks.iter().filter(|bookmark| {
+        bookmark
             .folder_id
             .as_ref()
-            .is_some_and(|folder_id| folder_ids.contains(folder_id))
-    });
-    manifest.bookmarks.retain(|bookmark| {
-        !bookmark
-            .folder_id
-            .as_ref()
-            .is_some_and(|folder_id| folder_ids.contains(folder_id))
-    });
-    manifest
-        .folders
-        .retain(|folder| !folder_ids.contains(&folder.id));
-    manifest.updated_at = now();
-    write_manifest(&root, &manifest)?;
-    Ok(manifest)
+            .is_some_and(|folder_id| ids.contains(folder_id))
+    }) {
+        let _ = fs::remove_file(root.join(bookmark_path(&bookmark.id, &bookmark.title)));
+    }
+    scan_workspace(&root)
 }
 
 #[tauri::command]
 fn upsert_folder(input: UpsertFolderRequest) -> Result<FolderRecord, String> {
-    let (root, mut manifest) = ensure_workspace()?;
+    let (root, manifest) = ensure_workspace()?;
     let timestamp = now();
-    let id = input.id.unwrap_or_else(|| Uuid::new_v4().to_string());
-    let existing = manifest
-        .folders
-        .iter()
-        .find(|folder| folder.id == id)
-        .cloned();
-    let record = FolderRecord {
-        id: id.clone(),
+    let existing = input.id.as_ref().and_then(|id| {
+        manifest
+            .folders
+            .iter()
+            .find(|folder| folder.id == *id)
+            .cloned()
+    });
+    let parent_rel = folder_rel_for_parent(&root, &manifest, input.parent_id.as_deref());
+    let next_rel = if parent_rel.is_empty() {
+        slugify(&input.name)
+    } else {
+        format!("{}/{}", parent_rel, slugify(&input.name))
+    };
+    let id = existing
+        .as_ref()
+        .map(|folder| folder.id.clone())
+        .unwrap_or_else(|| folder_id_from_rel(&next_rel));
+    let old_path = existing
+        .as_ref()
+        .and_then(|folder| folder_path_for_id(&root, &folder.id));
+    let new_path = root.join("notes").join(&next_rel);
+    if let Some(old_path) = old_path {
+        if old_path != new_path && old_path.exists() {
+            if let Some(parent) = new_path.parent() {
+                fs::create_dir_all(parent)
+                    .map_err(|e| format!("Failed to create folder parent: {e}"))?;
+            }
+            fs::rename(&old_path, &new_path)
+                .map_err(|e| format!("Failed to rename folder: {e}"))?;
+        }
+    } else {
+        fs::create_dir_all(&new_path).map_err(|e| format!("Failed to create folder: {e}"))?;
+    }
+    let folder = FolderRecord {
+        id,
         name: input.name,
         parent_id: input.parent_id,
         created_at: existing
@@ -778,16 +1205,13 @@ fn upsert_folder(input: UpsertFolderRequest) -> Result<FolderRecord, String> {
             .unwrap_or(timestamp),
         updated_at: timestamp,
     };
-    manifest.folders.retain(|folder| folder.id != id);
-    manifest.folders.push(record.clone());
-    manifest.updated_at = timestamp;
-    write_manifest(&root, &manifest)?;
-    Ok(record)
+    write_folder_meta_at(&new_path, &folder)?;
+    Ok(folder)
 }
 
 #[tauri::command]
 fn upsert_sticky(input: UpsertStickyRequest) -> Result<StickyRecord, String> {
-    let (root, mut manifest) = ensure_workspace()?;
+    let (root, manifest) = ensure_workspace()?;
     let timestamp = now();
     let id = input.id.unwrap_or_else(|| Uuid::new_v4().to_string());
     let existing = manifest
@@ -795,19 +1219,12 @@ fn upsert_sticky(input: UpsertStickyRequest) -> Result<StickyRecord, String> {
         .iter()
         .find(|sticky| sticky.id == id)
         .cloned();
-    let path = existing
-        .as_ref()
-        .map(|sticky| {
-            if sticky.path.is_empty() {
-                sticky_path(&id)
-            } else {
-                sticky.path.clone()
-            }
-        })
-        .unwrap_or_else(|| sticky_path(&id));
     let record = StickyRecord {
         id: id.clone(),
-        path,
+        path: existing
+            .as_ref()
+            .map(|sticky| sticky.path.clone())
+            .unwrap_or_else(|| sticky_path(&id)),
         content: input.content.clone(),
         color: input.color,
         created_at: existing
@@ -816,33 +1233,21 @@ fn upsert_sticky(input: UpsertStickyRequest) -> Result<StickyRecord, String> {
         updated_at: timestamp,
     };
     write_sticky_file(&root, &record, &input.content)?;
-    manifest.stickies.retain(|sticky| sticky.id != id);
-    manifest.stickies.push(record.clone());
-    manifest.updated_at = timestamp;
-    write_manifest(&root, &manifest)?;
     Ok(record)
 }
 
 #[tauri::command]
 fn delete_sticky(id: String) -> Result<WorkspaceManifest, String> {
-    let (root, mut manifest) = ensure_workspace()?;
+    let (root, manifest) = ensure_workspace()?;
     if let Some(sticky) = manifest.stickies.iter().find(|sticky| sticky.id == id) {
-        let path = if sticky.path.is_empty() {
-            sticky_path(&sticky.id)
-        } else {
-            sticky.path.clone()
-        };
-        let _ = fs::remove_file(root.join(path));
+        let _ = fs::remove_file(root.join(&sticky.path));
     }
-    manifest.stickies.retain(|sticky| sticky.id != id);
-    manifest.updated_at = now();
-    write_manifest(&root, &manifest)?;
-    Ok(manifest)
+    scan_workspace(&root)
 }
 
 #[tauri::command]
 fn upsert_bookmark(input: UpsertBookmarkRequest) -> Result<BookmarkRecord, String> {
-    let (root, mut manifest) = ensure_workspace()?;
+    let (root, manifest) = ensure_workspace()?;
     let timestamp = now();
     let id = input.id.unwrap_or_else(|| Uuid::new_v4().to_string());
     let existing = manifest
@@ -857,24 +1262,29 @@ fn upsert_bookmark(input: UpsertBookmarkRequest) -> Result<BookmarkRecord, Strin
         folder_id: input.folder_id,
         tags: input.tags,
         created_at: existing
+            .as_ref()
             .map(|bookmark| bookmark.created_at)
             .unwrap_or(timestamp),
         updated_at: timestamp,
     };
-    manifest.bookmarks.retain(|bookmark| bookmark.id != id);
-    manifest.bookmarks.push(record.clone());
-    manifest.updated_at = timestamp;
-    write_manifest(&root, &manifest)?;
+    write_bookmark_file(&root, &record)?;
+    if let Some(existing) = existing {
+        let old_path = root.join(bookmark_path(&existing.id, &existing.title));
+        let new_path = root.join(bookmark_path(&record.id, &record.title));
+        if old_path != new_path {
+            let _ = fs::remove_file(old_path);
+        }
+    }
     Ok(record)
 }
 
 #[tauri::command]
 fn delete_bookmark(id: String) -> Result<WorkspaceManifest, String> {
-    let (root, mut manifest) = ensure_workspace()?;
-    manifest.bookmarks.retain(|bookmark| bookmark.id != id);
-    manifest.updated_at = now();
-    write_manifest(&root, &manifest)?;
-    Ok(manifest)
+    let (root, manifest) = ensure_workspace()?;
+    if let Some(bookmark) = manifest.bookmarks.iter().find(|bookmark| bookmark.id == id) {
+        let _ = fs::remove_file(root.join(bookmark_path(&bookmark.id, &bookmark.title)));
+    }
+    scan_workspace(&root)
 }
 
 #[tauri::command]
