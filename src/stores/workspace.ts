@@ -47,8 +47,8 @@ interface WorkspaceState {
   renameFolder: (folder: FolderRecord, name: string) => Promise<void>;
   saveActiveNote: (content: string, noteId?: string) => Promise<void>;
   saveActiveTitle: (title: string, content?: string, noteId?: string) => Promise<void>;
-  toggleTodo: (noteId: string, line: number, done: boolean) => Promise<void>;
-  deleteTodo: (noteId: string, line: number) => Promise<void>;
+  toggleTodo: (noteId: string, line: number, done: boolean) => Promise<NoteDocument | null>;
+  deleteTodo: (noteId: string, line: number) => Promise<NoteDocument | null>;
   createFolder: (parentId?: string | null) => Promise<FolderRecord | null>;
   saveSticky: (sticky: Partial<StickyRecord> & Pick<StickyRecord, "content" | "color">) => Promise<void>;
   deleteSticky: (id: string) => Promise<void>;
@@ -334,17 +334,17 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   toggleTodo: async (noteId, line, done) => {
     const current = await api.getNote(noteId);
-    if (!current) return;
+    if (!current) return null;
 
     const lines = current.content.split("\n");
     const target = lines[line];
-    if (!target) return;
+    if (!target) return null;
 
     const nextLine = target.replace(
       /^(\s*-\s+\[)( |x|X)(\]\s+.*)$/,
       `$1${done ? "x" : " "}$3`,
     );
-    if (nextLine === target) return;
+    if (nextLine === target) return null;
 
     const content = lines
       .map((item, index) => (index === line ? nextLine : item))
@@ -358,24 +358,31 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       tags: current.meta.tags,
       pinned: current.meta.pinned,
     });
-    const snapshot = await api.loadWorkspace();
-
     set((state) => ({
       activeNote: state.activeNote?.meta.id === note.meta.id ? note : state.activeNote,
       openNotes: state.openNotes.map((item) =>
         item.meta.id === note.meta.id ? note : item,
       ),
-      manifest: snapshot.manifest,
+      manifest: state.manifest
+        ? {
+            ...state.manifest,
+            updatedAt: note.meta.updatedAt,
+            notes: state.manifest.notes.map((item) =>
+              item.id === note.meta.id ? note.meta : item,
+            ),
+          }
+        : state.manifest,
     }));
+    return note;
   },
 
   deleteTodo: async (noteId, line) => {
     const current = await api.getNote(noteId);
-    if (!current) return;
+    if (!current) return null;
 
     const lines = current.content.split("\n");
     const target = lines[line];
-    if (!target || !/^(\s*-\s+\[)( |x|X)(\]\s+.*)$/.test(target)) return;
+    if (!target || !/^(\s*-\s+\[)( |x|X)(\]\s+.*)$/.test(target)) return null;
 
     const content = lines.filter((_, index) => index !== line).join("\n");
     const note = await api.upsertNote({
@@ -387,16 +394,23 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       tags: current.meta.tags,
       pinned: current.meta.pinned,
     });
-    const snapshot = await api.loadWorkspace();
-
     set((state) => ({
       activeNote:
         state.activeNote?.meta.id === note.meta.id ? note : state.activeNote,
       openNotes: state.openNotes.map((item) =>
         item.meta.id === note.meta.id ? note : item,
       ),
-      manifest: snapshot.manifest,
+      manifest: state.manifest
+        ? {
+            ...state.manifest,
+            updatedAt: note.meta.updatedAt,
+            notes: state.manifest.notes.map((item) =>
+              item.id === note.meta.id ? note.meta : item,
+            ),
+          }
+        : state.manifest,
     }));
+    return note;
   },
 
   createFolder: async (parentId = null) => {

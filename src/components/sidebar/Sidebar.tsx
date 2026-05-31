@@ -56,12 +56,12 @@ export function Sidebar() {
       <aside className="relative flex h-screen min-h-0 flex-col overflow-hidden border-r border-sidebar-divider dark:border-sidebar-divider-dark bg-sidebar dark:bg-sidebar-dark px-3 pb-4 pt-10 text-sidebar-ink dark:text-sidebar-ink-dark max-[860px]:hidden">
         <WorkspaceHeader
           name={manifest?.name ?? "Draft Workspace"}
-          onCreateNote={createNote}
+          onCreateNote={() => createNote()}
         />
         <SidebarNav
           activeView={view}
           onSelect={setView}
-          onCreateNote={createNote}
+          onCreateNote={() => createNote()}
           onSearch={() => setCommandOpen(true)}
         />
         <WorkspaceTree

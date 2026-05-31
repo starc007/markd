@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { extractTodos } from "@/lib/format";
-import type { NoteRecord } from "@/lib/types";
+import type { NoteDocument, NoteRecord } from "@/lib/types";
 import * as api from "@/lib/workspace-api";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { BookmarkBoard } from "./BookmarkBoard";
@@ -9,6 +9,33 @@ import { RichNoteEditor } from "./rich-editor";
 import { SettingsBoard } from "./SettingsBoard";
 import { StickyBoard } from "./StickyBoard";
 import { TodoBoard } from "./TodoBoard";
+
+function reconcileTodosForNote(
+  items: Array<ReturnType<typeof extractTodos>[number] & { note: NoteRecord }>,
+  note: NoteDocument,
+) {
+  const nextTodos = extractTodos(note.content).map((todo) => ({
+    ...todo,
+    note: note.meta,
+  }));
+  const output: typeof items = [];
+  let inserted = false;
+
+  for (const item of items) {
+    if (item.note.id !== note.meta.id) {
+      output.push(item);
+      continue;
+    }
+
+    if (!inserted) {
+      output.push(...nextTodos);
+      inserted = true;
+    }
+  }
+
+  if (!inserted) output.push(...nextTodos);
+  return output;
+}
 
 export function EditorPane() {
   const view = useWorkspaceStore((state) => state.view);
@@ -59,6 +86,11 @@ export function EditorPane() {
   }, [activeNote?.meta.id, saveActiveNote]);
 
   useEffect(() => {
+    if (view === "notes") return;
+    contentRef.current = activeNote?.content ?? "";
+  }, [activeNote?.content, view]);
+
+  useEffect(() => {
     setTitle(activeNote?.meta.title ?? "");
   }, [activeNote?.meta.id, activeNote?.meta.title]);
 
@@ -90,7 +122,9 @@ export function EditorPane() {
             : item,
         ),
       );
-      await toggleTodo(noteId, line, done);
+      const note = await toggleTodo(noteId, line, done);
+      if (!note) return;
+      setTodoItems((items) => reconcileTodosForNote(items, note));
     },
     [toggleTodo],
   );
@@ -100,7 +134,9 @@ export function EditorPane() {
       setTodoItems((items) =>
         items.filter((item) => item.note.id !== noteId || item.line !== line),
       );
-      await deleteTodo(noteId, line);
+      const note = await deleteTodo(noteId, line);
+      if (!note) return;
+      setTodoItems((items) => reconcileTodosForNote(items, note));
     },
     [deleteTodo],
   );
@@ -134,9 +170,6 @@ export function EditorPane() {
     let cancelled = false;
     Promise.all(
       manifest.notes.map(async (note) => {
-        if (activeNote?.meta.id === note.id) {
-          return { note, content: contentRef.current };
-        }
         const document = await api.getNote(note.id);
         return { note, content: document?.content ?? "" };
       }),
@@ -190,7 +223,7 @@ export function EditorPane() {
   }
 
   if (!activeNote) {
-    return <EmptyEditorState onCreateNote={createNote} />;
+    return <EmptyEditorState onCreateNote={() => createNote()} />;
   }
 
   return (
