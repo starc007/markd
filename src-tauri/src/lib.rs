@@ -133,6 +133,14 @@ pub struct SaveImageAssetRequest {
     pub file_name: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchNoteResult {
+    pub note: NoteRecord,
+    pub snippet: String,
+    pub score: i32,
+}
+
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct NoteFrontmatter {
@@ -1071,6 +1079,96 @@ fn get_note(id: String) -> Result<Option<NoteDocument>, String> {
     get_note_document(&root, &manifest, &id)
 }
 
+fn search_snippet(content: &str, needle: &str) -> String {
+    let normalized = content.to_lowercase();
+    let Some(index) = normalized.find(needle) else {
+        return content
+            .lines()
+            .find(|line| !line.trim().is_empty())
+            .unwrap_or("")
+            .trim()
+            .chars()
+            .take(140)
+            .collect();
+    };
+    let start = content[..index]
+        .char_indices()
+        .rev()
+        .nth(48)
+        .map(|(position, _)| position)
+        .unwrap_or(0);
+    let end = content[index..]
+        .char_indices()
+        .nth(120)
+        .map(|(position, _)| index + position)
+        .unwrap_or(content.len());
+    content[start..end]
+        .replace('\n', " ")
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+#[tauri::command]
+fn search_notes(query: String, limit: Option<usize>) -> Result<Vec<SearchNoteResult>, String> {
+    let (root, manifest) = ensure_workspace()?;
+    let needle = query.trim().to_lowercase();
+    let limit = limit.unwrap_or(20).clamp(1, 50);
+
+    if needle.is_empty() {
+        return Ok(manifest
+            .notes
+            .into_iter()
+            .take(limit)
+            .map(|note| SearchNoteResult {
+                note,
+                snippet: String::new(),
+                score: 0,
+            })
+            .collect());
+    }
+
+    let mut results = Vec::new();
+    for note in &manifest.notes {
+        let Some(document) = get_note_document(&root, &manifest, &note.id)? else {
+            continue;
+        };
+        let title = document.meta.title.to_lowercase();
+        let path = document.meta.path.to_lowercase();
+        let content = document.content.to_lowercase();
+        let mut score = 0;
+        if title == needle {
+            score += 120;
+        } else if title.starts_with(&needle) {
+            score += 80;
+        } else if title.contains(&needle) {
+            score += 50;
+        }
+        if path.contains(&needle) {
+            score += 12;
+        }
+        if content.contains(&needle) {
+            score += 28;
+        }
+        if score == 0 {
+            continue;
+        }
+        results.push(SearchNoteResult {
+            snippet: search_snippet(&document.content, &needle),
+            note: document.meta,
+            score,
+        });
+    }
+
+    results.sort_by(|a, b| {
+        b.score
+            .cmp(&a.score)
+            .then_with(|| a.note.path.cmp(&b.note.path))
+    });
+    results.truncate(limit);
+    Ok(results)
+}
+
 #[tauri::command]
 fn upsert_note(input: UpsertNoteRequest) -> Result<NoteDocument, String> {
     let (root, manifest) = ensure_workspace()?;
@@ -1101,6 +1199,20 @@ fn upsert_note(input: UpsertNoteRequest) -> Result<NoteDocument, String> {
     write_note_file(&root, &record, &input.content)?;
     if let Some(existing) = existing {
         if existing.path != path {
+            let old_child_dir = root.join("notes").join(note_stem_rel(&existing));
+            let new_child_dir = root.join("notes").join(note_stem_rel(&record));
+            if old_child_dir.exists() && old_child_dir != new_child_dir {
+                if let Some(parent) = new_child_dir.parent() {
+                    fs::create_dir_all(parent)
+                        .map_err(|e| format!("Failed to create note child directory: {e}"))?;
+                }
+                if new_child_dir.exists() {
+                    fs::remove_dir_all(&new_child_dir)
+                        .map_err(|e| format!("Failed to replace note child directory: {e}"))?;
+                }
+                fs::rename(&old_child_dir, &new_child_dir)
+                    .map_err(|e| format!("Failed to move note child directory: {e}"))?;
+            }
             let _ = fs::remove_file(root.join(existing.path));
         }
     }
@@ -1345,6 +1457,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             load_workspace,
             get_note,
+            search_notes,
             upsert_note,
             delete_note,
             delete_folder,

@@ -3,6 +3,7 @@ import type {
   BookmarkRecord,
   FolderRecord,
   NoteDocument,
+  SearchNoteResult,
   StickyRecord,
   WorkspaceManifest,
   WorkspaceSnapshot,
@@ -14,6 +15,10 @@ export function loadWorkspace() {
 
 export function getNote(id: string) {
   return invoke<NoteDocument | null>("get_note", { id });
+}
+
+export function searchNotes(query: string, limit = 20) {
+  return invoke<SearchNoteResult[]>("search_notes", { query, limit });
 }
 
 export function upsertNote(input: {

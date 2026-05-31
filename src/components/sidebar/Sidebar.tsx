@@ -16,6 +16,7 @@ export function Sidebar() {
   const createFolder = useWorkspaceStore((state) => state.createFolder);
   const deleteFolder = useWorkspaceStore((state) => state.deleteFolder);
   const deleteNote = useWorkspaceStore((state) => state.deleteNote);
+  const moveNote = useWorkspaceStore((state) => state.moveNote);
   const renameFolder = useWorkspaceStore((state) => state.renameFolder);
   const setCommandOpen = useWorkspaceStore((state) => state.setCommandOpen);
   const [noteToDelete, setNoteToDelete] = useState<NoteRecord | null>(null);
@@ -26,6 +27,8 @@ export function Sidebar() {
     null,
   );
   const [folderName, setFolderName] = useState("");
+  const [noteToMove, setNoteToMove] = useState<NoteRecord | null>(null);
+  const [moveTarget, setMoveTarget] = useState("root");
 
   const notes = useMemo(() => {
     return manifest?.notes ?? [];
@@ -50,6 +53,36 @@ export function Sidebar() {
       ).length,
     };
   }, [folderToDelete, manifest]);
+
+  const moveTargets = useMemo(() => {
+    if (!manifest || !noteToMove) return [];
+    const blockedNoteIds = new Set<string>();
+    const collectNotes = (noteId: string) => {
+      blockedNoteIds.add(noteId);
+      manifest.notes
+        .filter((note) => note.parentId === noteId)
+        .forEach((note) => collectNotes(note.id));
+    };
+    collectNotes(noteToMove.id);
+
+    return [
+      { id: "root", label: "Workspace root", folderId: null, parentId: null },
+      ...manifest.folders.map((folder) => ({
+        id: `folder:${folder.id}`,
+        label: `Folder / ${folder.name}`,
+        folderId: folder.id,
+        parentId: null,
+      })),
+      ...manifest.notes
+        .filter((note) => !blockedNoteIds.has(note.id))
+        .map((note) => ({
+          id: `note:${note.id}`,
+          label: `Inside note / ${note.title}`,
+          folderId: note.folderId,
+          parentId: note.id,
+        })),
+    ];
+  }, [manifest, noteToMove]);
 
   return (
     <>
@@ -80,6 +113,10 @@ export function Sidebar() {
             createNote(folderId, parentId)
           }
           onCreateFolderInside={(parentId) => createFolder(parentId)}
+          onMoveNote={(note) => {
+            setNoteToMove(note);
+            setMoveTarget("root");
+          }}
           onRenameFolder={(folder) => {
             setFolderToRename(folder);
             setFolderName(folder.name);
@@ -153,6 +190,52 @@ export function Sidebar() {
             </Button>
             <Button type="submit" variant="primary">
               Rename
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        open={Boolean(noteToMove)}
+        title="Move note"
+        onClose={() => setNoteToMove(null)}
+      >
+        <form
+          className="mt-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!noteToMove) return;
+            const target = moveTargets.find((item) => item.id === moveTarget);
+            if (!target) return;
+            moveNote(noteToMove, target.folderId, target.parentId);
+            setNoteToMove(null);
+          }}
+        >
+          <label className="grid gap-2 text-sm font-medium text-muted dark:text-muted-dark">
+            Destination
+            <select
+              autoFocus
+              className="h-10 rounded-xl border border-line bg-panel px-3 text-sm text-ink outline-none transition-colors focus:border-focus-line dark:border-tooltip-ink/15 dark:bg-tooltip-ink/10 dark:text-tooltip-ink dark:focus:border-tooltip-ink/35"
+              value={moveTarget}
+              onChange={(event) => setMoveTarget(event.target.value)}
+            >
+              {moveTargets.map((target) => (
+                <option key={target.id} value={target.id}>
+                  {target.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="mt-5 flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setNoteToMove(null)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary">
+              Move note
             </Button>
           </div>
         </form>

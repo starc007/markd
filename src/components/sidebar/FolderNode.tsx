@@ -17,6 +17,7 @@ export function FolderNode({
   notes,
   activeId,
   onDeleteNote,
+  onMoveNote,
   onDeleteFolder,
   onCreateFolder,
   onCreateNote,
@@ -28,6 +29,7 @@ export function FolderNode({
   notes: NoteRecord[];
   activeId?: string;
   onDeleteNote: (id: string) => void;
+  onMoveNote: (note: NoteRecord) => void;
   onDeleteFolder: (folder: FolderRecord) => void;
   onCreateFolder: (parentId: string) => void;
   onCreateNote: (folderId: string | null, parentId?: string | null) => void;
@@ -96,6 +98,7 @@ export function FolderNode({
             notes={notes}
             activeId={activeId}
             onDeleteNote={onDeleteNote}
+            onMoveNote={onMoveNote}
             onDeleteFolder={onDeleteFolder}
             onCreateFolder={onCreateFolder}
             onCreateNote={onCreateNote}
@@ -114,6 +117,7 @@ export function FolderNode({
             onCreateNote={onCreateNote}
             onDeleteFolder={onDeleteFolder}
             onDeleteNote={onDeleteNote}
+            onMoveNote={onMoveNote}
             onOpen={onOpen}
             onRenameFolder={onRenameFolder}
           />

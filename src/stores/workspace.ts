@@ -4,6 +4,7 @@ import type {
   BookmarkRecord,
   FolderRecord,
   NoteDocument,
+  NoteRecord,
   StickyRecord,
   ViewMode,
   WorkspaceManifest,
@@ -44,6 +45,7 @@ interface WorkspaceState {
   createLinkedNote: (title: string) => Promise<NoteDocument>;
   deleteFolder: (id: string) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
+  moveNote: (note: NoteRecord, folderId: string | null, parentId: string | null) => Promise<void>;
   renameFolder: (folder: FolderRecord, name: string) => Promise<void>;
   saveActiveNote: (content: string, noteId?: string) => Promise<void>;
   saveActiveTitle: (title: string, content?: string, noteId?: string) => Promise<void>;
@@ -208,6 +210,30 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         view: activeNote ? "notes" : state.view,
       };
     });
+  },
+
+  moveNote: async (note, folderId, parentId) => {
+    const document = await api.getNote(note.id);
+    if (!document) return;
+    const moved = await api.upsertNote({
+      id: document.meta.id,
+      title: document.meta.title,
+      content: document.content,
+      folderId,
+      parentId,
+      tags: document.meta.tags,
+      pinned: document.meta.pinned,
+    });
+    const snapshot = await api.loadWorkspace();
+    set((state) => ({
+      activeNote:
+        state.activeNote?.meta.id === moved.meta.id ? moved : state.activeNote,
+      openNotes: state.openNotes.map((item) =>
+        item.meta.id === moved.meta.id ? moved : item,
+      ),
+      manifest: snapshot.manifest,
+    }));
+    persistOpenTabs(get().openNotes, get().activeNote);
   },
 
   deleteFolder: async (id) => {

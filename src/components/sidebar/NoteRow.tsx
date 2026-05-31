@@ -1,6 +1,7 @@
 import {
   FileEditIcon,
   FolderAddIcon,
+  FolderIcon,
   MoreHorizontalIcon,
   NoteAddIcon,
   NoteRemoveIcon,
@@ -16,6 +17,7 @@ export function NoteRow({
   onCreateFolder,
   onCreateNote,
   onDelete,
+  onMove,
   onOpen,
 }: {
   note: NoteRecord;
@@ -23,6 +25,7 @@ export function NoteRow({
   onCreateFolder?: (note: NoteRecord) => void;
   onCreateNote?: (note: NoteRecord) => void;
   onDelete: (id: string) => void;
+  onMove: (note: NoteRecord) => void;
   onOpen: (id: string) => void;
 }) {
   return (
@@ -80,6 +83,10 @@ export function NoteRow({
             New folder inside
           </DropdownItem>
         )}
+        <DropdownItem onClick={() => onMove(note)}>
+          <HugeiconsIcon icon={FolderIcon} size={15} color="currentColor" />
+          Move note
+        </DropdownItem>
         <DropdownItem onClick={() => onDelete(note.id)}>
           <HugeiconsIcon icon={NoteRemoveIcon} size={15} color="currentColor" />
           Delete note

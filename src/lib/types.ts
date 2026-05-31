@@ -37,6 +37,12 @@ export interface NoteDocument {
   content: string;
 }
 
+export interface SearchNoteResult {
+  note: NoteRecord;
+  snippet: string;
+  score: number;
+}
+
 export interface StickyRecord {
   id: string;
   path: string;
