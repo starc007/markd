@@ -22,6 +22,32 @@
   --color-invert: var(--invert);
   --color-invert-ink: var(--invert-ink);
   --color-danger: var(--danger);
+
+  /* shadcn/beui semantic tokens mapped onto our monochrome palette so any
+     component pulled from the beui registry inherits our theme unchanged. */
+  --color-background: var(--bg);
+  --color-foreground: var(--ink);
+  --color-card: var(--panel);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--bg);
+  --color-popover-foreground: var(--ink);
+  --color-primary: var(--invert);
+  --color-primary-foreground: var(--invert-ink);
+  --color-secondary: var(--panel);
+  --color-secondary-foreground: var(--ink);
+  --color-muted-bg: var(--panel);
+  --color-muted-foreground: var(--muted);
+  --color-accent: var(--hover);
+  --color-accent-foreground: var(--ink);
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: var(--invert-ink);
+  --color-border: var(--line);
+  --color-border-strong: var(--faint);
+  --color-input: var(--line);
+  --color-ring: var(--faint);
+
+  /* motion easing tokens (CSS mirror of src/lib/ease.ts) */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 :root {
@@ -92,6 +118,19 @@ body {
 }
 *::-webkit-scrollbar-corner {
   background: transparent;
+}
+
+/* press feedback used by beui components (`className="press"`) */
+.press {
+  transition: transform 0.12s var(--ease-out);
+}
+.press:active {
+  transform: scale(0.97);
+}
+@media (prefers-reduced-motion: reduce) {
+  .press:active {
+    transform: none;
+  }
 }
 
 .tooltip-pop {

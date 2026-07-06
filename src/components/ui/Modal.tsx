@@ -1,13 +1,15 @@
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect } from "react";
-import { cx } from "@/lib/utils";
+import { EASE_OUT, SPRING_PANEL } from "@/lib/ease";
+import { cn } from "@/lib/utils";
 
 type Align = "center" | "top";
 
 /**
- * Backdrop + animated panel. Handles Escape, click-outside, and enter/exit
- * motion. For a trigger-anchored "morph" effect, pass a shared `layoutId`
- * to both the trigger and this panel (motion animates the shared layout).
+ * Backdrop + spring-entered panel, sharing beui's motion tokens so our own
+ * dialogs and any component pulled from the beui registry feel identical.
+ * Handles Escape and click-outside. Pass a shared `layoutId` to both a trigger
+ * and this panel for a morph-open effect.
  */
 export function Modal({
   open,
@@ -24,6 +26,9 @@ export function Modal({
   className?: string;
   layoutId?: string;
 }) {
+  const reduce = useReducedMotion();
+  const enterY = reduce ? 0 : align === "top" ? -8 : 8;
+
   useEffect(() => {
     if (!open) return;
     const onKey = (event: KeyboardEvent) => {
@@ -40,21 +45,26 @@ export function Modal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.12 }}
-          className={cx(
-            "fixed inset-0 z-80 flex justify-center bg-black/20 dark:bg-black/45",
+          transition={{ duration: 0.2, ease: EASE_OUT }}
+          className={cn(
+            "fixed inset-0 z-80 flex justify-center bg-foreground/[0.04] [backdrop-filter:blur(14px)_saturate(140%)] [-webkit-backdrop-filter:blur(14px)_saturate(140%)]",
             align === "center" ? "items-center" : "items-start",
           )}
           onMouseDown={onClose}
         >
           <motion.div
             layoutId={layoutId}
-            initial={{ opacity: 0, scale: 0.985, y: align === "top" ? -6 : 6 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.985, y: align === "top" ? -6 : 6 }}
-            transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-            className={cx(
-              "max-w-[calc(100vw-48px)] overflow-hidden rounded-xl border border-line bg-bg shadow-2xl shadow-black/20 dark:shadow-black/60",
+            initial={{ opacity: 0, y: enterY, scale: reduce ? 1 : 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{
+              opacity: 0,
+              y: enterY,
+              scale: reduce ? 1 : 0.98,
+              transition: { duration: 0.16, ease: EASE_OUT },
+            }}
+            transition={SPRING_PANEL}
+            className={cn(
+              "relative max-w-[calc(100vw-48px)] overflow-hidden rounded-xl border border-border bg-background shadow-2xl shadow-black/20 will-change-transform dark:shadow-black/60",
               className,
             )}
             onMouseDown={(event) => event.stopPropagation()}

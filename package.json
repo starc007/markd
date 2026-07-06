@@ -40,11 +40,13 @@
     "@tiptap/markdown": "3.23.6",
     "@tiptap/react": "^3.23.6",
     "@tiptap/starter-kit": "^3.23.6",
+    "clsx": "^2.1.1",
     "lucide-react": "^1.23.0",
     "motion": "^12.40.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "sonner": "^2.0.7",
+    "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.1.18",
     "zustand": "^5.0.9"
   },

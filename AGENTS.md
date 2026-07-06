@@ -53,6 +53,21 @@ Blocking dialogs (`blocking_pick_folder`) must run in async commands via `spawn_
 - Motion: 100–160ms ease-out only. Fonts: Inter Variable (UI), JetBrains Mono (code).
 - No autocorrect anywhere: global `focusin` hook in `main.tsx` handles inputs; editor sets its own attrs.
 
+## Adding beui components
+
+Animated components come from the beui registry (the user's own library). A compatibility layer is already in place so pulled components inherit our monochrome theme unchanged:
+
+- `src/lib/utils.ts` exports `cn()` (clsx + tailwind-merge) — what beui/shadcn files import. Our own components use `cx()`.
+- `src/lib/ease.ts` — shared motion tokens (`SPRING_PANEL`, `EASE_OUT`, …). `styles.css` mirrors `--ease-out` and defines the `.press` utility.
+- `styles.css` maps shadcn semantic tokens (`--color-background`, `--color-foreground`, `--color-card`, `--color-border`, `--color-muted-foreground`, `--color-destructive`, `--color-border-strong`, …) onto our palette, so `bg-background`, `border-border`, `text-muted-foreground` etc. resolve to our monochrome look in both themes.
+- `components.json` registers the `@beui` registry (`https://beui.dev/r/{name}.json`).
+
+Two ways to add one:
+1. **beui MCP** (preferred): `get_component <slug>` returns every file's contents; write them under `src/components/…`. Shared files (`lib/ease.ts`, `lib/utils.ts`) already exist — don't overwrite.
+2. **shadcn CLI**: `bunx --bun shadcn add @beui/<slug>`.
+
+Our `Modal` (`components/ui/Modal.tsx`) is built on the same tokens; keep new dialogs on it for one motion language.
+
 ## Rules
 
 - Never add "Co-Authored-By" or any AI attribution to commits or PRs.
