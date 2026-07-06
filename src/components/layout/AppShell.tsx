@@ -54,6 +54,11 @@ export function AppShell() {
               <PanelLeft size={15.5} strokeWidth={1.75} />
             </button>
           </Tooltip>
+          {(view?.type === "todos" || view?.type === "bookmarks") && (
+            <span className="ml-1 text-[13px] font-medium text-ink">
+              {view.type === "todos" ? "Todos" : "Bookmarks"}
+            </span>
+          )}
         </motion.div>
 
         <div className="relative min-h-0 flex-1">

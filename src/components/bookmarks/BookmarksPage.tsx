@@ -1,7 +1,8 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { Globe, RefreshCw, Search, X } from "lucide-react";
+import { Copy, Globe, RefreshCw, Search, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import type { Bookmark } from "@/lib/types";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { cx, hostOf } from "@/lib/utils";
@@ -185,6 +186,15 @@ function BookmarkRow({ bookmark }: { bookmark: Bookmark }) {
       </div>
 
       <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity duration-100 group-hover:opacity-100">
+        <RowAction
+          label="Copy link"
+          onClick={() => {
+            navigator.clipboard.writeText(bookmark.url);
+            toast("Link copied");
+          }}
+        >
+          <Copy size={13} strokeWidth={2} />
+        </RowAction>
         <RowAction
           label="Refresh preview"
           spinning={fetching}
