@@ -1,6 +1,7 @@
 import { FolderOpen, X } from "lucide-react";
 import type { Theme } from "@/lib/types";
 import { cx } from "@/lib/utils";
+import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { useUi } from "@/stores/ui";
 import { useVault } from "@/stores/vault";
@@ -63,14 +64,10 @@ export function SettingsModal() {
           >
             {root}
           </p>
-          <button
-            type="button"
-            onClick={chooseVault}
-            className="flex shrink-0 items-center gap-1.5 rounded-lg border border-line px-3 py-2 text-[12.5px] font-medium text-ink transition-colors hover:bg-hover"
-          >
+          <Button variant="outline" size="sm" onClick={chooseVault} className="shrink-0">
             <FolderOpen size={13.5} strokeWidth={1.75} />
             Change
-          </button>
+          </Button>
         </div>
       </section>
 

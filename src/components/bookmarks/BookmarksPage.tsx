@@ -7,6 +7,7 @@ import { ActionSwapIcon } from "@/components/motion/action-swap";
 import { TagList } from "@/components/ui/TagList";
 import { TagPicker } from "@/components/ui/TagPicker";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { SPRING_LAYOUT } from "@/lib/ease";
 import { tagColor } from "@/lib/tagColor";
 import { cx, hostOf } from "@/lib/utils";
 import { useBookmarks } from "@/stores/bookmarks";
@@ -125,14 +126,21 @@ function TagRail({
           type="button"
           onClick={() => onSelect(null)}
           className={cx(
-            "flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors",
+            "relative flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors",
             activeTag === null
-              ? "bg-active text-ink"
+              ? "text-ink"
               : "text-muted hover:bg-hover hover:text-ink",
           )}
         >
-          <span className="h-2.5 w-2.5 shrink-0 rounded-full border border-faint" />
-          <span className="truncate">All</span>
+          {activeTag === null && (
+            <motion.span
+              layoutId="rail-active"
+              transition={SPRING_LAYOUT}
+              className="absolute inset-0 rounded-md bg-active"
+            />
+          )}
+          <span className="relative z-10 h-2.5 w-2.5 shrink-0 rounded-full border border-faint" />
+          <span className="relative z-10 truncate">All</span>
         </button>
 
         {tags.map((tag) => {
@@ -143,15 +151,22 @@ function TagRail({
                 type="button"
                 onClick={() => onSelect(active ? null : tag)}
                 className={cx(
-                  "flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors",
-                  active ? "bg-active text-ink" : "text-muted hover:bg-hover hover:text-ink",
+                  "relative flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors",
+                  active ? "text-ink" : "text-muted hover:bg-hover hover:text-ink",
                 )}
               >
+                {active && (
+                  <motion.span
+                    layoutId="rail-active"
+                    transition={SPRING_LAYOUT}
+                    className="absolute inset-0 rounded-md bg-active"
+                  />
+                )}
                 <span
-                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  className="relative z-10 h-2.5 w-2.5 shrink-0 rounded-full"
                   style={{ backgroundColor: tagColor(tag) }}
                 />
-                <span className="truncate">{tag}</span>
+                <span className="relative z-10 truncate">{tag}</span>
               </button>
               <button
                 type="button"

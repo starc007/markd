@@ -1,5 +1,6 @@
 import { FolderOpen } from "lucide-react";
 import { motion } from "motion/react";
+import { Button } from "@/components/ui/Button";
 import { useVault } from "@/stores/vault";
 
 export function Welcome() {
@@ -36,14 +37,15 @@ export function Welcome() {
           Plain markdown notes. Yours, on disk.
         </p>
 
-        <button
-          type="button"
+        <Button
+          variant="primary"
+          size="lg"
           onClick={chooseVault}
-          className="mt-12 flex items-center gap-2.5 rounded-lg bg-invert px-5 py-2.5 text-[14px] font-medium text-invert-ink transition-transform duration-150 ease-out"
+          className="mt-12"
         >
           <FolderOpen size={16} strokeWidth={1.75} />
           Choose a vault folder
-        </button>
+        </Button>
 
         <p className="mt-5 max-w-[300px] text-center text-[12.5px] leading-relaxed text-faint">
           Pick any folder — your notes live there as plain{" "}

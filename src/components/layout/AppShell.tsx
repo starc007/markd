@@ -7,6 +7,7 @@ import { TodosPage } from "@/components/todos/TodosPage";
 import { EASE_OUT, SPRING_PANEL } from "@/lib/ease";
 import { ActionSwapText } from "@/components/motion/action-swap";
 import { Sidebar } from "./Sidebar";
+import { Button } from "@/components/ui/Button";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { useBookmarks } from "@/stores/bookmarks";
 import { useUi } from "@/stores/ui";
@@ -111,27 +112,38 @@ function NewTagButton() {
 
   return (
     <div className="ml-auto pr-4">
-      {open ? (
-        <input
-          ref={inputRef}
-          placeholder="Tag name…"
-          className="h-7 w-32 rounded-md border border-line bg-panel px-2 text-[12.5px] text-ink outline-none placeholder:text-faint"
-          onBlur={commit}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") commit();
-            if (event.key === "Escape") setOpen(false);
-          }}
-        />
-      ) : (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="flex items-center gap-1.5 rounded-md border border-line px-2.5 py-1 text-[12.5px] font-medium text-muted transition-colors hover:bg-hover hover:text-ink"
-        >
-          <Tag size={13} strokeWidth={2} />
-          New tag
-        </button>
-      )}
+      <AnimatePresence mode="wait" initial={false}>
+        {open ? (
+          <motion.input
+            key="input"
+            ref={inputRef}
+            initial={{ opacity: 0, width: 96 }}
+            animate={{ opacity: 1, width: 128 }}
+            exit={{ opacity: 0, width: 96 }}
+            transition={{ duration: 0.16, ease: EASE_OUT }}
+            placeholder="Tag name…"
+            className="h-7 rounded-md border border-line bg-panel px-2 text-[12.5px] text-ink outline-none placeholder:text-faint"
+            onBlur={commit}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") commit();
+              if (event.key === "Escape") setOpen(false);
+            }}
+          />
+        ) : (
+          <motion.div
+            key="button"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.12, ease: EASE_OUT }}
+          >
+            <Button variant="secondary" size="sm" onClick={() => setOpen(true)}>
+              <Tag size={13} strokeWidth={2} />
+              New tag
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

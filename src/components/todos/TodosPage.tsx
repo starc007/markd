@@ -2,6 +2,8 @@ import { Plus, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import type { Todo } from "@/lib/types";
+import { EASE_OUT } from "@/lib/ease";
+import { Button } from "@/components/ui/Button";
 import { TagList } from "@/components/ui/TagList";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { cx } from "@/lib/utils";
@@ -35,15 +37,25 @@ export function TodosPage() {
           <p className="text-[13px] text-muted">
             Things you&apos;ll totally get around to.
           </p>
-          {completedCount > 0 && (
-            <button
-              type="button"
-              className="text-[12px] text-faint underline-offset-2 transition-colors hover:text-muted hover:underline"
-              onClick={() => useTodos.getState().clearCompleted()}
-            >
-              Clear completed · {completedCount}
-            </button>
-          )}
+          <AnimatePresence>
+            {completedCount > 0 && (
+              <motion.div
+                initial={{ opacity: 0, x: 6 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 6 }}
+                transition={{ duration: 0.14, ease: EASE_OUT }}
+              >
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-[12px] text-faint hover:text-ink"
+                  onClick={() => useTodos.getState().clearCompleted()}
+                >
+                  Clear completed · {completedCount}
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         <div className="mt-4 flex items-center gap-2.5 border-b border-line pb-3">
@@ -58,9 +70,11 @@ export function TodosPage() {
           />
         </div>
 
-        {tagFilter && (
-          <FilterBar tag={tagFilter} onClear={() => setTagFilter(null)} />
-        )}
+        <AnimatePresence>
+          {tagFilter && (
+            <FilterBar tag={tagFilter} onClear={() => setTagFilter(null)} />
+          )}
+        </AnimatePresence>
 
         <div className="mt-2">
           <AnimatePresence initial={false}>
@@ -199,17 +213,25 @@ function TodoRow({
 
 function FilterBar({ tag, onClear }: { tag: string; onClear: () => void }) {
   return (
-    <div className="mt-3 flex items-center gap-2 text-[12px] text-muted">
-      <span>
-        Filtered by <span className="font-medium text-ink">#{tag}</span>
-      </span>
-      <button
-        type="button"
-        className="text-faint underline-offset-2 transition-colors hover:text-ink hover:underline"
-        onClick={onClear}
-      >
-        clear
-      </button>
-    </div>
+    <motion.div
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: "auto" }}
+      exit={{ opacity: 0, height: 0 }}
+      transition={{ duration: 0.16, ease: EASE_OUT }}
+      className="overflow-hidden"
+    >
+      <div className="mt-3 flex items-center gap-2 text-[12px] text-muted">
+        <span>
+          Filtered by <span className="font-medium text-ink">#{tag}</span>
+        </span>
+        <button
+          type="button"
+          className="text-faint underline-offset-2 transition-colors hover:text-ink hover:underline"
+          onClick={onClear}
+        >
+          clear
+        </button>
+      </div>
+    </motion.div>
   );
 }
