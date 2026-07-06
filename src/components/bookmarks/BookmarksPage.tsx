@@ -3,6 +3,7 @@ import { Globe, Link as LinkIcon, RefreshCw, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import type { Bookmark } from "@/lib/types";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { cx, hostOf } from "@/lib/utils";
 import { useBookmarks } from "@/stores/bookmarks";
 
@@ -193,18 +194,18 @@ function CardAction({
   children: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      disabled={spinning}
-      className="grid h-6 w-6 place-items-center rounded-md bg-invert/85 text-invert-ink backdrop-blur-sm transition-transform duration-100 hover:scale-105 active:scale-95"
-      onClick={(event) => {
-        event.stopPropagation();
-        onClick();
-      }}
-    >
-      {children}
-    </button>
+    <Tooltip label={label} side="bottom">
+      <button
+        type="button"
+        disabled={spinning}
+        className="grid h-6 w-6 place-items-center rounded-md bg-invert/85 text-invert-ink backdrop-blur-sm transition-transform duration-100 hover:scale-105 active:scale-95"
+        onClick={(event) => {
+          event.stopPropagation();
+          onClick();
+        }}
+      >
+        {children}
+      </button>
+    </Tooltip>
   );
 }

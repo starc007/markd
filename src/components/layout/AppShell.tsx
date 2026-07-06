@@ -4,6 +4,7 @@ import { NoteEditor } from "@/components/editor/NoteEditor";
 import { BookmarksPage } from "@/components/bookmarks/BookmarksPage";
 import { TodosPage } from "@/components/todos/TodosPage";
 import { Sidebar } from "./Sidebar";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { useUi } from "@/stores/ui";
 import { useVault } from "@/stores/vault";
 
@@ -33,15 +34,15 @@ export function AppShell() {
           className="flex h-12 shrink-0 items-center"
           style={{ paddingLeft: sidebarHidden ? 84 : 12 }}
         >
-          <button
-            type="button"
-            aria-label="Toggle sidebar"
-            title="Toggle sidebar (⌘\)"
-            onClick={toggleSidebar}
-            className="grid h-7 w-7 place-items-center rounded-md text-faint transition-colors duration-100 hover:bg-hover hover:text-ink"
-          >
-            <PanelLeft size={15.5} strokeWidth={1.75} />
-          </button>
+          <Tooltip label="Toggle sidebar ⌘\" side="right">
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className="grid h-7 w-7 place-items-center rounded-md text-faint transition-colors duration-100 hover:bg-hover hover:text-ink"
+            >
+              <PanelLeft size={15.5} strokeWidth={1.75} />
+            </button>
+          </Tooltip>
         </div>
 
         <div className="min-h-0 flex-1">

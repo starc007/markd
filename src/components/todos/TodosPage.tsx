@@ -2,6 +2,7 @@ import { ChevronRight, Plus, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import type { Todo } from "@/lib/types";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { cx } from "@/lib/utils";
 import { useTodos } from "@/stores/todos";
 
@@ -175,14 +176,15 @@ function TodoRow({ todo }: { todo: Todo }) {
         </span>
       )}
 
-      <button
-        type="button"
-        aria-label="Delete task"
-        onClick={() => remove(todo.id)}
-        className="grid h-5 w-5 shrink-0 place-items-center rounded text-faint opacity-0 transition-opacity duration-100 hover:text-ink group-hover:opacity-100"
-      >
-        <X size={13} strokeWidth={2} />
-      </button>
+      <Tooltip label="Delete" side="left">
+        <button
+          type="button"
+          onClick={() => remove(todo.id)}
+          className="grid h-5 w-5 shrink-0 place-items-center rounded text-faint opacity-0 transition-opacity duration-100 hover:text-ink group-hover:opacity-100"
+        >
+          <X size={13} strokeWidth={2} />
+        </button>
+      </Tooltip>
     </motion.div>
   );
 }

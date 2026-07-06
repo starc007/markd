@@ -9,6 +9,7 @@ import {
   Underline,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { cx } from "@/lib/utils";
 
 export function SelectionMenu({ editor }: { editor: Editor }) {
@@ -126,20 +127,20 @@ function MarkButton({
   children: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      className={cx(
-        "grid h-7 w-7 place-items-center rounded-md transition-colors duration-75",
-        active ? "bg-invert text-invert-ink" : "text-muted hover:bg-hover hover:text-ink",
-      )}
-      onMouseDown={(event) => {
-        event.preventDefault();
-        onClick();
-      }}
-    >
-      {children}
-    </button>
+    <Tooltip label={label} side="top">
+      <button
+        type="button"
+        className={cx(
+          "grid h-7 w-7 place-items-center rounded-md transition-colors duration-75",
+          active ? "bg-invert text-invert-ink" : "text-muted hover:bg-hover hover:text-ink",
+        )}
+        onMouseDown={(event) => {
+          event.preventDefault();
+          onClick();
+        }}
+      >
+        {children}
+      </button>
+    </Tooltip>
   );
 }

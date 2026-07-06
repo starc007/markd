@@ -6,6 +6,7 @@ import {
   Settings,
 } from "lucide-react";
 import { FileTree } from "@/components/tree/FileTree";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { cx } from "@/lib/utils";
 import { useUi } from "@/stores/ui";
 import { activeDir, useVault } from "@/stores/vault";
@@ -98,15 +99,15 @@ function IconAction({
   children: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      onClick={onClick}
-      className="grid h-6.5 w-6.5 place-items-center rounded-md text-faint transition-colors duration-100 hover:bg-hover hover:text-ink"
-    >
-      {children}
-    </button>
+    <Tooltip label={label}>
+      <button
+        type="button"
+        onClick={onClick}
+        className="grid h-6.5 w-6.5 place-items-center rounded-md text-faint transition-colors duration-100 hover:bg-hover hover:text-ink"
+      >
+        {children}
+      </button>
+    </Tooltip>
   );
 }
 

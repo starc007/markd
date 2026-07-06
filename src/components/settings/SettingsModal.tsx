@@ -2,6 +2,7 @@ import { FolderOpen, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect } from "react";
 import type { Theme } from "@/lib/types";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { cx } from "@/lib/utils";
 import { useUi } from "@/stores/ui";
 import { useVault } from "@/stores/vault";
@@ -52,14 +53,15 @@ export function SettingsModal() {
               <h2 className="text-[16px] font-semibold tracking-[-0.01em]">
                 Settings
               </h2>
-              <button
-                type="button"
-                aria-label="Close settings"
-                onClick={() => setOpen(false)}
-                className="grid h-7 w-7 place-items-center rounded-md text-faint transition-colors hover:bg-hover hover:text-ink"
-              >
-                <X size={15} strokeWidth={2} />
-              </button>
+              <Tooltip label="Close" side="left">
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="grid h-7 w-7 place-items-center rounded-md text-faint transition-colors hover:bg-hover hover:text-ink"
+                >
+                  <X size={15} strokeWidth={2} />
+                </button>
+              </Tooltip>
             </div>
 
             <section className="mt-5">

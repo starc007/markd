@@ -94,6 +94,15 @@ body {
   background: transparent;
 }
 
+.tooltip-pop {
+  animation: tooltip-in 120ms ease-out;
+}
+@keyframes tooltip-in {
+  from {
+    opacity: 0;
+  }
+}
+
 /* centered pages: reserve gutters so the scrollbar never shifts content */
 .page-scroll {
   height: 100%;
