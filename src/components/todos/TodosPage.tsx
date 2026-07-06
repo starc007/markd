@@ -25,7 +25,7 @@ export function TodosPage() {
   };
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="page-scroll">
       <div className="mx-auto w-full max-w-[560px] px-8 pb-24 pt-6">
         <h1 className="text-[30px] font-[680] tracking-[-0.025em]">Todos</h1>
 

@@ -94,6 +94,13 @@ body {
   background: transparent;
 }
 
+/* centered pages: reserve gutters so the scrollbar never shifts content */
+.page-scroll {
+  height: 100%;
+  overflow-y: auto;
+  scrollbar-gutter: stable both-edges;
+}
+
 /* ---------- editor typography ---------- */
 
 .prose-note {
@@ -204,6 +211,9 @@ body {
 .prose-note li {
   margin: 0.15em 0;
 }
+.prose-note li > p {
+  margin: 0;
+}
 .prose-note li::marker {
   color: var(--faint);
 }
@@ -249,6 +259,10 @@ body {
 .prose-note ul[data-type="taskList"] li > div {
   flex: 1;
   min-width: 0;
+}
+.prose-note ul[data-type="taskList"] li > div p {
+  margin: 0;
+  line-height: 1.65;
 }
 .prose-note ul[data-type="taskList"] li[data-checked="true"] > div {
   color: var(--muted);

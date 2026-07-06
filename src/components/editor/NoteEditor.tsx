@@ -230,7 +230,7 @@ function LoadedEditor({
   };
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="page-scroll">
       <div className="mx-auto w-full max-w-[720px] px-10 pt-6">
         <TitleInput
           key={rel}

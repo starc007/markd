@@ -22,7 +22,7 @@ export function BookmarksPage() {
   };
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="page-scroll">
       <div className="mx-auto w-full max-w-[880px] px-10 pb-24 pt-6">
         <h1 className="text-[30px] font-[680] tracking-[-0.025em]">Bookmarks</h1>
 
