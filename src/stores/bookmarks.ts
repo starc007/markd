@@ -11,7 +11,7 @@ interface BookmarksState {
   /** ids with a metadata fetch in flight */
   fetching: Set<string>;
   load: () => Promise<void>;
-  add: (url: string) => Promise<void>;
+  add: (url: string, tags?: string[]) => Promise<void>;
   fetchMeta: (id: string) => Promise<void>;
   updateTitle: (id: string, title: string) => Promise<void>;
   setTags: (id: string, tags: string[]) => Promise<void>;
@@ -45,9 +45,13 @@ export const useBookmarks = create<BookmarksState>((set, get) => ({
     }
   },
 
-  add: async (url) => {
+  add: async (url, tags) => {
     try {
-      const bookmark = await ipc.bookmarkAdd(url);
+      let bookmark = await ipc.bookmarkAdd(url);
+      if (tags && tags.length) {
+        // e.g. adding while a tag filter is active — inherit that tag
+        bookmark = await ipc.bookmarkSetTags(bookmark.id, tags);
+      }
       set({ bookmarks: [bookmark, ...get().bookmarks] });
       get().fetchMeta(bookmark.id);
     } catch (err) {

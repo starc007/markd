@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Bookmark } from "@/lib/types";
 import { ActionSwapIcon } from "@/components/motion/action-swap";
 import { TagList } from "@/components/ui/TagList";
+import { TagPicker } from "@/components/ui/TagPicker";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { tagColor } from "@/lib/tagColor";
 import { cx, hostOf } from "@/lib/utils";
@@ -40,7 +41,7 @@ export function BookmarksPage() {
   const submit = () => {
     if (!trimmed) return;
     if (isUrl) {
-      add(trimmed);
+      add(trimmed, tagFilter ? [tagFilter] : undefined);
       setQuery("");
     }
   };
@@ -48,10 +49,7 @@ export function BookmarksPage() {
   return (
     <div className="page-scroll">
       <div className="mx-auto flex w-full max-w-[940px] gap-8 px-8 pb-24 pt-6">
-        <TagRail
-          activeTag={tagFilter}
-          onSelect={(tag) => setTagFilter((cur) => (cur === tag ? null : tag))}
-        />
+        <TagRail activeTag={tagFilter} onSelect={setTagFilter} />
 
         <div className="min-w-0 flex-1">
           <p className="text-[13px] text-muted">
@@ -112,7 +110,7 @@ function TagRail({
   onSelect,
 }: {
   activeTag: string | null;
-  onSelect: (tag: string) => void;
+  onSelect: (tag: string | null) => void;
 }) {
   const tags = useBookmarks((s) => s.tagRegistry);
   const deleteTag = useBookmarks((s) => s.deleteTag);
@@ -122,43 +120,56 @@ function TagRail({
       <p className="px-2 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
         Tags
       </p>
-      {tags.length === 0 ? (
-        <p className="px-2 text-[12px] leading-relaxed text-faint">
+      <div className="flex flex-col gap-0.5">
+        <button
+          type="button"
+          onClick={() => onSelect(null)}
+          className={cx(
+            "flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors",
+            activeTag === null
+              ? "bg-active text-ink"
+              : "text-muted hover:bg-hover hover:text-ink",
+          )}
+        >
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full border border-faint" />
+          <span className="truncate">All</span>
+        </button>
+
+        {tags.map((tag) => {
+          const active = activeTag === tag;
+          return (
+            <div key={tag} className="group/rail flex items-center">
+              <button
+                type="button"
+                onClick={() => onSelect(active ? null : tag)}
+                className={cx(
+                  "flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors",
+                  active ? "bg-active text-ink" : "text-muted hover:bg-hover hover:text-ink",
+                )}
+              >
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: tagColor(tag) }}
+                />
+                <span className="truncate">{tag}</span>
+              </button>
+              <button
+                type="button"
+                aria-label={`Delete tag ${tag}`}
+                onClick={() => deleteTag(tag)}
+                className="grid h-6 w-6 shrink-0 place-items-center rounded text-faint opacity-0 transition-opacity hover:text-danger group-hover/rail:opacity-100"
+              >
+                <X size={12} strokeWidth={2} />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      {tags.length === 0 && (
+        <p className="mt-1 px-2 text-[12px] leading-relaxed text-faint">
           Create a tag from the top bar to start filtering.
         </p>
-      ) : (
-        <div className="flex flex-col gap-0.5">
-          {tags.map((tag) => {
-            const color = tagColor(tag);
-            const active = activeTag === tag;
-            return (
-              <div key={tag} className="group/rail flex items-center">
-                <button
-                  type="button"
-                  onClick={() => onSelect(tag)}
-                  className={cx(
-                    "flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors",
-                    active ? "bg-active text-ink" : "text-muted hover:bg-hover hover:text-ink",
-                  )}
-                >
-                  <span
-                    className="h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: color }}
-                  />
-                  <span className="truncate">{tag}</span>
-                </button>
-                <button
-                  type="button"
-                  aria-label={`Delete tag ${tag}`}
-                  onClick={() => deleteTag(tag)}
-                  className="grid h-6 w-6 shrink-0 place-items-center rounded text-faint opacity-0 transition-opacity hover:text-danger group-hover/rail:opacity-100"
-                >
-                  <X size={12} strokeWidth={2} />
-                </button>
-              </div>
-            );
-          })}
-        </div>
       )}
     </aside>
   );
@@ -177,6 +188,7 @@ function BookmarkRow({
   const fetchMeta = useBookmarks((s) => s.fetchMeta);
   const updateTitle = useBookmarks((s) => s.updateTitle);
   const setTags = useBookmarks((s) => s.setTags);
+  const registry = useBookmarks((s) => s.tagRegistry);
   const fetching = useBookmarks((s) => s.fetching.has(bookmark.id));
   const [editing, setEditing] = useState(false);
   const editRef = useRef<HTMLInputElement>(null);
@@ -285,17 +297,24 @@ function BookmarkRow({
         <p className="mt-0.5 truncate text-[11.5px] text-faint">
           {hostOf(bookmark.url)}
         </p>
-        <div className="mt-1.5">
-          <TagList
-            tags={bookmark.tags}
-            activeTag={activeTag}
-            onTagClick={onTagClick}
-            onChange={(tags) => setTags(bookmark.id, tags)}
-          />
-        </div>
+        {bookmark.tags.length > 0 && (
+          <div className="mt-1.5">
+            <TagList
+              tags={bookmark.tags}
+              activeTag={activeTag}
+              onTagClick={onTagClick}
+              editable={false}
+            />
+          </div>
+        )}
       </div>
 
       <div className="flex shrink-0 items-center gap-0.5 self-start opacity-0 transition-opacity duration-100 group-hover:opacity-100">
+        <TagPicker
+          assigned={bookmark.tags}
+          registry={registry}
+          onChange={(tags) => setTags(bookmark.id, tags)}
+        />
         <RowAction label={copied ? "Copied" : "Copy link"} onClick={copyLink}>
           <ActionSwapIcon
             value={copied ? "done" : "copy"}
