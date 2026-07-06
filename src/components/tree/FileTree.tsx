@@ -1,6 +1,9 @@
 import {
   ChevronRight,
   FilePlus,
+  FileText,
+  Folder,
+  FolderOpen,
   FolderPlus,
   Pencil,
   Trash2,
@@ -191,17 +194,48 @@ function Row({ node, depth }: { node: TreeNode; depth: number }) {
         }}
       >
         {isFolder ? (
-          <ChevronRight
-            size={13}
-            strokeWidth={2}
-            className={cx(
-              "mr-1 shrink-0 transition-transform duration-150 ease-out",
-              isOpen && "rotate-90",
-              isActive ? "text-invert-ink/70" : "text-faint",
+          <>
+            <ChevronRight
+              size={13}
+              strokeWidth={2}
+              className={cx(
+                "mr-0.5 shrink-0 transition-transform duration-150 ease-out",
+                isOpen && "rotate-90",
+                isActive ? "text-invert-ink/70" : "text-faint",
+              )}
+            />
+            {isOpen ? (
+              <FolderOpen
+                size={14}
+                strokeWidth={1.75}
+                className={cx(
+                  "mr-1.5 shrink-0",
+                  isActive ? "text-invert-ink/80" : "text-faint",
+                )}
+              />
+            ) : (
+              <Folder
+                size={14}
+                strokeWidth={1.75}
+                className={cx(
+                  "mr-1.5 shrink-0",
+                  isActive ? "text-invert-ink/80" : "text-faint",
+                )}
+              />
             )}
-          />
+          </>
         ) : (
-          <span className="mr-1 w-[13px] shrink-0" />
+          <>
+            <span className="mr-0.5 w-[13px] shrink-0" />
+            <FileText
+              size={14}
+              strokeWidth={1.75}
+              className={cx(
+                "mr-1.5 shrink-0",
+                isActive ? "text-invert-ink/80" : "text-faint",
+              )}
+            />
+          </>
         )}
 
         {isRenaming ? (

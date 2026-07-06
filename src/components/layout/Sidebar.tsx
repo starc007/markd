@@ -24,24 +24,13 @@ export function Sidebar() {
       {/* drag region + traffic-light clearance */}
       <div data-tauri-drag-region className="flex h-12 items-end px-3 pb-1" />
 
-      <div className="flex items-center justify-between px-4 pb-2">
+      <div className="flex items-center px-4 pb-2">
         <span
           className="truncate text-[11px] font-semibold uppercase tracking-[0.08em] text-faint"
           title={name}
         >
           {name}
         </span>
-        <div className="flex items-center gap-0.5">
-          <IconAction
-            label="New note"
-            onClick={() => createNote(activeDir(useVault.getState()))}
-          >
-            <FilePlus size={14.5} strokeWidth={1.75} />
-          </IconAction>
-          <IconAction label="New folder" onClick={() => createFolder("", "Untitled")}>
-            <FolderPlus size={14.5} strokeWidth={1.75} />
-          </IconAction>
-        </div>
       </div>
 
       <nav className="px-2 pb-1">
@@ -60,6 +49,23 @@ export function Sidebar() {
       </nav>
 
       <div className="mx-4 my-1.5 border-t border-line-soft" />
+
+      <div className="flex items-center justify-between pl-4 pr-2 pb-0.5">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
+          Notes
+        </span>
+        <div className="flex items-center gap-0.5">
+          <IconAction
+            label="New note"
+            onClick={() => createNote(activeDir(useVault.getState()))}
+          >
+            <FilePlus size={14.5} strokeWidth={1.75} />
+          </IconAction>
+          <IconAction label="New folder" onClick={() => createFolder("", "Untitled")}>
+            <FolderPlus size={14.5} strokeWidth={1.75} />
+          </IconAction>
+        </div>
+      </div>
 
       <FileTree />
 
