@@ -55,15 +55,17 @@ export default function App() {
       <CommandPalette />
       <SettingsModal />
       <Toaster
-        position="bottom-right"
+        position="top-right"
         gap={8}
+        offset={16}
         toastOptions={{
           style: {
-            background: "var(--invert)",
-            color: "var(--invert-ink)",
-            border: "none",
+            background: "var(--panel)",
+            color: "var(--ink)",
+            border: "1px solid var(--line)",
             fontSize: "13px",
-            borderRadius: "8px",
+            borderRadius: "10px",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
           },
         }}
       />
