@@ -25,7 +25,7 @@ export function TodosPage() {
 
   return (
     <div className="page-scroll">
-      <div className="mx-auto w-full max-w-[560px] px-8 pb-24 pt-6">
+      <div className="mx-auto w-full max-w-[720px] px-8 pb-24 pt-6">
         <div className="flex items-baseline justify-between">
           <p className="text-[13px] text-muted">
             Things you&apos;ll totally get around to.
