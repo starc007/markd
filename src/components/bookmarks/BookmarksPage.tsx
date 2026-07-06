@@ -41,9 +41,9 @@ export function BookmarksPage() {
   return (
     <div className="page-scroll">
       <div className="mx-auto w-full max-w-[720px] px-8 pb-24 pt-6">
-        <h1 className="text-[30px] font-[680] tracking-[-0.025em]">Bookmarks</h1>
+        <p className="text-[13px] text-muted">Your saved links.</p>
 
-        <div className="mt-6 flex items-center gap-2.5 border-b border-line pb-3">
+        <div className="mt-4 flex items-center gap-2.5 border-b border-line pb-3">
           <Search size={15} strokeWidth={2} className="shrink-0 text-faint" />
           <input
             value={query}

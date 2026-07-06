@@ -25,6 +25,7 @@ import {
   type MenuItem,
   type MenuPosition,
 } from "@/components/ui/ContextMenu";
+import { ActionSwapIcon } from "@/components/motion/action-swap";
 
 const DRAG_TYPE = "application/x-draft-rel";
 
@@ -195,25 +196,20 @@ function Row({ node, depth }: { node: TreeNode; depth: number }) {
         }}
       >
         {isFolder ? (
-          isOpen ? (
-            <FolderOpen
-              size={14}
-              strokeWidth={1.75}
-              className={cx(
-                "mr-2 shrink-0",
-                isActive ? "text-ink" : "text-faint",
-              )}
-            />
-          ) : (
-            <Folder
-              size={14}
-              strokeWidth={1.75}
-              className={cx(
-                "mr-2 shrink-0",
-                isActive ? "text-ink" : "text-faint",
-              )}
-            />
-          )
+          <ActionSwapIcon
+            value={isOpen ? "open" : "closed"}
+            animation="roll"
+            className={cx(
+              "mr-2 h-[14px] w-[14px]",
+              isActive ? "text-ink" : "text-faint",
+            )}
+          >
+            {isOpen ? (
+              <FolderOpen size={14} strokeWidth={1.75} />
+            ) : (
+              <Folder size={14} strokeWidth={1.75} />
+            )}
+          </ActionSwapIcon>
         ) : (
           <FileText
             size={14}
