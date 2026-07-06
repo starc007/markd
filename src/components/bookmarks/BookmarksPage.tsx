@@ -88,15 +88,17 @@ export function BookmarksPage() {
             </AnimatePresence>
           </div>
 
-          <AnimatePresence mode="wait">
+          <AnimatePresence>
             {loaded && filtered.length === 0 && (
               <motion.p
-                key={bookmarks.length === 0 ? "empty" : tagFilter ?? "search"}
-                layout
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.18, ease: EASE_OUT }}
+                transition={{
+                  duration: 0.18,
+                  ease: EASE_OUT,
+                  delay: 0.14,
+                }}
                 className="pt-10 text-center text-[13px] text-faint"
               >
                 {bookmarks.length === 0
