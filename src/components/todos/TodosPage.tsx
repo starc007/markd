@@ -138,9 +138,10 @@ function TodoRow({ todo }: { todo: Todo }) {
       ) : (
         <span
           className={cx(
-            "min-w-0 flex-1 select-none truncate text-[14px] transition-colors duration-150",
+            "min-w-0 flex-1 cursor-pointer select-none truncate text-[14px] transition-colors duration-150",
             todo.done && "text-faint line-through decoration-faint",
           )}
+          onClick={() => toggle(todo.id)}
           onDoubleClick={() => !todo.done && setEditing(true)}
         >
           {todo.text}
