@@ -27,7 +27,9 @@ export function TodosPage() {
     <div className="page-scroll">
       <div className="mx-auto w-full max-w-[560px] px-8 pb-24 pt-6">
         <div className="flex items-baseline justify-between">
-          <h1 className="text-[30px] font-[680] tracking-[-0.025em]">Todos</h1>
+          <p className="text-[13px] text-muted">
+            Things you&apos;ll totally get around to.
+          </p>
           {completedCount > 0 && (
             <button
               type="button"
@@ -39,7 +41,7 @@ export function TodosPage() {
           )}
         </div>
 
-        <div className="mt-6 flex items-center gap-2.5 border-b border-line pb-3">
+        <div className="mt-4 flex items-center gap-2.5 border-b border-line pb-3">
           <Plus size={16} strokeWidth={2} className="shrink-0 text-faint" />
           <input
             ref={inputRef}
