@@ -1,5 +1,5 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { Check, Copy, Globe, RefreshCw, Search, X } from "lucide-react";
+import { Check, Copy, Globe, Search, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Bookmark } from "@/lib/types";
@@ -185,7 +185,6 @@ function BookmarkRow({
   onTagClick: (tag: string) => void;
 }) {
   const remove = useBookmarks((s) => s.remove);
-  const fetchMeta = useBookmarks((s) => s.fetchMeta);
   const updateTitle = useBookmarks((s) => s.updateTitle);
   const setTags = useBookmarks((s) => s.setTags);
   const registry = useBookmarks((s) => s.tagRegistry);
@@ -327,17 +326,6 @@ function BookmarkRow({
               <Copy size={13} strokeWidth={2} />
             )}
           </ActionSwapIcon>
-        </RowAction>
-        <RowAction
-          label="Refresh preview"
-          spinning={fetching}
-          onClick={() => fetchMeta(bookmark.id)}
-        >
-          <RefreshCw
-            size={13}
-            strokeWidth={2}
-            className={cx(fetching && "animate-spin")}
-          />
         </RowAction>
         <RowAction label="Delete bookmark" onClick={() => remove(bookmark.id)}>
           <X size={13.5} strokeWidth={2} />
