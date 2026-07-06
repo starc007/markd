@@ -4,6 +4,7 @@ import { NoteEditor } from "@/components/editor/NoteEditor";
 import { BookmarksPage } from "@/components/bookmarks/BookmarksPage";
 import { TodosPage } from "@/components/todos/TodosPage";
 import { EASE_OUT, SPRING_PANEL } from "@/lib/ease";
+import { ActionSwapText } from "@/components/motion/action-swap";
 import { Sidebar } from "./Sidebar";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { useUi } from "@/stores/ui";
@@ -54,11 +55,17 @@ export function AppShell() {
               <PanelLeft size={15.5} strokeWidth={1.75} />
             </button>
           </Tooltip>
-          {(view?.type === "todos" || view?.type === "bookmarks") && (
-            <span className="ml-1 text-[13px] font-medium text-ink">
-              {view.type === "todos" ? "Todos" : "Bookmarks"}
-            </span>
-          )}
+          <ActionSwapText
+            value={view?.type ?? "none"}
+            animation="cascade"
+            className="ml-1 text-[13px] font-medium text-ink"
+          >
+            {view?.type === "todos"
+              ? "Todos"
+              : view?.type === "bookmarks"
+                ? "Bookmarks"
+                : ""}
+          </ActionSwapText>
         </motion.div>
 
         <div className="relative min-h-0 flex-1">
