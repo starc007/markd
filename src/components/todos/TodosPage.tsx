@@ -76,7 +76,7 @@ export function TodosPage() {
           )}
         </AnimatePresence>
 
-        <div className="mt-2">
+        <div className="relative mt-2">
           <AnimatePresence initial={false}>
             {shown.map((todo) => (
               <TodoRow
@@ -92,9 +92,9 @@ export function TodosPage() {
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.18, ease: EASE_OUT, delay: 0.14 }}
-                className="pt-6 text-center text-[13px] text-faint"
+                exit={{ opacity: 0, transition: { duration: 0.1 } }}
+                transition={{ duration: 0.18, ease: EASE_OUT }}
+                className="absolute inset-x-0 top-6 text-center text-[13px] text-faint"
               >
                 {tagFilter ? `No tasks tagged #${tagFilter}.` : "Nothing here yet."}
               </motion.p>

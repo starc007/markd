@@ -73,7 +73,7 @@ export function BookmarksPage() {
             )}
           </div>
 
-          <div className="mt-2">
+          <div className="relative mt-2">
             <AnimatePresence initial={false}>
               {filtered.map((bookmark) => (
                 <BookmarkRow
@@ -86,29 +86,25 @@ export function BookmarksPage() {
                 />
               ))}
             </AnimatePresence>
-          </div>
 
-          <AnimatePresence>
-            {loaded && filtered.length === 0 && (
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{
-                  duration: 0.18,
-                  ease: EASE_OUT,
-                  delay: 0.14,
-                }}
-                className="pt-10 text-center text-[13px] text-faint"
-              >
-                {bookmarks.length === 0
-                  ? "Paste a link above to save it."
-                  : tagFilter
-                    ? `Nothing tagged #${tagFilter}.`
-                    : `No bookmarks match “${trimmed}”.`}
-              </motion.p>
-            )}
-          </AnimatePresence>
+            <AnimatePresence>
+              {loaded && filtered.length === 0 && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0, transition: { duration: 0.1 } }}
+                  transition={{ duration: 0.18, ease: EASE_OUT }}
+                  className="absolute inset-x-0 top-10 text-center text-[13px] text-faint"
+                >
+                  {bookmarks.length === 0
+                    ? "Paste a link above to save it."
+                    : tagFilter
+                      ? `Nothing tagged #${tagFilter}.`
+                      : `No bookmarks match “${trimmed}”.`}
+                </motion.p>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
     </div>
