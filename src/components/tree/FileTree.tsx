@@ -1,5 +1,4 @@
 import {
-  ChevronRight,
   FilePlus,
   FileText,
   Folder,
@@ -194,40 +193,8 @@ function Row({ node, depth }: { node: TreeNode; depth: number }) {
         }}
       >
         {isFolder ? (
-          <>
-            <ChevronRight
-              size={13}
-              strokeWidth={2}
-              className={cx(
-                "mr-0.5 shrink-0 transition-transform duration-150 ease-out",
-                isOpen && "rotate-90",
-                isActive ? "text-invert-ink/70" : "text-faint",
-              )}
-            />
-            {isOpen ? (
-              <FolderOpen
-                size={14}
-                strokeWidth={1.75}
-                className={cx(
-                  "mr-1.5 shrink-0",
-                  isActive ? "text-invert-ink/80" : "text-faint",
-                )}
-              />
-            ) : (
-              <Folder
-                size={14}
-                strokeWidth={1.75}
-                className={cx(
-                  "mr-1.5 shrink-0",
-                  isActive ? "text-invert-ink/80" : "text-faint",
-                )}
-              />
-            )}
-          </>
-        ) : (
-          <>
-            <span className="mr-0.5 w-[13px] shrink-0" />
-            <FileText
+          isOpen ? (
+            <FolderOpen
               size={14}
               strokeWidth={1.75}
               className={cx(
@@ -235,7 +202,25 @@ function Row({ node, depth }: { node: TreeNode; depth: number }) {
                 isActive ? "text-invert-ink/80" : "text-faint",
               )}
             />
-          </>
+          ) : (
+            <Folder
+              size={14}
+              strokeWidth={1.75}
+              className={cx(
+                "mr-1.5 shrink-0",
+                isActive ? "text-invert-ink/80" : "text-faint",
+              )}
+            />
+          )
+        ) : (
+          <FileText
+            size={14}
+            strokeWidth={1.75}
+            className={cx(
+              "mr-1.5 shrink-0",
+              isActive ? "text-invert-ink/80" : "text-faint",
+            )}
+          />
         )}
 
         {isRenaming ? (
