@@ -87,11 +87,21 @@ export function TodosPage() {
               />
             ))}
           </AnimatePresence>
-          {loaded && shown.length === 0 && (
-            <p className="pt-6 text-center text-[13px] text-faint">
-              {tagFilter ? `No tasks tagged #${tagFilter}.` : "Nothing here yet."}
-            </p>
-          )}
+          <AnimatePresence mode="wait">
+            {loaded && shown.length === 0 && (
+              <motion.p
+                key={tagFilter ?? "all"}
+                layout
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.18, ease: EASE_OUT }}
+                className="pt-6 text-center text-[13px] text-faint"
+              >
+                {tagFilter ? `No tasks tagged #${tagFilter}.` : "Nothing here yet."}
+              </motion.p>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>

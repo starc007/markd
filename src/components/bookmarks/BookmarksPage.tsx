@@ -7,7 +7,7 @@ import { ActionSwapIcon } from "@/components/motion/action-swap";
 import { TagList } from "@/components/ui/TagList";
 import { TagPicker } from "@/components/ui/TagPicker";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { SPRING_LAYOUT } from "@/lib/ease";
+import { EASE_OUT, SPRING_LAYOUT } from "@/lib/ease";
 import { tagColor } from "@/lib/tagColor";
 import { cx, hostOf } from "@/lib/utils";
 import { useBookmarks } from "@/stores/bookmarks";
@@ -88,18 +88,25 @@ export function BookmarksPage() {
             </AnimatePresence>
           </div>
 
-          {loaded && bookmarks.length === 0 && (
-            <p className="pt-10 text-center text-[13px] text-faint">
-              Paste a link above to save it.
-            </p>
-          )}
-          {loaded && bookmarks.length > 0 && filtered.length === 0 && (
-            <p className="pt-10 text-center text-[13px] text-faint">
-              {tagFilter
-                ? `Nothing tagged #${tagFilter}.`
-                : `No bookmarks match “${trimmed}”.`}
-            </p>
-          )}
+          <AnimatePresence mode="wait">
+            {loaded && filtered.length === 0 && (
+              <motion.p
+                key={bookmarks.length === 0 ? "empty" : tagFilter ?? "search"}
+                layout
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.18, ease: EASE_OUT }}
+                className="pt-10 text-center text-[13px] text-faint"
+              >
+                {bookmarks.length === 0
+                  ? "Paste a link above to save it."
+                  : tagFilter
+                    ? `Nothing tagged #${tagFilter}.`
+                    : `No bookmarks match “${trimmed}”.`}
+              </motion.p>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>
