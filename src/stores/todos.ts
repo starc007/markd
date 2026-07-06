@@ -5,12 +5,15 @@ import type { Todo } from "@/lib/types";
 
 interface TodosState {
   todos: Todo[];
+  tagRegistry: string[];
   loaded: boolean;
   load: () => Promise<void>;
-  add: (text: string) => Promise<void>;
+  add: (text: string, tags?: string[]) => Promise<void>;
   toggle: (id: string) => Promise<void>;
   updateText: (id: string, text: string) => Promise<void>;
   setTags: (id: string, tags: string[]) => Promise<void>;
+  createTag: (name: string) => Promise<void>;
+  deleteTag: (name: string) => Promise<void>;
   remove: (id: string) => Promise<void>;
   clearCompleted: () => Promise<void>;
 }
@@ -20,19 +23,27 @@ const oops = (err: unknown) =>
 
 export const useTodos = create<TodosState>((set, get) => ({
   todos: [],
+  tagRegistry: [],
   loaded: false,
 
   load: async () => {
     try {
-      set({ todos: await ipc.todosList(), loaded: true });
+      const [todos, tagRegistry] = await Promise.all([
+        ipc.todosList(),
+        ipc.todoTagsList(),
+      ]);
+      set({ todos, tagRegistry, loaded: true });
     } catch (err) {
       oops(err);
     }
   },
 
-  add: async (text) => {
+  add: async (text, tags) => {
     try {
-      const todo = await ipc.todoAdd(text);
+      let todo = await ipc.todoAdd(text);
+      if (tags && tags.length) {
+        todo = await ipc.todoSetTags(todo.id, tags);
+      }
       set({ todos: [todo, ...get().todos] });
     } catch (err) {
       oops(err);
@@ -65,7 +76,35 @@ export const useTodos = create<TodosState>((set, get) => ({
   setTags: async (id, tags) => {
     try {
       const updated = await ipc.todoSetTags(id, tags);
-      set({ todos: get().todos.map((t) => (t.id === id ? updated : t)) });
+      const registry = new Set(get().tagRegistry);
+      updated.tags.forEach((t) => registry.add(t));
+      set({
+        todos: get().todos.map((t) => (t.id === id ? updated : t)),
+        tagRegistry: [...registry],
+      });
+    } catch (err) {
+      oops(err);
+    }
+  },
+
+  createTag: async (name) => {
+    try {
+      set({ tagRegistry: await ipc.todoTagCreate(name) });
+    } catch (err) {
+      oops(err);
+    }
+  },
+
+  deleteTag: async (name) => {
+    try {
+      const tagRegistry = await ipc.todoTagDelete(name);
+      set({
+        tagRegistry,
+        todos: get().todos.map((t) => ({
+          ...t,
+          tags: t.tags.filter((tag) => tag !== name),
+        })),
+      });
     } catch (err) {
       oops(err);
     }

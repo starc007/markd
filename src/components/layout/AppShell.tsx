@@ -10,6 +10,7 @@ import { Sidebar } from "./Sidebar";
 import { Button } from "@/components/ui/Button";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { useBookmarks } from "@/stores/bookmarks";
+import { useTodos } from "@/stores/todos";
 import { useUi } from "@/stores/ui";
 import { useVault } from "@/stores/vault";
 
@@ -25,6 +26,8 @@ export function AppShell() {
   const view = useVault((s) => s.view);
   const sidebarHidden = useUi((s) => s.sidebarHidden);
   const toggleSidebar = useUi((s) => s.toggleSidebar);
+  const createBookmarkTag = useBookmarks((s) => s.createTag);
+  const createTodoTag = useTodos((s) => s.createTag);
 
   return (
     <div className="flex h-full bg-bg">
@@ -70,7 +73,10 @@ export function AppShell() {
                 : ""}
           </ActionSwapText>
 
-          {view?.type === "bookmarks" && <NewTagButton />}
+          {view?.type === "bookmarks" && (
+            <NewTagButton onCreate={createBookmarkTag} />
+          )}
+          {view?.type === "todos" && <NewTagButton onCreate={createTodoTag} />}
         </motion.div>
 
         <div className="relative min-h-0 flex-1">
@@ -95,8 +101,7 @@ export function AppShell() {
   );
 }
 
-function NewTagButton() {
-  const createTag = useBookmarks((s) => s.createTag);
+function NewTagButton({ onCreate }: { onCreate: (name: string) => void }) {
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -106,7 +111,7 @@ function NewTagButton() {
 
   const commit = () => {
     const value = inputRef.current?.value.trim();
-    if (value) createTag(value);
+    if (value) onCreate(value);
     setOpen(false);
   };
 

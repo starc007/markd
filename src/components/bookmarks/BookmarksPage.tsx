@@ -6,16 +6,16 @@ import type { Bookmark } from "@/lib/types";
 import { ActionSwapIcon } from "@/components/motion/action-swap";
 import { TagList } from "@/components/ui/TagList";
 import { TagPicker } from "@/components/ui/TagPicker";
+import { TagRail } from "@/components/ui/TagRail";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { EASE_OUT, SPRING_LAYOUT } from "@/lib/ease";
-import { tagColor } from "@/lib/tagColor";
+import { EASE_OUT } from "@/lib/ease";
 import { cx, hostOf } from "@/lib/utils";
 import { useBookmarks } from "@/stores/bookmarks";
 
 const URL_RE = /^https?:\/\/\S+$/i;
 
 export function BookmarksPage() {
-  const { bookmarks, loaded, load, add } = useBookmarks();
+  const { bookmarks, tagRegistry, loaded, load, add, deleteTag } = useBookmarks();
   const [query, setQuery] = useState("");
   const [tagFilter, setTagFilter] = useState<string | null>(null);
 
@@ -50,7 +50,12 @@ export function BookmarksPage() {
   return (
     <div className="page-scroll">
       <div className="mx-auto flex w-full max-w-[940px] gap-8 px-8 pb-24 pt-6">
-        <TagRail activeTag={tagFilter} onSelect={setTagFilter} />
+        <TagRail
+          tags={tagRegistry}
+          activeTag={tagFilter}
+          onSelect={setTagFilter}
+          onDelete={deleteTag}
+        />
 
         <div className="min-w-0 flex-1">
           <p className="text-[13px] text-muted">
@@ -108,90 +113,6 @@ export function BookmarksPage() {
         </div>
       </div>
     </div>
-  );
-}
-
-function TagRail({
-  activeTag,
-  onSelect,
-}: {
-  activeTag: string | null;
-  onSelect: (tag: string | null) => void;
-}) {
-  const tags = useBookmarks((s) => s.tagRegistry);
-  const deleteTag = useBookmarks((s) => s.deleteTag);
-
-  return (
-    <aside className="sticky top-0 hidden w-[152px] shrink-0 sm:block">
-      <p className="px-2 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
-        Tags
-      </p>
-      <div className="flex flex-col gap-0.5">
-        <button
-          type="button"
-          onClick={() => onSelect(null)}
-          className={cx(
-            "relative flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors",
-            activeTag === null
-              ? "text-ink"
-              : "text-muted hover:bg-hover hover:text-ink",
-          )}
-        >
-          {activeTag === null && (
-            <motion.span
-              layoutId="rail-active"
-              transition={SPRING_LAYOUT}
-              className="absolute inset-0 rounded-md bg-active"
-            />
-          )}
-          <span className="relative z-10 h-2.5 w-2.5 shrink-0 rounded-full border border-faint" />
-          <span className="relative z-10 truncate">All</span>
-        </button>
-
-        {tags.map((tag) => {
-          const active = activeTag === tag;
-          return (
-            <div key={tag} className="group/rail flex items-center">
-              <button
-                type="button"
-                onClick={() => onSelect(active ? null : tag)}
-                className={cx(
-                  "relative flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors",
-                  active ? "text-ink" : "text-muted hover:bg-hover hover:text-ink",
-                )}
-              >
-                {active && (
-                  <motion.span
-                    layoutId="rail-active"
-                    transition={SPRING_LAYOUT}
-                    className="absolute inset-0 rounded-md bg-active"
-                  />
-                )}
-                <span
-                  className="relative z-10 h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: tagColor(tag) }}
-                />
-                <span className="relative z-10 truncate">{tag}</span>
-              </button>
-              <button
-                type="button"
-                aria-label={`Delete tag ${tag}`}
-                onClick={() => deleteTag(tag)}
-                className="grid h-6 w-6 shrink-0 place-items-center rounded text-faint opacity-0 transition-opacity hover:text-danger group-hover/rail:opacity-100"
-              >
-                <X size={12} strokeWidth={2} />
-              </button>
-            </div>
-          );
-        })}
-      </div>
-
-      {tags.length === 0 && (
-        <p className="mt-1 px-2 text-[12px] leading-relaxed text-faint">
-          Create a tag from the top bar to start filtering.
-        </p>
-      )}
-    </aside>
   );
 }
 

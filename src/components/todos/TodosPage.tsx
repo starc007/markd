@@ -5,12 +5,14 @@ import type { Todo } from "@/lib/types";
 import { EASE_OUT } from "@/lib/ease";
 import { Button } from "@/components/ui/Button";
 import { TagList } from "@/components/ui/TagList";
+import { TagPicker } from "@/components/ui/TagPicker";
+import { TagRail } from "@/components/ui/TagRail";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { cx } from "@/lib/utils";
 import { useTodos } from "@/stores/todos";
 
 export function TodosPage() {
-  const { todos, loaded, load, add } = useTodos();
+  const { todos, tagRegistry, loaded, load, add, deleteTag } = useTodos();
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -26,13 +28,21 @@ export function TodosPage() {
   const submit = () => {
     const value = inputRef.current?.value.trim();
     if (!value) return;
-    add(value);
+    add(value, tagFilter ? [tagFilter] : undefined);
     if (inputRef.current) inputRef.current.value = "";
   };
 
   return (
     <div className="page-scroll">
-      <div className="mx-auto w-full max-w-[720px] px-8 pb-24 pt-6">
+      <div className="mx-auto flex w-full max-w-[940px] gap-8 px-8 pb-24 pt-6">
+        <TagRail
+          tags={tagRegistry}
+          activeTag={tagFilter}
+          onSelect={setTagFilter}
+          onDelete={deleteTag}
+        />
+
+        <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between">
           <p className="text-[13px] text-muted">
             Things you&apos;ll totally get around to.
@@ -70,12 +80,6 @@ export function TodosPage() {
           />
         </div>
 
-        <AnimatePresence>
-          {tagFilter && (
-            <FilterBar tag={tagFilter} onClear={() => setTagFilter(null)} />
-          )}
-        </AnimatePresence>
-
         <div className="relative mt-2">
           <AnimatePresence initial={false}>
             {shown.map((todo) => (
@@ -101,6 +105,7 @@ export function TodosPage() {
             )}
           </AnimatePresence>
         </div>
+        </div>
       </div>
     </div>
   );
@@ -119,6 +124,7 @@ function TodoRow({
   const remove = useTodos((s) => s.remove);
   const updateText = useTodos((s) => s.updateText);
   const setTags = useTodos((s) => s.setTags);
+  const registry = useTodos((s) => s.tagRegistry);
   const [editing, setEditing] = useState(false);
   const editRef = useRef<HTMLInputElement>(null);
 
@@ -196,49 +202,33 @@ function TodoRow({
           </span>
         )}
 
-        <div className="mt-1">
-          <TagList
-            tags={todo.tags}
-            activeTag={activeTag}
-            onTagClick={onTagClick}
-            onChange={(tags) => setTags(todo.id, tags)}
-          />
-        </div>
+        {todo.tags.length > 0 && (
+          <div className="mt-1">
+            <TagList
+              tags={todo.tags}
+              activeTag={activeTag}
+              onTagClick={onTagClick}
+              editable={false}
+            />
+          </div>
+        )}
       </div>
 
-      <Tooltip label="Delete" side="left">
-        <button
-          type="button"
-          onClick={() => remove(todo.id)}
-          className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded text-faint opacity-0 transition-opacity duration-100 hover:text-ink group-hover:opacity-100"
-        >
-          <X size={13} strokeWidth={2} />
-        </button>
-      </Tooltip>
-    </motion.div>
-  );
-}
-
-function FilterBar({ tag, onClear }: { tag: string; onClear: () => void }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, height: 0 }}
-      animate={{ opacity: 1, height: "auto" }}
-      exit={{ opacity: 0, height: 0 }}
-      transition={{ duration: 0.16, ease: EASE_OUT }}
-      className="overflow-hidden"
-    >
-      <div className="mt-3 flex items-center gap-2 text-[12px] text-muted">
-        <span>
-          Filtered by <span className="font-medium text-ink">#{tag}</span>
-        </span>
-        <button
-          type="button"
-          className="text-faint underline-offset-2 transition-colors hover:text-ink hover:underline"
-          onClick={onClear}
-        >
-          clear
-        </button>
+      <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity duration-100 group-hover:opacity-100">
+        <TagPicker
+          assigned={todo.tags}
+          registry={registry}
+          onChange={(tags) => setTags(todo.id, tags)}
+        />
+        <Tooltip label="Delete" side="top">
+          <button
+            type="button"
+            onClick={() => remove(todo.id)}
+            className="grid h-7 w-7 place-items-center rounded-md text-faint transition-colors duration-100 hover:bg-active hover:text-ink"
+          >
+            <X size={13} strokeWidth={2} />
+          </button>
+        </Tooltip>
       </div>
     </motion.div>
   );

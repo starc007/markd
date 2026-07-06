@@ -60,6 +60,9 @@ export const ipc = {
     call<Todo>("todo_update", { id, text }),
   todoSetTags: (id: string, tags: string[]) =>
     call<Todo>("todo_set_tags", { id, tags }),
+  todoTagsList: () => call<string[]>("todo_tags_list"),
+  todoTagCreate: (name: string) => call<string[]>("todo_tag_create", { name }),
+  todoTagDelete: (name: string) => call<string[]>("todo_tag_delete", { name }),
   todoDelete: (id: string) => call<void>("todo_delete", { id }),
   todosClearCompleted: () => call<Todo[]>("todos_clear_completed"),
 

@@ -191,6 +191,27 @@ pub fn todo_set_tags(
 }
 
 #[tauri::command]
+pub fn todo_tags_list(state: State<'_, AppState>) -> AppResult<Vec<String>> {
+    todos::list_tags(&state.root()?)
+}
+
+#[tauri::command]
+pub fn todo_tag_create(
+    state: State<'_, AppState>,
+    name: String,
+) -> AppResult<Vec<String>> {
+    todos::create_tag(&state.root()?, &name)
+}
+
+#[tauri::command]
+pub fn todo_tag_delete(
+    state: State<'_, AppState>,
+    name: String,
+) -> AppResult<Vec<String>> {
+    todos::delete_tag(&state.root()?, &name)
+}
+
+#[tauri::command]
 pub fn todo_delete(state: State<'_, AppState>, id: String) -> AppResult<()> {
     todos::delete(&state.root()?, &id)
 }
