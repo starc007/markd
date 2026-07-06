@@ -43,7 +43,7 @@ export function TodosPage() {
         />
 
         <div className="min-w-0 flex-1">
-        <div className="flex items-baseline justify-between">
+        <div className="flex min-h-7 items-center justify-between">
           <p className="text-[13px] text-muted">
             Things you&apos;ll totally get around to.
           </p>
