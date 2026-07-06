@@ -139,71 +139,75 @@ function TodoRow({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15, ease: "easeOut" }}
-      className="group flex items-start gap-2.5 rounded-md px-1 py-[7px]"
+      className="group flex items-start gap-2.5 rounded-md px-1 py-[5px]"
     >
-      <button
-        type="button"
-        aria-label={todo.done ? "Mark as open" : "Mark as done"}
-        onClick={() => toggle(todo.id)}
-        className={cx(
-          "relative mt-[3px] grid h-[17px] w-[17px] shrink-0 place-items-center rounded-[5px] border-[1.5px] transition-colors duration-100",
-          todo.done
-            ? "border-invert bg-invert"
-            : "border-faint hover:border-ink",
-        )}
-      >
-        <svg
-          width="9"
-          height="8"
-          viewBox="0 0 10 8"
+      <div className="flex h-7 shrink-0 items-center">
+        <button
+          type="button"
+          aria-label={todo.done ? "Mark as open" : "Mark as done"}
+          onClick={() => toggle(todo.id)}
           className={cx(
-            "transition-opacity duration-100",
-            todo.done ? "opacity-100" : "opacity-0",
+            "relative grid h-[17px] w-[17px] place-items-center rounded-[5px] border-[1.5px] transition-colors duration-100",
+            todo.done
+              ? "border-invert bg-invert"
+              : "border-faint hover:border-ink",
           )}
         >
-          <path
-            d="M1 4.2 3.8 7 9 1"
-            fill="none"
-            stroke="var(--invert-ink)"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </button>
+          <svg
+            width="9"
+            height="8"
+            viewBox="0 0 10 8"
+            className={cx(
+              "transition-opacity duration-100",
+              todo.done ? "opacity-100" : "opacity-0",
+            )}
+          >
+            <path
+              d="M1 4.2 3.8 7 9 1"
+              fill="none"
+              stroke="var(--invert-ink)"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+      </div>
 
       <div className="min-w-0 flex-1">
-        {editing ? (
-          <input
-            ref={editRef}
-            defaultValue={todo.text}
-            className="w-full bg-transparent py-[3px] text-[14px] text-ink outline-none"
-            onBlur={(event) => {
-              setEditing(false);
-              const value = event.target.value.trim();
-              if (value && value !== todo.text) updateText(todo.id, value);
-            }}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === "Escape") {
-                event.currentTarget.blur();
-              }
-            }}
-          />
-        ) : (
-          <span
-            className={cx(
-              "block cursor-pointer select-none truncate py-[3px] text-[14px] transition-colors duration-150",
-              todo.done && "text-faint line-through decoration-faint",
-            )}
-            onClick={() => toggle(todo.id)}
-            onDoubleClick={() => !todo.done && setEditing(true)}
-          >
-            {todo.text}
-          </span>
-        )}
+        <div className="flex h-7 items-center">
+          {editing ? (
+            <input
+              ref={editRef}
+              defaultValue={todo.text}
+              className="w-full bg-transparent text-[14px] text-ink outline-none"
+              onBlur={(event) => {
+                setEditing(false);
+                const value = event.target.value.trim();
+                if (value && value !== todo.text) updateText(todo.id, value);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === "Escape") {
+                  event.currentTarget.blur();
+                }
+              }}
+            />
+          ) : (
+            <span
+              className={cx(
+                "cursor-pointer select-none truncate text-[14px] transition-colors duration-150",
+                todo.done && "text-faint line-through decoration-faint",
+              )}
+              onClick={() => toggle(todo.id)}
+              onDoubleClick={() => !todo.done && setEditing(true)}
+            >
+              {todo.text}
+            </span>
+          )}
+        </div>
 
         {todo.tags.length > 0 && (
-          <div className="mt-1">
+          <div className="mb-1">
             <TagList
               tags={todo.tags}
               activeTag={activeTag}
@@ -214,7 +218,7 @@ function TodoRow({
         )}
       </div>
 
-      <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity duration-100 group-hover:opacity-100">
+      <div className="flex h-7 shrink-0 items-center gap-0.5 opacity-0 transition-opacity duration-100 group-hover:opacity-100">
         <TagPicker
           assigned={todo.tags}
           registry={registry}
