@@ -244,11 +244,11 @@ export function CommandPalette() {
                   }}
                 >
                   <item.icon size={15} strokeWidth={1.75} className="shrink-0" />
-                  <span className="max-w-[55%] shrink-0 truncate text-[13.5px] font-medium">
+                  <span className="max-w-[55%] shrink-0 truncate text-[13.5px] font-medium leading-none">
                     {item.label}
                   </span>
                   {item.path && (
-                    <span className="min-w-0 shrink truncate text-[11.5px] text-faint">
+                    <span className="min-w-0 shrink truncate text-[11.5px] leading-none text-faint">
                       {item.path}
                     </span>
                   )}
