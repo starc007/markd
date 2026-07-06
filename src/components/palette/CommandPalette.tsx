@@ -150,9 +150,18 @@ export function CommandPalette() {
     return q ? [...noteItems, ...actions] : [...actions, ...noteItems];
   }, [query, hits, tree]);
 
-  useEffect(() => setSelected(0), [items.length, query]);
+  // Tracks whether the last selection change came from the keyboard. Only
+  // keyboard nav scrolls the list — mouse selection must not, or the scroll
+  // shifts rows under a stationary cursor and retriggers hover (flicker).
+  const keyboardNav = useRef(false);
 
   useEffect(() => {
+    keyboardNav.current = false;
+    setSelected(0);
+  }, [items.length, query]);
+
+  useEffect(() => {
+    if (!keyboardNav.current) return;
     listRef.current
       ?.querySelector('[data-selected="true"]')
       ?.scrollIntoView({ block: "nearest" });
@@ -185,9 +194,11 @@ export function CommandPalette() {
                     close();
                   } else if (event.key === "ArrowDown") {
                     event.preventDefault();
+                    keyboardNav.current = true;
                     setSelected((i) => Math.min(i + 1, items.length - 1));
                   } else if (event.key === "ArrowUp") {
                     event.preventDefault();
+                    keyboardNav.current = true;
                     setSelected((i) => Math.max(i - 1, 0));
                   } else if (event.key === "Enter") {
                     event.preventDefault();
@@ -208,31 +219,26 @@ export function CommandPalette() {
                   type="button"
                   data-selected={index === selected}
                   className={cx(
-                    "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors duration-75",
-                    index === selected ? "bg-invert text-invert-ink" : "text-muted",
+                    "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-ink transition-colors duration-75",
+                    index === selected ? "bg-active" : "text-muted",
                   )}
-                  onMouseEnter={() => setSelected(index)}
+                  onMouseMove={() => {
+                    if (selected !== index) {
+                      keyboardNav.current = false;
+                      setSelected(index);
+                    }
+                  }}
                   onClick={() => {
                     close();
                     item.run();
                   }}
                 >
                   <item.icon size={15} strokeWidth={1.75} className="shrink-0" />
-                  <span
-                    className={cx(
-                      "shrink-0 text-[13.5px] font-medium",
-                      index !== selected && "text-ink",
-                    )}
-                  >
+                  <span className="shrink-0 text-[13.5px] font-medium">
                     {item.label}
                   </span>
                   {item.hint && (
-                    <span
-                      className={cx(
-                        "min-w-0 flex-1 truncate text-right text-[11.5px]",
-                        index === selected ? "text-invert-ink/60" : "text-faint",
-                      )}
-                    >
+                    <span className="min-w-0 flex-1 truncate text-right text-[11.5px] text-faint">
                       {item.hint}
                     </span>
                   )}
