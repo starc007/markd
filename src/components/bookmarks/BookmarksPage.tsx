@@ -24,7 +24,7 @@ export function BookmarksPage() {
 
   return (
     <div className="page-scroll">
-      <div className="mx-auto w-full max-w-[880px] px-10 pb-24 pt-6">
+      <div className="mx-auto w-full max-w-[640px] px-8 pb-24 pt-6">
         <h1 className="text-[30px] font-[680] tracking-[-0.025em]">Bookmarks</h1>
 
         <div className="mt-6 flex items-center gap-2.5 border-b border-line pb-3">
@@ -46,10 +46,10 @@ export function BookmarksPage() {
           />
         </div>
 
-        <div className="mt-6 grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
+        <div className="mt-2">
           <AnimatePresence initial={false}>
             {bookmarks.map((bookmark) => (
-              <BookmarkCard key={bookmark.id} bookmark={bookmark} />
+              <BookmarkRow key={bookmark.id} bookmark={bookmark} />
             ))}
           </AnimatePresence>
         </div>
@@ -64,7 +64,7 @@ export function BookmarksPage() {
   );
 }
 
-function BookmarkCard({ bookmark }: { bookmark: Bookmark }) {
+function BookmarkRow({ bookmark }: { bookmark: Bookmark }) {
   const remove = useBookmarks((s) => s.remove);
   const fetchMeta = useBookmarks((s) => s.fetchMeta);
   const updateTitle = useBookmarks((s) => s.updateTitle);
@@ -83,18 +83,18 @@ function BookmarkCard({ bookmark }: { bookmark: Bookmark }) {
   const showImage = bookmark.image && !imageFailed;
 
   return (
-    <motion.article
+    <motion.div
       layout
-      initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.98 }}
+      initial={{ opacity: 0, y: -4 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
       transition={{ duration: 0.15, ease: "easeOut" }}
-      className="group relative flex cursor-default flex-col overflow-hidden rounded-lg border border-line bg-panel transition-colors duration-150 hover:border-faint"
+      className="group flex cursor-default items-center gap-3 rounded-lg px-2 py-2 transition-colors duration-100 hover:bg-hover"
       onClick={() => {
         if (!editing) openUrl(bookmark.url);
       }}
     >
-      <div className="relative aspect-[1.91/1] w-full overflow-hidden border-b border-line-soft bg-hover">
+      <div className="relative h-10 w-14 shrink-0 overflow-hidden rounded-md border border-line-soft bg-hover">
         {showImage ? (
           <img
             src={bookmark.image ?? undefined}
@@ -102,87 +102,90 @@ function BookmarkCard({ bookmark }: { bookmark: Bookmark }) {
             loading="lazy"
             draggable={false}
             onError={() => setImageFailed(true)}
-            className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03]"
+            className="h-full w-full object-cover"
           />
+        ) : bookmark.favicon ? (
+          <div className="grid h-full w-full place-items-center">
+            <img
+              src={bookmark.favicon}
+              alt=""
+              draggable={false}
+              className="h-4 w-4 rounded-sm"
+              onError={(event) => {
+                event.currentTarget.style.display = "none";
+              }}
+            />
+          </div>
         ) : (
           <div className="grid h-full w-full place-items-center">
             <Globe
-              size={22}
-              strokeWidth={1.25}
+              size={16}
+              strokeWidth={1.5}
               className={cx("text-faint", fetching && "animate-pulse")}
             />
           </div>
         )}
       </div>
 
-      <div className="flex items-start gap-2 p-3">
-        {bookmark.favicon && (
-          <img
-            src={bookmark.favicon}
-            alt=""
-            draggable={false}
-            className="mt-0.5 h-4 w-4 shrink-0 rounded-sm"
-            onError={(event) => {
-              event.currentTarget.style.display = "none";
+      <div className="min-w-0 flex-1">
+        {editing ? (
+          <input
+            ref={editRef}
+            defaultValue={bookmark.title}
+            className="w-full bg-transparent text-[13.5px] font-medium text-ink outline-none"
+            onClick={(event) => event.stopPropagation()}
+            onBlur={(event) => {
+              setEditing(false);
+              const value = event.target.value.trim();
+              if (value && value !== bookmark.title) {
+                updateTitle(bookmark.id, value);
+              }
+            }}
+            onKeyDown={(event) => {
+              event.stopPropagation();
+              if (event.key === "Enter" || event.key === "Escape") {
+                event.currentTarget.blur();
+              }
             }}
           />
+        ) : (
+          <h3
+            className="truncate text-[13.5px] font-medium text-ink"
+            title={bookmark.title}
+            onDoubleClick={(event) => {
+              event.stopPropagation();
+              setEditing(true);
+            }}
+          >
+            {bookmark.title}
+          </h3>
         )}
-        <div className="min-w-0 flex-1">
-          {editing ? (
-            <input
-              ref={editRef}
-              defaultValue={bookmark.title}
-              className="w-full bg-transparent text-[13px] font-medium text-ink outline-none"
-              onClick={(event) => event.stopPropagation()}
-              onBlur={(event) => {
-                setEditing(false);
-                const value = event.target.value.trim();
-                if (value && value !== bookmark.title) {
-                  updateTitle(bookmark.id, value);
-                }
-              }}
-              onKeyDown={(event) => {
-                event.stopPropagation();
-                if (event.key === "Enter" || event.key === "Escape") {
-                  event.currentTarget.blur();
-                }
-              }}
-            />
-          ) : (
-            <h3
-              className="truncate text-[13px] font-medium leading-snug text-ink"
-              title={bookmark.title}
-              onDoubleClick={(event) => {
-                event.stopPropagation();
-                setEditing(true);
-              }}
-            >
-              {bookmark.title}
-            </h3>
-          )}
-          <p className="mt-0.5 truncate text-[11.5px] text-faint">
-            {hostOf(bookmark.url)}
-          </p>
-        </div>
+        <p className="mt-0.5 truncate text-[11.5px] text-faint">
+          {hostOf(bookmark.url)}
+        </p>
       </div>
 
-      <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity duration-100 group-hover:opacity-100">
-        <CardAction
+      <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity duration-100 group-hover:opacity-100">
+        <RowAction
           label="Refresh preview"
           spinning={fetching}
           onClick={() => fetchMeta(bookmark.id)}
         >
-          <RefreshCw size={12.5} strokeWidth={2} className={cx(fetching && "animate-spin")} />
-        </CardAction>
-        <CardAction label="Delete bookmark" onClick={() => remove(bookmark.id)}>
-          <X size={13} strokeWidth={2} />
-        </CardAction>
+          <RefreshCw
+            size={13}
+            strokeWidth={2}
+            className={cx(fetching && "animate-spin")}
+          />
+        </RowAction>
+        <RowAction label="Delete bookmark" onClick={() => remove(bookmark.id)}>
+          <X size={13.5} strokeWidth={2} />
+        </RowAction>
       </div>
-    </motion.article>
+    </motion.div>
   );
 }
 
-function CardAction({
+function RowAction({
   label,
   onClick,
   spinning,
@@ -194,11 +197,11 @@ function CardAction({
   children: React.ReactNode;
 }) {
   return (
-    <Tooltip label={label} side="bottom">
+    <Tooltip label={label} side="top">
       <button
         type="button"
         disabled={spinning}
-        className="grid h-6 w-6 place-items-center rounded-md bg-invert/85 text-invert-ink backdrop-blur-sm transition-transform duration-100 hover:scale-105 active:scale-95"
+        className="grid h-7 w-7 place-items-center rounded-md text-faint transition-colors duration-100 hover:bg-active hover:text-ink"
         onClick={(event) => {
           event.stopPropagation();
           onClick();
