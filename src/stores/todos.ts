@@ -10,6 +10,7 @@ interface TodosState {
   add: (text: string) => Promise<void>;
   toggle: (id: string) => Promise<void>;
   updateText: (id: string, text: string) => Promise<void>;
+  setTags: (id: string, tags: string[]) => Promise<void>;
   remove: (id: string) => Promise<void>;
   clearCompleted: () => Promise<void>;
 }
@@ -55,6 +56,15 @@ export const useTodos = create<TodosState>((set, get) => ({
   updateText: async (id, text) => {
     try {
       const updated = await ipc.todoUpdate(id, text);
+      set({ todos: get().todos.map((t) => (t.id === id ? updated : t)) });
+    } catch (err) {
+      oops(err);
+    }
+  },
+
+  setTags: async (id, tags) => {
+    try {
+      const updated = await ipc.todoSetTags(id, tags);
       set({ todos: get().todos.map((t) => (t.id === id ? updated : t)) });
     } catch (err) {
       oops(err);

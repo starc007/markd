@@ -182,6 +182,15 @@ pub fn todo_update(state: State<'_, AppState>, id: String, text: String) -> AppR
 }
 
 #[tauri::command]
+pub fn todo_set_tags(
+    state: State<'_, AppState>,
+    id: String,
+    tags: Vec<String>,
+) -> AppResult<Todo> {
+    todos::set_tags(&state.root()?, &id, tags)
+}
+
+#[tauri::command]
 pub fn todo_delete(state: State<'_, AppState>, id: String) -> AppResult<()> {
     todos::delete(&state.root()?, &id)
 }
@@ -210,6 +219,15 @@ pub fn bookmark_update_title(
     title: String,
 ) -> AppResult<Bookmark> {
     bookmarks::update(&state.root()?, &id, Some(title), None, None, None)
+}
+
+#[tauri::command]
+pub fn bookmark_set_tags(
+    state: State<'_, AppState>,
+    id: String,
+    tags: Vec<String>,
+) -> AppResult<Bookmark> {
+    bookmarks::set_tags(&state.root()?, &id, tags)
 }
 
 #[tauri::command]

@@ -58,6 +58,8 @@ export const ipc = {
   todoToggle: (id: string) => call<Todo>("todo_toggle", { id }),
   todoUpdate: (id: string, text: string) =>
     call<Todo>("todo_update", { id, text }),
+  todoSetTags: (id: string, tags: string[]) =>
+    call<Todo>("todo_set_tags", { id, tags }),
   todoDelete: (id: string) => call<void>("todo_delete", { id }),
   todosClearCompleted: () => call<Todo[]>("todos_clear_completed"),
 
@@ -65,6 +67,8 @@ export const ipc = {
   bookmarkAdd: (url: string) => call<Bookmark>("bookmark_add", { url }),
   bookmarkUpdateTitle: (id: string, title: string) =>
     call<Bookmark>("bookmark_update_title", { id, title }),
+  bookmarkSetTags: (id: string, tags: string[]) =>
+    call<Bookmark>("bookmark_set_tags", { id, tags }),
   bookmarkDelete: (id: string) => call<void>("bookmark_delete", { id }),
   bookmarkFetchMeta: (id: string) => call<Bookmark>("bookmark_fetch_meta", { id }),
 

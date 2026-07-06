@@ -21,6 +21,8 @@ pub struct Bookmark {
     /// True once metadata fetch finished (successfully or not).
     #[serde(default)]
     pub meta_fetched: bool,
+    #[serde(default)]
+    pub tags: Vec<String>,
     pub created_at: i64,
 }
 
@@ -72,6 +74,7 @@ pub fn add(root: &Path, url: &str) -> AppResult<Bookmark> {
         image: None,
         favicon: None,
         meta_fetched: false,
+        tags: Vec::new(),
         created_at: now_ms(),
     };
     let mut bookmarks = list(root)?;
@@ -108,6 +111,18 @@ pub fn update(
     if let Some(fetched) = meta_fetched {
         bookmark.meta_fetched = fetched;
     }
+    let updated = bookmark.clone();
+    save(root, &bookmarks)?;
+    Ok(updated)
+}
+
+pub fn set_tags(root: &Path, id: &str, tags: Vec<String>) -> AppResult<Bookmark> {
+    let mut bookmarks = list(root)?;
+    let bookmark = bookmarks
+        .iter_mut()
+        .find(|b| b.id == id)
+        .ok_or_else(|| AppError::NotFound(id.to_string()))?;
+    bookmark.tags = crate::util::normalize_tags(tags);
     let updated = bookmark.clone();
     save(root, &bookmarks)?;
     Ok(updated)

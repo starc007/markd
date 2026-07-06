@@ -2,12 +2,14 @@ import { Plus, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import type { Todo } from "@/lib/types";
+import { TagList } from "@/components/ui/TagList";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { cx } from "@/lib/utils";
 import { useTodos } from "@/stores/todos";
 
 export function TodosPage() {
   const { todos, loaded, load, add } = useTodos();
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -15,6 +17,9 @@ export function TodosPage() {
   }, [load]);
 
   const completedCount = todos.filter((t) => t.done).length;
+  const shown = tagFilter
+    ? todos.filter((t) => t.tags.includes(tagFilter))
+    : todos;
 
   const submit = () => {
     const value = inputRef.current?.value.trim();
@@ -53,15 +58,24 @@ export function TodosPage() {
           />
         </div>
 
+        {tagFilter && (
+          <FilterBar tag={tagFilter} onClear={() => setTagFilter(null)} />
+        )}
+
         <div className="mt-2">
           <AnimatePresence initial={false}>
-            {todos.map((todo) => (
-              <TodoRow key={todo.id} todo={todo} />
+            {shown.map((todo) => (
+              <TodoRow
+                key={todo.id}
+                todo={todo}
+                activeTag={tagFilter}
+                onTagClick={setTagFilter}
+              />
             ))}
           </AnimatePresence>
-          {loaded && todos.length === 0 && (
+          {loaded && shown.length === 0 && (
             <p className="pt-6 text-center text-[13px] text-faint">
-              Nothing here yet.
+              {tagFilter ? `No tasks tagged #${tagFilter}.` : "Nothing here yet."}
             </p>
           )}
         </div>
@@ -70,10 +84,19 @@ export function TodosPage() {
   );
 }
 
-function TodoRow({ todo }: { todo: Todo }) {
+function TodoRow({
+  todo,
+  activeTag,
+  onTagClick,
+}: {
+  todo: Todo;
+  activeTag: string | null;
+  onTagClick: (tag: string) => void;
+}) {
   const toggle = useTodos((s) => s.toggle);
   const remove = useTodos((s) => s.remove);
   const updateText = useTodos((s) => s.updateText);
+  const setTags = useTodos((s) => s.setTags);
   const [editing, setEditing] = useState(false);
   const editRef = useRef<HTMLInputElement>(null);
 
@@ -88,14 +111,14 @@ function TodoRow({ todo }: { todo: Todo }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15, ease: "easeOut" }}
-      className="group flex items-center gap-2.5 rounded-md px-1 py-[7px]"
+      className="group flex items-start gap-2.5 rounded-md px-1 py-[7px]"
     >
       <button
         type="button"
         aria-label={todo.done ? "Mark as open" : "Mark as done"}
         onClick={() => toggle(todo.id)}
         className={cx(
-          "relative grid h-[17px] w-[17px] shrink-0 place-items-center rounded-[5px] border-[1.5px] transition-colors duration-100",
+          "relative mt-[3px] grid h-[17px] w-[17px] shrink-0 place-items-center rounded-[5px] border-[1.5px] transition-colors duration-100",
           todo.done
             ? "border-invert bg-invert"
             : "border-faint hover:border-ink",
@@ -121,44 +144,72 @@ function TodoRow({ todo }: { todo: Todo }) {
         </svg>
       </button>
 
-      {editing ? (
-        <input
-          ref={editRef}
-          defaultValue={todo.text}
-          className="w-full bg-transparent text-[14px] text-ink outline-none"
-          onBlur={(event) => {
-            setEditing(false);
-            const value = event.target.value.trim();
-            if (value && value !== todo.text) updateText(todo.id, value);
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === "Escape") {
-              event.currentTarget.blur();
-            }
-          }}
-        />
-      ) : (
-        <span
-          className={cx(
-            "min-w-0 flex-1 cursor-pointer select-none truncate text-[14px] transition-colors duration-150",
-            todo.done && "text-faint line-through decoration-faint",
-          )}
-          onClick={() => toggle(todo.id)}
-          onDoubleClick={() => !todo.done && setEditing(true)}
-        >
-          {todo.text}
-        </span>
-      )}
+      <div className="min-w-0 flex-1">
+        {editing ? (
+          <input
+            ref={editRef}
+            defaultValue={todo.text}
+            className="w-full bg-transparent py-[3px] text-[14px] text-ink outline-none"
+            onBlur={(event) => {
+              setEditing(false);
+              const value = event.target.value.trim();
+              if (value && value !== todo.text) updateText(todo.id, value);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === "Escape") {
+                event.currentTarget.blur();
+              }
+            }}
+          />
+        ) : (
+          <span
+            className={cx(
+              "block cursor-pointer select-none truncate py-[3px] text-[14px] transition-colors duration-150",
+              todo.done && "text-faint line-through decoration-faint",
+            )}
+            onClick={() => toggle(todo.id)}
+            onDoubleClick={() => !todo.done && setEditing(true)}
+          >
+            {todo.text}
+          </span>
+        )}
+
+        <div className="mt-1">
+          <TagList
+            tags={todo.tags}
+            activeTag={activeTag}
+            onTagClick={onTagClick}
+            onChange={(tags) => setTags(todo.id, tags)}
+          />
+        </div>
+      </div>
 
       <Tooltip label="Delete" side="left">
         <button
           type="button"
           onClick={() => remove(todo.id)}
-          className="grid h-5 w-5 shrink-0 place-items-center rounded text-faint opacity-0 transition-opacity duration-100 hover:text-ink group-hover:opacity-100"
+          className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded text-faint opacity-0 transition-opacity duration-100 hover:text-ink group-hover:opacity-100"
         >
           <X size={13} strokeWidth={2} />
         </button>
       </Tooltip>
     </motion.div>
+  );
+}
+
+function FilterBar({ tag, onClear }: { tag: string; onClear: () => void }) {
+  return (
+    <div className="mt-3 flex items-center gap-2 text-[12px] text-muted">
+      <span>
+        Filtered by <span className="font-medium text-ink">#{tag}</span>
+      </span>
+      <button
+        type="button"
+        className="text-faint underline-offset-2 transition-colors hover:text-ink hover:underline"
+        onClick={onClear}
+      >
+        clear
+      </button>
+    </div>
   );
 }

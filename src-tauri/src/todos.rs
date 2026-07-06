@@ -17,6 +17,8 @@ pub struct Todo {
     pub created_at: i64,
     #[serde(default)]
     pub completed_at: Option<i64>,
+    #[serde(default)]
+    pub tags: Vec<String>,
 }
 
 fn store_path(root: &Path) -> std::path::PathBuf {
@@ -47,6 +49,7 @@ pub fn add(root: &Path, text: &str) -> AppResult<Todo> {
         done: false,
         created_at: now_ms(),
         completed_at: None,
+        tags: Vec::new(),
     };
     let mut todos = list(root)?;
     todos.insert(0, todo.clone());
@@ -78,6 +81,18 @@ pub fn update_text(root: &Path, id: &str, text: &str) -> AppResult<Todo> {
         .find(|t| t.id == id)
         .ok_or_else(|| AppError::NotFound(id.to_string()))?;
     todo.text = text.to_string();
+    let updated = todo.clone();
+    save(root, &todos)?;
+    Ok(updated)
+}
+
+pub fn set_tags(root: &Path, id: &str, tags: Vec<String>) -> AppResult<Todo> {
+    let mut todos = list(root)?;
+    let todo = todos
+        .iter_mut()
+        .find(|t| t.id == id)
+        .ok_or_else(|| AppError::NotFound(id.to_string()))?;
+    todo.tags = crate::util::normalize_tags(tags);
     let updated = todo.clone();
     save(root, &todos)?;
     Ok(updated)

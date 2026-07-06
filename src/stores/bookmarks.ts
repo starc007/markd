@@ -12,6 +12,7 @@ interface BookmarksState {
   add: (url: string) => Promise<void>;
   fetchMeta: (id: string) => Promise<void>;
   updateTitle: (id: string, title: string) => Promise<void>;
+  setTags: (id: string, tags: string[]) => Promise<void>;
   remove: (id: string) => Promise<void>;
 }
 
@@ -66,6 +67,17 @@ export const useBookmarks = create<BookmarksState>((set, get) => ({
   updateTitle: async (id, title) => {
     try {
       const updated = await ipc.bookmarkUpdateTitle(id, title);
+      set({
+        bookmarks: get().bookmarks.map((b) => (b.id === id ? updated : b)),
+      });
+    } catch (err) {
+      oops(err);
+    }
+  },
+
+  setTags: async (id, tags) => {
+    try {
+      const updated = await ipc.bookmarkSetTags(id, tags);
       set({
         bookmarks: get().bookmarks.map((b) => (b.id === id ? updated : b)),
       });

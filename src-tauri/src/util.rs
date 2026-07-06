@@ -27,9 +27,41 @@ pub fn sanitize_name(value: &str) -> String {
     }
 }
 
+/// Clean a set of tags: trim, drop a leading '#', lowercase, dedupe, drop
+/// empties, and cap length. Order is preserved by first appearance.
+pub fn normalize_tags(tags: Vec<String>) -> Vec<String> {
+    let mut seen = std::collections::HashSet::new();
+    let mut out = Vec::new();
+    for tag in tags {
+        let cleaned = tag
+            .trim()
+            .trim_start_matches('#')
+            .trim()
+            .to_lowercase();
+        if cleaned.is_empty() || cleaned.len() > 32 {
+            continue;
+        }
+        if seen.insert(cleaned.clone()) {
+            out.push(cleaned);
+        }
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn normalize_tags_cleans_and_dedupes() {
+        let out = normalize_tags(vec![
+            "#Work".into(),
+            "work".into(),
+            "  home ".into(),
+            "".into(),
+        ]);
+        assert_eq!(out, vec!["work", "home"]);
+    }
 
     #[test]
     fn sanitize_removes_separators() {

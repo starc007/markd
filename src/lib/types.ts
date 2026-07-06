@@ -24,6 +24,7 @@ export interface Todo {
   done: boolean;
   createdAt: number;
   completedAt: number | null;
+  tags: string[];
 }
 
 export interface Bookmark {
@@ -33,6 +34,7 @@ export interface Bookmark {
   image: string | null;
   favicon: string | null;
   metaFetched: boolean;
+  tags: string[];
   createdAt: number;
 }
 

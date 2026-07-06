@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Bookmark } from "@/lib/types";
 import { ActionSwapIcon } from "@/components/motion/action-swap";
+import { TagList } from "@/components/ui/TagList";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { cx, hostOf } from "@/lib/utils";
 import { useBookmarks } from "@/stores/bookmarks";
@@ -13,6 +14,7 @@ const URL_RE = /^https?:\/\/\S+$/i;
 export function BookmarksPage() {
   const { bookmarks, loaded, load, add } = useBookmarks();
   const [query, setQuery] = useState("");
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
 
   useEffect(() => {
     load();
@@ -23,12 +25,16 @@ export function BookmarksPage() {
 
   const filtered = useMemo(() => {
     const q = trimmed.toLowerCase();
-    if (!q || isUrl) return bookmarks;
-    return bookmarks.filter(
-      (b) =>
-        b.title.toLowerCase().includes(q) || b.url.toLowerCase().includes(q),
-    );
-  }, [bookmarks, trimmed, isUrl]);
+    return bookmarks.filter((b) => {
+      if (tagFilter && !b.tags.includes(tagFilter)) return false;
+      if (!q || isUrl) return true;
+      return (
+        b.title.toLowerCase().includes(q) ||
+        b.url.toLowerCase().includes(q) ||
+        b.tags.some((tag) => tag.includes(q))
+      );
+    });
+  }, [bookmarks, trimmed, isUrl, tagFilter]);
 
   const submit = () => {
     if (!trimmed) return;
@@ -63,10 +69,30 @@ export function BookmarksPage() {
           )}
         </div>
 
+        {tagFilter && (
+          <div className="mt-3 flex items-center gap-2 text-[12px] text-muted">
+            <span>
+              Filtered by <span className="font-medium text-ink">#{tagFilter}</span>
+            </span>
+            <button
+              type="button"
+              className="text-faint underline-offset-2 transition-colors hover:text-ink hover:underline"
+              onClick={() => setTagFilter(null)}
+            >
+              clear
+            </button>
+          </div>
+        )}
+
         <div className="mt-2">
           <AnimatePresence initial={false}>
             {filtered.map((bookmark) => (
-              <BookmarkRow key={bookmark.id} bookmark={bookmark} />
+              <BookmarkRow
+                key={bookmark.id}
+                bookmark={bookmark}
+                activeTag={tagFilter}
+                onTagClick={setTagFilter}
+              />
             ))}
           </AnimatePresence>
         </div>
@@ -86,10 +112,19 @@ export function BookmarksPage() {
   );
 }
 
-function BookmarkRow({ bookmark }: { bookmark: Bookmark }) {
+function BookmarkRow({
+  bookmark,
+  activeTag,
+  onTagClick,
+}: {
+  bookmark: Bookmark;
+  activeTag: string | null;
+  onTagClick: (tag: string) => void;
+}) {
   const remove = useBookmarks((s) => s.remove);
   const fetchMeta = useBookmarks((s) => s.fetchMeta);
   const updateTitle = useBookmarks((s) => s.updateTitle);
+  const setTags = useBookmarks((s) => s.setTags);
   const fetching = useBookmarks((s) => s.fetching.has(bookmark.id));
   const [editing, setEditing] = useState(false);
   const editRef = useRef<HTMLInputElement>(null);
@@ -124,7 +159,7 @@ function BookmarkRow({ bookmark }: { bookmark: Bookmark }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15, ease: "easeOut" }}
-      className="group flex cursor-default items-center gap-3 rounded-lg px-2 py-2 transition-colors duration-100 hover:bg-hover"
+      className="group flex cursor-default items-start gap-3 rounded-lg px-2 py-2 transition-colors duration-100 hover:bg-hover"
       onClick={() => {
         if (!editing) openUrl(bookmark.url);
       }}
@@ -198,9 +233,17 @@ function BookmarkRow({ bookmark }: { bookmark: Bookmark }) {
         <p className="mt-0.5 truncate text-[11.5px] text-faint">
           {hostOf(bookmark.url)}
         </p>
+        <div className="mt-1.5">
+          <TagList
+            tags={bookmark.tags}
+            activeTag={activeTag}
+            onTagClick={onTagClick}
+            onChange={(tags) => setTags(bookmark.id, tags)}
+          />
+        </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity duration-100 group-hover:opacity-100">
+      <div className="flex shrink-0 items-center gap-0.5 self-start opacity-0 transition-opacity duration-100 group-hover:opacity-100">
         <RowAction label={copied ? "Copied" : "Copy link"} onClick={copyLink}>
           <ActionSwapIcon
             value={copied ? "done" : "copy"}
