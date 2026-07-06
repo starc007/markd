@@ -1,20 +1,14 @@
 [package]
 name = "Draft"
 version = "0.1.6"
-description = "A Tauri App"
-authors = ["you"]
+description = "Local-first markdown notes"
+authors = ["Saurabh"]
 edition = "2021"
 default-run = "Draft"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [lib]
-# The `_lib` suffix may seem redundant but it is necessary
-# to make the lib name unique and wouldn't conflict with the bin name.
-# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
 name = "usedraft_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
-
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
@@ -22,13 +16,16 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = ["protocol-asset"] }
 tauri-plugin-opener = "2"
-tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-process = "2"
 tauri-plugin-updater = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-serde_yaml = "0.9"
-uuid = { version = "1.11", features = ["v4", "serde"] }
-dirs = "6"
-chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.11", features = ["v4"] }
+thiserror = "2"
+reqwest = { version = "0.12", default-features = false, features = ["native-tls", "gzip"] }
+scraper = "0.23"
+trash = "5"
+
+[dev-dependencies]
+tempfile = "3"

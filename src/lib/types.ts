@@ -1,69 +1,49 @@
-export type ViewMode = "notes" | "todos" | "stickies" | "bookmarks" | "settings";
+export type Theme = "system" | "light" | "dark";
 
-export interface WorkspaceManifest {
-  version: number;
-  workspaceId: string;
+export type NodeKind = "folder" | "note";
+
+export interface TreeNode {
   name: string;
-  createdAt: number;
-  updatedAt: number;
-  folders: FolderRecord[];
-  notes: NoteRecord[];
-  stickies: StickyRecord[];
-  bookmarks: BookmarkRecord[];
+  /** Path relative to the vault's notes root, e.g. "projects/app.md". */
+  rel: string;
+  kind: NodeKind;
+  children?: TreeNode[];
+  modifiedMs: number;
 }
 
-export interface FolderRecord {
-  id: string;
+export interface VaultSnapshot {
+  root: string;
   name: string;
-  parentId: string | null;
-  createdAt: number;
-  updatedAt: number;
+  tree: TreeNode[];
+  theme: Theme;
 }
 
-export interface NoteRecord {
+export interface Todo {
   id: string;
-  title: string;
-  path: string;
-  folderId: string | null;
-  parentId: string | null;
-  tags: string[];
-  pinned: boolean;
+  text: string;
+  done: boolean;
   createdAt: number;
-  updatedAt: number;
+  completedAt: number | null;
 }
 
-export interface NoteDocument {
-  meta: NoteRecord;
-  content: string;
-}
-
-export interface SearchNoteResult {
-  note: NoteRecord;
-  snippet: string;
-  score: number;
-}
-
-export interface StickyRecord {
+export interface Bookmark {
   id: string;
-  path: string;
-  content: string;
-  color: string;
-  createdAt: number;
-  updatedAt: number;
-}
-
-export interface BookmarkRecord {
-  id: string;
-  title: string;
   url: string;
-  folderId: string | null;
-  tags: string[];
+  title: string;
+  image: string | null;
+  favicon: string | null;
+  metaFetched: boolean;
   createdAt: number;
-  updatedAt: number;
 }
 
-export interface WorkspaceSnapshot {
-  rootPath: string;
-  manifest: WorkspaceManifest;
-  activeNote: NoteDocument | null;
+export interface SearchHit {
+  rel: string;
+  title: string;
+  snippet: string;
+  titleMatch: boolean;
 }
+
+export type View =
+  | { type: "note"; rel: string }
+  | { type: "todos" }
+  | { type: "bookmarks" };

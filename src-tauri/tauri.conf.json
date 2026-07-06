@@ -28,7 +28,7 @@
       "csp": null,
       "assetProtocol": {
         "enable": true,
-        "scope": ["$DOCUMENT/Draft/Workspace/assets/**"]
+        "scope": []
       }
     }
   },

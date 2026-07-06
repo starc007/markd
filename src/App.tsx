@@ -1,47 +1,72 @@
 import { useEffect } from "react";
-import { motion } from "motion/react";
-import { CommandBar } from "@/components/CommandBar";
-import { EditorPane } from "@/components/editor-workspace";
-import { Sidebar } from "@/components/sidebar";
-import { TopBar } from "@/components/TopBar";
-import { useWorkspaceStore } from "@/stores/workspace";
+import { Toaster } from "sonner";
+import { AppShell } from "@/components/layout/AppShell";
+import { CommandPalette } from "@/components/palette/CommandPalette";
+import { SettingsModal } from "@/components/settings/SettingsModal";
+import { Welcome } from "@/components/welcome/Welcome";
+import { activeDir, useVault } from "@/stores/vault";
+import { useUi } from "@/stores/ui";
 
 export default function App() {
-  const hydrate = useWorkspaceStore((state) => state.hydrate);
-  const ready = useWorkspaceStore((state) => state.ready);
+  const status = useVault((s) => s.status);
+  const startup = useVault((s) => s.startup);
+  const refreshTree = useVault((s) => s.refreshTree);
 
   useEffect(() => {
-    hydrate();
-  }, [hydrate]);
+    startup();
+  }, [startup]);
 
-  if (!ready) {
-    return (
-      <main className="grid h-dvh w-dvw place-items-center overflow-hidden bg-canvas text-ink dark:bg-canvas-dark dark:text-ink-dark">
-        <motion.div
-          initial={{ scale: 0.98, y: 10 }}
-          animate={{ scale: 1, y: 0 }}
-          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-          className="rounded-2xl border border-line dark:border-line-dark bg-panel/80 dark:bg-panel-dark/80 px-5 py-4 text-sm text-muted dark:text-muted-dark backdrop-blur-[22px]"
-        >
-          Opening workspace...
-        </motion.div>
-      </main>
-    );
-  }
+  // Pick up edits made outside the app when the window regains focus.
+  useEffect(() => {
+    const onFocus = () => refreshTree();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [refreshTree]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const mod = event.metaKey || event.ctrlKey;
+      if (!mod) return;
+      const ui = useUi.getState();
+      const vault = useVault.getState();
+
+      if (event.key === "k") {
+        event.preventDefault();
+        ui.setPaletteOpen(!ui.paletteOpen);
+      } else if (event.key === "n" && vault.status === "ready") {
+        event.preventDefault();
+        vault.createNote(activeDir(vault));
+      } else if (event.key === "\\") {
+        event.preventDefault();
+        ui.toggleSidebar();
+      } else if (event.key === ",") {
+        event.preventDefault();
+        ui.setSettingsOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   return (
-    <div className="grid h-dvh w-dvw min-h-0 min-w-0 grid-cols-[280px_minmax(0,1fr)] overflow-hidden bg-canvas text-ink dark:bg-canvas-dark dark:text-ink-dark max-[860px]:grid-cols-1">
-      <Sidebar />
-      <motion.section
-        className="grid h-dvh min-h-0 min-w-0 grid-rows-[48px_minmax(0,1fr)] overflow-hidden"
-        initial={{ x: 10 }}
-        animate={{ x: 0 }}
-        transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-      >
-        <TopBar />
-        <EditorPane />
-      </motion.section>
-      <CommandBar />
-    </div>
+    <>
+      {status === "welcome" && <Welcome />}
+      {status === "ready" && <AppShell />}
+      <CommandPalette />
+      <SettingsModal />
+      <Toaster
+        position="bottom-right"
+        gap={8}
+        toastOptions={{
+          style: {
+            background: "var(--invert)",
+            color: "var(--invert-ink)",
+            border: "none",
+            fontSize: "13px",
+            borderRadius: "8px",
+          },
+        }}
+      />
+    </>
   );
 }
