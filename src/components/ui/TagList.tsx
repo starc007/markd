@@ -25,12 +25,16 @@ export function TagList({
   onTagClick,
   activeTag,
   editable = true,
+  removable = editable,
 }: {
   tags: string[];
   onChange?: (tags: string[]) => void;
   onTagClick?: (tag: string) => void;
   activeTag?: string | null;
+  /** show the free-text add affordance */
   editable?: boolean;
+  /** show × to unassign a chip (defaults to `editable`) */
+  removable?: boolean;
 }) {
   const [adding, setAdding] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -62,11 +66,11 @@ export function TagList({
           >
             #{tag}
           </button>
-          {editable && (
+          {removable && (
             <button
               type="button"
               aria-label={`Remove ${tag}`}
-              className="grid place-items-center opacity-0 transition-opacity group-hover/tag:opacity-100"
+              className="grid place-items-center opacity-60 transition-opacity hover:opacity-100"
               onClick={() => onChange?.(tags.filter((t) => t !== tag))}
             >
               <X size={10} strokeWidth={2.5} />

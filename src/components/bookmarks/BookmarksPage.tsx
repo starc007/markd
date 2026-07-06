@@ -243,7 +243,9 @@ function BookmarkRow({
               tags={bookmark.tags}
               activeTag={activeTag}
               onTagClick={onTagClick}
+              onChange={(tags) => setTags(bookmark.id, tags)}
               editable={false}
+              removable
             />
           </div>
         )}

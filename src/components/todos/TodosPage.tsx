@@ -212,7 +212,9 @@ function TodoRow({
               tags={todo.tags}
               activeTag={activeTag}
               onTagClick={onTagClick}
+              onChange={(tags) => setTags(todo.id, tags)}
               editable={false}
+              removable
             />
           </div>
         )}
