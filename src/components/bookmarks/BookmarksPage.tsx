@@ -1,54 +1,68 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { Globe, Link as LinkIcon, RefreshCw, X } from "lucide-react";
+import { Globe, RefreshCw, Search, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Bookmark } from "@/lib/types";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { cx, hostOf } from "@/lib/utils";
 import { useBookmarks } from "@/stores/bookmarks";
 
+const URL_RE = /^https?:\/\/\S+$/i;
+
 export function BookmarksPage() {
   const { bookmarks, loaded, load, add } = useBookmarks();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     load();
   }, [load]);
 
+  const trimmed = query.trim();
+  const isUrl = URL_RE.test(trimmed) || /^[\w-]+\.[a-z]{2,}(\/\S*)?$/i.test(trimmed);
+
+  const filtered = useMemo(() => {
+    const q = trimmed.toLowerCase();
+    if (!q || isUrl) return bookmarks;
+    return bookmarks.filter(
+      (b) =>
+        b.title.toLowerCase().includes(q) || b.url.toLowerCase().includes(q),
+    );
+  }, [bookmarks, trimmed, isUrl]);
+
   const submit = () => {
-    const value = inputRef.current?.value.trim();
-    if (!value) return;
-    add(value);
-    if (inputRef.current) inputRef.current.value = "";
+    if (!trimmed) return;
+    if (isUrl) {
+      add(trimmed);
+      setQuery("");
+    }
   };
 
   return (
     <div className="page-scroll">
-      <div className="mx-auto w-full max-w-[640px] px-8 pb-24 pt-6">
+      <div className="mx-auto w-full max-w-[720px] px-8 pb-24 pt-6">
         <h1 className="text-[30px] font-[680] tracking-[-0.025em]">Bookmarks</h1>
 
         <div className="mt-6 flex items-center gap-2.5 border-b border-line pb-3">
-          <LinkIcon size={15} strokeWidth={2} className="shrink-0 text-faint" />
+          <Search size={15} strokeWidth={2} className="shrink-0 text-faint" />
           <input
-            ref={inputRef}
-            placeholder="Paste a link…"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search bookmarks, or paste a link…"
             className="w-full bg-transparent text-[14.5px] text-ink outline-none placeholder:text-faint"
             onKeyDown={(event) => {
               if (event.key === "Enter") submit();
             }}
-            onPaste={(event) => {
-              const text = event.clipboardData.getData("text").trim();
-              if (/^https?:\/\/\S+$/i.test(text)) {
-                event.preventDefault();
-                add(text);
-              }
-            }}
           />
+          {isUrl && (
+            <span className="shrink-0 text-[11.5px] text-faint">
+              ↵ to save
+            </span>
+          )}
         </div>
 
         <div className="mt-2">
           <AnimatePresence initial={false}>
-            {bookmarks.map((bookmark) => (
+            {filtered.map((bookmark) => (
               <BookmarkRow key={bookmark.id} bookmark={bookmark} />
             ))}
           </AnimatePresence>
@@ -57,6 +71,11 @@ export function BookmarksPage() {
         {loaded && bookmarks.length === 0 && (
           <p className="pt-10 text-center text-[13px] text-faint">
             Paste a link above to save it.
+          </p>
+        )}
+        {loaded && bookmarks.length > 0 && filtered.length === 0 && (
+          <p className="pt-10 text-center text-[13px] text-faint">
+            No bookmarks match “{trimmed}”.
           </p>
         )}
       </div>
