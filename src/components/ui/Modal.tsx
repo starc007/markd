@@ -27,7 +27,7 @@ export function Modal({
   layoutId?: string;
 }) {
   const reduce = useReducedMotion();
-  const enterY = reduce ? 0 : align === "top" ? -8 : 8;
+  const enterY = reduce ? 0 : align === "top" ? -10 : 10;
 
   useEffect(() => {
     if (!open) return;
@@ -47,20 +47,20 @@ export function Modal({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2, ease: EASE_OUT }}
           className={cn(
-            "fixed inset-0 z-80 flex justify-center bg-foreground/[0.04] [backdrop-filter:blur(14px)_saturate(140%)] [-webkit-backdrop-filter:blur(14px)_saturate(140%)]",
+            "fixed inset-0 z-80 flex justify-center bg-background/5 backdrop-blur-sm",
             align === "center" ? "items-center" : "items-start",
           )}
           onMouseDown={onClose}
         >
           <motion.div
             layoutId={layoutId}
-            initial={{ opacity: 0, y: enterY, scale: reduce ? 1 : 0.97 }}
+            initial={{ opacity: 0, y: enterY, scale: reduce ? 1 : 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{
               opacity: 0,
-              y: enterY,
-              scale: reduce ? 1 : 0.98,
-              transition: { duration: 0.16, ease: EASE_OUT },
+              y: enterY * 0.6,
+              scale: reduce ? 1 : 0.96,
+              transition: { duration: 0.14, ease: EASE_OUT },
             }}
             transition={SPRING_PANEL}
             className={cn(

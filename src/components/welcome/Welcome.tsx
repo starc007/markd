@@ -39,7 +39,7 @@ export function Welcome() {
         <button
           type="button"
           onClick={chooseVault}
-          className="mt-12 flex items-center gap-2.5 rounded-lg bg-invert px-5 py-2.5 text-[14px] font-medium text-invert-ink transition-transform duration-150 ease-out hover:scale-[1.02] active:scale-[0.98]"
+          className="mt-12 flex items-center gap-2.5 rounded-lg bg-invert px-5 py-2.5 text-[14px] font-medium text-invert-ink transition-transform duration-150 ease-out"
         >
           <FolderOpen size={16} strokeWidth={1.75} />
           Choose a vault folder

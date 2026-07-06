@@ -3,10 +3,19 @@ import { AnimatePresence, motion } from "motion/react";
 import { NoteEditor } from "@/components/editor/NoteEditor";
 import { BookmarksPage } from "@/components/bookmarks/BookmarksPage";
 import { TodosPage } from "@/components/todos/TodosPage";
+import { EASE_OUT, SPRING_PANEL } from "@/lib/ease";
 import { Sidebar } from "./Sidebar";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { useUi } from "@/stores/ui";
 import { useVault } from "@/stores/vault";
+
+const SIDEBAR_WIDTH = 240;
+
+/** Stable key per view so AnimatePresence cross-fades on switch. */
+function viewKey(view: ReturnType<typeof useVault.getState>["view"]) {
+  if (!view) return "empty";
+  return view.type === "note" ? `note:${view.rel}` : view.type;
+}
 
 export function AppShell() {
   const view = useVault((s) => s.view);
@@ -15,24 +24,26 @@ export function AppShell() {
 
   return (
     <div className="flex h-full bg-bg">
-      <AnimatePresence initial={false}>
-        {!sidebarHidden && (
-          <motion.div
-            initial={{ marginLeft: -240 }}
-            animate={{ marginLeft: 0 }}
-            exit={{ marginLeft: -240 }}
-            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-          >
-            <Sidebar />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Collapse by animating width (spring) with the panel clipped at a
+          fixed inner width — slides cleanly, no content reflow-jitter. */}
+      <motion.div
+        animate={{ width: sidebarHidden ? 0 : SIDEBAR_WIDTH }}
+        initial={false}
+        transition={SPRING_PANEL}
+        className="h-full shrink-0 overflow-hidden"
+      >
+        <div style={{ width: SIDEBAR_WIDTH }} className="h-full">
+          <Sidebar />
+        </div>
+      </motion.div>
 
       <main className="relative flex min-w-0 flex-1 flex-col">
-        <div
+        <motion.div
           data-tauri-drag-region
           className="flex h-12 shrink-0 items-center"
-          style={{ paddingLeft: sidebarHidden ? 84 : 12 }}
+          animate={{ paddingLeft: sidebarHidden ? 84 : 12 }}
+          initial={false}
+          transition={SPRING_PANEL}
         >
           <Tooltip label="Toggle sidebar ⌘\" side="right">
             <button
@@ -43,13 +54,24 @@ export function AppShell() {
               <PanelLeft size={15.5} strokeWidth={1.75} />
             </button>
           </Tooltip>
-        </div>
+        </motion.div>
 
-        <div className="min-h-0 flex-1">
-          {view?.type === "note" && <NoteEditor key={view.rel} rel={view.rel} />}
-          {view?.type === "todos" && <TodosPage />}
-          {view?.type === "bookmarks" && <BookmarksPage />}
-          {!view && <EmptyState />}
+        <div className="relative min-h-0 flex-1">
+          <AnimatePresence initial={false}>
+            <motion.div
+              key={viewKey(view)}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.18, ease: EASE_OUT }}
+              className="absolute inset-0"
+            >
+              {view?.type === "note" && <NoteEditor rel={view.rel} />}
+              {view?.type === "todos" && <TodosPage />}
+              {view?.type === "bookmarks" && <BookmarksPage />}
+              {!view && <EmptyState />}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
     </div>

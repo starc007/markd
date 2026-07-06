@@ -10,6 +10,7 @@ import { Tooltip } from "@/components/ui/Tooltip";
 import { cx } from "@/lib/utils";
 import { useUi } from "@/stores/ui";
 import { activeDir, useVault } from "@/stores/vault";
+import { HoverPill, SidebarHover, useHoverRow } from "./SidebarHover";
 
 export function Sidebar() {
   const name = useVault((s) => s.name);
@@ -34,41 +35,45 @@ export function Sidebar() {
         </span>
       </div>
 
-      <nav className="px-2 pb-1">
-        <PageLink
-          active={view?.type === "todos"}
-          icon={<CheckSquare size={14.5} strokeWidth={1.75} />}
-          label="Todos"
-          onClick={() => setView({ type: "todos" })}
-        />
-        <PageLink
-          active={view?.type === "bookmarks"}
-          icon={<Bookmark size={14.5} strokeWidth={1.75} />}
-          label="Bookmarks"
-          onClick={() => setView({ type: "bookmarks" })}
-        />
-      </nav>
+      <SidebarHover>
+        <nav className="px-2 pb-1">
+          <PageLink
+            id="nav:todos"
+            active={view?.type === "todos"}
+            icon={<CheckSquare size={14.5} strokeWidth={1.75} />}
+            label="Todos"
+            onClick={() => setView({ type: "todos" })}
+          />
+          <PageLink
+            id="nav:bookmarks"
+            active={view?.type === "bookmarks"}
+            icon={<Bookmark size={14.5} strokeWidth={1.75} />}
+            label="Bookmarks"
+            onClick={() => setView({ type: "bookmarks" })}
+          />
+        </nav>
 
-      <div className="mx-4 my-1.5 border-t border-line-soft" />
+        <div className="mx-4 my-1.5 border-t border-line-soft" />
 
-      <div className="flex items-center justify-between pl-4 pr-2 pb-0.5">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
-          Notes
-        </span>
-        <div className="flex items-center gap-0.5">
-          <IconAction
-            label="New note"
-            onClick={() => createNote(activeDir(useVault.getState()))}
-          >
-            <FilePlus size={14.5} strokeWidth={1.75} />
-          </IconAction>
-          <IconAction label="New folder" onClick={() => createFolder("", "Untitled")}>
-            <FolderPlus size={14.5} strokeWidth={1.75} />
-          </IconAction>
+        <div className="flex items-center justify-between pl-4 pr-2 pb-0.5">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
+            Notes
+          </span>
+          <div className="flex items-center gap-0.5">
+            <IconAction
+              label="New note"
+              onClick={() => createNote(activeDir(useVault.getState()))}
+            >
+              <FilePlus size={14.5} strokeWidth={1.75} />
+            </IconAction>
+            <IconAction label="New folder" onClick={() => createFolder("", "Untitled")}>
+              <FolderPlus size={14.5} strokeWidth={1.75} />
+            </IconAction>
+          </div>
         </div>
-      </div>
 
-      <FileTree />
+        <FileTree />
+      </SidebarHover>
 
       <div className="flex items-center justify-between border-t border-line-soft px-2 py-1.5">
         <IconAction label="Settings" onClick={() => setSettingsOpen(true)}>
@@ -112,29 +117,34 @@ function IconAction({
 }
 
 function PageLink({
+  id,
   active,
   icon,
   label,
   onClick,
 }: {
+  id: string;
   active: boolean;
   icon: React.ReactNode;
   label: string;
   onClick: () => void;
 }) {
+  const hover = useHoverRow(id);
   return (
     <button
       type="button"
       onClick={onClick}
+      {...hover}
       className={cx(
-        "flex h-[26px] w-full items-center gap-2 rounded-md px-1.5 text-[13px] transition-colors duration-100",
-        active
-          ? "bg-invert text-invert-ink"
-          : "text-muted hover:bg-hover hover:text-ink",
+        "relative flex h-[26px] w-full items-center rounded-md px-1.5 text-[13px] transition-colors duration-100",
+        active ? "bg-active text-ink" : "text-muted hover:text-ink",
       )}
     >
-      {icon}
-      <span className="font-medium">{label}</span>
+      <HoverPill id={id} />
+      <span className="relative z-10 flex items-center gap-2">
+        {icon}
+        <span className="font-medium">{label}</span>
+      </span>
     </button>
   );
 }

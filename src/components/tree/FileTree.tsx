@@ -7,6 +7,7 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import {
   createContext,
   useCallback,
@@ -16,6 +17,7 @@ import {
   useState,
 } from "react";
 import type { TreeNode } from "@/lib/types";
+import { EASE_OUT } from "@/lib/ease";
 import { cx, parentDir } from "@/lib/utils";
 import { useVault } from "@/stores/vault";
 import {
@@ -23,6 +25,7 @@ import {
   type MenuItem,
   type MenuPosition,
 } from "@/components/ui/ContextMenu";
+import { HoverPill, useHoverRow } from "@/components/layout/SidebarHover";
 
 const DRAG_TYPE = "application/x-draft-rel";
 
@@ -144,6 +147,7 @@ function Row({ node, depth }: { node: TreeNode; depth: number }) {
   const isOpen = expanded.has(node.rel);
   const isActive = view?.type === "note" && view.rel === node.rel;
   const isRenaming = api?.renaming === node.rel;
+  const hover = useHoverRow(node.rel);
 
   return (
     <>
@@ -151,11 +155,10 @@ function Row({ node, depth }: { node: TreeNode; depth: number }) {
         role="treeitem"
         aria-selected={isActive}
         draggable={!isRenaming}
+        {...hover}
         className={cx(
           "group relative flex h-[26px] cursor-default items-center rounded-md pr-1.5 text-[13px] transition-colors duration-100",
-          isActive
-            ? "bg-invert text-invert-ink"
-            : "text-muted hover:bg-hover hover:text-ink",
+          isActive ? "bg-active text-ink" : "text-muted hover:text-ink",
           dropping && !isActive && "bg-active text-ink",
         )}
         style={{ paddingLeft: 6 + depth * 14 }}
@@ -192,61 +195,74 @@ function Row({ node, depth }: { node: TreeNode; depth: number }) {
           if (rel && rel !== node.rel) moveEntry(rel, node.rel);
         }}
       >
-        {isFolder ? (
-          isOpen ? (
-            <FolderOpen
-              size={14}
-              strokeWidth={1.75}
-              className={cx(
-                "mr-1.5 shrink-0",
-                isActive ? "text-invert-ink/80" : "text-faint",
-              )}
-            />
-          ) : (
-            <Folder
-              size={14}
-              strokeWidth={1.75}
-              className={cx(
-                "mr-1.5 shrink-0",
-                isActive ? "text-invert-ink/80" : "text-faint",
-              )}
-            />
-          )
-        ) : (
-          <FileText
-            size={14}
-            strokeWidth={1.75}
-            className={cx(
-              "mr-1.5 shrink-0",
-              isActive ? "text-invert-ink/80" : "text-faint",
-            )}
-          />
-        )}
+        <HoverPill id={node.rel} />
 
-        {isRenaming ? (
-          <RenameInput node={node} />
-        ) : (
-          <span className={cx("truncate", isFolder && "font-medium")}>
-            {node.name}
-          </span>
-        )}
+        <span className="relative z-10 flex min-w-0 flex-1 items-center">
+          {isFolder ? (
+            isOpen ? (
+              <FolderOpen
+                size={14}
+                strokeWidth={1.75}
+                className={cx(
+                  "mr-1.5 shrink-0",
+                  isActive ? "text-ink" : "text-faint",
+                )}
+              />
+            ) : (
+              <Folder
+                size={14}
+                strokeWidth={1.75}
+                className={cx(
+                  "mr-1.5 shrink-0",
+                  isActive ? "text-ink" : "text-faint",
+                )}
+              />
+            )
+          ) : (
+            <FileText
+              size={14}
+              strokeWidth={1.75}
+              className={cx(
+                "mr-1.5 shrink-0",
+                isActive ? "text-ink" : "text-faint",
+              )}
+            />
+          )}
+
+          {isRenaming ? (
+            <RenameInput node={node} />
+          ) : (
+            <span className={cx("truncate", isFolder && "font-medium")}>
+              {node.name}
+            </span>
+          )}
+        </span>
       </div>
 
-      {isFolder && isOpen && (
-        <div role="group">
-          {node.children?.map((child) => (
-            <Row key={child.rel} node={child} depth={depth + 1} />
-          ))}
-          {node.children?.length === 0 && (
-            <p
-              className="py-0.5 text-[12px] italic text-faint"
-              style={{ paddingLeft: 26 + (depth + 1) * 14 }}
-            >
-              empty
-            </p>
-          )}
-        </div>
-      )}
+      <AnimatePresence initial={false}>
+        {isFolder && isOpen && (
+          <motion.div
+            role="group"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.18, ease: EASE_OUT }}
+            className="overflow-hidden"
+          >
+            {node.children?.map((child) => (
+              <Row key={child.rel} node={child} depth={depth + 1} />
+            ))}
+            {node.children?.length === 0 && (
+              <p
+                className="py-0.5 text-[12px] italic text-faint"
+                style={{ paddingLeft: 26 + (depth + 1) * 14 }}
+              >
+                empty
+              </p>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
