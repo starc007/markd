@@ -1,8 +1,9 @@
-import { Plus, X } from "lucide-react";
+import { Check, Copy, Plus, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import type { Todo } from "@/lib/types";
 import { EASE_OUT } from "@/lib/ease";
+import { ActionSwapIcon } from "@/components/motion/action-swap";
 import { Button } from "@/components/ui/Button";
 import { TagList } from "@/components/ui/TagList";
 import { TagPicker } from "@/components/ui/TagPicker";
@@ -127,10 +128,23 @@ function TodoRow({
   const registry = useTodos((s) => s.tagRegistry);
   const [editing, setEditing] = useState(false);
   const editRef = useRef<HTMLInputElement>(null);
+  const [copied, setCopied] = useState(false);
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (editing) editRef.current?.focus();
   }, [editing]);
+
+  useEffect(() => () => {
+    if (copyTimer.current) clearTimeout(copyTimer.current);
+  }, []);
+
+  const copyText = () => {
+    navigator.clipboard.writeText(todo.text);
+    setCopied(true);
+    if (copyTimer.current) clearTimeout(copyTimer.current);
+    copyTimer.current = setTimeout(() => setCopied(false), 1400);
+  };
 
   return (
     <motion.div
@@ -226,6 +240,25 @@ function TodoRow({
           registry={registry}
           onChange={(tags) => setTags(todo.id, tags)}
         />
+        <Tooltip label={copied ? "Copied" : "Copy"} side="top">
+          <button
+            type="button"
+            onClick={copyText}
+            className="grid h-7 w-7 place-items-center rounded-md text-faint transition-colors duration-100 hover:bg-active hover:text-ink"
+          >
+            <ActionSwapIcon
+              value={copied ? "done" : "copy"}
+              animation="roll"
+              className="h-[13px] w-[13px]"
+            >
+              {copied ? (
+                <Check size={13} strokeWidth={2} />
+              ) : (
+                <Copy size={13} strokeWidth={2} />
+              )}
+            </ActionSwapIcon>
+          </button>
+        </Tooltip>
         <Tooltip label="Delete" side="top">
           <button
             type="button"
