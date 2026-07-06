@@ -1,9 +1,9 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { Copy, Globe, RefreshCw, Search, X } from "lucide-react";
+import { Check, Copy, Globe, RefreshCw, Search, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 import type { Bookmark } from "@/lib/types";
+import { ActionSwapIcon } from "@/components/motion/action-swap";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { cx, hostOf } from "@/lib/utils";
 import { useBookmarks } from "@/stores/bookmarks";
@@ -41,7 +41,9 @@ export function BookmarksPage() {
   return (
     <div className="page-scroll">
       <div className="mx-auto w-full max-w-[720px] px-8 pb-24 pt-6">
-        <p className="text-[13px] text-muted">Your saved links.</p>
+        <p className="text-[13px] text-muted">
+          Stash links here — your memory clearly isn&apos;t up to the job.
+        </p>
 
         <div className="mt-4 flex items-center gap-2.5 border-b border-line pb-3">
           <Search size={15} strokeWidth={2} className="shrink-0 text-faint" />
@@ -92,6 +94,8 @@ function BookmarkRow({ bookmark }: { bookmark: Bookmark }) {
   const [editing, setEditing] = useState(false);
   const editRef = useRef<HTMLInputElement>(null);
   const [imageFailed, setImageFailed] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (editing) {
@@ -99,6 +103,17 @@ function BookmarkRow({ bookmark }: { bookmark: Bookmark }) {
       editRef.current?.select();
     }
   }, [editing]);
+
+  useEffect(() => () => {
+    if (copyTimer.current) clearTimeout(copyTimer.current);
+  }, []);
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(bookmark.url);
+    setCopied(true);
+    if (copyTimer.current) clearTimeout(copyTimer.current);
+    copyTimer.current = setTimeout(() => setCopied(false), 1400);
+  };
 
   const showImage = bookmark.image && !imageFailed;
 
@@ -186,14 +201,18 @@ function BookmarkRow({ bookmark }: { bookmark: Bookmark }) {
       </div>
 
       <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity duration-100 group-hover:opacity-100">
-        <RowAction
-          label="Copy link"
-          onClick={() => {
-            navigator.clipboard.writeText(bookmark.url);
-            toast("Link copied");
-          }}
-        >
-          <Copy size={13} strokeWidth={2} />
+        <RowAction label={copied ? "Copied" : "Copy link"} onClick={copyLink}>
+          <ActionSwapIcon
+            value={copied ? "done" : "copy"}
+            animation="roll"
+            className="h-[13px] w-[13px]"
+          >
+            {copied ? (
+              <Check size={13} strokeWidth={2} />
+            ) : (
+              <Copy size={13} strokeWidth={2} />
+            )}
+          </ActionSwapIcon>
         </RowAction>
         <RowAction
           label="Refresh preview"
