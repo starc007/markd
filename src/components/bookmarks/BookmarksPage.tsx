@@ -1,9 +1,9 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { Check, Copy, Globe, Search, X } from "lucide-react";
+import { Globe, Search, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Bookmark } from "@/lib/types";
-import { ActionSwapIcon } from "@/components/motion/action-swap";
+import { CopyButton } from "@/components/ui/CopyButton";
 import { TagList } from "@/components/ui/TagList";
 import { TagPicker } from "@/components/ui/TagPicker";
 import { TagRail } from "@/components/ui/TagRail";
@@ -133,8 +133,6 @@ function BookmarkRow({
   const [editing, setEditing] = useState(false);
   const editRef = useRef<HTMLInputElement>(null);
   const [imageFailed, setImageFailed] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (editing) {
@@ -142,17 +140,6 @@ function BookmarkRow({
       editRef.current?.select();
     }
   }, [editing]);
-
-  useEffect(() => () => {
-    if (copyTimer.current) clearTimeout(copyTimer.current);
-  }, []);
-
-  const copyLink = () => {
-    navigator.clipboard.writeText(bookmark.url);
-    setCopied(true);
-    if (copyTimer.current) clearTimeout(copyTimer.current);
-    copyTimer.current = setTimeout(() => setCopied(false), 1400);
-  };
 
   const showImage = bookmark.image && !imageFailed;
 
@@ -257,19 +244,7 @@ function BookmarkRow({
           registry={registry}
           onChange={(tags) => setTags(bookmark.id, tags)}
         />
-        <RowAction label={copied ? "Copied" : "Copy link"} onClick={copyLink}>
-          <ActionSwapIcon
-            value={copied ? "done" : "copy"}
-            animation="roll"
-            className="h-[13px] w-[13px]"
-          >
-            {copied ? (
-              <Check size={13} strokeWidth={2} />
-            ) : (
-              <Copy size={13} strokeWidth={2} />
-            )}
-          </ActionSwapIcon>
-        </RowAction>
+        <CopyButton value={bookmark.url} label="Copy link" side="top" />
         <RowAction label="Delete bookmark" onClick={() => remove(bookmark.id)}>
           <X size={13.5} strokeWidth={2} />
         </RowAction>
