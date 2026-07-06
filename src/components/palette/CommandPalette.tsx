@@ -9,11 +9,11 @@ import {
   SunMoon,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ipc } from "@/lib/ipc";
 import type { SearchHit, TreeNode } from "@/lib/types";
 import { cx } from "@/lib/utils";
+import { Modal } from "@/components/ui/Modal";
 import { useUi } from "@/stores/ui";
 import { activeDir, useVault } from "@/stores/vault";
 
@@ -164,25 +164,14 @@ export function CommandPalette() {
   }
 
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.12 }}
-          className="fixed inset-0 z-80 bg-black/20 dark:bg-black/45"
-          onMouseDown={close}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.985, y: -6 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.985, y: -6 }}
-            transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-            className="mx-auto mt-[16vh] w-[560px] max-w-[calc(100vw-48px)] overflow-hidden rounded-xl border border-line bg-bg shadow-2xl shadow-black/20 dark:shadow-black/60"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <div className="flex items-center gap-2.5 border-b border-line-soft px-4">
+    <Modal
+      open={open}
+      onClose={close}
+      align="top"
+      className="mt-[16vh] w-[560px]"
+    >
+      <div>
+        <div className="flex items-center gap-2.5 border-b border-line-soft px-4">
               <Search size={15} strokeWidth={2} className="shrink-0 text-faint" />
               <input
                 ref={inputRef}
@@ -255,9 +244,7 @@ export function CommandPalette() {
                 </p>
               )}
             </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+      </div>
+    </Modal>
   );
 }
