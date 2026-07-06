@@ -295,13 +295,13 @@ body {
 .prose-note ul[data-type="taskList"] label span::after {
   content: "";
   position: absolute;
-  left: 5.5px;
-  top: 2.5px;
+  left: 50%;
+  top: 50%;
   width: 4px;
   height: 8px;
   border-right: 1.5px solid var(--invert-ink);
   border-bottom: 1.5px solid var(--invert-ink);
-  transform: rotate(45deg);
+  transform: translate(-50%, -60%) rotate(45deg);
   opacity: 0;
   transition: opacity 120ms ease-out;
 }
