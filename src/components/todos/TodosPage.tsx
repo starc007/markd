@@ -1,4 +1,4 @@
-import { ChevronRight, Plus, X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import type { Todo } from "@/lib/types";
@@ -8,15 +8,13 @@ import { useTodos } from "@/stores/todos";
 
 export function TodosPage() {
   const { todos, loaded, load, add } = useTodos();
-  const [showCompleted, setShowCompleted] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  const open = todos.filter((t) => !t.done);
-  const completed = todos.filter((t) => t.done);
+  const completedCount = todos.filter((t) => t.done).length;
 
   const submit = () => {
     const value = inputRef.current?.value.trim();
@@ -28,7 +26,18 @@ export function TodosPage() {
   return (
     <div className="page-scroll">
       <div className="mx-auto w-full max-w-[560px] px-8 pb-24 pt-6">
-        <h1 className="text-[30px] font-[680] tracking-[-0.025em]">Todos</h1>
+        <div className="flex items-baseline justify-between">
+          <h1 className="text-[30px] font-[680] tracking-[-0.025em]">Todos</h1>
+          {completedCount > 0 && (
+            <button
+              type="button"
+              className="text-[12px] text-faint underline-offset-2 transition-colors hover:text-muted hover:underline"
+              onClick={() => useTodos.getState().clearCompleted()}
+            >
+              Clear completed · {completedCount}
+            </button>
+          )}
+        </div>
 
         <div className="mt-6 flex items-center gap-2.5 border-b border-line pb-3">
           <Plus size={16} strokeWidth={2} className="shrink-0 text-faint" />
@@ -44,54 +53,16 @@ export function TodosPage() {
 
         <div className="mt-2">
           <AnimatePresence initial={false}>
-            {open.map((todo) => (
+            {todos.map((todo) => (
               <TodoRow key={todo.id} todo={todo} />
             ))}
           </AnimatePresence>
-          {loaded && open.length === 0 && (
+          {loaded && todos.length === 0 && (
             <p className="pt-6 text-center text-[13px] text-faint">
-              {completed.length > 0 ? "All done." : "Nothing here yet."}
+              Nothing here yet.
             </p>
           )}
         </div>
-
-        {completed.length > 0 && (
-          <div className="mt-8">
-            <div className="flex items-center justify-between">
-              <button
-                type="button"
-                className="flex items-center gap-1 text-[12px] font-medium uppercase tracking-[0.08em] text-faint transition-colors hover:text-muted"
-                onClick={() => setShowCompleted((v) => !v)}
-              >
-                <ChevronRight
-                  size={12}
-                  strokeWidth={2}
-                  className={cx(
-                    "transition-transform duration-150",
-                    showCompleted && "rotate-90",
-                  )}
-                />
-                Completed · {completed.length}
-              </button>
-              {showCompleted && (
-                <button
-                  type="button"
-                  className="text-[12px] text-faint underline-offset-2 transition-colors hover:text-muted hover:underline"
-                  onClick={() => useTodos.getState().clearCompleted()}
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-            {showCompleted && (
-              <div className="mt-2">
-                {completed.map((todo) => (
-                  <TodoRow key={todo.id} todo={todo} />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
@@ -115,7 +86,7 @@ function TodoRow({ todo }: { todo: Todo }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15, ease: "easeOut" }}
-      className="group flex items-center gap-2.5 rounded-md px-1 py-[7px] transition-colors hover:bg-hover"
+      className="group flex items-center gap-2.5 rounded-md px-1 py-[7px]"
     >
       <button
         type="button"
