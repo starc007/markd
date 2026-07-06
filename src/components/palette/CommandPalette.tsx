@@ -12,7 +12,7 @@ import type { LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ipc } from "@/lib/ipc";
 import type { SearchHit, TreeNode } from "@/lib/types";
-import { cx } from "@/lib/utils";
+import { cx, parentDir } from "@/lib/utils";
 import { Modal } from "@/components/ui/Modal";
 import { useUi } from "@/stores/ui";
 import { activeDir, useVault } from "@/stores/vault";
@@ -20,9 +20,17 @@ import { activeDir, useVault } from "@/stores/vault";
 interface PaletteItem {
   id: string;
   label: string;
+  /** Dim breadcrumb of the containing folder, e.g. "projects / research". */
+  path?: string;
   hint?: string;
   icon: LucideIcon;
   run: () => void;
+}
+
+/** "projects/research/deep.md" → "projects / research" ("" for root notes). */
+function folderRoute(rel: string) {
+  const dir = parentDir(rel);
+  return dir ? dir.split("/").join(" / ") : undefined;
 }
 
 function flattenNotes(tree: TreeNode[], out: TreeNode[] = []) {
@@ -126,6 +134,7 @@ export function CommandPalette() {
       ? hits.map((hit) => ({
           id: `note-${hit.rel}`,
           label: hit.title,
+          path: folderRoute(hit.rel),
           hint: hit.titleMatch ? undefined : hit.snippet,
           icon: FileText,
           run: () => {
@@ -139,6 +148,7 @@ export function CommandPalette() {
           .map((node) => ({
             id: `note-${node.rel}`,
             label: node.name,
+            path: folderRoute(node.rel),
             hint: "recent",
             icon: FileText,
             run: () => {
@@ -234,11 +244,16 @@ export function CommandPalette() {
                   }}
                 >
                   <item.icon size={15} strokeWidth={1.75} className="shrink-0" />
-                  <span className="shrink-0 text-[13.5px] font-medium">
+                  <span className="max-w-[55%] shrink-0 truncate text-[13.5px] font-medium">
                     {item.label}
                   </span>
+                  {item.path && (
+                    <span className="min-w-0 shrink truncate text-[11.5px] text-faint">
+                      {item.path}
+                    </span>
+                  )}
                   {item.hint && (
-                    <span className="min-w-0 flex-1 truncate text-right text-[11.5px] text-faint">
+                    <span className="ml-auto min-w-0 shrink-0 truncate pl-2 text-right text-[11.5px] text-faint">
                       {item.hint}
                     </span>
                   )}
