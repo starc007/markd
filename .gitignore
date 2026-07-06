@@ -23,6 +23,9 @@ dist-ssr
 *.sln
 *.sw?
 *.md
+!README.md
+!AGENTS.md
+!CLAUDE.md
 
 # Secrets and keys (never commit these!)
 *.key
