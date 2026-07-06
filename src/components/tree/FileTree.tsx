@@ -55,7 +55,7 @@ export function FileTree() {
     <TreeContext.Provider value={{ renaming, setRenaming, openMenu }}>
       <div
         className={cx(
-          "flex min-h-0 flex-1 flex-col overflow-y-auto px-2 pb-6 pt-1",
+          "min-h-0 flex-1 overflow-y-auto px-2 pb-6 pt-1",
           rootDropping && "bg-hover",
         )}
         onDragOver={(event) => {
