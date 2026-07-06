@@ -27,17 +27,12 @@ const HoverContext = createContext<HoverApi>({
 });
 
 const variants: Variants = {
-  initial: { opacity: 0, filter: "blur(5px)" },
-  animate: { opacity: 1, filter: "blur(0px)" },
-  exit: (isActive: boolean) =>
-    !isActive ? { opacity: 0, filter: "blur(5px)" } : {},
-};
-
-const reducedVariants: Variants = {
   initial: { opacity: 0 },
   animate: { opacity: 1 },
   exit: (isActive: boolean) => (!isActive ? { opacity: 0 } : {}),
 };
+
+const reducedVariants = variants;
 
 export function SidebarHover({
   children,
