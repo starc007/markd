@@ -5,6 +5,8 @@ import type { Bookmark } from "@/lib/types";
 
 interface BookmarksState {
   bookmarks: Bookmark[];
+  /** the user's tag registry, in creation order */
+  tagRegistry: string[];
   loaded: boolean;
   /** ids with a metadata fetch in flight */
   fetching: Set<string>;
@@ -13,6 +15,8 @@ interface BookmarksState {
   fetchMeta: (id: string) => Promise<void>;
   updateTitle: (id: string, title: string) => Promise<void>;
   setTags: (id: string, tags: string[]) => Promise<void>;
+  createTag: (name: string) => Promise<void>;
+  deleteTag: (name: string) => Promise<void>;
   remove: (id: string) => Promise<void>;
 }
 
@@ -21,13 +25,17 @@ const oops = (err: unknown) =>
 
 export const useBookmarks = create<BookmarksState>((set, get) => ({
   bookmarks: [],
+  tagRegistry: [],
   loaded: false,
   fetching: new Set<string>(),
 
   load: async () => {
     try {
-      const bookmarks = await ipc.bookmarksList();
-      set({ bookmarks, loaded: true });
+      const [bookmarks, tagRegistry] = await Promise.all([
+        ipc.bookmarksList(),
+        ipc.bookmarkTagsList(),
+      ]);
+      set({ bookmarks, tagRegistry, loaded: true });
       // pick up bookmarks whose metadata never arrived (e.g. app closed mid-fetch)
       for (const bookmark of bookmarks) {
         if (!bookmark.metaFetched) get().fetchMeta(bookmark.id);
@@ -78,8 +86,35 @@ export const useBookmarks = create<BookmarksState>((set, get) => ({
   setTags: async (id, tags) => {
     try {
       const updated = await ipc.bookmarkSetTags(id, tags);
+      // backend auto-registers any new tag names — merge them in
+      const registry = new Set(get().tagRegistry);
+      updated.tags.forEach((t) => registry.add(t));
       set({
         bookmarks: get().bookmarks.map((b) => (b.id === id ? updated : b)),
+        tagRegistry: [...registry],
+      });
+    } catch (err) {
+      oops(err);
+    }
+  },
+
+  createTag: async (name) => {
+    try {
+      set({ tagRegistry: await ipc.bookmarkTagCreate(name) });
+    } catch (err) {
+      oops(err);
+    }
+  },
+
+  deleteTag: async (name) => {
+    try {
+      const tagRegistry = await ipc.bookmarkTagDelete(name);
+      set({
+        tagRegistry,
+        bookmarks: get().bookmarks.map((b) => ({
+          ...b,
+          tags: b.tags.filter((t) => t !== name),
+        })),
       });
     } catch (err) {
       oops(err);

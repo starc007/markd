@@ -30,6 +30,70 @@ fn store_path(root: &Path) -> std::path::PathBuf {
     root.join(DATA_DIR).join("bookmarks.json")
 }
 
+fn tags_path(root: &Path) -> std::path::PathBuf {
+    root.join(DATA_DIR).join("bookmark_tags.json")
+}
+
+/// The tag registry — tags the user has created, in creation order. Kept
+/// separate from bookmarks so a tag can exist before anything uses it.
+pub fn list_tags(root: &Path) -> AppResult<Vec<String>> {
+    let path = tags_path(root);
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    Ok(serde_json::from_str(&fs::read_to_string(path)?)?)
+}
+
+fn save_tags(root: &Path, tags: &[String]) -> AppResult<()> {
+    fs::write(tags_path(root), serde_json::to_string_pretty(tags)?)?;
+    Ok(())
+}
+
+/// Register any tags not already present, preserving order. Returns the list.
+fn register(root: &Path, incoming: &[String]) -> AppResult<Vec<String>> {
+    let mut tags = list_tags(root)?;
+    let mut changed = false;
+    for tag in incoming {
+        if !tags.contains(tag) {
+            tags.push(tag.clone());
+            changed = true;
+        }
+    }
+    if changed {
+        save_tags(root, &tags)?;
+    }
+    Ok(tags)
+}
+
+pub fn create_tag(root: &Path, name: &str) -> AppResult<Vec<String>> {
+    let clean = crate::util::normalize_tags(vec![name.to_string()]);
+    let tag = clean
+        .into_iter()
+        .next()
+        .ok_or_else(|| AppError::InvalidInput("tag is empty".to_string()))?;
+    register(root, &[tag])
+}
+
+/// Delete a tag from the registry and strip it from every bookmark.
+pub fn delete_tag(root: &Path, name: &str) -> AppResult<Vec<String>> {
+    let mut tags = list_tags(root)?;
+    tags.retain(|t| t != name);
+    save_tags(root, &tags)?;
+
+    let mut bookmarks = list(root)?;
+    let mut changed = false;
+    for bookmark in &mut bookmarks {
+        if bookmark.tags.iter().any(|t| t == name) {
+            bookmark.tags.retain(|t| t != name);
+            changed = true;
+        }
+    }
+    if changed {
+        save(root, &bookmarks)?;
+    }
+    Ok(tags)
+}
+
 pub fn list(root: &Path) -> AppResult<Vec<Bookmark>> {
     let path = store_path(root);
     if !path.exists() {
@@ -125,6 +189,7 @@ pub fn set_tags(root: &Path, id: &str, tags: Vec<String>) -> AppResult<Bookmark>
     bookmark.tags = crate::util::normalize_tags(tags);
     let updated = bookmark.clone();
     save(root, &bookmarks)?;
+    register(root, &updated.tags)?;
     Ok(updated)
 }
 

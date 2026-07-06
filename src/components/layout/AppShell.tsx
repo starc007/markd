@@ -1,5 +1,6 @@
-import { PanelLeft } from "lucide-react";
+import { PanelLeft, Tag } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useRef, useState } from "react";
 import { NoteEditor } from "@/components/editor/NoteEditor";
 import { BookmarksPage } from "@/components/bookmarks/BookmarksPage";
 import { TodosPage } from "@/components/todos/TodosPage";
@@ -7,6 +8,7 @@ import { EASE_OUT, SPRING_PANEL } from "@/lib/ease";
 import { ActionSwapText } from "@/components/motion/action-swap";
 import { Sidebar } from "./Sidebar";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { useBookmarks } from "@/stores/bookmarks";
 import { useUi } from "@/stores/ui";
 import { useVault } from "@/stores/vault";
 
@@ -66,6 +68,8 @@ export function AppShell() {
                 ? "Bookmarks"
                 : ""}
           </ActionSwapText>
+
+          {view?.type === "bookmarks" && <NewTagButton />}
         </motion.div>
 
         <div className="relative min-h-0 flex-1">
@@ -86,6 +90,48 @@ export function AppShell() {
           </AnimatePresence>
         </div>
       </main>
+    </div>
+  );
+}
+
+function NewTagButton() {
+  const createTag = useBookmarks((s) => s.createTag);
+  const [open, setOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) inputRef.current?.focus();
+  }, [open]);
+
+  const commit = () => {
+    const value = inputRef.current?.value.trim();
+    if (value) createTag(value);
+    setOpen(false);
+  };
+
+  return (
+    <div className="ml-auto pr-4">
+      {open ? (
+        <input
+          ref={inputRef}
+          placeholder="Tag name…"
+          className="h-7 w-32 rounded-md border border-line bg-panel px-2 text-[12.5px] text-ink outline-none placeholder:text-faint"
+          onBlur={commit}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") commit();
+            if (event.key === "Escape") setOpen(false);
+          }}
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex items-center gap-1.5 rounded-md border border-line px-2.5 py-1 text-[12.5px] font-medium text-muted transition-colors hover:bg-hover hover:text-ink"
+        >
+          <Tag size={13} strokeWidth={2} />
+          New tag
+        </button>
+      )}
     </div>
   );
 }

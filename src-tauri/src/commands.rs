@@ -231,6 +231,27 @@ pub fn bookmark_set_tags(
 }
 
 #[tauri::command]
+pub fn bookmark_tags_list(state: State<'_, AppState>) -> AppResult<Vec<String>> {
+    bookmarks::list_tags(&state.root()?)
+}
+
+#[tauri::command]
+pub fn bookmark_tag_create(
+    state: State<'_, AppState>,
+    name: String,
+) -> AppResult<Vec<String>> {
+    bookmarks::create_tag(&state.root()?, &name)
+}
+
+#[tauri::command]
+pub fn bookmark_tag_delete(
+    state: State<'_, AppState>,
+    name: String,
+) -> AppResult<Vec<String>> {
+    bookmarks::delete_tag(&state.root()?, &name)
+}
+
+#[tauri::command]
 pub fn bookmark_delete(state: State<'_, AppState>, id: String) -> AppResult<()> {
     bookmarks::delete(&state.root()?, &id)
 }

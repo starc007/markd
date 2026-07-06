@@ -1,6 +1,15 @@
 import { Plus, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { cx } from "@/lib/utils";
+import { tagColor } from "@/lib/tagColor";
+
+function chipStyle(tag: string, active: boolean) {
+  const color = tagColor(tag);
+  return {
+    color,
+    backgroundColor: `color-mix(in srgb, ${color} ${active ? 26 : 14}%, transparent)`,
+    borderColor: `color-mix(in srgb, ${color} ${active ? 55 : 28}%, transparent)`,
+  };
+}
 
 /** Split raw input into clean tag tokens (drop leading #, lowercase). */
 function parseTags(raw: string) {
@@ -43,12 +52,8 @@ export function TagList({
       {tags.map((tag) => (
         <span
           key={tag}
-          className={cx(
-            "group/tag inline-flex items-center gap-1 rounded-full border px-2 py-[1px] text-[11px] leading-none transition-colors",
-            activeTag === tag
-              ? "border-ink bg-active text-ink"
-              : "border-line text-muted hover:text-ink",
-          )}
+          style={chipStyle(tag, activeTag === tag)}
+          className="group/tag inline-flex items-center gap-1 rounded-full border px-2 py-[1px] text-[11px] font-medium leading-none transition-colors"
         >
           <button
             type="button"

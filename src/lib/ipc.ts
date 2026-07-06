@@ -69,6 +69,11 @@ export const ipc = {
     call<Bookmark>("bookmark_update_title", { id, title }),
   bookmarkSetTags: (id: string, tags: string[]) =>
     call<Bookmark>("bookmark_set_tags", { id, tags }),
+  bookmarkTagsList: () => call<string[]>("bookmark_tags_list"),
+  bookmarkTagCreate: (name: string) =>
+    call<string[]>("bookmark_tag_create", { name }),
+  bookmarkTagDelete: (name: string) =>
+    call<string[]>("bookmark_tag_delete", { name }),
   bookmarkDelete: (id: string) => call<void>("bookmark_delete", { id }),
   bookmarkFetchMeta: (id: string) => call<Bookmark>("bookmark_fetch_meta", { id }),
 

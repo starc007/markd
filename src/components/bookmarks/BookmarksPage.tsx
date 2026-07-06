@@ -6,6 +6,7 @@ import type { Bookmark } from "@/lib/types";
 import { ActionSwapIcon } from "@/components/motion/action-swap";
 import { TagList } from "@/components/ui/TagList";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { tagColor } from "@/lib/tagColor";
 import { cx, hostOf } from "@/lib/utils";
 import { useBookmarks } from "@/stores/bookmarks";
 
@@ -46,69 +47,120 @@ export function BookmarksPage() {
 
   return (
     <div className="page-scroll">
-      <div className="mx-auto w-full max-w-[720px] px-8 pb-24 pt-6">
-        <p className="text-[13px] text-muted">
-          Stash links here — your memory clearly isn&apos;t up to the job.
-        </p>
+      <div className="mx-auto flex w-full max-w-[940px] gap-8 px-8 pb-24 pt-6">
+        <TagRail
+          activeTag={tagFilter}
+          onSelect={(tag) => setTagFilter((cur) => (cur === tag ? null : tag))}
+        />
 
-        <div className="mt-4 flex items-center gap-2.5 border-b border-line pb-3">
-          <Search size={15} strokeWidth={2} className="shrink-0 text-faint" />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search bookmarks, or paste a link…"
-            className="w-full bg-transparent text-[14.5px] text-ink outline-none placeholder:text-faint"
-            onKeyDown={(event) => {
-              if (event.key === "Enter") submit();
-            }}
-          />
-          {isUrl && (
-            <span className="shrink-0 text-[11.5px] text-faint">
-              ↵ to save
-            </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[13px] text-muted">
+            Stash links here — your memory clearly isn&apos;t up to the job.
+          </p>
+
+          <div className="mt-4 flex items-center gap-2.5 border-b border-line pb-3">
+            <Search size={15} strokeWidth={2} className="shrink-0 text-faint" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search bookmarks, or paste a link…"
+              className="w-full bg-transparent text-[14.5px] text-ink outline-none placeholder:text-faint"
+              onKeyDown={(event) => {
+                if (event.key === "Enter") submit();
+              }}
+            />
+            {isUrl && (
+              <span className="shrink-0 text-[11.5px] text-faint">↵ to save</span>
+            )}
+          </div>
+
+          <div className="mt-2">
+            <AnimatePresence initial={false}>
+              {filtered.map((bookmark) => (
+                <BookmarkRow
+                  key={bookmark.id}
+                  bookmark={bookmark}
+                  activeTag={tagFilter}
+                  onTagClick={(tag) =>
+                    setTagFilter((cur) => (cur === tag ? null : tag))
+                  }
+                />
+              ))}
+            </AnimatePresence>
+          </div>
+
+          {loaded && bookmarks.length === 0 && (
+            <p className="pt-10 text-center text-[13px] text-faint">
+              Paste a link above to save it.
+            </p>
+          )}
+          {loaded && bookmarks.length > 0 && filtered.length === 0 && (
+            <p className="pt-10 text-center text-[13px] text-faint">
+              {tagFilter
+                ? `Nothing tagged #${tagFilter}.`
+                : `No bookmarks match “${trimmed}”.`}
+            </p>
           )}
         </div>
-
-        {tagFilter && (
-          <div className="mt-3 flex items-center gap-2 text-[12px] text-muted">
-            <span>
-              Filtered by <span className="font-medium text-ink">#{tagFilter}</span>
-            </span>
-            <button
-              type="button"
-              className="text-faint underline-offset-2 transition-colors hover:text-ink hover:underline"
-              onClick={() => setTagFilter(null)}
-            >
-              clear
-            </button>
-          </div>
-        )}
-
-        <div className="mt-2">
-          <AnimatePresence initial={false}>
-            {filtered.map((bookmark) => (
-              <BookmarkRow
-                key={bookmark.id}
-                bookmark={bookmark}
-                activeTag={tagFilter}
-                onTagClick={setTagFilter}
-              />
-            ))}
-          </AnimatePresence>
-        </div>
-
-        {loaded && bookmarks.length === 0 && (
-          <p className="pt-10 text-center text-[13px] text-faint">
-            Paste a link above to save it.
-          </p>
-        )}
-        {loaded && bookmarks.length > 0 && filtered.length === 0 && (
-          <p className="pt-10 text-center text-[13px] text-faint">
-            No bookmarks match “{trimmed}”.
-          </p>
-        )}
       </div>
     </div>
+  );
+}
+
+function TagRail({
+  activeTag,
+  onSelect,
+}: {
+  activeTag: string | null;
+  onSelect: (tag: string) => void;
+}) {
+  const tags = useBookmarks((s) => s.tagRegistry);
+  const deleteTag = useBookmarks((s) => s.deleteTag);
+
+  return (
+    <aside className="sticky top-0 hidden w-[152px] shrink-0 sm:block">
+      <p className="px-2 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
+        Tags
+      </p>
+      {tags.length === 0 ? (
+        <p className="px-2 text-[12px] leading-relaxed text-faint">
+          Create a tag from the top bar to start filtering.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-0.5">
+          {tags.map((tag) => {
+            const color = tagColor(tag);
+            const active = activeTag === tag;
+            return (
+              <div key={tag} className="group/rail flex items-center">
+                <button
+                  type="button"
+                  onClick={() => onSelect(tag)}
+                  className={cx(
+                    "flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors",
+                    active ? "bg-active text-ink" : "text-muted hover:bg-hover hover:text-ink",
+                  )}
+                >
+                  <span
+                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: color }}
+                  />
+                  <span className="truncate">{tag}</span>
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Delete tag ${tag}`}
+                  onClick={() => deleteTag(tag)}
+                  className="grid h-6 w-6 shrink-0 place-items-center rounded text-faint opacity-0 transition-opacity hover:text-danger group-hover/rail:opacity-100"
+                >
+                  <X size={12} strokeWidth={2} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </aside>
   );
 }
 
