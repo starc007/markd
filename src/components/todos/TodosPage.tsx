@@ -81,7 +81,13 @@ export function TodosPage() {
           />
         </div>
 
-        <div className="relative mt-2">
+        <motion.div
+          key={tagFilter ?? "all"}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.15, ease: EASE_OUT }}
+          className="relative mt-2"
+        >
           <AnimatePresence initial={false}>
             {shown.map((todo) => (
               <TodoRow
@@ -105,7 +111,7 @@ export function TodosPage() {
               </motion.p>
             )}
           </AnimatePresence>
-        </div>
+        </motion.div>
         </div>
       </div>
     </div>
