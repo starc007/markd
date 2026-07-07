@@ -21,6 +21,10 @@ export function TodosPage() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
   const completedCount = todos.filter((t) => t.done).length;
   const shown = tagFilter
     ? todos.filter((t) => t.tags.includes(tagFilter))

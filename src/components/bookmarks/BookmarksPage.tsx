@@ -18,10 +18,15 @@ export function BookmarksPage() {
   const { bookmarks, tagRegistry, loaded, load, add, deleteTag } = useBookmarks();
   const [query, setQuery] = useState("");
   const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   const trimmed = query.trim();
   const isUrl = URL_RE.test(trimmed) || /^[\w-]+\.[a-z]{2,}(\/\S*)?$/i.test(trimmed);
@@ -65,6 +70,7 @@ export function BookmarksPage() {
           <div className="mt-4 flex items-center gap-2.5 border-b border-line pb-3">
             <Search size={15} strokeWidth={2} className="shrink-0 text-faint" />
             <input
+              ref={inputRef}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search bookmarks, or paste a link…"
