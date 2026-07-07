@@ -1,6 +1,6 @@
 import { EditorContent, useEditor } from "@tiptap/react";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ipc } from "@/lib/ipc";
 import { cx, debounce, noteTitle } from "@/lib/utils";
@@ -12,16 +12,26 @@ import { SelectionMenu } from "./SelectionMenu";
 import { SlashMenu, type SlashMenuState } from "./SlashMenu";
 
 /**
- * One Tiptap instance for the whole note-editing session. Switching notes swaps
- * the document via `setContent` instead of remounting the editor — that keeps
- * the expensive per-mount work (schema build, plugin/extension setup, view
- * creation) off the critical path, so note→note switches only pay the
- * unavoidable parse+render of the new document.
+ * One live Tiptap instance per mounted editor. Tab panes keep an instance per
+ * open note (hidden via display:none when inactive) so switching tabs is a
+ * pure CSS toggle — no parse, no remount, cursor/undo/scroll preserved. The
+ * per-mount work (schema build, plugin setup, view creation) is paid once per
+ * tab open, never on switch.
  *
- * Because the editor is created once, every `rel`-dependent bit of logic reads
- * from a ref (`relRef`) rather than a closure captured at creation time.
+ * `rel` can also change on a mounted instance (content is swapped via
+ * setContent), so every rel-dependent bit of logic reads from `relRef` rather
+ * than a closure captured at editor creation.
+ *
+ * `active` gates the singleton concerns (fixed word counter, focus-reload,
+ * overlay menus) so hidden panes stay completely inert.
  */
-export function NoteEditor({ rel }: { rel: string }) {
+export const NoteEditor = memo(function NoteEditor({
+  rel,
+  active = true,
+}: {
+  rel: string;
+  active?: boolean;
+}) {
   const vaultRoot = useVault((s) => s.root);
   const renameEntry = useVault((s) => s.renameEntry);
   const setSaveState = useUi((s) => s.setSaveState);
@@ -31,6 +41,12 @@ export function NoteEditor({ rel }: { rel: string }) {
   const [missing, setMissing] = useState(false);
 
   const relRef = useRef(rel);
+  const activeRef = useRef(active);
+  activeRef.current = active;
+  const scrollRef = useRef<HTMLDivElement>(null);
+  // Tracked continuously — reading scrollTop after display:none flips is too
+  // late (layout is gone), so the pane restores from this on re-activation.
+  const savedScroll = useRef(0);
   const lastSaved = useRef("");
   const pending = useRef<string | null>(null);
   const loadedRel = useRef<string | null>(null);
@@ -208,7 +224,9 @@ export function NoteEditor({ rel }: { rel: string }) {
         editor.commands.setContent(text, { contentType: "markdown" });
         swapping.current = false;
         setWords(countWords(text));
-        if (text.length === 0) editor.commands.focus("start");
+        if (text.length === 0 && activeRef.current) {
+          editor.commands.focus("start");
+        }
       })
       .catch(() => {
         if (!cancelled) setMissing(true);
@@ -219,7 +237,7 @@ export function NoteEditor({ rel }: { rel: string }) {
     };
   }, [editor, rel, persist, debouncedPersist]);
 
-  // Flush any unsaved edit when the editor unmounts (leaving note view).
+  // Flush any unsaved edit when the editor unmounts (tab closed / view gone).
   useEffect(() => {
     return () => {
       debouncedPersist.cancel();
@@ -228,29 +246,41 @@ export function NoteEditor({ rel }: { rel: string }) {
   }, [debouncedPersist, persist]);
 
   // If the file changed on disk while we were away and the editor is clean,
-  // reload it silently. Dirty editor wins.
-  useEffect(() => {
-    if (!editor) return;
-    const onFocus = async () => {
-      if (pending.current !== null) return;
-      const cur = relRef.current;
-      try {
-        const disk = await ipc.readNote(cur);
-        if (cur !== relRef.current || pending.current !== null) return;
-        if (disk !== lastSaved.current) {
-          lastSaved.current = disk;
-          swapping.current = true;
-          editor.commands.setContent(disk, { contentType: "markdown" });
-          swapping.current = false;
-          setWords(countWords(disk));
-        }
-      } catch {
-        // note may have been deleted externally; tree refresh handles it
+  // reload it silently. Dirty editor wins. Only the active pane checks —
+  // hidden tabs catch up in the activation effect below.
+  const reloadIfChanged = useCallback(async () => {
+    if (!editor || pending.current !== null) return;
+    const cur = relRef.current;
+    try {
+      const disk = await ipc.readNote(cur);
+      if (cur !== relRef.current || pending.current !== null) return;
+      if (disk !== lastSaved.current) {
+        lastSaved.current = disk;
+        swapping.current = true;
+        editor.commands.setContent(disk, { contentType: "markdown" });
+        swapping.current = false;
+        setWords(countWords(disk));
       }
+    } catch {
+      // note may have been deleted externally; tree refresh handles it
+    }
+  }, [editor]);
+
+  useEffect(() => {
+    const onFocus = () => {
+      if (activeRef.current) reloadIfChanged();
     };
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
-  }, [editor]);
+  }, [reloadIfChanged]);
+
+  // On tab activation: restore the pane's scroll offset (display:none wiped
+  // the layout) and pick up any external edit that landed while hidden.
+  useEffect(() => {
+    if (!active) return;
+    if (scrollRef.current) scrollRef.current.scrollTop = savedScroll.current;
+    reloadIfChanged();
+  }, [active, reloadIfChanged]);
 
   const flushThen = (action: () => void) => {
     debouncedPersist.cancel();
@@ -262,7 +292,13 @@ export function NoteEditor({ rel }: { rel: string }) {
   };
 
   return (
-    <div className="page-scroll">
+    <div
+      ref={scrollRef}
+      className="page-scroll"
+      onScroll={(event) => {
+        savedScroll.current = event.currentTarget.scrollTop;
+      }}
+    >
       <div className="mx-auto w-full max-w-[720px] px-10 pt-6">
         {missing ? (
           <p className="pt-16 text-center text-[14px] text-faint">
@@ -278,24 +314,28 @@ export function NoteEditor({ rel }: { rel: string }) {
         <div className={cx(missing && "hidden")}>
           <EditorContent editor={editor} />
         </div>
-        {editor && <SelectionMenu editor={editor} />}
-        <SlashMenu
-          editor={editor}
-          menu={slashMenu}
-          onClose={() => setSlashMenu(null)}
-        />
-      </div>
-      <div
-        className={cx(
-          "pointer-events-none fixed bottom-3 right-4 text-[11px] tabular-nums text-faint transition-opacity duration-300",
-          (words === 0 || missing) && "opacity-0",
+        {active && editor && <SelectionMenu editor={editor} />}
+        {active && (
+          <SlashMenu
+            editor={editor}
+            menu={slashMenu}
+            onClose={() => setSlashMenu(null)}
+          />
         )}
-      >
-        {words} {words === 1 ? "word" : "words"}
       </div>
+      {active && (
+        <div
+          className={cx(
+            "pointer-events-none fixed bottom-3 right-4 text-[11px] tabular-nums text-faint transition-opacity duration-300",
+            (words === 0 || missing) && "opacity-0",
+          )}
+        >
+          {words} {words === 1 ? "word" : "words"}
+        </div>
+      )}
     </div>
   );
-}
+});
 
 type EditorInstance = ReturnType<typeof useEditor>;
 

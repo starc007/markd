@@ -41,9 +41,10 @@ Blocking dialogs (`blocking_pick_folder`) must run in async commands via `spawn_
 
 ### Frontend (`src/`)
 
-- `stores/` — zustand: `vault` (tree, view, theme), `todos`, `bookmarks`, `ui`
+- `stores/` — zustand: `vault` (tree, view, theme, recents), `tabs` (open note tabs; active = derived from `vault.view`), `todos`, `bookmarks`, `ui`
 - `components/` — by feature: `layout/`, `tree/`, `editor/`, `todos/`, `bookmarks/`, `palette/`, `settings/`, `welcome/`, `ui/`
 - Editor: Tiptap with `contentType: "markdown"`; autosave debounced 500ms, flush on unmount; images stored as vault-relative paths, rendered via asset protocol
+- Tabs: `NotesWorkspace` keeps one live editor per open tab, inactive panes hidden via `display:none` — tab switch is a CSS toggle, never a remount/re-parse. Keep it that way.
 
 ## UI conventions
 

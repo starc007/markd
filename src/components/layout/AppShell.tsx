@@ -1,7 +1,9 @@
 import { Check, Download, PanelLeft, Tag, X } from "lucide-react";
 import { AnimatePresence, LayoutGroup, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
-import { NoteEditor } from "@/components/editor/NoteEditor";
+import { NoteBreadcrumb } from "@/components/editor/NoteBreadcrumb";
+import { NotesWorkspace } from "@/components/editor/NotesWorkspace";
+import { TabBar } from "@/components/editor/TabBar";
 import { BookmarksPage } from "@/components/bookmarks/BookmarksPage";
 import { TodosPage } from "@/components/todos/TodosPage";
 import { EASE_OUT, SPRING_LAYOUT, SPRING_PANEL } from "@/lib/ease";
@@ -15,14 +17,6 @@ import { useUi } from "@/stores/ui";
 import { useVault } from "@/stores/vault";
 
 const SIDEBAR_WIDTH = 240;
-
-/** Stable key per view — forces a clean remount on switch. All notes share one
- *  key so the editor persists across note→note switches (it swaps content
- *  internally instead of remounting). */
-function viewKey(view: ReturnType<typeof useVault.getState>["view"]) {
-  if (!view) return "empty";
-  return view.type === "note" ? "note" : view.type;
-}
 
 /** Absolute on-disk path for the current view — handy to hand to an agent. */
 function viewPath(
@@ -63,10 +57,11 @@ export function AppShell() {
       </motion.div>
 
       <main className="relative flex min-w-0 flex-1 flex-col">
+        {/* Row 1 — titlebar: sidebar toggle + open-note tabs. */}
         <motion.div
           data-tauri-drag-region
-          className="flex h-12 shrink-0 items-center"
-          animate={{ paddingLeft: sidebarHidden ? 84 : 12 }}
+          className="flex h-11 shrink-0 items-center gap-1.5 pr-3"
+          animate={{ paddingLeft: sidebarHidden ? 84 : 10 }}
           initial={false}
           transition={SPRING_PANEL}
         >
@@ -74,25 +69,34 @@ export function AppShell() {
             <button
               type="button"
               onClick={toggleSidebar}
-              className="grid h-7 w-7 place-items-center rounded-md text-faint transition-colors duration-100 hover:bg-hover hover:text-ink"
+              className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-faint transition-colors duration-100 hover:bg-hover hover:text-ink"
             >
               <PanelLeft size={15.5} strokeWidth={1.75} />
             </button>
           </Tooltip>
-          <ActionSwapText
-            value={view?.type ?? "none"}
-            animation="cascade"
-            className="ml-1 text-[13px] font-medium text-ink"
-          >
-            {view?.type === "todos"
-              ? "Todos"
-              : view?.type === "bookmarks"
-                ? "Bookmarks"
-                : ""}
-          </ActionSwapText>
+          <TabBar />
+        </motion.div>
+
+        {/* Row 2 — current view title + right-side actions. */}
+        <div className="flex h-8 bg-transparent shrink-0 items-center px-3">
+          {view?.type === "note" ? (
+            <NoteBreadcrumb rel={view.rel} />
+          ) : (
+            <ActionSwapText
+              value={view?.type ?? "none"}
+              animation="cascade"
+              className="text-[14px] font-semibold text-ink"
+            >
+              {view?.type === "todos"
+                ? "Todos"
+                : view?.type === "bookmarks"
+                  ? "Bookmarks"
+                  : ""}
+            </ActionSwapText>
+          )}
 
           <LayoutGroup>
-            <div className="ml-auto flex items-center gap-2 pr-4">
+            <div className="ml-auto flex items-center gap-2">
               {path && (
                 <motion.div layout transition={SPRING_LAYOUT}>
                   <CopyButton
@@ -122,15 +126,23 @@ export function AppShell() {
               )}
             </div>
           </LayoutGroup>
-        </motion.div>
+        </div>
 
         <div className="relative min-h-0 flex-1">
-          <div key={viewKey(view)} className="absolute inset-0">
-            {view?.type === "note" && <NoteEditor rel={view.rel} />}
-            {view?.type === "todos" && <TodosPage />}
-            {view?.type === "bookmarks" && <BookmarksPage />}
-            {!view && <EmptyState />}
-          </div>
+          {/* Workspace stays mounted (hidden) across view switches — open
+              tabs keep their live editors, so returning to notes is instant. */}
+          <NotesWorkspace visible={view?.type === "note"} />
+          {view?.type === "todos" && (
+            <div className="absolute inset-0">
+              <TodosPage />
+            </div>
+          )}
+          {view?.type === "bookmarks" && (
+            <div className="absolute inset-0">
+              <BookmarksPage />
+            </div>
+          )}
+          {!view && <EmptyState />}
         </div>
       </main>
     </div>

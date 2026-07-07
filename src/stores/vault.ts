@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { ipc } from "@/lib/ipc";
 import type { Theme, TreeNode, View } from "@/lib/types";
 import { parentDir } from "@/lib/utils";
+import { useTabs } from "@/stores/tabs";
 
 type Status = "loading" | "welcome" | "ready";
 
@@ -131,6 +132,7 @@ export const useVault = create<VaultState>((set, get) => ({
         expanded: new Set<string>(),
         recentNotes: seedRecents(snapshot.tree),
       });
+      useTabs.getState().clear();
     } catch (err) {
       oops(err);
     }
@@ -147,7 +149,10 @@ export const useVault = create<VaultState>((set, get) => ({
 
   setView: (view) => {
     set({ view });
-    if (view?.type === "note") get().pushRecent(view.rel);
+    if (view?.type === "note") {
+      useTabs.getState().open(view.rel);
+      get().pushRecent(view.rel);
+    }
   },
 
   pushRecent: (rel) => {
@@ -209,6 +214,7 @@ export const useVault = create<VaultState>((set, get) => ({
       const { view } = get();
       await get().refreshTree();
       remapRecents(set, get, rel, next);
+      useTabs.getState().remap(rel, next);
       if (view?.type === "note") {
         if (view.rel === rel) {
           set({ view: { type: "note", rel: next } });
@@ -228,6 +234,7 @@ export const useVault = create<VaultState>((set, get) => ({
       await get().refreshTree();
       get().expandTo(next);
       remapRecents(set, get, rel, next);
+      useTabs.getState().remap(rel, next);
       if (view?.type === "note") {
         if (view.rel === rel) {
           set({ view: { type: "note", rel: next } });
@@ -245,16 +252,19 @@ export const useVault = create<VaultState>((set, get) => ({
       await ipc.deleteEntry(rel);
       const { view } = get();
       await get().refreshTree();
-      set({
-        recentNotes: get().recentNotes.filter(
-          (r) => r !== rel && !r.startsWith(`${rel}/`),
-        ),
-      });
-      if (
-        view?.type === "note" &&
-        (view.rel === rel || view.rel.startsWith(`${rel}/`))
-      ) {
-        set({ view: null });
+      const gone = (r: string) => r === rel || r.startsWith(`${rel}/`);
+      set({ recentNotes: get().recentNotes.filter((r) => !gone(r)) });
+
+      // Drop affected tabs; if the active note went with them, activate the
+      // nearest surviving tab to its right (else the last one standing).
+      const before = useTabs.getState().tabs;
+      useTabs.getState().removeUnder(rel);
+      if (view?.type === "note" && gone(view.rel)) {
+        const index = before.indexOf(view.rel);
+        const right = before.slice(index + 1).find((t) => !gone(t));
+        const survivors = before.filter((t) => !gone(t));
+        const next = right ?? survivors[survivors.length - 1] ?? null;
+        get().setView(next ? { type: "note", rel: next } : null);
       }
       toast("Moved to Trash", {
         description: rel.split("/").pop()?.replace(/\.md$/, ""),

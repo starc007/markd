@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Toaster } from "sonner";
+import { closeTab } from "@/components/editor/TabBar";
 import { AppShell } from "@/components/layout/AppShell";
 import { CommandPalette } from "@/components/palette/CommandPalette";
 import { SettingsModal } from "@/components/settings/SettingsModal";
@@ -42,6 +43,9 @@ export default function App() {
       } else if (event.key === ",") {
         event.preventDefault();
         ui.setSettingsOpen(true);
+      } else if (event.key === "w" && vault.view?.type === "note") {
+        event.preventDefault();
+        closeTab(vault.view.rel);
       }
     };
     window.addEventListener("keydown", onKeyDown);
