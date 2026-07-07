@@ -16,10 +16,12 @@ import { useVault } from "@/stores/vault";
 
 const SIDEBAR_WIDTH = 240;
 
-/** Stable key per view — forces a clean remount on switch. */
+/** Stable key per view — forces a clean remount on switch. All notes share one
+ *  key so the editor persists across note→note switches (it swaps content
+ *  internally instead of remounting). */
 function viewKey(view: ReturnType<typeof useVault.getState>["view"]) {
   if (!view) return "empty";
-  return view.type === "note" ? `note:${view.rel}` : view.type;
+  return view.type === "note" ? "note" : view.type;
 }
 
 /** Absolute on-disk path for the current view — handy to hand to an agent. */
