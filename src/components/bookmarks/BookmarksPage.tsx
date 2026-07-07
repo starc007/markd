@@ -44,6 +44,14 @@ export function BookmarksPage() {
     });
   }, [bookmarks, trimmed, isUrl, tagFilter]);
 
+  const tagCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const bookmark of bookmarks) {
+      for (const tag of bookmark.tags) counts[tag] = (counts[tag] ?? 0) + 1;
+    }
+    return counts;
+  }, [bookmarks]);
+
   const submit = () => {
     if (!trimmed) return;
     if (isUrl) {
@@ -60,6 +68,7 @@ export function BookmarksPage() {
           activeTag={tagFilter}
           onSelect={setTagFilter}
           onDelete={deleteTag}
+          counts={tagCounts}
         />
 
         <div className="min-w-0 flex-1">

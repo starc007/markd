@@ -1,6 +1,6 @@
 import { Plus, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Todo } from "@/lib/types";
 import { EASE_OUT } from "@/lib/ease";
 import { Button } from "@/components/ui/Button";
@@ -30,6 +30,14 @@ export function TodosPage() {
     ? todos.filter((t) => t.tags.includes(tagFilter))
     : todos;
 
+  const tagCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const todo of todos) {
+      for (const tag of todo.tags) counts[tag] = (counts[tag] ?? 0) + 1;
+    }
+    return counts;
+  }, [todos]);
+
   const submit = () => {
     const value = inputRef.current?.value.trim();
     if (!value) return;
@@ -45,6 +53,7 @@ export function TodosPage() {
           activeTag={tagFilter}
           onSelect={setTagFilter}
           onDelete={deleteTag}
+          counts={tagCounts}
         />
 
         <div className="min-w-0 flex-1">

@@ -1,5 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { EASE_OUT, SPRING_PANEL } from "@/lib/ease";
 import { cn } from "@/lib/utils";
 
@@ -38,7 +39,7 @@ export function Modal({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -64,7 +65,7 @@ export function Modal({
             }}
             transition={SPRING_PANEL}
             className={cn(
-              "relative max-w-[calc(100vw-48px)] overflow-hidden rounded-xl border border-border bg-background shadow-2xl shadow-black/20 will-change-transform dark:shadow-black/60",
+              "relative max-w-[calc(100vw-48px)] z-50 overflow-hidden rounded-xl border border-border bg-background shadow-2xl shadow-black/20 will-change-transform dark:shadow-black/60",
               className,
             )}
             onMouseDown={(event) => event.stopPropagation()}
@@ -73,6 +74,7 @@ export function Modal({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

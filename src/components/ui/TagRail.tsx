@@ -1,9 +1,11 @@
 import { X } from "lucide-react";
 import { motion } from "motion/react";
-import { useId } from "react";
+import { useId, useState } from "react";
 import { SPRING_LAYOUT } from "@/lib/ease";
 import { tagColor } from "@/lib/tagColor";
 import { cx } from "@/lib/utils";
+import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
 
 /** Left filter rail: "All" + registry tags, with a gliding active pill. */
 export function TagRail({
@@ -11,13 +13,27 @@ export function TagRail({
   activeTag,
   onSelect,
   onDelete,
+  counts = {},
 }: {
   tags: string[];
   activeTag: string | null;
   onSelect: (tag: string | null) => void;
   onDelete: (tag: string) => void;
+  /** item count per tag — deleting a tag with items asks for confirmation */
+  counts?: Record<string, number>;
 }) {
   const pillId = useId();
+  const [confirmTag, setConfirmTag] = useState<string | null>(null);
+
+  const requestDelete = (tag: string) => {
+    if (counts[tag] > 0) {
+      setConfirmTag(tag);
+    } else {
+      onDelete(tag);
+    }
+  };
+
+  const confirmCount = confirmTag ? (counts[confirmTag] ?? 0) : 0;
 
   return (
     <aside className="sticky top-0 hidden w-[152px] shrink-0 sm:block">
@@ -74,7 +90,7 @@ export function TagRail({
               <button
                 type="button"
                 aria-label={`Delete tag ${tag}`}
-                onClick={() => onDelete(tag)}
+                onClick={() => requestDelete(tag)}
                 className="grid h-6 w-6 shrink-0 place-items-center rounded text-faint opacity-0 transition-opacity hover:text-danger group-hover/rail:opacity-100"
               >
                 <X size={12} strokeWidth={2} />
@@ -89,6 +105,33 @@ export function TagRail({
           Create a tag from the top bar to start filtering.
         </p>
       )}
+
+      <Modal open={confirmTag !== null} onClose={() => setConfirmTag(null)}>
+        <div className="w-[320px] p-5">
+          <h2 className="text-[14px] font-semibold text-ink">
+            Delete #{confirmTag}?
+          </h2>
+          <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted">
+            {confirmCount} item{confirmCount === 1 ? "" : "s"} tagged
+            #{confirmTag} will be untagged. This can&apos;t be undone.
+          </p>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setConfirmTag(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() => {
+                if (confirmTag) onDelete(confirmTag);
+                setConfirmTag(null);
+              }}
+            >
+              Delete
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </aside>
   );
 }
