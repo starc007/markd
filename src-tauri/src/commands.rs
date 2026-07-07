@@ -277,6 +277,38 @@ pub fn bookmark_delete(state: State<'_, AppState>, id: String) -> AppResult<()> 
     bookmarks::delete(&state.root()?, &id)
 }
 
+/// Export all bookmarks to a markdown file the user picks. Async so the
+/// blocking save dialog runs off the main thread. Returns the written path,
+/// or None if the user cancelled.
+#[tauri::command]
+pub async fn export_bookmarks(
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> AppResult<Option<String>> {
+    let markdown = bookmarks::to_markdown(&bookmarks::list(&state.root()?)?);
+
+    let picked = tauri::async_runtime::spawn_blocking({
+        let app = app.clone();
+        move || {
+            app.dialog()
+                .file()
+                .set_file_name("bookmarks.md")
+                .blocking_save_file()
+        }
+    })
+    .await
+    .map_err(|e| AppError::Other(e.to_string()))?;
+
+    let Some(dest) = picked else {
+        return Ok(None);
+    };
+    let path = dest
+        .into_path()
+        .map_err(|e| AppError::InvalidPath(e.to_string()))?;
+    std::fs::write(&path, markdown)?;
+    Ok(Some(path.display().to_string()))
+}
+
 /// Fetch title/preview-image/favicon for a bookmark and persist them.
 /// Marks the bookmark as fetched even on failure so the UI can offer retry
 /// without hammering the network on every load.

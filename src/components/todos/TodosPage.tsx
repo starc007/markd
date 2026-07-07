@@ -176,7 +176,7 @@ function TodoRow({
       </div>
 
       <div className="min-w-0 flex-1">
-        <div className="flex h-7 items-center">
+        <div className="flex min-h-7 items-center">
           {editing ? (
             <input
               ref={editRef}
@@ -196,7 +196,7 @@ function TodoRow({
           ) : (
             <span
               className={cx(
-                "cursor-pointer select-none truncate text-[14px] transition-colors duration-150",
+                "cursor-pointer select-none whitespace-pre-wrap break-words text-[14px] transition-colors duration-150",
                 todo.done && "text-faint line-through decoration-faint",
               )}
               onClick={() => toggle(todo.id)}

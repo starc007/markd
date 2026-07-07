@@ -18,6 +18,7 @@ interface BookmarksState {
   createTag: (name: string) => Promise<void>;
   deleteTag: (name: string) => Promise<void>;
   remove: (id: string) => Promise<void>;
+  exportAll: () => Promise<void>;
 }
 
 const oops = (err: unknown) =>
@@ -132,6 +133,21 @@ export const useBookmarks = create<BookmarksState>((set, get) => ({
     } catch (err) {
       oops(err);
       get().load();
+    }
+  },
+
+  exportAll: async () => {
+    if (get().bookmarks.length === 0) {
+      toast("Nothing to export yet.");
+      return;
+    }
+    try {
+      const path = await ipc.exportBookmarks();
+      if (path) {
+        toast("Bookmarks exported", { description: path });
+      }
+    } catch (err) {
+      oops(err);
     }
   },
 }));

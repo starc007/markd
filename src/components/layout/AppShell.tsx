@@ -1,13 +1,13 @@
-import { PanelLeft, Tag } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { Check, Download, PanelLeft, Tag, X } from "lucide-react";
+import { AnimatePresence, LayoutGroup, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { NoteEditor } from "@/components/editor/NoteEditor";
 import { BookmarksPage } from "@/components/bookmarks/BookmarksPage";
 import { TodosPage } from "@/components/todos/TodosPage";
-import { EASE_OUT, SPRING_PANEL } from "@/lib/ease";
+import { EASE_OUT, SPRING_LAYOUT, SPRING_PANEL } from "@/lib/ease";
 import { ActionSwapText } from "@/components/motion/action-swap";
 import { Sidebar } from "./Sidebar";
-import { Button } from "@/components/ui/Button";
+import { CopyButton } from "@/components/ui/CopyButton";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { useBookmarks } from "@/stores/bookmarks";
 import { useTodos } from "@/stores/todos";
@@ -22,12 +22,28 @@ function viewKey(view: ReturnType<typeof useVault.getState>["view"]) {
   return view.type === "note" ? `note:${view.rel}` : view.type;
 }
 
+/** Absolute on-disk path for the current view — handy to hand to an agent. */
+function viewPath(
+  root: string,
+  view: ReturnType<typeof useVault.getState>["view"],
+): string | null {
+  if (!root || !view) return null;
+  if (view.type === "note") return `${root}/notes/${view.rel}`;
+  if (view.type === "todos") return `${root}/.draft/todos.json`;
+  if (view.type === "bookmarks") return `${root}/.draft/bookmarks.json`;
+  return null;
+}
+
 export function AppShell() {
   const view = useVault((s) => s.view);
+  const root = useVault((s) => s.root);
   const sidebarHidden = useUi((s) => s.sidebarHidden);
   const toggleSidebar = useUi((s) => s.toggleSidebar);
   const createBookmarkTag = useBookmarks((s) => s.createTag);
+  const exportBookmarks = useBookmarks((s) => s.exportAll);
   const createTodoTag = useTodos((s) => s.createTag);
+
+  const path = viewPath(root, view);
 
   return (
     <div className="flex h-full bg-bg">
@@ -73,10 +89,37 @@ export function AppShell() {
                 : ""}
           </ActionSwapText>
 
-          {view?.type === "bookmarks" && (
-            <NewTagButton onCreate={createBookmarkTag} />
-          )}
-          {view?.type === "todos" && <NewTagButton onCreate={createTodoTag} />}
+          <LayoutGroup>
+            <div className="ml-auto flex items-center gap-2 pr-4">
+              {path && (
+                <motion.div layout transition={SPRING_LAYOUT}>
+                  <CopyButton
+                    value={path}
+                    text="Copy path"
+                    copiedText="Copied"
+                  />
+                </motion.div>
+              )}
+              {view?.type === "bookmarks" && (
+                <>
+                  <Tooltip label="Export as markdown" side="bottom">
+                    <button
+                      type="button"
+                      onClick={exportBookmarks}
+                      className="inline-flex h-7 select-none items-center gap-1.5 rounded-md border border-line bg-hover px-2.5 text-[12.5px] font-medium text-ink transition-colors duration-100 hover:bg-active"
+                    >
+                      <Download size={13} strokeWidth={2} />
+                      Export
+                    </button>
+                  </Tooltip>
+                  <NewTagButton onCreate={createBookmarkTag} />
+                </>
+              )}
+              {view?.type === "todos" && (
+                <NewTagButton onCreate={createTodoTag} />
+              )}
+            </div>
+          </LayoutGroup>
         </motion.div>
 
         <div className="relative min-h-0 flex-1">
@@ -116,39 +159,71 @@ function NewTagButton({ onCreate }: { onCreate: (name: string) => void }) {
   };
 
   return (
-    <div className="ml-auto pr-4">
-      <AnimatePresence mode="wait" initial={false}>
-        {open ? (
-          <motion.input
-            key="input"
-            ref={inputRef}
-            initial={{ opacity: 0, width: 96 }}
-            animate={{ opacity: 1, width: 128 }}
-            exit={{ opacity: 0, width: 96 }}
-            transition={{ duration: 0.16, ease: EASE_OUT }}
-            placeholder="Tag name…"
-            className="h-7 rounded-md border border-line bg-panel px-2 text-[12.5px] text-ink outline-none placeholder:text-faint"
-            onBlur={commit}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") commit();
-              if (event.key === "Escape") setOpen(false);
-            }}
-          />
-        ) : (
-          <motion.div
-            key="button"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.12, ease: EASE_OUT }}
-          >
-            <Button variant="secondary" size="sm" onClick={() => setOpen(true)}>
+    <div>
+      {/* Single morphing pill: the container reshapes (layout spring) while its
+          contents cross-fade, so button → input feels like one object. */}
+      <motion.div
+        layout
+        transition={SPRING_LAYOUT}
+        className="flex h-7 items-center overflow-hidden rounded-md border border-line bg-hover"
+      >
+        <AnimatePresence mode="popLayout" initial={false}>
+          {open ? (
+            <motion.div
+              key="form"
+              layout
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.12, ease: EASE_OUT }}
+              className="flex items-center pl-2 pr-1"
+            >
+              <input
+                ref={inputRef}
+                placeholder="Tag name…"
+                className="w-28 bg-transparent text-[12.5px] text-ink outline-none placeholder:text-faint"
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") commit();
+                  if (event.key === "Escape") setOpen(false);
+                }}
+              />
+              <Tooltip label="Save ↵" side="bottom">
+                <button
+                  type="button"
+                  onClick={commit}
+                  className="grid h-5 w-5 place-items-center rounded text-faint transition-colors duration-100 hover:bg-hover hover:text-ink"
+                >
+                  <Check size={13} strokeWidth={2.25} />
+                </button>
+              </Tooltip>
+              <Tooltip label="Cancel esc" side="bottom">
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="grid h-5 w-5 place-items-center rounded text-faint transition-colors duration-100 hover:bg-hover hover:text-ink"
+                >
+                  <X size={13} strokeWidth={2.25} />
+                </button>
+              </Tooltip>
+            </motion.div>
+          ) : (
+            <motion.button
+              key="button"
+              layout
+              type="button"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.12, ease: EASE_OUT }}
+              onClick={() => setOpen(true)}
+              className="flex h-7 select-none items-center gap-1.5 px-2.5 text-[12.5px] font-medium text-ink transition-colors duration-100 hover:bg-hover"
+            >
               <Tag size={13} strokeWidth={2} />
               New tag
-            </Button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.button>
+          )}
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
 }

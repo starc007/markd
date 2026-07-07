@@ -79,6 +79,7 @@ export const ipc = {
     call<string[]>("bookmark_tag_delete", { name }),
   bookmarkDelete: (id: string) => call<void>("bookmark_delete", { id }),
   bookmarkFetchMeta: (id: string) => call<Bookmark>("bookmark_fetch_meta", { id }),
+  exportBookmarks: () => call<string | null>("export_bookmarks"),
 
   saveImageAsset: (data: string, extension: string) =>
     call<string>("save_image_asset", { data, extension }),

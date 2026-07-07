@@ -193,6 +193,25 @@ pub fn set_tags(root: &Path, id: &str, tags: Vec<String>) -> AppResult<Bookmark>
     Ok(updated)
 }
 
+/// Render bookmarks as a portable markdown list (newest first, tags inline).
+pub fn to_markdown(bookmarks: &[Bookmark]) -> String {
+    let mut out = String::from("# Bookmarks\n\n");
+    for b in bookmarks {
+        let title = if b.title.trim().is_empty() {
+            b.url.as_str()
+        } else {
+            b.title.trim()
+        };
+        out.push_str(&format!("- [{title}]({})", b.url));
+        if !b.tags.is_empty() {
+            let tags: Vec<String> = b.tags.iter().map(|t| format!("#{t}")).collect();
+            out.push_str(&format!(" — {}", tags.join(" ")));
+        }
+        out.push('\n');
+    }
+    out
+}
+
 pub fn delete(root: &Path, id: &str) -> AppResult<()> {
     let mut bookmarks = list(root)?;
     let before = bookmarks.len();
@@ -217,6 +236,18 @@ mod tests {
         assert_eq!(b.url, "https://example.com/page");
         assert_eq!(b.title, "example.com/page");
         assert!(!b.meta_fetched);
+    }
+
+    #[test]
+    fn markdown_export() {
+        let dir = tempdir().unwrap();
+        ensure_layout(dir.path()).unwrap();
+        let b = add(dir.path(), "https://example.com").unwrap();
+        set_tags(dir.path(), &b.id, vec!["read".to_string()]).unwrap();
+        let md = to_markdown(&list(dir.path()).unwrap());
+        assert!(md.starts_with("# Bookmarks"));
+        assert!(md.contains("(https://example.com)"));
+        assert!(md.contains("#read"));
     }
 
     #[test]
