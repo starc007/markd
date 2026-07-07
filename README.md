@@ -4,33 +4,57 @@
 
 Markd is a macOS-first notes app built for developers and content creators who care about speed, privacy, and ownership.
 
-No accounts.  
-No cloud.  
+No accounts.
+No cloud.
 No sync (for now).
 
-Your notes live on your Mac as plain files. Markd simply makes writing and finding them fast.
+Your notes live on your Mac as plain `.md` files. Markd simply makes writing and finding them fast.
 
 ---
 
-## Why Markd
+## Features
 
-- **Zero-lag typing** — writing never waits on disk or network
-- **Local-only** — your data never leaves your machine
-- **Markdown-first** — clean, portable, future-proof
-- **Instant search** — find notes in milliseconds
-- **Keyboard-first** — minimal UI, maximum focus
-- **macOS-native** — fast startup, native menus, system shortcuts
+- **WYSIWYG markdown editor** — write in a rich editor, saved as clean markdown on disk
+- **Folders & subfolders** — organize notes in real, Finder-visible folders
+- **Todos** — a standalone task list with tags and filtering
+- **Bookmarks** — save links with auto-fetched title, image, and favicon; tag and filter them too
+- **⌘K command palette** — jump to any note, folder, or page instantly
+- **Instant search** — title + content, ranked, in milliseconds
+- **Monochrome UI** — light, dark, or system theme; no color noise
+- **Obsidian-compatible vault** — plain files, no IDs, no frontmatter, no lock-in
 
 ---
 
-## What Markd Is Not
+## Vault model
 
-- Not a collaboration tool
-- Not a second-brain system
-- Not a database or workspace
-- Not a SaaS product
+Pick any folder on disk as your vault:
 
-Markd does one thing well: let you write.
+```
+<vault>/
+├── notes/          plain .md files — filename is the title, folders are real folders
+└── .markd/         app data: todos, bookmarks, tags, pasted images
+```
+
+Notes are addressed by path, never by ID. Deletes go to the OS trash. Edit notes externally (Obsidian, vim, whatever) — Markd picks up changes on window focus.
+
+---
+
+## Getting started
+
+Requirements: [Bun](https://bun.sh), [Rust](https://rustup.rs), and Xcode Command Line Tools.
+
+```bash
+bun install
+bun tauri dev      # run the app
+```
+
+Build a release bundle:
+
+```bash
+bun tauri build    # produces a .app and .dmg under src-tauri/target/release/bundle
+```
+
+See [AGENTS.md](./AGENTS.md) for architecture details, or [CONTRIBUTING.md](./CONTRIBUTING.md) to send a PR.
 
 ---
 
@@ -38,16 +62,20 @@ Markd does one thing well: let you write.
 
 - Notes are stored locally as user-owned files
 - No analytics, no tracking, no hidden network calls
-- Export your notes anytime
+- Export your notes anytime — they're already just files
 
 ---
 
 ## Status
 
-Markd is under active development.  
+Markd is under active development.
 Sync, encryption, and publishing may be added later — without compromising local-first performance.
+
+## License
+
+[MIT](./LICENSE)
 
 ---
 
-**Markd**  
+**Markd**
 _Write at the speed of thought._

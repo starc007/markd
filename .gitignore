@@ -26,6 +26,7 @@ dist-ssr
 !README.md
 !AGENTS.md
 !CLAUDE.md
+!CONTRIBUTING.md
 
 # Secrets and keys (never commit these!)
 *.key
