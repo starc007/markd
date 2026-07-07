@@ -47,7 +47,6 @@
     "shortDescription": "A fast, local-first notes app for developers and content creators",
     "longDescription": "Markd is a macOS-first, local-only, ultra high-performance notes app designed for developers and content creators who care deeply about speed, privacy, and data ownership.",
     "macOS": {
-      "signingIdentity": "Developer ID Application: YAGANA DIGITAL PRIVATE LIMITED (PZTKZ6MYVZ)",
       "entitlements": "./Entitlements.plist",
       "dmg": {
         "windowSize": {
@@ -74,7 +73,7 @@
       "active": true,
       "endpoints": ["https://usemarkd.app/updates/latest.json"],
       "dialog": false,
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDcxOUUxMkU3MzE1N0FFNjUKUldSbHJsY3g1eEtlY1V0UkNTZTNzd0hteTZhUUp2UmlCcHNsT3pZUXl4VFpQQ1NyR2hIVkpsY3YK"
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDNDNEIzMzVGNjU2MDEwNEYKUldSUEVHQmxYek5MUEZkU252SjlvYkcxSzRlNjhXaTdEeGN2SFRpQm9uSHY5OGJMZDVFRGdOdDUK"
     }
   }
 }
