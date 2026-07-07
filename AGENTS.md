@@ -48,7 +48,7 @@ Blocking dialogs (`blocking_pick_folder`) must run in async commands via `spawn_
 
 ## UI conventions
 
-- Strict monochrome: only the semantic tokens in `styles.css` (`bg`, `panel`, `ink`, `muted`, `faint`, `line`, `hover`, `invert`…). Never hardcode colors; `danger` is the sole exception, for destructive actions.
+- Strict monochrome: only the semantic tokens in `styles.css` (`bg`, `panel`, `sunken`, `ink`, `muted`, `faint`, `line`, `hover`, `active`, `invert`…). `sunken` is the recessed surface (tab strip), darker than `panel`. Never hardcode colors; `danger` is the sole exception, for destructive actions.
 - Dark mode = `.dark` class on `<html>`; themes: system/light/dark.
 - Active/selected rows use inverted style (`bg-invert text-invert-ink`) — the signature look.
 - Motion: 100–160ms ease-out only. Fonts: Inter Variable (UI), JetBrains Mono (code).

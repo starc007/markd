@@ -155,7 +155,7 @@ function Row({ node, depth }: { node: TreeNode; depth: number }) {
         aria-selected={isActive}
         draggable={!isRenaming}
         className={cx(
-          "group relative flex h-[30px] cursor-default items-center rounded-md pr-1.5 text-[13px] transition-colors duration-100",
+          "group relative flex h-[30px] cursor-pointer items-center rounded-md pr-1.5 text-[13px] transition-colors duration-100",
           isActive
             ? "bg-active text-ink"
             : "text-muted hover:bg-hover hover:text-ink",

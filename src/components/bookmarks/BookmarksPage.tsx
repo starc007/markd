@@ -171,7 +171,7 @@ function BookmarkRow({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15, ease: "easeOut" }}
-      className="group flex cursor-default items-start gap-3 rounded-lg px-2 py-2 transition-colors duration-100 hover:bg-hover"
+      className="group flex cursor-pointer items-start gap-3 rounded-lg px-2 py-2 transition-colors duration-100 hover:bg-hover"
       onClick={() => {
         if (!editing) openUrl(bookmark.url);
       }}

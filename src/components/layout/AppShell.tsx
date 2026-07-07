@@ -57,28 +57,32 @@ export function AppShell() {
       </motion.div>
 
       <main className="relative flex min-w-0 flex-1 flex-col">
-        {/* Row 1 — titlebar: sidebar toggle + open-note tabs. */}
+        {/* Row 1 — titlebar: sidebar toggle + open-note tabs. The strip is
+            recessed (panel); the active tab takes the content bg so it reads
+            as merged with the pane below, code-editor style. */}
         <motion.div
           data-tauri-drag-region
-          className="flex h-11 shrink-0 items-center gap-1.5 pr-3"
+          className="flex h-11 shrink-0 items-stretch gap-1.5 bg-sunken pr-3"
           animate={{ paddingLeft: sidebarHidden ? 84 : 10 }}
           initial={false}
           transition={SPRING_PANEL}
         >
-          <Tooltip label="Toggle sidebar ⌘\" side="right">
-            <button
-              type="button"
-              onClick={toggleSidebar}
-              className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-faint transition-colors duration-100 hover:bg-hover hover:text-ink"
-            >
-              <PanelLeft size={15.5} strokeWidth={1.75} />
-            </button>
-          </Tooltip>
+          <div className="flex shrink-0 items-center">
+            <Tooltip label="Toggle sidebar ⌘\" side="right">
+              <button
+                type="button"
+                onClick={toggleSidebar}
+                className="grid h-7 w-7 place-items-center rounded-md text-faint transition-colors duration-100 hover:bg-hover hover:text-ink"
+              >
+                <PanelLeft size={15.5} strokeWidth={1.75} />
+              </button>
+            </Tooltip>
+          </div>
           <TabBar />
         </motion.div>
 
         {/* Row 2 — current view title + right-side actions. */}
-        <div className="flex h-8 bg-transparent shrink-0 items-center px-3">
+        <div className="flex h-10 bg-transparent shrink-0 items-center px-3">
           {view?.type === "note" ? (
             <NoteBreadcrumb rel={view.rel} />
           ) : (

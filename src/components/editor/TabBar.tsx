@@ -1,5 +1,7 @@
 import { X } from "lucide-react";
+import { motion } from "motion/react";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { SPRING_LAYOUT } from "@/lib/ease";
 import { cx, noteTitle } from "@/lib/utils";
 import { nextAfterClose, useTabs } from "@/stores/tabs";
 import { useVault } from "@/stores/vault";
@@ -16,14 +18,17 @@ export function TabBar() {
   if (tabs.length === 0) return null;
 
   return (
-    <div
+    // layoutRoot scopes the sliding active-tab fill to this strip so the
+    // horizontal scroll offset can't smear its projection.
+    <motion.div
+      layoutRoot
       role="tablist"
-      className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [scrollbar-width:none]"
+      className="flex min-w-0 flex-1 items-stretch overflow-x-auto [scrollbar-width:none]"
     >
       {tabs.map((rel) => (
         <Tab key={rel} rel={rel} active={rel === active} />
       ))}
-    </div>
+    </motion.div>
   );
 }
 
@@ -48,10 +53,8 @@ function Tab({ rel, active }: { rel: string; active: boolean }) {
       aria-selected={active}
       title={rel}
       className={cx(
-        "group/tab flex h-7 min-w-0 max-w-[180px] shrink-0 cursor-default select-none items-center gap-1 rounded-md pl-2.5 pr-1 text-[12.5px] transition-colors duration-75",
-        active
-          ? "bg-active text-ink"
-          : "text-muted hover:bg-hover hover:text-ink",
+        "group/tab relative flex h-full min-w-0 max-w-[180px] shrink-0 cursor-pointer select-none items-center gap-1 pl-3 pr-1.5 text-[12.5px] transition-colors duration-100",
+        active ? "text-ink" : "text-muted hover:text-ink",
       )}
       onClick={() => {
         if (!active) setView({ type: "note", rel });
@@ -61,16 +64,27 @@ function Tab({ rel, active }: { rel: string; active: boolean }) {
         if (event.button === 1) closeTab(rel);
       }}
     >
-      <span className="truncate">{noteTitle(rel)}</span>
+      {/* Active fill glides between tabs via shared layout; inactive rows get
+          a plain hover tint that doesn't participate in the projection. */}
+      {active ? (
+        <motion.div
+          layoutId="tab-active-fill"
+          transition={SPRING_LAYOUT}
+          className="absolute inset-0 bg-bg"
+        />
+      ) : (
+        <span className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-100 group-hover/tab:bg-hover/60 group-hover/tab:opacity-100" />
+      )}
+      <span className="relative z-10 truncate">{noteTitle(rel)}</span>
       <Tooltip label="Close ⌘W" side="bottom">
         <button
           type="button"
           aria-label={`Close ${noteTitle(rel)}`}
           className={cx(
-            "grid h-4.5 w-4.5 shrink-0 place-items-center rounded transition-opacity duration-75 hover:bg-active",
+            "relative z-10 grid h-5 w-5 shrink-0 place-items-center rounded transition-opacity duration-75 hover:bg-hover",
             active
-              ? "opacity-70 hover:opacity-100"
-              : "opacity-0 group-hover/tab:opacity-70 group-hover/tab:hover:opacity-100",
+              ? "opacity-60 hover:opacity-100"
+              : "opacity-0 group-hover/tab:opacity-60 group-hover/tab:hover:opacity-100",
           )}
           onClick={(event) => {
             event.stopPropagation();
