@@ -72,7 +72,7 @@ export function SettingsModal() {
       </section>
 
       <p className="mt-6 text-center text-[11px] text-faint">
-        Draft · notes as plain markdown, on your disk
+        Markd · notes as plain markdown, on your disk
       </p>
     </Modal>
   );

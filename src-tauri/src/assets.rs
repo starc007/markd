@@ -74,7 +74,7 @@ mod tests {
         let data = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg==";
         let path = save_image(dir.path(), data, "png").unwrap();
         assert!(path.exists());
-        assert!(path.to_string_lossy().contains(".draft/assets"));
+        assert!(path.to_string_lossy().contains(".markd/assets"));
     }
 
     #[test]

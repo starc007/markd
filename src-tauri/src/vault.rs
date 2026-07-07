@@ -6,8 +6,8 @@ use serde::Serialize;
 use crate::error::{AppError, AppResult};
 
 pub const NOTES_DIR: &str = "notes";
-pub const DATA_DIR: &str = ".draft";
-pub const ASSETS_DIR: &str = ".draft/assets";
+pub const DATA_DIR: &str = ".markd";
+pub const ASSETS_DIR: &str = ".markd/assets";
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]

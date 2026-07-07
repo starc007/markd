@@ -18,7 +18,7 @@ function isRemoteSource(src: string) {
 }
 
 /**
- * Image node that keeps a vault-relative path (".draft/assets/…") in the
+ * Image node that keeps a vault-relative path (".markd/assets/…") in the
  * markdown while rendering through Tauri's asset protocol.
  */
 const VaultImage = (vaultRoot: string) =>

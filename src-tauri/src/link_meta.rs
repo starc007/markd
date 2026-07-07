@@ -20,7 +20,7 @@ pub async fn fetch(url: &str) -> AppResult<LinkMeta> {
 
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(10))
-        .user_agent("Mozilla/5.0 (Macintosh) Draft/0.2")
+        .user_agent("Mozilla/5.0 (Macintosh) Markd/0.2")
         .build()
         .map_err(|e| AppError::Network(e.to_string()))?;
 

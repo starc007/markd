@@ -1,18 +1,18 @@
-# Draft
+# Markd
 
 **Local-first notes for people who write.**
 
-Draft is a macOS-first notes app built for developers and content creators who care about speed, privacy, and ownership.
+Markd is a macOS-first notes app built for developers and content creators who care about speed, privacy, and ownership.
 
 No accounts.  
 No cloud.  
 No sync (for now).
 
-Your notes live on your Mac as plain files. Draft simply makes writing and finding them fast.
+Your notes live on your Mac as plain files. Markd simply makes writing and finding them fast.
 
 ---
 
-## Why Draft
+## Why Markd
 
 - **Zero-lag typing** — writing never waits on disk or network
 - **Local-only** — your data never leaves your machine
@@ -23,14 +23,14 @@ Your notes live on your Mac as plain files. Draft simply makes writing and findi
 
 ---
 
-## What Draft Is Not
+## What Markd Is Not
 
 - Not a collaboration tool
 - Not a second-brain system
 - Not a database or workspace
 - Not a SaaS product
 
-Draft does one thing well: let you write.
+Markd does one thing well: let you write.
 
 ---
 
@@ -44,10 +44,10 @@ Draft does one thing well: let you write.
 
 ## Status
 
-Draft is under active development.  
+Markd is under active development.  
 Sync, encryption, and publishing may be added later — without compromising local-first performance.
 
 ---
 
-**Draft**  
+**Markd**  
 _Write at the speed of thought._

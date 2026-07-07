@@ -1,13 +1,13 @@
 [package]
-name = "Draft"
+name = "Markd"
 version = "0.1.6"
 description = "Local-first markdown notes"
 authors = ["Saurabh"]
 edition = "2021"
-default-run = "Draft"
+default-run = "Markd"
 
 [lib]
-name = "usedraft_lib"
+name = "markd_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

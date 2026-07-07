@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Draft",
+  "productName": "Markd",
   "version": "0.1.6",
-  "identifier": "app.usedraft.draft",
+  "identifier": "app.usemarkd",
   "build": {
     "beforeDevCommand": "bun run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Draft",
+        "title": "Markd",
         "width": 1200,
         "height": 800,
         "minWidth": 800,
@@ -45,7 +45,7 @@
     ],
     "category": "Productivity",
     "shortDescription": "A fast, local-first notes app for developers and content creators",
-    "longDescription": "Draft is a macOS-first, local-only, ultra high-performance notes app designed for developers and content creators who care deeply about speed, privacy, and data ownership.",
+    "longDescription": "Markd is a macOS-first, local-only, ultra high-performance notes app designed for developers and content creators who care deeply about speed, privacy, and data ownership.",
     "macOS": {
       "signingIdentity": "Developer ID Application: YAGANA DIGITAL PRIVATE LIMITED (PZTKZ6MYVZ)",
       "entitlements": "./Entitlements.plist",
@@ -72,7 +72,7 @@
   "plugins": {
     "updater": {
       "active": true,
-      "endpoints": ["https://usedraft.app/updates/latest.json"],
+      "endpoints": ["https://usemarkd.app/updates/latest.json"],
       "dialog": false,
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDcxOUUxMkU3MzE1N0FFNjUKUldSbHJsY3g1eEtlY1V0UkNTZTNzd0hteTZhUUp2UmlCcHNsT3pZUXl4VFpQQ1NyR2hIVkpsY3YK"
     }

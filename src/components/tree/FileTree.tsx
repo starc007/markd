@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/ContextMenu";
 import { ActionSwapIcon } from "@/components/motion/action-swap";
 
-const DRAG_TYPE = "application/x-draft-rel";
+const DRAG_TYPE = "application/x-markd-rel";
 
 interface TreeApi {
   renaming: string | null;

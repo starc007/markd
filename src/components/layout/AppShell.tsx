@@ -29,8 +29,8 @@ function viewPath(
 ): string | null {
   if (!root || !view) return null;
   if (view.type === "note") return `${root}/notes/${view.rel}`;
-  if (view.type === "todos") return `${root}/.draft/todos.json`;
-  if (view.type === "bookmarks") return `${root}/.draft/bookmarks.json`;
+  if (view.type === "todos") return `${root}/.markd/todos.json`;
+  if (view.type === "bookmarks") return `${root}/.markd/bookmarks.json`;
   return null;
 }
 
