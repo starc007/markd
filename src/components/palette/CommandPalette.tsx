@@ -3,14 +3,13 @@ import {
   CheckSquare,
   FilePlus,
   FileText,
-  FolderOpen,
   Search,
-  Settings,
-  SunMoon,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "motion/react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { ipc } from "@/lib/ipc";
+import { SPRING_LAYOUT } from "@/lib/ease";
 import type { SearchHit, TreeNode } from "@/lib/types";
 import { cx, parentDir } from "@/lib/utils";
 import { Modal } from "@/components/ui/Modal";
@@ -46,6 +45,7 @@ export function CommandPalette() {
   const setOpen = useUi((s) => s.setPaletteOpen);
   const status = useVault((s) => s.status);
   const tree = useVault((s) => s.tree);
+  const recentNotes = useVault((s) => s.recentNotes);
 
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<SearchHit[]>([]);
@@ -92,7 +92,6 @@ export function CommandPalette() {
 
   const items = useMemo<PaletteItem[]>(() => {
     const vault = useVault.getState();
-    const ui = useUi.getState();
     const q = query.trim().toLowerCase();
 
     const actions: PaletteItem[] = [
@@ -115,28 +114,6 @@ export function CommandPalette() {
         icon: Bookmark,
         run: () => vault.setView({ type: "bookmarks" }),
       },
-      {
-        id: "theme",
-        label: "Toggle appearance",
-        icon: SunMoon,
-        run: () => {
-          const isDark = document.documentElement.classList.contains("dark");
-          vault.setTheme(isDark ? "light" : "dark");
-        },
-      },
-      {
-        id: "settings",
-        label: "Settings",
-        hint: "⌘,",
-        icon: Settings,
-        run: () => ui.setSettingsOpen(true),
-      },
-      {
-        id: "change-vault",
-        label: "Change vault…",
-        icon: FolderOpen,
-        run: () => vault.chooseVault(),
-      },
     ].filter((a) => !q || a.label.toLowerCase().includes(q));
 
     const noteItems: PaletteItem[] = q
@@ -151,23 +128,33 @@ export function CommandPalette() {
             vault.setView({ type: "note", rel: hit.rel });
           },
         }))
-      : flattenNotes(tree)
-          .sort((a, b) => b.modifiedMs - a.modifiedMs)
-          .slice(0, 6)
-          .map((node) => ({
-            id: `note-${node.rel}`,
-            label: node.name,
-            path: folderRoute(node.rel),
-            hint: "recent",
-            icon: FileText,
-            run: () => {
-              vault.expandTo(node.rel);
-              vault.setView({ type: "note", rel: node.rel });
-            },
-          }));
+      : (() => {
+          const byRel = new Map(
+            flattenNotes(tree).map((node) => [node.rel, node]),
+          );
+          return recentNotes
+            .map((rel) => byRel.get(rel))
+            .filter((node): node is TreeNode => node !== undefined)
+            .slice(0, 6)
+            .map((node) => ({
+              id: `note-${node.rel}`,
+              label: node.name,
+              path: folderRoute(node.rel),
+              icon: FileText,
+              run: () => {
+                vault.expandTo(node.rel);
+                vault.setView({ type: "note", rel: node.rel });
+              },
+            }));
+        })();
 
     return q ? [...noteItems, ...actions] : [...actions, ...noteItems];
-  }, [query, hits, tree]);
+  }, [query, hits, tree, recentNotes]);
+
+  // Index where the "Recent" section starts (no query only), for the header.
+  const recentStart = query.trim()
+    ? -1
+    : items.findIndex((i) => i.id.startsWith("note-"));
 
   // Tracks whether the last selection change came from the keyboard. Only
   // keyboard nav scrolls the list — mouse selection must not, or the scroll
@@ -228,46 +215,67 @@ export function CommandPalette() {
               />
             </div>
 
-            <div ref={listRef} className="max-h-[320px] overflow-y-auto p-1.5">
+            <motion.div
+              ref={listRef}
+              layoutRoot
+              className="max-h-[320px] overflow-y-auto p-1.5"
+            >
               {items.map((item, index) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  data-selected={index === selected}
-                  className={cx(
-                    "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-ink transition-colors duration-75",
-                    index === selected ? "bg-active" : "text-muted",
+                <Fragment key={item.id}>
+                  {index === recentStart && (
+                    <p className="px-2.5 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
+                      Recent
+                    </p>
                   )}
-                  onMouseMove={() => {
-                    if (selected !== index) {
-                      keyboardNav.current = false;
-                      setSelected(index);
-                    }
-                  }}
-                  onClick={() => runDeferred(item.run)}
-                >
-                  <item.icon size={15} strokeWidth={1.75} className="shrink-0" />
-                  <span className="max-w-[55%] shrink-0 truncate text-[13.5px] font-medium leading-none">
-                    {item.label}
-                  </span>
-                  {item.path && (
-                    <span className="min-w-0 shrink truncate text-[11.5px] leading-none text-faint">
-                      {item.path}
+                  <button
+                    type="button"
+                    data-selected={index === selected}
+                    className={cx(
+                      "relative flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors duration-75",
+                      index === selected ? "text-ink" : "text-muted",
+                    )}
+                    onMouseMove={() => {
+                      if (selected !== index) {
+                        keyboardNav.current = false;
+                        setSelected(index);
+                      }
+                    }}
+                    onClick={() => runDeferred(item.run)}
+                  >
+                    {index === selected && (
+                      <motion.div
+                        layoutId="palette-active"
+                        transition={SPRING_LAYOUT}
+                        className="absolute inset-0 rounded-lg bg-active"
+                      />
+                    )}
+                    <item.icon
+                      size={15}
+                      strokeWidth={1.75}
+                      className="relative z-10 shrink-0"
+                    />
+                    <span className="relative z-10 max-w-[55%] shrink-0 truncate text-[13.5px] font-medium leading-normal">
+                      {item.label}
                     </span>
-                  )}
-                  {item.hint && (
-                    <span className="ml-auto min-w-0 shrink-0 truncate pl-2 text-right text-[11.5px] text-faint">
-                      {item.hint}
-                    </span>
-                  )}
-                </button>
+                    {item.path && (
+                      <span className="relative z-10 min-w-0 shrink truncate text-[11.5px] leading-normal text-faint">
+                        {item.path}
+                      </span>
+                    )}
+                    {item.hint && (
+                      <span className="relative z-10 ml-auto min-w-0 shrink-0 truncate pl-2 text-right text-[11.5px] text-faint">
+                        {item.hint}
+                      </span>
+                    )}
+                  </button>
+                </Fragment>
               ))}
               {items.length === 0 && (
                 <p className="px-3 py-8 text-center text-[13px] text-faint">
                   Nothing found for “{query.trim()}”
                 </p>
               )}
-            </div>
+            </motion.div>
       </div>
     </Modal>
   );

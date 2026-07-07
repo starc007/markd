@@ -14,11 +14,14 @@ interface VaultState {
   theme: Theme;
   view: View | null;
   expanded: Set<string>;
+  /** note rels most recently opened, newest first (session MRU) */
+  recentNotes: string[];
 
   startup: () => Promise<void>;
   chooseVault: () => Promise<void>;
   refreshTree: () => Promise<void>;
   setView: (view: View | null) => void;
+  pushRecent: (rel: string) => void;
   toggleExpanded: (rel: string) => void;
   expandTo: (rel: string) => void;
 
@@ -49,6 +52,36 @@ function watchSystemTheme(get: () => VaultState) {
 const oops = (err: unknown) =>
   toast.error(err instanceof Error ? err.message : String(err));
 
+/** Top note rels by on-disk mtime — seeds "recent" before any note is opened. */
+function seedRecents(tree: TreeNode[]): string[] {
+  const notes: TreeNode[] = [];
+  const walk = (nodes: TreeNode[]) => {
+    for (const node of nodes) {
+      if (node.kind === "note") notes.push(node);
+      if (node.children) walk(node.children);
+    }
+  };
+  walk(tree);
+  return notes
+    .sort((a, b) => b.modifiedMs - a.modifiedMs)
+    .slice(0, 8)
+    .map((n) => n.rel);
+}
+
+/** Rewrite recent-note rels after a rename/move of `rel` → `next` (folder or note). */
+function remapRecents(
+  set: (partial: Partial<VaultState>) => void,
+  get: () => VaultState,
+  rel: string,
+  next: string,
+) {
+  set({
+    recentNotes: get().recentNotes.map((r) =>
+      r === rel ? next : r.startsWith(`${rel}/`) ? next + r.slice(rel.length) : r,
+    ),
+  });
+}
+
 export const useVault = create<VaultState>((set, get) => ({
   status: "loading",
   root: "",
@@ -57,6 +90,7 @@ export const useVault = create<VaultState>((set, get) => ({
   theme: "system",
   view: null,
   expanded: new Set<string>(),
+  recentNotes: [],
 
   startup: async () => {
     watchSystemTheme(get);
@@ -74,6 +108,7 @@ export const useVault = create<VaultState>((set, get) => ({
         name: snapshot.name,
         tree: snapshot.tree,
         theme: snapshot.theme,
+        recentNotes: seedRecents(snapshot.tree),
       });
     } catch (err) {
       oops(err);
@@ -94,6 +129,7 @@ export const useVault = create<VaultState>((set, get) => ({
         theme: snapshot.theme,
         view: null,
         expanded: new Set<string>(),
+        recentNotes: seedRecents(snapshot.tree),
       });
     } catch (err) {
       oops(err);
@@ -109,7 +145,18 @@ export const useVault = create<VaultState>((set, get) => ({
     }
   },
 
-  setView: (view) => set({ view }),
+  setView: (view) => {
+    set({ view });
+    if (view?.type === "note") get().pushRecent(view.rel);
+  },
+
+  pushRecent: (rel) => {
+    const recentNotes = [
+      rel,
+      ...get().recentNotes.filter((r) => r !== rel),
+    ].slice(0, 8);
+    set({ recentNotes });
+  },
 
   toggleExpanded: (rel) => {
     const expanded = new Set(get().expanded);
@@ -138,6 +185,7 @@ export const useVault = create<VaultState>((set, get) => ({
       await get().refreshTree();
       get().expandTo(rel);
       set({ view: { type: "note", rel } });
+      get().pushRecent(rel);
     } catch (err) {
       oops(err);
     }
@@ -160,6 +208,7 @@ export const useVault = create<VaultState>((set, get) => ({
       const next = await ipc.renameEntry(rel, name);
       const { view } = get();
       await get().refreshTree();
+      remapRecents(set, get, rel, next);
       if (view?.type === "note") {
         if (view.rel === rel) {
           set({ view: { type: "note", rel: next } });
@@ -178,6 +227,7 @@ export const useVault = create<VaultState>((set, get) => ({
       const { view } = get();
       await get().refreshTree();
       get().expandTo(next);
+      remapRecents(set, get, rel, next);
       if (view?.type === "note") {
         if (view.rel === rel) {
           set({ view: { type: "note", rel: next } });
@@ -195,6 +245,11 @@ export const useVault = create<VaultState>((set, get) => ({
       await ipc.deleteEntry(rel);
       const { view } = get();
       await get().refreshTree();
+      set({
+        recentNotes: get().recentNotes.filter(
+          (r) => r !== rel && !r.startsWith(`${rel}/`),
+        ),
+      });
       if (
         view?.type === "note" &&
         (view.rel === rel || view.rel.startsWith(`${rel}/`))
