@@ -14,13 +14,24 @@ import { SlashMenu, type SlashMenuState } from "./SlashMenu";
 export function NoteEditor({ rel }: { rel: string }) {
   const [content, setContent] = useState<string | null>(null);
   const [missing, setMissing] = useState(false);
+  // Mounting Tiptap on a long document is real synchronous work — flip this
+  // a tick after content arrives so the skeleton below gets a frame to paint
+  // first, instead of freezing on the last frame until the editor is ready.
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+    setContent(null);
+    setMissing(false);
+    setReady(false);
     ipc
       .readNote(rel)
       .then((text) => {
-        if (!cancelled) setContent(text);
+        if (cancelled) return;
+        setContent(text);
+        setTimeout(() => {
+          if (!cancelled) setReady(true);
+        }, 0);
       })
       .catch(() => {
         if (!cancelled) setMissing(true);
@@ -37,7 +48,23 @@ export function NoteEditor({ rel }: { rel: string }) {
       </div>
     );
   }
-  if (content === null) return null;
+
+  if (content === null || !ready) {
+    return (
+      <div className="page-scroll">
+        <div className="mx-auto w-full max-w-[720px] px-10 pt-6">
+          <p className="truncate text-[30px] font-[680] tracking-[-0.025em] text-ink">
+            {noteTitle(rel)}
+          </p>
+          <div className="mt-8 space-y-3">
+            <div className="h-3.5 w-full rounded bg-hover" />
+            <div className="h-3.5 w-11/12 rounded bg-hover" />
+            <div className="h-3.5 w-4/6 rounded bg-hover" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return <LoadedEditor rel={rel} initialContent={content} />;
 }

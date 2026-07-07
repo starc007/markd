@@ -16,7 +16,7 @@ import { useVault } from "@/stores/vault";
 
 const SIDEBAR_WIDTH = 240;
 
-/** Stable key per view so AnimatePresence cross-fades on switch. */
+/** Stable key per view — forces a clean remount on switch. */
 function viewKey(view: ReturnType<typeof useVault.getState>["view"]) {
   if (!view) return "empty";
   return view.type === "note" ? `note:${view.rel}` : view.type;
@@ -123,21 +123,12 @@ export function AppShell() {
         </motion.div>
 
         <div className="relative min-h-0 flex-1">
-          <AnimatePresence initial={false}>
-            <motion.div
-              key={viewKey(view)}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.18, ease: EASE_OUT }}
-              className="absolute inset-0"
-            >
-              {view?.type === "note" && <NoteEditor rel={view.rel} />}
-              {view?.type === "todos" && <TodosPage />}
-              {view?.type === "bookmarks" && <BookmarksPage />}
-              {!view && <EmptyState />}
-            </motion.div>
-          </AnimatePresence>
+          <div key={viewKey(view)} className="absolute inset-0">
+            {view?.type === "note" && <NoteEditor rel={view.rel} />}
+            {view?.type === "todos" && <TodosPage />}
+            {view?.type === "bookmarks" && <BookmarksPage />}
+            {!view && <EmptyState />}
+          </div>
         </div>
       </main>
     </div>

@@ -81,6 +81,15 @@ export function CommandPalette() {
 
   const close = () => setOpen(false);
 
+  // Defer the action past the next paint so the close animation is actually
+  // visible before any heavy work it triggers (e.g. mounting a fresh Tiptap
+  // editor) blocks the main thread. rAF fires *before* paint, so it doesn't
+  // help here — a macrotask does.
+  const runDeferred = (run: () => void) => {
+    close();
+    setTimeout(run, 0);
+  };
+
   const items = useMemo<PaletteItem[]>(() => {
     const vault = useVault.getState();
     const ui = useUi.getState();
@@ -213,10 +222,7 @@ export function CommandPalette() {
                   } else if (event.key === "Enter") {
                     event.preventDefault();
                     const item = items[selected];
-                    if (item) {
-                      close();
-                      item.run();
-                    }
+                    if (item) runDeferred(item.run);
                   }
                 }}
               />
@@ -238,10 +244,7 @@ export function CommandPalette() {
                       setSelected(index);
                     }
                   }}
-                  onClick={() => {
-                    close();
-                    item.run();
-                  }}
+                  onClick={() => runDeferred(item.run)}
                 >
                   <item.icon size={15} strokeWidth={1.75} className="shrink-0" />
                   <span className="max-w-[55%] shrink-0 truncate text-[13.5px] font-medium leading-none">
