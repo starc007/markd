@@ -1,15 +1,15 @@
 {
-  "version": "0.1.6",
-  "notes": "Added custom banner upload",
-  "pub_date": "2026-01-20T15:40:44.558Z",
+  "version": "0.1.1",
+  "notes": "Portable plain-markdown vault, frontmatter properties panel, internal page links, and per-vault session persistence.",
+  "pub_date": "2026-07-09T09:59:44.137Z",
   "platforms": {
     "darwin-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSbHJsY3g1eEtlY2FhbkZJL3JLa0xTdno2UllMOThNVG5QaUdsYzdBRXFCWVJjcEJNL3FUamg2U215SkEwNXdwRElNWUFGVzkrYloyKzdaZ1R3ekI1R053YlQrZDBvdWdnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY4OTIzNjQ0CWZpbGU6RHJhZnQuYXBwLnRhci5negpBTHZTQ3JYV2xnbm1qcTNGZmp4aWlSSEpZQlNScUlxdEozQkFtaXpnQk1XdWIvbU9jQk1zSmhCL0JtaWlYNlpOZnM2RXV5ZlBoa3NvZGd0Rm1PWHdDQT09Cg==",
-      "url": "https://usedraft.app/updates/Draft.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUais5QS9oMXBYdGRTUThwdGZORXZ2SnhVUXBUSmNGTG0wRTdWTmtmdnQxTUhLejR2dVNWcWlpaTVReXduU084MVRPSGhrUjFZNkt4c3NwblNTU1JWY2FMUGE4WnFpM2cwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgzNTkwNTc1CWZpbGU6TWFya2QuYXBwLnRhci5negpZRkUxWVB1S3A5bVpyMjZZWUJKMkxIRXBGVElPUXZYanRURnJrd0RxYmluNkJ6dUMyNFN3MWJrRFE4ekpNdzZYaVFxbllGTFRVUHFSa0JadWR6Q3dBZz09Cg==",
+      "url": "https://usemarkd.app/updates/Markd.app.tar.gz"
     },
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSbHJsY3g1eEtlY2FhbkZJL3JLa0xTdno2UllMOThNVG5QaUdsYzdBRXFCWVJjcEJNL3FUamg2U215SkEwNXdwRElNWUFGVzkrYloyKzdaZ1R3ekI1R053YlQrZDBvdWdnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY4OTIzNjQ0CWZpbGU6RHJhZnQuYXBwLnRhci5negpBTHZTQ3JYV2xnbm1qcTNGZmp4aWlSSEpZQlNScUlxdEozQkFtaXpnQk1XdWIvbU9jQk1zSmhCL0JtaWlYNlpOZnM2RXV5ZlBoa3NvZGd0Rm1PWHdDQT09Cg==",
-      "url": "https://usedraft.app/updates/Draft.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUais5QS9oMXBYdGRTUThwdGZORXZ2SnhVUXBUSmNGTG0wRTdWTmtmdnQxTUhLejR2dVNWcWlpaTVReXduU084MVRPSGhrUjFZNkt4c3NwblNTU1JWY2FMUGE4WnFpM2cwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgzNTkwNTc1CWZpbGU6TWFya2QuYXBwLnRhci5negpZRkUxWVB1S3A5bVpyMjZZWUJKMkxIRXBGVElPUXZYanRURnJrd0RxYmluNkJ6dUMyNFN3MWJrRFE4ekpNdzZYaVFxbllGTFRVUHFSa0JadWR6Q3dBZz09Cg==",
+      "url": "https://usemarkd.app/updates/Markd.app.tar.gz"
     }
   }
 }
