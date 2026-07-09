@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { toast } from "sonner";
 import { ipc } from "@/lib/ipc";
-import type { Theme, TreeNode, View } from "@/lib/types";
+import type { Theme, TreeNode, VaultSnapshot, View } from "@/lib/types";
 import { parentDir } from "@/lib/utils";
 import { useTabs } from "@/stores/tabs";
 
@@ -20,6 +20,7 @@ interface VaultState {
 
   startup: () => Promise<void>;
   chooseVault: () => Promise<void>;
+  createVault: () => Promise<void>;
   refreshTree: () => Promise<void>;
   setView: (view: View | null) => void;
   pushRecent: (rel: string) => void;
@@ -53,6 +54,26 @@ function watchSystemTheme(get: () => VaultState) {
 
 const oops = (err: unknown) =>
   toast.error(err instanceof Error ? err.message : String(err));
+
+/** Apply a freshly opened/created vault snapshot as the active vault. */
+function openVaultSnapshot(
+  set: (partial: Partial<VaultState>) => void,
+  snapshot: VaultSnapshot | null,
+) {
+  if (!snapshot) return;
+  applyTheme(snapshot.theme);
+  set({
+    status: "ready",
+    root: snapshot.root,
+    name: snapshot.name,
+    tree: snapshot.tree,
+    theme: snapshot.theme,
+    view: null,
+    expanded: new Set<string>(),
+    recentNotes: seedRecents(snapshot.tree),
+  });
+  useTabs.getState().clear();
+}
 
 /** Top note rels by on-disk mtime — seeds "recent" before any note is opened. */
 function seedRecents(tree: TreeNode[]): string[] {
@@ -120,20 +141,15 @@ export const useVault = create<VaultState>((set, get) => ({
 
   chooseVault: async () => {
     try {
-      const snapshot = await ipc.chooseVault();
-      if (!snapshot) return;
-      applyTheme(snapshot.theme);
-      set({
-        status: "ready",
-        root: snapshot.root,
-        name: snapshot.name,
-        tree: snapshot.tree,
-        theme: snapshot.theme,
-        view: null,
-        expanded: new Set<string>(),
-        recentNotes: seedRecents(snapshot.tree),
-      });
-      useTabs.getState().clear();
+      openVaultSnapshot(set, await ipc.chooseVault());
+    } catch (err) {
+      oops(err);
+    }
+  },
+
+  createVault: async () => {
+    try {
+      openVaultSnapshot(set, await ipc.createVault());
     } catch (err) {
       oops(err);
     }
@@ -190,8 +206,8 @@ export const useVault = create<VaultState>((set, get) => ({
       const rel = await ipc.createNote(dir, "Untitled");
       await get().refreshTree();
       get().expandTo(rel);
-      set({ view: { type: "note", rel } });
-      get().pushRecent(rel);
+      // Route through setView so the tab opens (blank pane otherwise).
+      get().setView({ type: "note", rel });
     } catch (err) {
       oops(err);
     }

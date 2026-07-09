@@ -175,12 +175,13 @@ body {
     scrollbar-gutter: stable both-edges;
 }
 
-/* sonner toasts follow the theme tokens (description was stuck dark) */
+/* sonner toasts follow the theme tokens (description was stuck dark).
+   !important beats sonner's own injected color rule. */
 [data-sonner-toast] [data-title] {
-    color: var(--ink);
+    color: var(--ink) !important;
 }
 [data-sonner-toast] [data-description] {
-    color: var(--muted);
+    color: var(--muted) !important;
 }
 
 /* ---------- editor typography ---------- */

@@ -36,6 +36,7 @@ async function call<T>(command: string, args?: Record<string, unknown>) {
 export const ipc = {
   startup: () => call<VaultSnapshot | null>("startup"),
   chooseVault: () => call<VaultSnapshot | null>("choose_vault"),
+  createVault: () => call<VaultSnapshot | null>("create_vault"),
   loadTree: () => call<TreeNode[]>("load_tree"),
 
   readNote: (rel: string) => call<string>("read_note", { rel }),

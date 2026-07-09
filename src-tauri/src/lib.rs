@@ -24,6 +24,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::startup,
             commands::choose_vault,
+            commands::create_vault,
             commands::load_tree,
             commands::read_note,
             commands::write_note,

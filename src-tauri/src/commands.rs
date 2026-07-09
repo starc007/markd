@@ -116,6 +116,35 @@ pub async fn choose_vault(
     activate_vault(&app, &state, root).map(Some)
 }
 
+/// Prompt for a location + name, create that folder as a fresh vault, and
+/// activate it. Async so the blocking save dialog runs off the main thread.
+#[tauri::command]
+pub async fn create_vault(
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> AppResult<Option<VaultSnapshot>> {
+    let picked = tauri::async_runtime::spawn_blocking({
+        let app = app.clone();
+        move || {
+            app.dialog()
+                .file()
+                .set_file_name("Markd Vault")
+                .blocking_save_file()
+        }
+    })
+    .await
+    .map_err(|e| AppError::Other(e.to_string()))?;
+
+    let Some(dest) = picked else {
+        return Ok(None);
+    };
+    let root = dest
+        .into_path()
+        .map_err(|e| AppError::InvalidPath(e.to_string()))?;
+    std::fs::create_dir_all(&root)?;
+    activate_vault(&app, &state, root).map(Some)
+}
+
 #[tauri::command]
 pub fn load_tree(state: State<'_, AppState>) -> AppResult<Vec<TreeNode>> {
     vault::scan_tree(&state.root()?)
