@@ -8,6 +8,7 @@ import { Welcome } from "@/components/welcome/Welcome";
 import { initSessionSync, restoreSession } from "@/lib/session";
 import { activeDir, useVault } from "@/stores/vault";
 import { useUi } from "@/stores/ui";
+import { useUpdater } from "@/stores/updater";
 
 export default function App() {
   const status = useVault((s) => s.status);
@@ -18,6 +19,8 @@ export default function App() {
   useEffect(() => {
     initSessionSync();
     startup();
+    // Look for an app update in the background; surfaces in the sidebar.
+    useUpdater.getState().check();
   }, [startup]);
 
   // Restore the saved tabs / view / filters once a vault is loaded (and again

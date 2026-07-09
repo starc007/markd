@@ -1,8 +1,10 @@
 import {
+  ArrowDownToLine,
   Bookmark,
   CheckSquare,
   FilePlus,
   FolderPlus,
+  Loader2,
   Search,
   Settings,
 } from "lucide-react";
@@ -10,6 +12,7 @@ import { FileTree } from "@/components/tree/FileTree";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { cx } from "@/lib/utils";
 import { useUi } from "@/stores/ui";
+import { useUpdater } from "@/stores/updater";
 import { activeDir, useVault } from "@/stores/vault";
 
 export function Sidebar() {
@@ -78,13 +81,18 @@ export function Sidebar() {
           >
             <FilePlus size={14.5} strokeWidth={1.75} />
           </IconAction>
-          <IconAction label="New folder" onClick={() => createFolder("", "Untitled")}>
+          <IconAction
+            label="New folder"
+            onClick={() => createFolder("", "Untitled")}
+          >
             <FolderPlus size={14.5} strokeWidth={1.75} />
           </IconAction>
         </div>
       </div>
 
       <FileTree />
+
+      <UpdateRow />
 
       <div className="flex items-center justify-between border-t border-line-soft px-2 py-1.5">
         <IconAction label="Settings" onClick={() => setSettingsOpen(true)}>
@@ -127,6 +135,50 @@ function IconAction({
   );
 }
 
+function UpdateRow() {
+  const status = useUpdater((s) => s.status);
+  const version = useUpdater((s) => s.version);
+  const install = useUpdater((s) => s.install);
+
+  if (
+    status !== "available" &&
+    status !== "downloading" &&
+    status !== "ready"
+  ) {
+    return null;
+  }
+  const busy = status !== "available";
+
+  return (
+    <div className="border-t border-line-soft px-2 py-1.5">
+      <button
+        type="button"
+        disabled={busy}
+        onClick={install}
+        className="flex w-full items-center gap-2 rounded-md bg-hover px-2.5 py-1.5 text-[12.5px] font-medium text-ink transition-colors duration-100 hover:bg-active disabled:cursor-default disabled:hover:bg-hover"
+      >
+        {busy ? (
+          <Loader2
+            size={14}
+            strokeWidth={2}
+            className="shrink-0 animate-spin text-faint"
+          />
+        ) : (
+          <ArrowDownToLine size={14} strokeWidth={2} className="shrink-0" />
+        )}
+        <span className="truncate">
+          {busy ? "Updating…" : `Update to ${version}`}
+        </span>
+        {!busy && (
+          <span className="ml-auto shrink-0 text-[11px] text-faint">
+            Restart
+          </span>
+        )}
+      </button>
+    </div>
+  );
+}
+
 function PageLink({
   active,
   icon,
@@ -144,7 +196,9 @@ function PageLink({
       onClick={onClick}
       className={cx(
         "flex h-[30px] w-full items-center gap-2.5 rounded-md px-2 text-[13px] transition-colors duration-100",
-        active ? "bg-active text-ink" : "text-muted hover:bg-hover hover:text-ink",
+        active
+          ? "bg-active text-ink"
+          : "text-muted hover:bg-hover hover:text-ink",
       )}
     >
       {icon}
