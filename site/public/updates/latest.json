@@ -1,14 +1,14 @@
 {
-  "version": "0.1.0",
-  "notes": "First release. Local-first plain-markdown vault — fast editor, tabs, page links, frontmatter properties, todos and bookmarks.",
-  "pub_date": "2026-07-09T14:04:08.369Z",
+  "version": "0.1.1",
+  "notes": "Starter welcome note on new vaults, reveal-vault and settings commands in the palette, and crash recovery.",
+  "pub_date": "2026-07-09T15:57:22.308Z",
   "platforms": {
     "darwin-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUais5QS9oMXBYdFRzRjdGN3o0NkpmNkpTTGh3RVZKa0ZXc2t5NVNtUmxrMGF6QW9CTG9hemNEaTZmTWovOHI0eUVwVVR4MVM4ZjRGd3FybEFrTGhvQThIMXJBU2toK3dZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgzNjA1ODQ4CWZpbGU6TWFya2QuYXBwLnRhci5negpKcy9SckdmMGxaMnNGbWZrUUU1em10alk0ZUI3UTM3UTFlK1hwZFN2Z3RDMWthWkFhRU5nUmJBNmhXblZOVURNb28xMllnbzh1OGZFbld4VW5CWGxDZz09Cg==",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUais5QS9oMXBYdGFrV1VwaFhvYS9rNm9uVmlDUkx1aDFxZnd2b3RUTnJqUktmb0NJam8xYU9DTDA5dk1xekF3OC9pMENGdWZSVjQ3THl2ZDhpV09pOUN6UDZDSmduWlFRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgzNjEyNjQyCWZpbGU6TWFya2QuYXBwLnRhci5nego0ZXNyWVpTWjR0Z09GYXM4K0hLRzQ1Tk82SHN5ZlVtY3ZETXpBODVkUGVVSFh5SzdHTWFVK1BzVlJTZkFWUkdEb1hLVWJFZENMcDlZOTZRZk41LzZEUT09Cg==",
       "url": "https://usemarkd.app/updates/Markd.app.tar.gz"
     },
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUais5QS9oMXBYdFRzRjdGN3o0NkpmNkpTTGh3RVZKa0ZXc2t5NVNtUmxrMGF6QW9CTG9hemNEaTZmTWovOHI0eUVwVVR4MVM4ZjRGd3FybEFrTGhvQThIMXJBU2toK3dZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgzNjA1ODQ4CWZpbGU6TWFya2QuYXBwLnRhci5negpKcy9SckdmMGxaMnNGbWZrUUU1em10alk0ZUI3UTM3UTFlK1hwZFN2Z3RDMWthWkFhRU5nUmJBNmhXblZOVURNb28xMllnbzh1OGZFbld4VW5CWGxDZz09Cg==",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUais5QS9oMXBYdGFrV1VwaFhvYS9rNm9uVmlDUkx1aDFxZnd2b3RUTnJqUktmb0NJam8xYU9DTDA5dk1xekF3OC9pMENGdWZSVjQ3THl2ZDhpV09pOUN6UDZDSmduWlFRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgzNjEyNjQyCWZpbGU6TWFya2QuYXBwLnRhci5nego0ZXNyWVpTWjR0Z09GYXM4K0hLRzQ1Tk82SHN5ZlVtY3ZETXpBODVkUGVVSFh5SzdHTWFVK1BzVlJTZkFWUkdEb1hLVWJFZENMcDlZOTZRZk41LzZEUT09Cg==",
       "url": "https://usemarkd.app/updates/Markd.app.tar.gz"
     }
   }
