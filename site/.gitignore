@@ -1,10 +1,15 @@
-# build output
-dist/
-.astro/
+# dependencies
 node_modules/
 
-# Cloudflare
+# next / build
+.next/
+out/
+next-env.d.ts
+
+# opennext / cloudflare
+.open-next/
 .wrangler/
+cloudflare-env.d.ts
 
 # Release binaries are dropped in by scripts/release.sh at release time.
 # Only latest.json (tiny, versioned) is committed; the bundles are not.

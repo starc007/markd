@@ -1,22 +1,32 @@
 {
   "name": "markd-site",
-  "type": "module",
-  "private": true,
   "version": "0.1.1",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
-    "preview": "astro preview",
-    "deploy": "astro build && wrangler deploy"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
-    "@fontsource-variable/inter": "^5.2.8",
-    "@fontsource-variable/jetbrains-mono": "^5.2.8",
-    "@tailwindcss/vite": "^4.1.18",
-    "astro": "^5.14.1",
-    "tailwindcss": "^4.1.18"
+    "geist": "^1.4.2",
+    "motion": "^12.40.0",
+    "next": "^15.5.4",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.10.0",
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.8.3",
     "wrangler": "^4.42.0"
   }
 }

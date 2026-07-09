@@ -1,0 +1,114 @@
+@import "tailwindcss";
+
+/* Monochrome ink/paper base ported from the Markd app, plus a warm duotone
+   accent (vermillion → amber) used sparingly: logo, hero glow, key words. */
+
+@theme inline {
+  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-serif: var(--font-instrument), Georgia, "Times New Roman", serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-sunken: var(--sunken);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-hover: var(--hover);
+  --color-active: var(--active);
+  --color-invert: var(--invert);
+  --color-invert-ink: var(--invert-ink);
+
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root {
+  --bg: #fbfbfa;
+  --panel: #f4f4f2;
+  --sunken: #e9e9e6;
+  --ink: #191919;
+  --muted: #6e6e6a;
+  --faint: #a3a39e;
+  --line: #e3e3e0;
+  --line-soft: #ececea;
+  --hover: rgba(25, 25, 25, 0.05);
+  --active: rgba(25, 25, 25, 0.09);
+  --invert: #1c1c1c;
+  --invert-ink: #fbfbfa;
+
+  --accent: #f4501e;
+  --accent-2: #f7a616;
+  --accent-glow: rgba(244, 80, 30, 0.18);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121211;
+    --panel: #17171690;
+    --sunken: #0e0e0d;
+    --ink: #ebebe8;
+    --muted: #8f8f8a;
+    --faint: #64645f;
+    --line: #292927;
+    --line-soft: #1e1e1c;
+    --hover: rgba(235, 235, 232, 0.06);
+    --active: rgba(235, 235, 232, 0.1);
+    --invert: #ebebe8;
+    --invert-ink: #131313;
+
+    --accent: #ff6338;
+    --accent-2: #ffb648;
+    --accent-glow: rgba(255, 99, 56, 0.22);
+  }
+}
+
+html {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-size: 14px;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+a {
+  text-decoration: none;
+}
+
+/* Fine grain overlay for depth — barely-there texture, not noise. */
+.grain::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.accent-text {
+  background: linear-gradient(105deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
