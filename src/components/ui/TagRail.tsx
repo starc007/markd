@@ -14,6 +14,7 @@ export function TagRail({
   onSelect,
   onDelete,
   counts = {},
+  total,
 }: {
   tags: string[];
   activeTag: string | null;
@@ -21,6 +22,8 @@ export function TagRail({
   onDelete: (tag: string) => void;
   /** item count per tag — deleting a tag with items asks for confirmation */
   counts?: Record<string, number>;
+  /** total item count, shown next to "All" */
+  total?: number;
 }) {
   const pillId = useId();
   const [confirmTag, setConfirmTag] = useState<string | null>(null);
@@ -60,6 +63,11 @@ export function TagRail({
           )}
           <span className="relative z-10 h-2.5 w-2.5 shrink-0 rounded-full border border-faint" />
           <span className="relative z-10 truncate">All</span>
+          {total !== undefined && (
+            <span className="relative z-10 ml-auto shrink-0 tabular-nums text-[11px] text-faint">
+              {total}
+            </span>
+          )}
         </button>
 
         {tags.map((tag) => {
@@ -86,6 +94,14 @@ export function TagRail({
                   style={{ backgroundColor: tagColor(tag) }}
                 />
                 <span className="relative z-10 truncate">{tag}</span>
+                <span
+                  className={cx(
+                    "relative z-10 ml-auto shrink-0 tabular-nums text-[11px]",
+                    active ? "text-muted" : "text-faint",
+                  )}
+                >
+                  {counts[tag] ?? 0}
+                </span>
               </button>
               <button
                 type="button"

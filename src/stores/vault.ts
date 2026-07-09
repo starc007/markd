@@ -33,6 +33,7 @@ interface VaultState {
   deleteEntry: (rel: string) => Promise<void>;
 
   setTheme: (theme: Theme) => Promise<void>;
+  cycleTheme: () => Promise<void>;
 }
 
 function applyTheme(theme: Theme) {
@@ -282,6 +283,12 @@ export const useVault = create<VaultState>((set, get) => ({
     } catch (err) {
       oops(err);
     }
+  },
+
+  cycleTheme: async () => {
+    // Keyboard toggle only flips light ↔ dark; never sets "system".
+    const isDark = document.documentElement.classList.contains("dark");
+    await get().setTheme(isDark ? "light" : "dark");
   },
 }));
 

@@ -70,6 +70,7 @@ export function BookmarksPage() {
           onSelect={setTagFilter}
           onDelete={deleteTag}
           counts={tagCounts}
+          total={bookmarks.length}
         />
 
         <div className="min-w-0 flex-1">

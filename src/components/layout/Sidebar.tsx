@@ -3,6 +3,7 @@ import {
   CheckSquare,
   FilePlus,
   FolderPlus,
+  Search,
   Settings,
 } from "lucide-react";
 import { FileTree } from "@/components/tree/FileTree";
@@ -18,12 +19,27 @@ export function Sidebar() {
   const createNote = useVault((s) => s.createNote);
   const createFolder = useVault((s) => s.createFolder);
   const setSettingsOpen = useUi((s) => s.setSettingsOpen);
+  const setPaletteOpen = useUi((s) => s.setPaletteOpen);
   const saveState = useUi((s) => s.saveState);
 
   return (
     <aside className="flex h-full w-[240px] shrink-0 flex-col border-r border-line-soft bg-panel">
       {/* drag region + traffic-light clearance */}
       <div data-tauri-drag-region className="flex h-12 items-end px-3 pb-1" />
+
+      <div className="px-2 pb-2">
+        <button
+          type="button"
+          onClick={() => setPaletteOpen(true)}
+          className="flex w-full items-center gap-2 rounded-md border border-line-soft bg-bg px-2.5 py-1.5 text-[12.5px] text-faint transition-colors duration-100 hover:border-line hover:text-muted"
+        >
+          <Search size={14} strokeWidth={2} className="shrink-0" />
+          <span>Search…</span>
+          <kbd className="ml-auto rounded border border-line bg-panel px-1 font-mono text-[10px] leading-4 text-faint">
+            ⌘K
+          </kbd>
+        </button>
+      </div>
 
       <div className="flex items-center px-4 pb-2">
         <span

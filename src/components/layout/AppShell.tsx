@@ -1,4 +1,4 @@
-import { Check, Download, PanelLeft, Tag, X } from "lucide-react";
+import { Check, Download, FilePlus, PanelLeft, Search, Tag, X } from "lucide-react";
 import { AnimatePresence, LayoutGroup, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { NoteBreadcrumb } from "@/components/editor/NoteBreadcrumb";
@@ -237,16 +237,80 @@ function NewTagButton({ onCreate }: { onCreate: (name: string) => void }) {
   );
 }
 
-function EmptyState() {
+function HashMark() {
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-3 pb-24">
-      <p className="text-[15px] text-faint">No note open</p>
-      <p className="text-[12.5px] text-faint">
-        <kbd className="rounded border border-line bg-panel px-1.5 py-0.5 font-mono text-[10.5px]">
-          ⌘K
-        </kbd>{" "}
-        to find or create
-      </p>
+    <div className="grid h-16 w-16 place-items-center rounded-2xl border border-line-soft bg-panel">
+      <svg width="34" height="34" viewBox="0 0 1024 1024" fill="none" aria-hidden="true">
+        <g
+          stroke="var(--faint)"
+          strokeWidth="84"
+          strokeLinecap="round"
+        >
+          <line x1="390" y1="280" x2="390" y2="744" />
+          <line x1="634" y1="280" x2="634" y2="744" />
+          <line x1="280" y1="390" x2="744" y2="390" />
+          <line x1="280" y1="634" x2="744" y2="634" />
+        </g>
+      </svg>
+    </div>
+  );
+}
+
+function EmptyAction({
+  icon,
+  label,
+  keys,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  keys: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center gap-2 rounded-lg border border-line bg-panel px-3 py-2 text-[13px] font-medium text-muted transition-colors duration-100 hover:bg-hover hover:text-ink"
+    >
+      {icon}
+      {label}
+      <kbd className="ml-1 rounded border border-line bg-bg px-1.5 py-0.5 font-mono text-[10.5px] text-faint">
+        {keys}
+      </kbd>
+    </button>
+  );
+}
+
+function EmptyState() {
+  const setPaletteOpen = useUi((s) => s.setPaletteOpen);
+  const createNote = useVault((s) => s.createNote);
+
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-6 pb-24">
+      <HashMark />
+      <div className="text-center">
+        <p className="text-[16px] font-semibold tracking-[-0.01em] text-ink">
+          Nothing open yet
+        </p>
+        <p className="mt-1 text-[13px] text-faint">
+          Jump to a note, or start something new.
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <EmptyAction
+          icon={<Search size={14} strokeWidth={2} />}
+          label="Search"
+          keys="⌘K"
+          onClick={() => setPaletteOpen(true)}
+        />
+        <EmptyAction
+          icon={<FilePlus size={14} strokeWidth={2} />}
+          label="New note"
+          keys="⌘N"
+          onClick={() => createNote("")}
+        />
+      </div>
     </div>
   );
 }

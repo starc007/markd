@@ -55,6 +55,7 @@ export function TodosPage() {
           onSelect={setTagFilter}
           onDelete={deleteTag}
           counts={tagCounts}
+          total={todos.length}
         />
 
         <div className="min-w-0 flex-1">

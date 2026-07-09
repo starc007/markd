@@ -160,11 +160,27 @@ body {
     }
 }
 
+/* hide scrollbar entirely (sidebar note list) while keeping scroll */
+.no-scrollbar {
+    scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
 /* centered pages: reserve gutters so the scrollbar never shifts content */
 .page-scroll {
     height: 100%;
     overflow-y: auto;
     scrollbar-gutter: stable both-edges;
+}
+
+/* sonner toasts follow the theme tokens (description was stuck dark) */
+[data-sonner-toast] [data-title] {
+    color: var(--ink);
+}
+[data-sonner-toast] [data-description] {
+    color: var(--muted);
 }
 
 /* ---------- editor typography ---------- */

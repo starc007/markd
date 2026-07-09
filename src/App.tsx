@@ -40,7 +40,10 @@ export default function App() {
       const ui = useUi.getState();
       const vault = useVault.getState();
 
-      if (event.key === "k") {
+      if (event.shiftKey && event.key.toLowerCase() === "d") {
+        event.preventDefault();
+        vault.cycleTheme();
+      } else if (event.key === "k") {
         event.preventDefault();
         ui.setPaletteOpen(!ui.paletteOpen);
       } else if (event.key === "n" && vault.status === "ready") {
