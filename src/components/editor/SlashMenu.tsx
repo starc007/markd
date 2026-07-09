@@ -5,6 +5,7 @@ import {
   Heading1,
   Heading2,
   Heading3,
+  Link2,
   List,
   ListOrdered,
   ListTodo,
@@ -29,10 +30,17 @@ interface SlashCommand {
   label: string;
   icon: LucideIcon;
   keywords: string;
-  run: (editor: Editor) => void;
+  /** Edit to run on select. Omitted for special commands (e.g. note link). */
+  run?: (editor: Editor) => void;
 }
 
 const commands: SlashCommand[] = [
+  {
+    id: "note-link",
+    label: "Link to note",
+    icon: Link2,
+    keywords: "page link reference mention connect",
+  },
   {
     id: "text",
     label: "Text",
@@ -117,10 +125,12 @@ export function SlashMenu({
   editor,
   menu,
   onClose,
+  onLinkToNote,
 }: {
   editor: Editor | null;
   menu: SlashMenuState | null;
   onClose: () => void;
+  onLinkToNote: (range: { from: number; to: number }) => void;
 }) {
   const [selected, setSelected] = useState(0);
 
@@ -136,6 +146,18 @@ export function SlashMenu({
 
   useEffect(() => {
     if (!menu || !editor) return;
+    const execute = (command: SlashCommand) => {
+      // The note-link command hands off to the picker, which owns deleting
+      // the "/…" range and inserting the link.
+      if (command.id === "note-link") {
+        onLinkToNote(menu.range);
+        onClose();
+        return;
+      }
+      editor.chain().focus().deleteRange(menu.range).run();
+      command.run?.(editor);
+      onClose();
+    };
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
@@ -149,15 +171,12 @@ export function SlashMenu({
       } else if (event.key === "Enter" || event.key === "Tab") {
         event.preventDefault();
         const command = filtered[selected];
-        if (!command) return;
-        editor.chain().focus().deleteRange(menu.range).run();
-        command.run(editor);
-        onClose();
+        if (command) execute(command);
       }
     };
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, [editor, filtered, menu, onClose, selected]);
+  }, [editor, filtered, menu, onClose, onLinkToNote, selected]);
 
   if (!menu || !editor || filtered.length === 0) return null;
 
@@ -179,8 +198,13 @@ export function SlashMenu({
           )}
           onMouseDown={(event) => {
             event.preventDefault();
+            if (command.id === "note-link") {
+              onLinkToNote(menu.range);
+              onClose();
+              return;
+            }
             editor.chain().focus().deleteRange(menu.range).run();
-            command.run(editor);
+            command.run?.(editor);
             onClose();
           }}
           onMouseEnter={() => setSelected(index)}

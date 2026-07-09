@@ -7,6 +7,8 @@ import { create } from "zustand";
  */
 interface TabsState {
   tabs: string[];
+  /** Bumped to ask a note's pane to scroll to top (e.g. opened via a link). */
+  scrollTopReq: { rel: string; nonce: number } | null;
   /** Add a tab for `rel` if not already open (no-op otherwise). */
   open: (rel: string) => void;
   close: (rel: string) => void;
@@ -14,11 +16,14 @@ interface TabsState {
   remap: (rel: string, next: string) => void;
   /** Drop `rel` and anything under it (folder delete). */
   removeUnder: (rel: string) => void;
+  /** Request that `rel`'s pane jump to the top on next render. */
+  requestScrollTop: (rel: string) => void;
   clear: () => void;
 }
 
 export const useTabs = create<TabsState>((set, get) => ({
   tabs: [],
+  scrollTopReq: null,
 
   open: (rel) => {
     if (!get().tabs.includes(rel)) set({ tabs: [...get().tabs, rel] });
@@ -38,7 +43,12 @@ export const useTabs = create<TabsState>((set, get) => ({
       tabs: get().tabs.filter((t) => t !== rel && !t.startsWith(`${rel}/`)),
     }),
 
-  clear: () => set({ tabs: [] }),
+  requestScrollTop: (rel) =>
+    set({
+      scrollTopReq: { rel, nonce: (get().scrollTopReq?.nonce ?? 0) + 1 },
+    }),
+
+  clear: () => set({ tabs: [], scrollTopReq: null }),
 }));
 
 /** Tab to activate after closing `rel`: right neighbor, else left, else none. */

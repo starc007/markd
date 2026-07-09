@@ -12,6 +12,7 @@ import TaskList from "@tiptap/extension-task-list";
 import Typography from "@tiptap/extension-typography";
 import Underline from "@tiptap/extension-underline";
 import StarterKit from "@tiptap/starter-kit";
+import { WikiLink } from "./wikiLink";
 
 function isRemoteSource(src: string) {
   return /^(?:[a-z][a-z0-9+.-]*:|#|\/)/i.test(src);
@@ -66,6 +67,15 @@ export function createExtensions(vaultRoot: string) {
       defaultProtocol: "https",
       openOnClick: false,
       protocols: ["http", "https", "mailto"],
+      // Keep relative hrefs (our internal page links, e.g. "projects/app.md").
+      // Without this the default sanitizer resolves them against the app's
+      // tauri:// origin and strips them. External URLs still get validated.
+      isAllowedUri: (uri, ctx) => {
+        if (!/^[a-z][a-z0-9+.-]*:/i.test(uri) && !uri.startsWith("//")) {
+          return true;
+        }
+        return ctx.defaultValidate(uri);
+      },
     }),
     VaultImage(vaultRoot).configure({ allowBase64: true, inline: false }),
     TaskList,
@@ -75,5 +85,6 @@ export function createExtensions(vaultRoot: string) {
     TableHeader,
     TableCell,
     Placeholder.configure({ placeholder: "Write, or press / for blocks…" }),
+    WikiLink,
   ];
 }

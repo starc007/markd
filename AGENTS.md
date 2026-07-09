@@ -45,6 +45,7 @@ Blocking dialogs (`blocking_pick_folder`) must run in async commands via `spawn_
 - `components/` — by feature: `layout/`, `tree/`, `editor/`, `todos/`, `bookmarks/`, `palette/`, `settings/`, `welcome/`, `ui/`
 - Editor: Tiptap with `contentType: "markdown"`; autosave debounced 500ms, flush on unmount; images stored as vault-relative paths, rendered via asset protocol
 - Tabs: `NotesWorkspace` keeps one live editor per open tab, inactive panes hidden via `display:none` — tab switch is a CSS toggle, never a remount/re-parse. Keep it that way.
+- Page links: internal note links are plain markdown links whose href is a vault-relative note path (`[Title](projects/app.md)`) — no `[[wiki]]` syntax. `lib/noteLinks.ts` converts href↔rel; clicking one opens the note; `/link` slash command + `NoteLinkPicker` insert them.
 
 ## UI conventions
 
@@ -73,4 +74,4 @@ Our `Modal` (`components/ui/Modal.tsx`) is built on the same tokens; keep new di
 
 - Never add "Co-Authored-By" or any AI attribution to commits or PRs.
 - Commit messages: conventional commits, subject ≤50 chars where possible.
-- Don't reintroduce: sticky notes, wiki links, note IDs/frontmatter, plugin-fs.
+- Don't reintroduce: sticky notes, `[[wiki]]`-link syntax, note IDs/frontmatter, plugin-fs. (Internal page links use standard markdown `[title](path.md)` — that's allowed and expected.)

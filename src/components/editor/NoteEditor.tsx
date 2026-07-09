@@ -3,11 +3,15 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ipc } from "@/lib/ipc";
+import { hrefToRel, relToHref, wikiToMarkdown } from "@/lib/noteLinks";
+import { flattenNotes } from "@/lib/tree";
 import { cx, debounce, noteTitle } from "@/lib/utils";
+import { useTabs } from "@/stores/tabs";
 import { useUi } from "@/stores/ui";
 import { useVault } from "@/stores/vault";
 import { createExtensions } from "./extensions";
 import { insertImageFile } from "./insertImage";
+import { NoteLinkPicker, type LinkPickerState } from "./NoteLinkPicker";
 import { SelectionMenu } from "./SelectionMenu";
 import { SlashMenu, type SlashMenuState } from "./SlashMenu";
 
@@ -37,6 +41,7 @@ export const NoteEditor = memo(function NoteEditor({
   const setSaveState = useUi((s) => s.setSaveState);
 
   const [slashMenu, setSlashMenu] = useState<SlashMenuState | null>(null);
+  const [linkPicker, setLinkPicker] = useState<LinkPickerState | null>(null);
   const [words, setWords] = useState(0);
   const [missing, setMissing] = useState(false);
 
@@ -171,16 +176,9 @@ export const NoteEditor = memo(function NoteEditor({
           });
           return true;
         },
-        handleClick(_view, _position, event) {
-          const link = (event.target as HTMLElement | null)?.closest("a");
-          const href = link?.getAttribute("href");
-          if (href && /^https?:\/\//i.test(href)) {
-            event.preventDefault();
-            openUrl(href);
-            return true;
-          }
-          return false;
-        },
+        // Link clicks are handled by a capture-phase listener on the pane (see
+        // the effect below) so the anchor's native navigation is stopped before
+        // anything — including the webview — can act on it.
       },
       onUpdate({ editor }) {
         if (swapping.current) return;
@@ -220,10 +218,19 @@ export const NoteEditor = memo(function NoteEditor({
         if (cancelled) return;
         lastSaved.current = text;
         loadedRel.current = rel;
+        // Render any `[[wiki]]` links (e.g. authored in Obsidian) as real page
+        // links. lastSaved keeps the raw disk text; the rewrite only reaches
+        // the file if the user actually edits the note.
+        const notes = flattenNotes(useVault.getState().tree);
         swapping.current = true;
-        editor.commands.setContent(text, { contentType: "markdown" });
+        editor.commands.setContent(wikiToMarkdown(text, notes), {
+          contentType: "markdown",
+        });
         swapping.current = false;
         setWords(countWords(text));
+        // A freshly loaded note starts at the top.
+        savedScroll.current = 0;
+        if (scrollRef.current) scrollRef.current.scrollTop = 0;
         if (text.length === 0 && activeRef.current) {
           editor.commands.focus("start");
         }
@@ -282,6 +289,45 @@ export const NoteEditor = memo(function NoteEditor({
     reloadIfChanged();
   }, [active, reloadIfChanged]);
 
+  // Handle link clicks in the capture phase, before the anchor's native
+  // navigation (which the webview would otherwise turn into a browser open).
+  // Scoped to this pane's DOM, so exactly one handler runs per click.
+  useEffect(() => {
+    const root = scrollRef.current;
+    if (!root) return;
+    const onClick = (event: MouseEvent) => {
+      const anchor = (event.target as HTMLElement | null)?.closest("a[href]");
+      if (!anchor) return;
+      const href = anchor.getAttribute("href");
+      if (!href) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (/^https?:\/\//i.test(href)) {
+        openUrl(href);
+        return;
+      }
+      const target = hrefToRel(href);
+      if (target) {
+        const vault = useVault.getState();
+        vault.expandTo(target);
+        vault.setView({ type: "note", rel: target });
+        // Links point at the note as a whole — open it at the top, even if the
+        // target tab was already scrolled down.
+        useTabs.getState().requestScrollTop(target);
+      }
+    };
+    root.addEventListener("click", onClick, true);
+    return () => root.removeEventListener("click", onClick, true);
+  }, []);
+
+  // Honor a scroll-to-top request for this note (fired when opened via a link).
+  const scrollTopReq = useTabs((s) => s.scrollTopReq);
+  useEffect(() => {
+    if (!scrollTopReq || scrollTopReq.rel !== rel) return;
+    savedScroll.current = 0;
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  }, [scrollTopReq, rel]);
+
   const flushThen = (action: () => void) => {
     debouncedPersist.cancel();
     const flush =
@@ -289,6 +335,26 @@ export const NoteEditor = memo(function NoteEditor({
         ? persist(pending.current, relRef.current)
         : Promise.resolve();
     flush.then(action);
+  };
+
+  // Insert a page link to `rel` over the slash range, as a link mark whose
+  // href is the note path (serializes to `[title](rel)` markdown on save).
+  const insertNoteLink = (rel: string, title: string) => {
+    if (!editor || !linkPicker) return;
+    editor
+      .chain()
+      .focus()
+      .deleteRange(linkPicker.range)
+      .insertContent([
+        {
+          type: "text",
+          text: title,
+          marks: [{ type: "link", attrs: { href: relToHref(rel) } }],
+        },
+        { type: "text", text: " " },
+      ])
+      .run();
+    setLinkPicker(null);
   };
 
   return (
@@ -320,6 +386,24 @@ export const NoteEditor = memo(function NoteEditor({
             editor={editor}
             menu={slashMenu}
             onClose={() => setSlashMenu(null)}
+            onLinkToNote={(range) => {
+              if (slashMenu) {
+                setLinkPicker({
+                  range,
+                  position: slashMenu.position,
+                  side: slashMenu.side,
+                });
+              }
+              setSlashMenu(null);
+            }}
+          />
+        )}
+        {active && linkPicker && (
+          <NoteLinkPicker
+            state={linkPicker}
+            currentRel={rel}
+            onPick={insertNoteLink}
+            onClose={() => setLinkPicker(null)}
           />
         )}
       </div>

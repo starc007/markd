@@ -10,6 +10,7 @@ import { motion } from "motion/react";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { ipc } from "@/lib/ipc";
 import { SPRING_LAYOUT } from "@/lib/ease";
+import { flattenNotes } from "@/lib/tree";
 import type { SearchHit, TreeNode } from "@/lib/types";
 import { cx, parentDir } from "@/lib/utils";
 import { Modal } from "@/components/ui/Modal";
@@ -30,14 +31,6 @@ interface PaletteItem {
 function folderRoute(rel: string) {
   const dir = parentDir(rel);
   return dir ? dir.split("/").join(" / ") : undefined;
-}
-
-function flattenNotes(tree: TreeNode[], out: TreeNode[] = []) {
-  for (const node of tree) {
-    if (node.kind === "note") out.push(node);
-    if (node.children) flattenNotes(node.children, out);
-  }
-  return out;
 }
 
 export function CommandPalette() {
