@@ -1,3 +1,4 @@
+mod agent_docs;
 mod assets;
 mod bookmarks;
 mod commands;

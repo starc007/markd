@@ -11,7 +11,7 @@ use crate::error::{AppError, AppResult};
 use crate::search::SearchHit;
 use crate::todos::{self, Todo};
 use crate::vault::{self, TreeNode};
-use crate::{assets, link_meta, notes, search};
+use crate::{agent_docs, assets, link_meta, notes, search};
 
 #[derive(Default)]
 pub struct AppState {
@@ -59,6 +59,8 @@ fn snapshot(app: &AppHandle, root: &PathBuf) -> AppResult<VaultSnapshot> {
 
 fn activate_vault(app: &AppHandle, state: &AppState, root: PathBuf) -> AppResult<VaultSnapshot> {
     vault::ensure_layout(&root)?;
+    // Drop in agent guide files so coding agents understand the vault.
+    let _ = agent_docs::ensure(&root);
     // Allow the webview to load images from the vault's asset folder.
     let _ = app
         .asset_protocol_scope()
