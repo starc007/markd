@@ -16,8 +16,9 @@ const URL_RE = /^https?:\/\/\S+$/i;
 
 export function BookmarksPage() {
   const { bookmarks, tagRegistry, loaded, load, add, deleteTag } = useBookmarks();
+  const tagFilter = useBookmarks((s) => s.tagFilter);
+  const setTagFilter = useBookmarks((s) => s.setTagFilter);
   const [query, setQuery] = useState("");
-  const [tagFilter, setTagFilter] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -107,7 +108,7 @@ export function BookmarksPage() {
                   bookmark={bookmark}
                   activeTag={tagFilter}
                   onTagClick={(tag) =>
-                    setTagFilter((cur) => (cur === tag ? null : tag))
+                    setTagFilter(tagFilter === tag ? null : tag)
                   }
                 />
               ))}

@@ -14,7 +14,8 @@ import { useTodos } from "@/stores/todos";
 
 export function TodosPage() {
   const { todos, tagRegistry, loaded, load, add, deleteTag } = useTodos();
-  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const tagFilter = useTodos((s) => s.tagFilter);
+  const setTagFilter = useTodos((s) => s.setTagFilter);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {

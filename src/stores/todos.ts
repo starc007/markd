@@ -7,6 +7,9 @@ interface TodosState {
   todos: Todo[];
   tagRegistry: string[];
   loaded: boolean;
+  /** active tag filter for the todos view (null = All) */
+  tagFilter: string | null;
+  setTagFilter: (tag: string | null) => void;
   load: () => Promise<void>;
   add: (text: string, tags?: string[]) => Promise<void>;
   toggle: (id: string) => Promise<void>;
@@ -25,6 +28,9 @@ export const useTodos = create<TodosState>((set, get) => ({
   todos: [],
   tagRegistry: [],
   loaded: false,
+  tagFilter: null,
+
+  setTagFilter: (tag) => set({ tagFilter: tag }),
 
   load: async () => {
     try {
@@ -100,6 +106,7 @@ export const useTodos = create<TodosState>((set, get) => ({
       const tagRegistry = await ipc.todoTagDelete(name);
       set({
         tagRegistry,
+        tagFilter: get().tagFilter === name ? null : get().tagFilter,
         todos: get().todos.map((t) => ({
           ...t,
           tags: t.tags.filter((tag) => tag !== name),

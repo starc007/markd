@@ -10,6 +10,9 @@ interface BookmarksState {
   loaded: boolean;
   /** ids with a metadata fetch in flight */
   fetching: Set<string>;
+  /** active tag filter for the bookmarks view (null = All) */
+  tagFilter: string | null;
+  setTagFilter: (tag: string | null) => void;
   load: () => Promise<void>;
   add: (url: string, tags?: string[]) => Promise<void>;
   fetchMeta: (id: string) => Promise<void>;
@@ -29,6 +32,9 @@ export const useBookmarks = create<BookmarksState>((set, get) => ({
   tagRegistry: [],
   loaded: false,
   fetching: new Set<string>(),
+  tagFilter: null,
+
+  setTagFilter: (tag) => set({ tagFilter: tag }),
 
   load: async () => {
     try {
@@ -116,6 +122,7 @@ export const useBookmarks = create<BookmarksState>((set, get) => ({
       const tagRegistry = await ipc.bookmarkTagDelete(name);
       set({
         tagRegistry,
+        tagFilter: get().tagFilter === name ? null : get().tagFilter,
         bookmarks: get().bookmarks.map((b) => ({
           ...b,
           tags: b.tags.filter((t) => t !== name),

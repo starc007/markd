@@ -5,17 +5,26 @@ import { AppShell } from "@/components/layout/AppShell";
 import { CommandPalette } from "@/components/palette/CommandPalette";
 import { SettingsModal } from "@/components/settings/SettingsModal";
 import { Welcome } from "@/components/welcome/Welcome";
+import { initSessionSync, restoreSession } from "@/lib/session";
 import { activeDir, useVault } from "@/stores/vault";
 import { useUi } from "@/stores/ui";
 
 export default function App() {
   const status = useVault((s) => s.status);
+  const root = useVault((s) => s.root);
   const startup = useVault((s) => s.startup);
   const refreshTree = useVault((s) => s.refreshTree);
 
   useEffect(() => {
+    initSessionSync();
     startup();
   }, [startup]);
+
+  // Restore the saved tabs / view / filters once a vault is loaded (and again
+  // whenever the active vault changes).
+  useEffect(() => {
+    if (status === "ready" && root) restoreSession(root);
+  }, [status, root]);
 
   // Pick up edits made outside the app when the window regains focus.
   useEffect(() => {
