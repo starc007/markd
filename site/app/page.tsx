@@ -3,6 +3,7 @@ import { Hero } from "@/components/Hero";
 import { FeaturesBento } from "@/components/FeaturesBento";
 import { AgentTrace } from "@/components/AgentTrace";
 import { Footer } from "@/components/Footer";
+import { DownloadModal } from "@/components/DownloadModal";
 
 export default function Home() {
   return (
@@ -14,6 +15,7 @@ export default function Home() {
         <AgentTrace />
       </main>
       <Footer />
+      <DownloadModal />
     </>
   );
 }

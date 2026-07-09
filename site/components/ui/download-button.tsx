@@ -1,4 +1,7 @@
+"use client";
+
 import { ButtonLink, type ButtonSize } from "./button";
+import { DOWNLOAD_EVENT } from "../DownloadModal";
 import { DMG } from "@/lib/config";
 
 function AppleLogo() {
@@ -19,7 +22,12 @@ export function DownloadButton({
   className?: string;
 }) {
   return (
-    <ButtonLink href={DMG} size={size} className={className}>
+    <ButtonLink
+      href={DMG}
+      size={size}
+      className={className}
+      onClick={() => window.dispatchEvent(new CustomEvent(DOWNLOAD_EVENT))}
+    >
       <AppleLogo />
       {label}
     </ButtonLink>

@@ -2,7 +2,6 @@
 
 import { motion, useReducedMotion } from "motion/react";
 import { AppDemo } from "./AppDemo";
-import { FirstLaunchNote } from "./FirstLaunchNote";
 import { ButtonLink } from "./ui/button";
 import { DownloadButton } from "./ui/download-button";
 import { EASE_OUT } from "@/lib/ease";
@@ -77,10 +76,6 @@ export function Hero() {
         >
           Free &amp; open source · Apple Silicon · macOS 12+ · v{VERSION}
         </motion.p>
-
-        <motion.div {...rise(0.3)}>
-          <FirstLaunchNote />
-        </motion.div>
       </div>
 
       {/* Demo stage — the real app UI, bleeding flush to the bottom. */}
