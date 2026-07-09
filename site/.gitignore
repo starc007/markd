@@ -16,3 +16,6 @@ cloudflare-env.d.ts
 public/downloads/*
 public/updates/*.tar.gz
 !public/downloads/.gitkeep
+
+# TS build cache
+*.tsbuildinfo

@@ -2,35 +2,40 @@
 
 import { motion } from "motion/react";
 import { Wordmark } from "./Logo";
-import { DMG, GITHUB } from "@/lib/config";
+import { DownloadButton } from "./ui/download-button";
+import { GITHUB } from "@/lib/config";
+
+const LINKS = [
+  { label: "Features", href: "#features" },
+  { label: "Agent", href: "#agent" },
+  { label: "GitHub", href: GITHUB },
+];
 
 export function Nav() {
   return (
-    <motion.header
-      initial={{ opacity: 0, y: -12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] as const }}
-      className="sticky top-0 z-40 border-b border-transparent"
-    >
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-        <a href="/" aria-label="Markd home">
-          <Wordmark size={26} />
+    <div className="pointer-events-none fixed inset-x-0 top-0 z-50 px-4 pt-4 sm:px-6">
+      <motion.header
+        initial={{ opacity: 0, y: -12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] as const }}
+        className="pointer-events-auto mx-auto flex h-14 w-full max-w-5xl items-center justify-between rounded-full border border-border/50 bg-background/60 px-3 backdrop-blur-xl sm:px-4"
+      >
+        <a href="/" aria-label="Markd home" className="px-1">
+          <Wordmark size={22} />
         </a>
-        <nav className="flex items-center gap-1.5 text-[13px]">
-          <a
-            href={GITHUB}
-            className="rounded-lg px-3 py-1.5 text-muted transition-colors hover:bg-hover hover:text-ink"
-          >
-            GitHub
-          </a>
-          <a
-            href={DMG}
-            className="rounded-lg bg-invert px-3.5 py-1.5 font-medium text-invert-ink transition-opacity hover:opacity-90"
-          >
-            Download
-          </a>
+        <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 md:flex">
+          {LINKS.map((l) => (
+            <a
+              key={l.label}
+              href={l.href}
+              className="rounded-full px-3.5 py-2 text-[13.5px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {l.label}
+            </a>
+          ))}
         </nav>
-      </div>
-    </motion.header>
+        <DownloadButton label="Download" size="sm" />
+      </motion.header>
+    </div>
   );
 }
