@@ -12,6 +12,28 @@ Your notes live on your Mac as plain `.md` files. Markd simply makes writing and
 
 ---
 
+## Installing on macOS
+
+Download the latest `.dmg` from [usemarkd.app](https://usemarkd.app) and drag Markd to Applications.
+
+Markd is signed but **not yet notarized**, so on the first launch macOS asks to verify it. Open it once, either way:
+
+**Terminal**
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Markd.app
+```
+
+Then open Markd normally.
+
+**Or via Settings**
+
+Double-click Markd → click **Done** → **System Settings → Privacy & Security** → **Open Anyway** → authenticate. macOS remembers the choice after that.
+
+> Notarization (which removes this prompt entirely) needs an active Apple Developer account and is planned for a future release.
+
+---
+
 ## Features
 
 - **WYSIWYG markdown editor** — write in a rich editor, saved as clean markdown on disk
