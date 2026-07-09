@@ -31,7 +31,7 @@ export function relToHref(rel: string): string {
 
 /**
  * Resolve a `[[wiki]]` target to a note. Matches by full rel first, then by
- * bare filename anywhere in the vault (Obsidian-style); falls back to a
+ * bare filename anywhere in the vault (wiki-style); falls back to a
  * root-level path if nothing matches, so the link still points somewhere sane.
  */
 export function resolveWiki(
@@ -58,7 +58,7 @@ export function resolveWiki(
 /**
  * Rewrite `[[target]]` / `[[target|alias]]` wiki links in a markdown string
  * into standard markdown links, resolving targets against `notes`. Keeps files
- * plain-markdown while letting Obsidian-style syntax render as page links.
+ * plain-markdown while letting wiki-style syntax render as page links.
  */
 export function wikiToMarkdown(
   markdown: string,

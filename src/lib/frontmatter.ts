@@ -1,6 +1,6 @@
 /**
  * YAML frontmatter handling. The app never authors frontmatter, but notes
- * clipped from Obsidian (etc.) carry a leading `---` block. We split it off so
+ * clipped from external tools carry a leading `---` block. We split it off so
  * the editor shows only the body, then re-attach it verbatim on save — the file
  * keeps its metadata, the editor stays clean.
  */

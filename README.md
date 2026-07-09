@@ -21,7 +21,7 @@ Your notes live on your Mac as plain `.md` files. Markd simply makes writing and
 - **⌘K command palette** — jump to any note, folder, or page instantly
 - **Instant search** — title + content, ranked, in milliseconds
 - **Monochrome UI** — light, dark, or system theme; no color noise
-- **Obsidian-compatible vault** — plain files, no IDs, no frontmatter, no lock-in
+- **Portable vault** — plain files, no IDs, no frontmatter, no lock-in
 
 ---
 
@@ -35,7 +35,7 @@ Pick any folder on disk as your vault:
 └── .markd/         app data: todos, bookmarks, tags, pasted images
 ```
 
-Notes are addressed by path, never by ID. Deletes go to the OS trash. Edit notes externally (Obsidian, vim, whatever) — Markd picks up changes on window focus.
+Notes are addressed by path, never by ID. Deletes go to the OS trash. Edit notes externally (vim, VS Code, whatever) — Markd picks up changes on window focus.
 
 ---
 

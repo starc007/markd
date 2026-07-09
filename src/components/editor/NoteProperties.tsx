@@ -6,7 +6,7 @@ import { EASE_OUT } from "@/lib/ease";
 import { cx, hostOf } from "@/lib/utils";
 
 /**
- * Obsidian-style read-only properties panel for a note's frontmatter. Renders
+ * Read-only properties panel for a note's frontmatter. Renders
  * scalars as text (URLs as links), lists as chips. Collapsible; the raw YAML
  * itself lives in the file, untouched.
  */

@@ -18,7 +18,7 @@ Rust owns the filesystem; the frontend is UI + state only. All IO goes through t
 
 User picks any folder as a vault:
 
-- `<vault>/notes/` — plain `.md` files, filename = title, no IDs. Folders are real folders. Obsidian-compatible. The app never *authors* frontmatter, but preserves and renders any that external tools (e.g. Obsidian clippings) added — see below.
+- `<vault>/notes/` — plain `.md` files, filename = title, no IDs. Folders are real folders. Portable plain-markdown. The app never *authors* frontmatter, but preserves and renders any that external tools (e.g. web clippers) added — see below.
 - `<vault>/.markd/` — app data: `todos.json`, `bookmarks.json`, `assets/` (pasted images).
 - Vault path + theme persist in the app config dir (`config.json`).
 
