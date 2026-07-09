@@ -18,7 +18,7 @@ Rust owns the filesystem; the frontend is UI + state only. All IO goes through t
 
 User picks any folder as a vault:
 
-- `<vault>/notes/` — plain `.md` files, filename = title, no frontmatter, no IDs. Folders are real folders. Obsidian-compatible.
+- `<vault>/notes/` — plain `.md` files, filename = title, no IDs. Folders are real folders. Obsidian-compatible. The app never *authors* frontmatter, but preserves and renders any that external tools (e.g. Obsidian clippings) added — see below.
 - `<vault>/.markd/` — app data: `todos.json`, `bookmarks.json`, `assets/` (pasted images).
 - Vault path + theme persist in the app config dir (`config.json`).
 
@@ -45,7 +45,8 @@ Blocking dialogs (`blocking_pick_folder`) must run in async commands via `spawn_
 - `components/` — by feature: `layout/`, `tree/`, `editor/`, `todos/`, `bookmarks/`, `palette/`, `settings/`, `welcome/`, `ui/`
 - Editor: Tiptap with `contentType: "markdown"`; autosave debounced 500ms, flush on unmount; images stored as vault-relative paths, rendered via asset protocol
 - Tabs: `NotesWorkspace` keeps one live editor per open tab, inactive panes hidden via `display:none` — tab switch is a CSS toggle, never a remount/re-parse. Keep it that way.
-- Page links: internal note links are plain markdown links whose href is a vault-relative note path (`[Title](projects/app.md)`) — no `[[wiki]]` syntax. `lib/noteLinks.ts` converts href↔rel; clicking one opens the note; `/link` slash command + `NoteLinkPicker` insert them.
+- Page links: internal note links are plain markdown links whose href is a vault-relative note path (`[Title](projects/app.md)`). `lib/noteLinks.ts` converts href↔rel and rewrites `[[wiki]]`/`[[target|alias]]` syntax (on type + on load) into those markdown links; clicking one opens the note; `/link` slash command + `NoteLinkPicker` also insert them.
+- Frontmatter: `lib/frontmatter.ts` splits a leading `---` YAML block off the body on load and re-attaches it verbatim on save (so metadata round-trips), and parses it for the read-only `NoteProperties` panel shown above the editor. The editor body never contains the raw YAML.
 
 ## UI conventions
 
@@ -74,4 +75,4 @@ Our `Modal` (`components/ui/Modal.tsx`) is built on the same tokens; keep new di
 
 - Never add "Co-Authored-By" or any AI attribution to commits or PRs.
 - Commit messages: conventional commits, subject ≤50 chars where possible.
-- Don't reintroduce: sticky notes, `[[wiki]]`-link syntax, note IDs/frontmatter, plugin-fs. (Internal page links use standard markdown `[title](path.md)` — that's allowed and expected.)
+- Don't reintroduce: sticky notes, note IDs, plugin-fs. Don't *author* frontmatter (external frontmatter is preserved/rendered, not written by us). `[[wiki]]` is accepted as input but stored as standard markdown `[title](path.md)` links.

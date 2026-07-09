@@ -3,6 +3,12 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ipc } from "@/lib/ipc";
+import {
+  joinFrontmatter,
+  parseFrontmatter,
+  splitFrontmatter,
+  type Property,
+} from "@/lib/frontmatter";
 import { hrefToRel, relToHref, wikiToMarkdown } from "@/lib/noteLinks";
 import { flattenNotes } from "@/lib/tree";
 import { cx, debounce, noteTitle } from "@/lib/utils";
@@ -12,6 +18,7 @@ import { useVault } from "@/stores/vault";
 import { createExtensions } from "./extensions";
 import { insertImageFile } from "./insertImage";
 import { NoteLinkPicker, type LinkPickerState } from "./NoteLinkPicker";
+import { NoteProperties } from "./NoteProperties";
 import { SelectionMenu } from "./SelectionMenu";
 import { SlashMenu, type SlashMenuState } from "./SlashMenu";
 
@@ -44,8 +51,12 @@ export const NoteEditor = memo(function NoteEditor({
   const [linkPicker, setLinkPicker] = useState<LinkPickerState | null>(null);
   const [words, setWords] = useState(0);
   const [missing, setMissing] = useState(false);
+  const [properties, setProperties] = useState<Property[]>([]);
 
   const relRef = useRef(rel);
+  // Frontmatter of the loaded note, kept out of the editor and re-attached on
+  // save so the file's metadata survives round-trips.
+  const frontmatter = useRef("");
   const activeRef = useRef(active);
   activeRef.current = active;
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -62,10 +73,13 @@ export const NoteEditor = memo(function NoteEditor({
   const persist = useCallback(
     async (markdown: string, targetRel: string) => {
       if (relRef.current === targetRel) pending.current = null;
+      // Re-attach the note's frontmatter (captured now, before any await, so a
+      // concurrent note switch can't swap it out mid-save).
+      const fullText = joinFrontmatter(frontmatter.current, markdown);
       try {
-        await ipc.writeNote(targetRel, markdown);
+        await ipc.writeNote(targetRel, fullText);
         if (relRef.current === targetRel) {
-          lastSaved.current = markdown;
+          lastSaved.current = fullText;
           setSaveState("idle");
         }
         toast.dismiss(`save-${targetRel}`);
@@ -218,20 +232,23 @@ export const NoteEditor = memo(function NoteEditor({
         if (cancelled) return;
         lastSaved.current = text;
         loadedRel.current = rel;
-        // Render any `[[wiki]]` links (e.g. authored in Obsidian) as real page
-        // links. lastSaved keeps the raw disk text; the rewrite only reaches
-        // the file if the user actually edits the note.
+        // Split off frontmatter (kept for save), then render any `[[wiki]]`
+        // links in the body as real page links. lastSaved keeps the raw disk
+        // text; rewrites only reach the file if the user edits the note.
+        const { frontmatter: fm, body } = splitFrontmatter(text);
+        frontmatter.current = fm;
+        setProperties(parseFrontmatter(fm));
         const notes = flattenNotes(useVault.getState().tree);
         swapping.current = true;
-        editor.commands.setContent(wikiToMarkdown(text, notes), {
+        editor.commands.setContent(wikiToMarkdown(body, notes), {
           contentType: "markdown",
         });
         swapping.current = false;
-        setWords(countWords(text));
+        setWords(countWords(body));
         // A freshly loaded note starts at the top.
         savedScroll.current = 0;
         if (scrollRef.current) scrollRef.current.scrollTop = 0;
-        if (text.length === 0 && activeRef.current) {
+        if (body.length === 0 && activeRef.current) {
           editor.commands.focus("start");
         }
       })
@@ -263,10 +280,16 @@ export const NoteEditor = memo(function NoteEditor({
       if (cur !== relRef.current || pending.current !== null) return;
       if (disk !== lastSaved.current) {
         lastSaved.current = disk;
+        const { frontmatter: fm, body } = splitFrontmatter(disk);
+        frontmatter.current = fm;
+        setProperties(parseFrontmatter(fm));
+        const notes = flattenNotes(useVault.getState().tree);
         swapping.current = true;
-        editor.commands.setContent(disk, { contentType: "markdown" });
+        editor.commands.setContent(wikiToMarkdown(body, notes), {
+          contentType: "markdown",
+        });
         swapping.current = false;
-        setWords(countWords(disk));
+        setWords(countWords(body));
       }
     } catch {
       // note may have been deleted externally; tree refresh handles it
@@ -378,6 +401,7 @@ export const NoteEditor = memo(function NoteEditor({
           />
         )}
         <div className={cx(missing && "hidden")}>
+          <NoteProperties properties={properties} />
           <EditorContent editor={editor} />
         </div>
         {active && editor && <SelectionMenu editor={editor} />}
