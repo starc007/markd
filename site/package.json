@@ -1,0 +1,22 @@
+{
+  "name": "markd-site",
+  "type": "module",
+  "private": true,
+  "version": "0.1.1",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "deploy": "astro build && wrangler deploy"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.2.8",
+    "@fontsource-variable/jetbrains-mono": "^5.2.8",
+    "@tailwindcss/vite": "^4.1.18",
+    "astro": "^5.14.1",
+    "tailwindcss": "^4.1.18"
+  },
+  "devDependencies": {
+    "wrangler": "^4.42.0"
+  }
+}

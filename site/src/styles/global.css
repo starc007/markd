@@ -1,0 +1,106 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
+
+/* Palette + type tokens ported verbatim from the Markd app (src/styles.css) so
+   the site reads as the same product. Theme follows the OS (system-only for the
+   landing page); no manual toggle. */
+
+@theme inline {
+  --font-sans: "Inter Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-sunken: var(--sunken);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-hover: var(--hover);
+  --color-active: var(--active);
+  --color-invert: var(--invert);
+  --color-invert-ink: var(--invert-ink);
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root {
+  --bg: #fbfbfa;
+  --panel: #f4f4f2;
+  --sunken: #e9e9e6;
+  --ink: #191919;
+  --muted: #6e6e6a;
+  --faint: #a3a39e;
+  --line: #e3e3e0;
+  --line-soft: #ececea;
+  --hover: rgba(25, 25, 25, 0.05);
+  --active: rgba(25, 25, 25, 0.09);
+  --invert: #1c1c1c;
+  --invert-ink: #fbfbfa;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1a1a;
+    --panel: #151515;
+    --sunken: #0f0f0f;
+    --ink: #ebebe8;
+    --muted: #8f8f8a;
+    --faint: #64645f;
+    --line: #292927;
+    --line-soft: #202020;
+    --hover: rgba(235, 235, 232, 0.06);
+    --active: rgba(235, 235, 232, 0.1);
+    --invert: #ebebe8;
+    --invert-ink: #131313;
+  }
+}
+
+html {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-size: 14px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--ink) 14%, transparent);
+}
+
+a {
+  text-decoration: none;
+}
+
+/* Signature staggered page-load reveal — the one orchestrated motion moment. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rise {
+  opacity: 0;
+  animation: rise 0.7s var(--ease-out) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: none;
+    opacity: 1;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}

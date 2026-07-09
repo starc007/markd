@@ -74,6 +74,23 @@ fi
 
 echo ""
 
+# Step 3.5: Stage artifacts into the website (site/public serves them as-is).
+echo -e "${YELLOW}🌐 Step 3.5: Staging artifacts into the website...${NC}"
+SITE_UPDATES="$PROJECT_ROOT/site/public/updates"
+SITE_DOWNLOADS="$PROJECT_ROOT/site/public/downloads"
+mkdir -p "$SITE_UPDATES" "$SITE_DOWNLOADS"
+
+STAGE_DMG=$(find "$PROJECT_ROOT/src-tauri/target/release/bundle/dmg" -name "*.dmg" -type f 2>/dev/null | head -n 1)
+STAGE_BUNDLE=$(find "$PROJECT_ROOT/src-tauri/target/release/bundle/macos" -name "*.tar.gz" -type f 2>/dev/null | head -n 1)
+
+cp "$PROJECT_ROOT/latest.json" "$SITE_UPDATES/latest.json"
+[ -n "$STAGE_BUNDLE" ] && cp "$STAGE_BUNDLE" "$SITE_UPDATES/"
+[ -n "$STAGE_DMG" ] && cp "$STAGE_DMG" "$SITE_DOWNLOADS/"
+
+echo -e "${GREEN}✅ Staged latest.json + bundles into site/public${NC}"
+echo -e "   ${YELLOW}Deploy with: cd site && bun run deploy${NC}"
+echo ""
+
 # Step 4: Show summary
 echo -e "${GREEN}✅ Release process completed!${NC}"
 echo ""

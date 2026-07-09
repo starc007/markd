@@ -1,0 +1,13 @@
+# build output
+dist/
+.astro/
+node_modules/
+
+# Cloudflare
+.wrangler/
+
+# Release binaries are dropped in by scripts/release.sh at release time.
+# Only latest.json (tiny, versioned) is committed; the bundles are not.
+public/downloads/*
+public/updates/*.tar.gz
+!public/downloads/.gitkeep
