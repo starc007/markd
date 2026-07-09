@@ -8,6 +8,7 @@ import { GITHUB } from "@/lib/config";
 const LINKS = [
   { label: "Features", href: "#features" },
   { label: "Agent", href: "#agent" },
+  { label: "FAQ", href: "#faq" },
   { label: "GitHub", href: GITHUB },
 ];
 

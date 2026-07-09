@@ -58,9 +58,15 @@ fn snapshot(app: &AppHandle, root: &PathBuf) -> AppResult<VaultSnapshot> {
 }
 
 fn activate_vault(app: &AppHandle, state: &AppState, root: PathBuf) -> AppResult<VaultSnapshot> {
+    // First run = Markd has never set this folder up (no .markd yet).
+    let first_run = !root.join(vault::DATA_DIR).exists();
     vault::ensure_layout(&root)?;
     // Drop in agent guide files so coding agents understand the vault.
     let _ = agent_docs::ensure(&root);
+    // Seed a starter note only on a brand-new vault, so it isn't empty.
+    if first_run {
+        let _ = notes::seed_welcome(&root);
+    }
     // Allow the webview to load images from the vault's asset folder.
     let _ = app
         .asset_protocol_scope()

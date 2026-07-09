@@ -3,9 +3,12 @@ import {
   CheckSquare,
   FilePlus,
   FileText,
+  FolderOpen,
   Search,
+  Settings,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { openPath } from "@tauri-apps/plugin-opener";
 import { motion } from "motion/react";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { ipc } from "@/lib/ipc";
@@ -106,6 +109,21 @@ export function CommandPalette() {
         label: "Open Bookmarks",
         icon: Bookmark,
         run: () => vault.setView({ type: "bookmarks" }),
+      },
+      {
+        id: "reveal-vault",
+        label: "Reveal vault in Finder",
+        icon: FolderOpen,
+        run: () => {
+          if (vault.root) void openPath(vault.root);
+        },
+      },
+      {
+        id: "settings",
+        label: "Settings",
+        hint: "⌘,",
+        icon: Settings,
+        run: () => useUi.getState().setSettingsOpen(true),
       },
     ].filter((a) => !q || a.label.toLowerCase().includes(q));
 
