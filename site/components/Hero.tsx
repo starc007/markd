@@ -39,16 +39,19 @@ export function Hero() {
         >
           <span className="text-foreground">The last notes app</span>
           <br />
-          <span className="text-muted-foreground/45">you&apos;ll download.</span>
+          <span className="text-muted-foreground/45">
+            you&apos;ll download.
+          </span>
         </motion.h1>
 
         <motion.p
           {...rise(0.12)}
           className="mx-auto mt-6 max-w-xl text-pretty text-[16px] leading-7 text-muted-foreground sm:text-[18px]"
         >
-          Everyone&apos;s built one; most don&apos;t survive their own v2. Markd is
-          the fast, local-first markdown editor for macOS you actually keep — clean
-          UI, instant everything, and AI that reads and writes your notes. Plain{" "}
+          Everyone&apos;s built one; most don&apos;t survive their own v2. Markd
+          is the fast, local-first markdown editor for macOS you actually keep.
+          Clean UI, instant everything, and AI that reads and writes your notes.
+          Plain{" "}
           <code className="rounded bg-card px-1.5 py-0.5 font-mono text-[0.85em] text-fg-soft">
             .md
           </code>{" "}
@@ -65,8 +68,9 @@ export function Hero() {
             variant="outline"
             size="lg"
             className="w-full sm:w-auto"
+            target="_blank"
           >
-            View source
+            GitHub
           </ButtonLink>
         </motion.div>
 

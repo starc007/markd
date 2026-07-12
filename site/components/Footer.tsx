@@ -53,7 +53,7 @@ export function Footer() {
               transition={{ duration: 0.5, ease: EASE_OUT, delay: 0.15 }}
               className="mx-auto mt-5 max-w-md text-pretty text-[15px] leading-7 text-muted-foreground"
             >
-              No account, no cloud, no lock-in — just the last notes app
+              No account, no cloud, no lock-in. Just the last notes app
               you&apos;ll download. Probably. Grab it and start writing.
             </motion.p>
             <motion.div
@@ -64,7 +64,12 @@ export function Footer() {
               className="mt-9 flex flex-wrap items-center justify-center gap-3"
             >
               <DownloadButton size="lg" />
-              <ButtonLink href={GITHUB} variant="outline" size="lg">
+              <ButtonLink
+                href={GITHUB}
+                variant="outline"
+                size="lg"
+                target="_blank"
+              >
                 Star on GitHub
               </ButtonLink>
             </motion.div>
@@ -109,7 +114,7 @@ export function Footer() {
             </div>
           </div>
           <div className="mt-12 flex flex-col items-start justify-between gap-2 border-t border-border pt-6 font-mono text-[11px] uppercase tracking-[0.12em] text-faint sm:flex-row sm:items-center">
-            <span>© Markd — v{VERSION}</span>
+            <span>© Markd · v{VERSION}</span>
             <span>Built local-first · Open source</span>
           </div>
         </div>
