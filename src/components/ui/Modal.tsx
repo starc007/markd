@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { EASE_OUT, SPRING_PANEL } from "@/lib/ease";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ export function Modal({
   align = "center",
   className,
   layoutId,
+  ariaLabel,
 }: {
   open: boolean;
   onClose: () => void;
@@ -26,18 +27,55 @@ export function Modal({
   align?: Align;
   className?: string;
   layoutId?: string;
+  ariaLabel?: string;
 }) {
   const reduce = useReducedMotion();
   const enterY = reduce ? 0 : align === "top" ? -10 : 10;
+  const panelRef = useRef<HTMLDivElement>(null);
+  const previousFocus = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!open) return;
+    previousFocus.current = document.activeElement as HTMLElement | null;
+    const focusable = () =>
+      Array.from(
+        panelRef.current?.querySelectorAll<HTMLElement>(
+          'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      );
+    requestAnimationFrame(() => focusable()[0]?.focus());
+
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const items = focusable();
+      if (items.length === 0) {
+        event.preventDefault();
+        panelRef.current?.focus();
+        return;
+      }
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      previousFocus.current?.focus();
+    };
+  }, [open]);
 
   return createPortal(
     <AnimatePresence>
@@ -54,6 +92,11 @@ export function Modal({
           onMouseDown={onClose}
         >
           <motion.div
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={ariaLabel}
+            tabIndex={-1}
             layoutId={layoutId}
             initial={{ opacity: 0, y: enterY, scale: reduce ? 1 : 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}

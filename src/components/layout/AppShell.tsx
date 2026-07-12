@@ -266,6 +266,7 @@ function NoteMenuButton({
   return (
     <button
       type="button"
+      role="menuitem"
       onClick={onClick}
       className={cx(
         "flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[13px] transition-colors duration-100",

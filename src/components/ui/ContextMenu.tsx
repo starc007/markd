@@ -38,11 +38,30 @@ export function ContextMenu({
   }, [position]);
 
   useEffect(() => {
+    requestAnimationFrame(() => {
+      ref.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+    });
     const close = (event: MouseEvent) => {
       if (!ref.current?.contains(event.target as Node)) onClose();
     };
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") {
+        onClose();
+        return;
+      }
+      const items = Array.from(
+        ref.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [],
+      );
+      const index = items.indexOf(document.activeElement as HTMLElement);
+      let next = index;
+      if (event.key === "ArrowDown") next = (index + 1) % items.length;
+      else if (event.key === "ArrowUp") {
+        next = (index - 1 + items.length) % items.length;
+      } else if (event.key === "Home") next = 0;
+      else if (event.key === "End") next = items.length - 1;
+      else return;
+      event.preventDefault();
+      items[next]?.focus();
     };
     window.addEventListener("mousedown", close);
     window.addEventListener("contextmenu", close);
@@ -57,6 +76,7 @@ export function ContextMenu({
   return createPortal(
     <div
       ref={ref}
+      role="menu"
       className="fixed z-100 min-w-[168px] rounded-lg border border-line bg-bg p-1 shadow-lg shadow-black/8 dark:shadow-black/40"
       style={{ left: adjusted.x, top: adjusted.y }}
     >
@@ -64,6 +84,7 @@ export function ContextMenu({
         <button
           key={item.label}
           type="button"
+          role="menuitem"
           className={cx(
             "flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[13px] transition-colors duration-100",
             item.danger

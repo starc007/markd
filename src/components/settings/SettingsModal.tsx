@@ -1,4 +1,12 @@
-import { FolderOpen, Monitor, Moon, RefreshCw, Sun, X } from "lucide-react";
+import {
+  FolderOpen,
+  Monitor,
+  Moon,
+  RefreshCw,
+  Settings,
+  Sun,
+  X,
+} from "lucide-react";
 import type { Theme } from "@/lib/types";
 import { cx } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
@@ -35,47 +43,68 @@ export function SettingsModal() {
   const installUpdate = useUpdater((s) => s.install);
 
   return (
-    <Modal open={open} onClose={() => setOpen(false)} className="w-[440px] p-5">
-      <div className="flex items-center justify-between">
-        <h2 className="text-[16px] font-semibold tracking-[-0.01em]">Settings</h2>
+    <Modal
+      open={open}
+      onClose={() => setOpen(false)}
+      ariaLabel="Settings"
+      className="w-[460px]"
+    >
+      <header className="flex items-center gap-3 border-b border-line-soft px-5 py-4">
+        <div className="grid h-8 w-8 place-items-center rounded-lg bg-invert text-invert-ink">
+          <Settings size={15} strokeWidth={1.8} />
+        </div>
+        <div className="min-w-0">
+          <h2 className="text-[15px] font-semibold tracking-[-0.01em]">
+            Settings
+          </h2>
+          <p className="mt-0.5 text-[11.5px] text-faint">
+            Appearance, vault, updates, and shortcuts
+          </p>
+        </div>
         <button
           type="button"
           aria-label="Close settings"
           onClick={() => setOpen(false)}
-          className="grid h-7 w-7 place-items-center rounded-md text-faint transition-colors hover:bg-hover hover:text-ink"
+          className="ml-auto grid h-8 w-8 place-items-center rounded-md text-faint transition-colors hover:bg-hover hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
         >
           <X size={15} strokeWidth={2} />
         </button>
-      </div>
+      </header>
 
-      <section className="mt-5">
-        <div className="flex items-center justify-between">
-          <Label>Appearance</Label>
-          <span className="text-[11px] text-faint">
-            <Kbd>⌘</Kbd>
-            <Kbd>⇧</Kbd>
-            <Kbd>D</Kbd> to cycle
-          </span>
-        </div>
-        <div className="mt-2 grid grid-cols-3 gap-1 rounded-xl bg-panel p-1">
-          {THEMES.map(({ value, label, icon: Icon }) => (
-            <button
-              key={value}
-              type="button"
-              className={cx(
-                "flex flex-col items-center gap-1.5 rounded-lg py-2.5 text-[12.5px] font-medium transition-colors duration-100",
-                theme === value
-                  ? "bg-invert text-invert-ink"
-                  : "text-muted hover:bg-hover hover:text-ink",
-              )}
-              onClick={() => setTheme(value)}
-            >
-              <Icon size={16} strokeWidth={1.75} />
-              {label}
-            </button>
-          ))}
-        </div>
-      </section>
+      <div className="page-scroll max-h-[min(620px,calc(100vh-96px))] px-5 pb-5">
+        <section className="pt-5">
+          <div className="flex items-center justify-between">
+            <Label>Appearance</Label>
+            <span className="text-[11px] text-faint">
+              <Kbd>⌘</Kbd>
+              <Kbd>⇧</Kbd>
+              <Kbd>D</Kbd> to cycle
+            </span>
+          </div>
+          <div
+            role="group"
+            aria-label="Theme"
+            className="mt-2 grid grid-cols-3 gap-1 rounded-xl bg-panel p-1"
+          >
+            {THEMES.map(({ value, label, icon: Icon }) => (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={theme === value}
+                className={cx(
+                  "flex flex-col items-center gap-1.5 rounded-lg py-2.5 text-[12.5px] font-medium transition-colors duration-100",
+                  theme === value
+                    ? "bg-invert text-invert-ink"
+                    : "text-muted hover:bg-hover hover:text-ink",
+                )}
+                onClick={() => setTheme(value)}
+              >
+                <Icon size={16} strokeWidth={1.75} />
+                {label}
+              </button>
+            ))}
+          </div>
+        </section>
 
       <section className="mt-5">
         <Label>Vault</Label>
@@ -96,7 +125,10 @@ export function SettingsModal() {
       <section className="mt-5">
         <Label>Updates</Label>
         <div className="mt-2 flex items-center justify-between gap-2">
-          <p className="min-w-0 truncate text-[12.5px] text-muted">
+          <p
+            aria-live="polite"
+            className="min-w-0 truncate text-[12.5px] text-muted"
+          >
             {updateStatus === "available"
               ? `Version ${updateVersion} is available`
               : updateStatus === "downloading" || updateStatus === "ready"
@@ -146,9 +178,10 @@ export function SettingsModal() {
         </div>
       </section>
 
-      <p className="mt-6 text-center text-[11px] text-faint">
-        Markd · notes as plain markdown, on your disk
-      </p>
+        <p className="mt-6 text-center text-[11px] text-faint">
+          Markd · notes as plain markdown, on your disk
+        </p>
+      </div>
     </Modal>
   );
 }

@@ -93,10 +93,18 @@ export function Sidebar() {
 
       <UpdateRow />
 
-      <div className="flex items-center border-t border-line-soft px-2 py-1.5">
-        <IconAction label="Settings" onClick={() => setSettingsOpen(true)}>
+      <div className="border-t border-line-soft px-2 py-1.5">
+        <button
+          type="button"
+          onClick={() => setSettingsOpen(true)}
+          className="flex h-[30px] w-full items-center gap-2.5 rounded-md px-2 text-[13px] font-medium text-muted transition-colors duration-100 hover:bg-hover hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ink"
+        >
           <Settings size={15} strokeWidth={1.75} />
-        </IconAction>
+          <span>Settings</span>
+          <kbd className="ml-auto font-mono text-[10px] font-normal text-faint">
+            ⌘,
+          </kbd>
+        </button>
       </div>
     </aside>
   );

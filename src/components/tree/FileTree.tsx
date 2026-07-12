@@ -52,6 +52,8 @@ const treeCollisionDetection: CollisionDetection = (args) => {
 interface TreeApi {
   renaming: string | null;
   setRenaming: (rel: string | null) => void;
+  focusRel: string | null;
+  setFocusRel: (rel: string) => void;
   dragging: string | null;
   openMenu: (position: MenuPosition, node: TreeNode) => void;
 }
@@ -62,6 +64,7 @@ export function FileTree() {
   const tree = useVault((s) => s.tree);
   const moveEntry = useVault((s) => s.moveEntry);
   const [renaming, setRenaming] = useState<string | null>(null);
+  const [focusRel, setFocusRel] = useState<string | null>(null);
   const [dragging, setDragging] = useState<string | null>(null);
   const [menu, setMenu] = useState<{
     position: MenuPosition;
@@ -88,6 +91,13 @@ export function FileTree() {
   };
   const draggedNode = dragging ? findNode(tree, dragging) : null;
 
+  useEffect(() => {
+    const currentView = useVault.getState().view;
+    const activeRel = currentView?.type === "note" ? currentView.rel : null;
+    if (focusRel && findNode(tree, focusRel)) return;
+    setFocusRel(activeRel && findNode(tree, activeRel) ? activeRel : tree[0]?.rel ?? null);
+  }, [tree, focusRel]);
+
   return (
     <DndContext
       sensors={sensors}
@@ -97,7 +107,14 @@ export function FileTree() {
       onDragEnd={finishDrag}
     >
       <TreeContext.Provider
-        value={{ renaming, setRenaming, dragging, openMenu }}
+        value={{
+          renaming,
+          setRenaming,
+          focusRel,
+          setFocusRel,
+          dragging,
+          openMenu,
+        }}
       >
         <TreeList tree={tree} dragging={dragging} />
         {menu && (
@@ -193,6 +210,8 @@ function TreeList({
   return (
     <div
       ref={setNodeRef}
+      role="tree"
+      aria-label="Notes"
       className="no-scrollbar relative min-h-0 flex-1 overflow-y-auto px-2 pb-6 pt-1"
     >
       {tree.map((node) => (
@@ -254,6 +273,8 @@ function Row({ node, depth }: { node: TreeNode; depth: number }) {
         {...listeners}
         role="treeitem"
         aria-selected={isActive}
+        aria-expanded={isFolder ? isOpen : undefined}
+        tabIndex={api?.focusRel === node.rel ? 0 : -1}
         className={cx(
           "group relative flex h-[30px] touch-none cursor-pointer items-center rounded-md pr-1.5 text-[13px] transition-colors duration-100",
           isActive
@@ -266,6 +287,7 @@ function Row({ node, depth }: { node: TreeNode; depth: number }) {
           paddingLeft: 8 + depth * 15,
         }}
         onClick={() => {
+          api?.setFocusRel(node.rel);
           if (isFolder) {
             toggleExpanded(node.rel);
           } else {
@@ -277,6 +299,54 @@ function Row({ node, depth }: { node: TreeNode; depth: number }) {
           event.stopPropagation();
           api?.openMenu({ x: event.clientX, y: event.clientY }, node);
         }}
+        onFocus={() => api?.setFocusRel(node.rel)}
+        onKeyDown={(event) => {
+          if (isRenaming) return;
+          const treeRoot = event.currentTarget.closest('[role="tree"]');
+          const items = Array.from(
+            treeRoot?.querySelectorAll<HTMLElement>('[role="treeitem"]') ?? [],
+          );
+          const index = items.indexOf(event.currentTarget);
+          const focusAt = (next: number) => {
+            const item = items[next];
+            if (!item) return;
+            event.preventDefault();
+            item.focus();
+          };
+
+          if (event.key === "ArrowDown") {
+            focusAt(Math.min(index + 1, items.length - 1));
+          } else if (event.key === "ArrowUp") {
+            focusAt(Math.max(index - 1, 0));
+          } else if (event.key === "Home") {
+            focusAt(0);
+          } else if (event.key === "End") {
+            focusAt(items.length - 1);
+          } else if (event.key === "ArrowRight" && isFolder) {
+            event.preventDefault();
+            if (!isOpen) toggleExpanded(node.rel);
+            else focusAt(index + 1);
+          } else if (event.key === "ArrowLeft") {
+            event.preventDefault();
+            if (isFolder && isOpen) {
+              toggleExpanded(node.rel);
+            } else {
+              const parent = parentDir(node.rel);
+              const parentItem = items.find(
+                (item) => item.dataset.rel === parent,
+              );
+              parentItem?.focus();
+            }
+          } else if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            if (isFolder) toggleExpanded(node.rel);
+            else setView({ type: "note", rel: node.rel });
+          } else if (event.key === "F2") {
+            event.preventDefault();
+            api?.setRenaming(node.rel);
+          }
+        }}
+        data-rel={node.rel}
       >
         {isFolder ? (
           <ActionSwapIcon

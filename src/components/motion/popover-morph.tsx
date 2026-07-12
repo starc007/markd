@@ -171,6 +171,38 @@ export function MorphPopoverContent({
 }: MorphPopoverContentProps) {
   const ctx = useMorphContext("MorphPopoverContent");
   const reduce = useReducedMotion() ?? false;
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!ctx.open) return;
+    requestAnimationFrame(() => {
+      contentRef.current
+        ?.querySelector<HTMLElement>('[role="menuitem"]')
+        ?.focus();
+    });
+  }, [ctx.open]);
+
+  const onMenuKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const items = Array.from(
+      contentRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ??
+        [],
+    );
+    const index = items.indexOf(document.activeElement as HTMLElement);
+    let next = index;
+    if (event.key === "ArrowDown") next = (index + 1) % items.length;
+    else if (event.key === "ArrowUp") {
+      next = (index - 1 + items.length) % items.length;
+    } else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = items.length - 1;
+    else if (event.key === "Escape") {
+      event.preventDefault();
+      ctx.setOpen(false);
+      document.getElementById(ctx.triggerId)?.focus();
+      return;
+    } else return;
+    event.preventDefault();
+    items[next]?.focus();
+  };
 
   const posClass = cn(
     side === "bottom" ? "top-full" : "bottom-full",
@@ -214,7 +246,11 @@ export function MorphPopoverContent({
           )}
         >
           <motion.div
+            ref={contentRef}
             id={ctx.contentId}
+            role="menu"
+            aria-labelledby={ctx.triggerId}
+            onKeyDown={onMenuKeyDown}
             variants={clip}
             style={{ borderRadius: radius }}
             className={cn(
