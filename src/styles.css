@@ -205,24 +205,29 @@ body {
 .prose-note h2,
 .prose-note h3,
 .prose-note h4 {
-    font-weight: 650;
-    letter-spacing: -0.015em;
     line-height: 1.25;
 }
 .prose-note h1 {
-    font-size: 1.9em;
-    margin: 1em 0 0.4em;
+    font-size: 1.6em;
+    font-weight: 620;
+    letter-spacing: -0.018em;
+    margin: 1.15em 0 0.4em;
 }
 .prose-note h2 {
-    font-size: 1.45em;
+    font-size: 1.3em;
+    font-weight: 580;
+    letter-spacing: -0.012em;
     margin: 1.1em 0 0.35em;
 }
 .prose-note h3 {
-    font-size: 1.18em;
+    font-size: 1.1em;
+    font-weight: 560;
+    letter-spacing: -0.006em;
     margin: 1.1em 0 0.3em;
 }
 .prose-note h4 {
     font-size: 1em;
+    font-weight: 550;
     margin: 1em 0 0.25em;
 }
 
@@ -257,14 +262,19 @@ body {
     padding: 0.15em 0.4em;
 }
 
+.prose-note .code-block-wrap {
+    position: relative;
+    margin: 1em 0;
+}
+
 .prose-note pre {
     font-family: var(--font-mono);
     font-size: 0.86em;
     background: var(--panel);
     border: 1px solid var(--line-soft);
     border-radius: 8px;
-    padding: 14px 16px;
-    margin: 1em 0;
+    padding: 14px 52px 14px 16px;
+    margin: 0;
     overflow-x: auto;
 }
 .prose-note pre code {
@@ -272,6 +282,42 @@ body {
     padding: 0;
     border-radius: 0;
     font-size: 1em;
+}
+
+.prose-note .code-block-copy {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: inline-flex;
+    height: 26px;
+    align-items: center;
+    gap: 5px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--bg);
+    padding: 0 8px;
+    color: var(--faint);
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 550;
+    opacity: 0;
+    transform: translateY(-2px);
+    transition:
+        opacity 120ms var(--ease-out),
+        transform 120ms var(--ease-out),
+        color 100ms ease,
+        background-color 100ms ease;
+}
+
+.prose-note .code-block-wrap:hover .code-block-copy,
+.prose-note .code-block-copy:focus-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.prose-note .code-block-copy:hover {
+    background: var(--hover);
+    color: var(--ink);
 }
 
 .prose-note hr {
