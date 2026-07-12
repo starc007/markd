@@ -1,14 +1,14 @@
 {
-  "version": "0.1.3",
-  "notes": "Create a new vault right from the welcome screen, new notes open in the editor, and toasts read clearly in dark mode.",
-  "pub_date": "2026-07-09T17:46:27.321Z",
+  "version": "0.1.4",
+  "notes": "Markdown source editing, reliable nested note moves, code block copy actions, and improved keyboard accessibility.",
+  "pub_date": "2026-07-12T13:48:34.947Z",
   "platforms": {
     "darwin-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUais5QS9oMXBYdGQyV25XVU1Ray90S0U2c0RXYzdPdStaZWhaVHRHOXkzWFZYTnlEZkhvckdpMzNTRGgrbW95d3pHSWJCc1pQdGw5OFlIME5jNnVJRFFoU25DbVJxNUFJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgzNjE5MTg3CWZpbGU6TWFya2QuYXBwLnRhci5negpiTFJxc0l2WU5XUlhGQ2MwRElZVGhuMmNXbHpmbXlvTzZWTVBXK1pFY3VVVkp0QjFYQkEra2RQQkxCVDB6N0FxV2k4TVJhUlFWQ2xmd3NrUVpzNStBQT09Cg==",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUais5QS9oMXBYdFp2RmtwbVBUT1FNaXRnVTlsMzIxdjRMQ0hyVWpoa28zMGdPd3FOL2dFUnRqYmhUVVpqYi9weWdtekJRWmdWelpqbnBsY0dsVGZvdjBSbFRtZGJNRGc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgzODY0MTA2CWZpbGU6TWFya2QuYXBwLnRhci5negp0ZWlRTDNtM2FOZlJpRjNpZW1XZnVPU0lEMi9PUW0va2psOW8zWnNXendUNFBDb2d0WlpXd1lLUU5wRSsvWFdOK3hZa3hLUjRQSmk2cEUrU1pKZjJCQT09Cg==",
       "url": "https://usemarkd.app/updates/Markd.app.tar.gz"
     },
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUais5QS9oMXBYdGQyV25XVU1Ray90S0U2c0RXYzdPdStaZWhaVHRHOXkzWFZYTnlEZkhvckdpMzNTRGgrbW95d3pHSWJCc1pQdGw5OFlIME5jNnVJRFFoU25DbVJxNUFJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgzNjE5MTg3CWZpbGU6TWFya2QuYXBwLnRhci5negpiTFJxc0l2WU5XUlhGQ2MwRElZVGhuMmNXbHpmbXlvTzZWTVBXK1pFY3VVVkp0QjFYQkEra2RQQkxCVDB6N0FxV2k4TVJhUlFWQ2xmd3NrUVpzNStBQT09Cg==",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUais5QS9oMXBYdFp2RmtwbVBUT1FNaXRnVTlsMzIxdjRMQ0hyVWpoa28zMGdPd3FOL2dFUnRqYmhUVVpqYi9weWdtekJRWmdWelpqbnBsY0dsVGZvdjBSbFRtZGJNRGc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgzODY0MTA2CWZpbGU6TWFya2QuYXBwLnRhci5negp0ZWlRTDNtM2FOZlJpRjNpZW1XZnVPU0lEMi9PUW0va2psOW8zWnNXendUNFBDb2d0WlpXd1lLUU5wRSsvWFdOK3hZa3hLUjRQSmk2cEUrU1pKZjJCQT09Cg==",
       "url": "https://usemarkd.app/updates/Markd.app.tar.gz"
     }
   }
