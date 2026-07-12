@@ -1,14 +1,27 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Toaster } from "sonner";
 import { closeTab } from "@/components/editor/TabBar";
-import { AppShell } from "@/components/layout/AppShell";
-import { CommandPalette } from "@/components/palette/CommandPalette";
-import { SettingsModal } from "@/components/settings/SettingsModal";
 import { Welcome } from "@/components/welcome/Welcome";
 import { initSessionSync, restoreSession } from "@/lib/session";
 import { activeDir, useVault } from "@/stores/vault";
 import { useUi } from "@/stores/ui";
 import { useUpdater } from "@/stores/updater";
+
+const AppShell = lazy(() =>
+  import("@/components/layout/AppShell").then((module) => ({
+    default: module.AppShell,
+  })),
+);
+const CommandPalette = lazy(() =>
+  import("@/components/palette/CommandPalette").then((module) => ({
+    default: module.CommandPalette,
+  })),
+);
+const SettingsModal = lazy(() =>
+  import("@/components/settings/SettingsModal").then((module) => ({
+    default: module.SettingsModal,
+  })),
+);
 
 export default function App() {
   const status = useVault((s) => s.status);
@@ -70,9 +83,11 @@ export default function App() {
   return (
     <>
       {status === "welcome" && <Welcome />}
-      {status === "ready" && <AppShell />}
-      <CommandPalette />
-      <SettingsModal />
+      <Suspense fallback={null}>
+        {status === "ready" && <AppShell />}
+        <CommandPalette />
+        <SettingsModal />
+      </Suspense>
       <Toaster
         position="top-right"
         gap={8}

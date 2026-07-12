@@ -83,7 +83,9 @@ See [AGENTS.md](./AGENTS.md) for architecture details, or [CONTRIBUTING.md](./CO
 ## Data & Privacy
 
 - Notes are stored locally as user-owned files
-- No analytics, no tracking, no hidden network calls
+- No analytics, tracking, accounts, or note-content uploads
+- Markd connects to `usemarkd.app` to check for application updates
+- Saving a bookmark fetches that page's title, preview image, and favicon
 - Export your notes anytime — they're already just files
 
 ---

@@ -9,7 +9,7 @@
  *   1. Build your app: npm run tauri build
  *   2. Copy the built app to src-tauri/target/release/bundle/macos/
  *   3. Create a test latest.json with a higher version
- *   4. Run this server: node scripts/test-update-server.js
+ *   4. Run this server: bun run update:test-server
  *   5. Temporarily update tauri.conf.json to point to http://localhost:3000/updates/latest.json
  *   6. Run your app and test the update
  */

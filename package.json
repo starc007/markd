@@ -14,7 +14,7 @@
     "pretauri:build": "bun run version:sync",
     "posttauri:build": "bash scripts/prepare-dmg.sh",
     "update:generate": "bun scripts/generate-latest-json.js",
-    "update:test-server": "node scripts/test-update-server.js",
+    "update:test-server": "node scripts/test-update-server.cjs",
     "icon:generate": "bash scripts/generate-icns.sh",
     "prepare:dmg": "bash scripts/prepare-dmg.sh",
     "release": "bash scripts/release.sh"
