@@ -25,8 +25,13 @@ export function TabBar() {
       role="tablist"
       className="flex min-w-0 flex-1 items-stretch overflow-x-auto [scrollbar-width:none]"
     >
-      {tabs.map((rel) => (
-        <Tab key={rel} rel={rel} active={rel === active} />
+      {tabs.map((rel, index) => (
+        <Tab
+          key={rel}
+          rel={rel}
+          active={rel === active}
+          focusable={rel === active || (!active && index === 0)}
+        />
       ))}
     </motion.div>
   );
@@ -44,16 +49,25 @@ export function closeTab(rel: string) {
   }
 }
 
-function Tab({ rel, active }: { rel: string; active: boolean }) {
+function Tab({
+  rel,
+  active,
+  focusable,
+}: {
+  rel: string;
+  active: boolean;
+  focusable: boolean;
+}) {
   const setView = useVault((s) => s.setView);
 
   return (
     <div
       role="tab"
       aria-selected={active}
+      tabIndex={focusable ? 0 : -1}
       title={rel}
       className={cx(
-        "group/tab relative flex h-full min-w-0 max-w-[180px] shrink-0 cursor-pointer select-none items-center gap-1 pl-3 pr-1.5 text-[12.5px] transition-colors duration-100",
+        "group/tab relative flex h-full min-w-0 max-w-[180px] shrink-0 cursor-pointer select-none items-center gap-1 pl-3 pr-1.5 text-[12.5px] transition-colors duration-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ink",
         active ? "text-ink" : "text-muted hover:text-ink",
       )}
       onClick={() => {
@@ -62,6 +76,28 @@ function Tab({ rel, active }: { rel: string; active: boolean }) {
       onAuxClick={(event) => {
         // middle-click closes, like every code editor
         if (event.button === 1) closeTab(rel);
+      }}
+      onKeyDown={(event) => {
+        const tabs = Array.from(
+          event.currentTarget.parentElement?.querySelectorAll<HTMLElement>(
+            '[role="tab"]',
+          ) ?? [],
+        );
+        const index = tabs.indexOf(event.currentTarget);
+        let next = index;
+        if (event.key === "ArrowRight") next = (index + 1) % tabs.length;
+        else if (event.key === "ArrowLeft") {
+          next = (index - 1 + tabs.length) % tabs.length;
+        } else if (event.key === "Home") next = 0;
+        else if (event.key === "End") next = tabs.length - 1;
+        else if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          setView({ type: "note", rel });
+          return;
+        } else return;
+        event.preventDefault();
+        tabs[next]?.focus();
+        tabs[next]?.click();
       }}
     >
       {/* Active fill glides between tabs via shared layout; inactive rows get

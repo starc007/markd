@@ -208,6 +208,7 @@ export const useVault = create<VaultState>((set, get) => ({
       get().expandTo(rel);
       // Route through setView so the tab opens (blank pane otherwise).
       get().setView({ type: "note", rel });
+      useTabs.getState().requestTitleFocus(rel);
     } catch (err) {
       oops(err);
     }

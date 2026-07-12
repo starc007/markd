@@ -12,6 +12,7 @@ import TaskList from "@tiptap/extension-task-list";
 import Typography from "@tiptap/extension-typography";
 import Underline from "@tiptap/extension-underline";
 import StarterKit from "@tiptap/starter-kit";
+import { CodeBlockWithCopy } from "./CodeBlock";
 import { WikiLink } from "./wikiLink";
 
 function isRemoteSource(src: string) {
@@ -59,7 +60,8 @@ export function createExtensions(vaultRoot: string) {
     Markdown.configure({
       markedOptions: { breaks: true, gfm: true },
     }),
-    StarterKit.configure({ link: false }),
+    StarterKit.configure({ link: false, codeBlock: false }),
+    CodeBlockWithCopy,
     Underline,
     Typography,
     Link.configure({

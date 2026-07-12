@@ -54,6 +54,7 @@ pub fn run() {
             commands::bookmark_delete,
             commands::bookmark_fetch_meta,
             commands::export_bookmarks,
+            commands::export_note,
             commands::save_image_asset,
             commands::set_theme,
         ])

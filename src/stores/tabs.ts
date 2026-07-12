@@ -9,6 +9,8 @@ interface TabsState {
   tabs: string[];
   /** Bumped to ask a note's pane to scroll to top (e.g. opened via a link). */
   scrollTopReq: { rel: string; nonce: number } | null;
+  /** Bumped to ask a newly created note to select its title. */
+  titleFocusReq: { rel: string; nonce: number } | null;
   /** Add a tab for `rel` if not already open (no-op otherwise). */
   open: (rel: string) => void;
   close: (rel: string) => void;
@@ -18,12 +20,15 @@ interface TabsState {
   removeUnder: (rel: string) => void;
   /** Request that `rel`'s pane jump to the top on next render. */
   requestScrollTop: (rel: string) => void;
+  /** Request that `rel`'s title input receive focus and select its text. */
+  requestTitleFocus: (rel: string) => void;
   clear: () => void;
 }
 
 export const useTabs = create<TabsState>((set, get) => ({
   tabs: [],
   scrollTopReq: null,
+  titleFocusReq: null,
 
   open: (rel) => {
     if (!get().tabs.includes(rel)) set({ tabs: [...get().tabs, rel] });
@@ -48,7 +53,15 @@ export const useTabs = create<TabsState>((set, get) => ({
       scrollTopReq: { rel, nonce: (get().scrollTopReq?.nonce ?? 0) + 1 },
     }),
 
-  clear: () => set({ tabs: [], scrollTopReq: null }),
+  requestTitleFocus: (rel) =>
+    set({
+      titleFocusReq: {
+        rel,
+        nonce: (get().titleFocusReq?.nonce ?? 0) + 1,
+      },
+    }),
+
+  clear: () => set({ tabs: [], scrollTopReq: null, titleFocusReq: null }),
 }));
 
 /** Tab to activate after closing `rel`: right neighbor, else left, else none. */

@@ -122,7 +122,11 @@ export function TagRail({
         </p>
       )}
 
-      <Modal open={confirmTag !== null} onClose={() => setConfirmTag(null)}>
+      <Modal
+        open={confirmTag !== null}
+        onClose={() => setConfirmTag(null)}
+        ariaLabel="Delete tag"
+      >
         <div className="w-[320px] p-5">
           <h2 className="text-[14px] font-semibold text-ink">
             Delete #{confirmTag}?

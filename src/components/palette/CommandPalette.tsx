@@ -193,6 +193,7 @@ export function CommandPalette() {
     <Modal
       open={open}
       onClose={close}
+      ariaLabel="Command palette"
       align="top"
       className="mt-[16vh] w-[560px]"
     >

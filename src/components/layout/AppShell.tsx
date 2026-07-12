@@ -1,4 +1,4 @@
-import { Check, Download, FilePlus, PanelLeft, Search, Tag, X } from "lucide-react";
+import { Check, Code2, Copy, Download, FilePlus, MoreVertical, PanelLeft, Pilcrow, Search, Tag, Trash2, X } from "lucide-react";
 import { AnimatePresence, LayoutGroup, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { NoteBreadcrumb } from "@/components/editor/NoteBreadcrumb";
@@ -7,7 +7,16 @@ import { TabBar } from "@/components/editor/TabBar";
 import { BookmarksPage } from "@/components/bookmarks/BookmarksPage";
 import { TodosPage } from "@/components/todos/TodosPage";
 import { EASE_OUT, SPRING_LAYOUT, SPRING_PANEL } from "@/lib/ease";
-import { ActionSwapText } from "@/components/motion/action-swap";
+import { cx } from "@/lib/utils";
+import {
+  ActionSwapIcon,
+  ActionSwapText,
+} from "@/components/motion/action-swap";
+import {
+  MorphPopover,
+  MorphPopoverContent,
+  MorphPopoverTrigger,
+} from "@/components/motion/popover-morph";
 import { Sidebar } from "./Sidebar";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { Tooltip } from "@/components/ui/Tooltip";
@@ -34,10 +43,13 @@ export function AppShell() {
   const view = useVault((s) => s.view);
   const root = useVault((s) => s.root);
   const sidebarHidden = useUi((s) => s.sidebarHidden);
+  const markdownSource = useUi((s) => s.markdownSource);
   const toggleSidebar = useUi((s) => s.toggleSidebar);
+  const toggleMarkdownSource = useUi((s) => s.toggleMarkdownSource);
   const createBookmarkTag = useBookmarks((s) => s.createTag);
   const exportBookmarks = useBookmarks((s) => s.exportAll);
   const createTodoTag = useTodos((s) => s.createTag);
+  const [noteMenuOpen, setNoteMenuOpen] = useState(false);
 
   const path = viewPath(root, view);
 
@@ -101,6 +113,36 @@ export function AppShell() {
 
           <LayoutGroup>
             <div className="ml-auto flex items-center gap-2">
+              {view?.type === "note" && (
+                <Tooltip
+                  label={markdownSource ? "Show rich editor" : "Show Markdown source"}
+                  side="bottom"
+                >
+                  <button
+                    type="button"
+                    aria-pressed={markdownSource}
+                    onClick={toggleMarkdownSource}
+                    className={cx(
+                      "grid h-7 w-7 place-items-center rounded-md border transition-[color,background-color,border-color,transform] duration-100 active:scale-[0.96]",
+                      markdownSource
+                        ? "border-invert bg-invert text-invert-ink"
+                        : "border-line bg-hover text-muted hover:bg-active hover:text-ink",
+                    )}
+                  >
+                    <ActionSwapIcon
+                      value={markdownSource ? "rich" : "markdown"}
+                      animation="roll"
+                      className="h-[15px] w-[15px]"
+                    >
+                      {markdownSource ? (
+                        <Pilcrow size={15} strokeWidth={1.9} />
+                      ) : (
+                        <Code2 size={15} strokeWidth={1.9} />
+                      )}
+                    </ActionSwapIcon>
+                  </button>
+                </Tooltip>
+              )}
               {path && (
                 <motion.div layout transition={SPRING_LAYOUT}>
                   <CopyButton
@@ -128,6 +170,55 @@ export function AppShell() {
               {view?.type === "todos" && (
                 <NewTagButton onCreate={createTodoTag} />
               )}
+              {view?.type === "note" && (
+                <MorphPopover
+                  open={noteMenuOpen}
+                  onOpenChange={setNoteMenuOpen}
+                >
+                  <MorphPopoverTrigger>
+                    <button
+                      type="button"
+                      aria-label="Note actions"
+                      className="grid h-7 w-7 place-items-center rounded-md text-muted transition-colors duration-100 hover:text-ink"
+                    >
+                      <MoreVertical size={15} strokeWidth={2} />
+                    </button>
+                  </MorphPopoverTrigger>
+                  <MorphPopoverContent
+                    align="end"
+                    sideOffset={6}
+                    radius={10}
+                    className="w-48 bg-bg p-1"
+                  >
+                    <NoteMenuButton
+                      icon={Download}
+                      label="Export as Markdown"
+                      onClick={() => {
+                        setNoteMenuOpen(false);
+                        dispatchNoteAction("export");
+                      }}
+                    />
+                    <NoteMenuButton
+                      icon={Copy}
+                      label="Copy Markdown"
+                      onClick={() => {
+                        setNoteMenuOpen(false);
+                        dispatchNoteAction("copy");
+                      }}
+                    />
+                    <div className="mx-1 my-1 border-t border-line-soft" />
+                    <NoteMenuButton
+                      icon={Trash2}
+                      label="Delete note"
+                      danger
+                      onClick={() => {
+                        setNoteMenuOpen(false);
+                        dispatchNoteAction("delete");
+                      }}
+                    />
+                  </MorphPopoverContent>
+                </MorphPopover>
+              )}
             </div>
           </LayoutGroup>
         </div>
@@ -150,6 +241,43 @@ export function AppShell() {
         </div>
       </main>
     </div>
+  );
+}
+
+type NoteAction = "export" | "copy" | "delete";
+
+function dispatchNoteAction(action: NoteAction) {
+  window.dispatchEvent(
+    new CustomEvent("markd:note-action", { detail: { action } }),
+  );
+}
+
+function NoteMenuButton({
+  icon: Icon,
+  label,
+  danger = false,
+  onClick,
+}: {
+  icon: typeof Download;
+  label: string;
+  danger?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onClick}
+      className={cx(
+        "flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[13px] transition-colors duration-100",
+        danger
+          ? "text-danger hover:bg-danger/8"
+          : "text-ink hover:bg-hover",
+      )}
+    >
+      <Icon size={14} strokeWidth={1.75} />
+      {label}
+    </button>
   );
 }
 

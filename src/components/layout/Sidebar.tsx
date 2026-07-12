@@ -23,7 +23,6 @@ export function Sidebar() {
   const createFolder = useVault((s) => s.createFolder);
   const setSettingsOpen = useUi((s) => s.setSettingsOpen);
   const setPaletteOpen = useUi((s) => s.setPaletteOpen);
-  const saveState = useUi((s) => s.saveState);
 
   return (
     <aside className="flex h-full w-[240px] shrink-0 flex-col border-r border-line-soft bg-panel">
@@ -94,20 +93,18 @@ export function Sidebar() {
 
       <UpdateRow />
 
-      <div className="flex items-center justify-between border-t border-line-soft px-2 py-1.5">
-        <IconAction label="Settings" onClick={() => setSettingsOpen(true)}>
-          <Settings size={15} strokeWidth={1.75} />
-        </IconAction>
-        <span
-          className={cx(
-            "pr-2 text-[11px] transition-opacity duration-300",
-            saveState === "idle" && "opacity-0",
-            saveState === "saving" && "text-faint opacity-100",
-            saveState === "error" && "text-danger opacity-100",
-          )}
+      <div className="border-t border-line-soft px-2 py-1.5">
+        <button
+          type="button"
+          onClick={() => setSettingsOpen(true)}
+          className="flex h-[30px] w-full items-center gap-2.5 rounded-md px-2 text-[13px] font-medium text-muted transition-colors duration-100 hover:bg-hover hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ink"
         >
-          {saveState === "error" ? "not saved" : "saving…"}
-        </span>
+          <Settings size={15} strokeWidth={1.75} />
+          <span>Settings</span>
+          <kbd className="ml-auto font-mono text-[10px] font-normal text-faint">
+            ⌘,
+          </kbd>
+        </button>
       </div>
     </aside>
   );
