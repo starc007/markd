@@ -1,6 +1,6 @@
 import { EditorContent, useEditor } from "@tiptap/react";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ipc } from "@/lib/ipc";
 import {
@@ -21,6 +21,12 @@ import { NoteLinkPicker, type LinkPickerState } from "./NoteLinkPicker";
 import { NoteProperties } from "./NoteProperties";
 import { SelectionMenu } from "./SelectionMenu";
 import { SlashMenu, type SlashMenuState } from "./SlashMenu";
+
+const MarkdownSourceEditor = lazy(() =>
+  import("./MarkdownSourceEditor").then((module) => ({
+    default: module.MarkdownSourceEditor,
+  })),
+);
 
 /**
  * One live Tiptap instance per mounted editor. Tab panes keep an instance per
@@ -466,14 +472,10 @@ export const NoteEditor = memo(function NoteEditor({
         )}
         <div className={cx(missing && "hidden")}>
           {markdownSource ? (
-            <textarea
-              value={rawText}
-              aria-label="Markdown source"
-              autoCapitalize="off"
-              autoCorrect="off"
-              spellCheck={false}
-              onChange={(event) => {
-                const text = event.target.value;
+            <Suspense fallback={null}>
+              <MarkdownSourceEditor
+                value={rawText}
+                onChange={(text) => {
                 setRawText(text);
                 const { frontmatter: fm, body } = splitFrontmatter(text);
                 frontmatter.current = fm;
@@ -483,8 +485,8 @@ export const NoteEditor = memo(function NoteEditor({
                 debouncedPersist(body);
                 setWords(countWords(body));
               }}
-              className="min-h-[calc(100vh-190px)] w-full resize-none bg-transparent pb-20 font-mono text-[13px] leading-6 text-ink outline-none placeholder:text-faint"
-            />
+              />
+            </Suspense>
           ) : (
             <>
               <NoteProperties properties={properties} />
