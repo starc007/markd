@@ -1,4 +1,4 @@
-import { Check, Download, FilePlus, PanelLeft, Search, Tag, X } from "lucide-react";
+import { Check, Copy, Download, FileCode2, FilePlus, MoreHorizontal, PanelLeft, Search, Tag, Trash2, X } from "lucide-react";
 import { AnimatePresence, LayoutGroup, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { NoteBreadcrumb } from "@/components/editor/NoteBreadcrumb";
@@ -7,10 +7,12 @@ import { TabBar } from "@/components/editor/TabBar";
 import { BookmarksPage } from "@/components/bookmarks/BookmarksPage";
 import { TodosPage } from "@/components/todos/TodosPage";
 import { EASE_OUT, SPRING_LAYOUT, SPRING_PANEL } from "@/lib/ease";
+import { cx } from "@/lib/utils";
 import { ActionSwapText } from "@/components/motion/action-swap";
 import { Sidebar } from "./Sidebar";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { ContextMenu, type MenuPosition } from "@/components/ui/ContextMenu";
 import { useBookmarks } from "@/stores/bookmarks";
 import { useTodos } from "@/stores/todos";
 import { useUi } from "@/stores/ui";
@@ -34,10 +36,13 @@ export function AppShell() {
   const view = useVault((s) => s.view);
   const root = useVault((s) => s.root);
   const sidebarHidden = useUi((s) => s.sidebarHidden);
+  const markdownSource = useUi((s) => s.markdownSource);
   const toggleSidebar = useUi((s) => s.toggleSidebar);
+  const toggleMarkdownSource = useUi((s) => s.toggleMarkdownSource);
   const createBookmarkTag = useBookmarks((s) => s.createTag);
   const exportBookmarks = useBookmarks((s) => s.exportAll);
   const createTodoTag = useTodos((s) => s.createTag);
+  const [noteMenu, setNoteMenu] = useState<MenuPosition | null>(null);
 
   const path = viewPath(root, view);
 
@@ -101,6 +106,42 @@ export function AppShell() {
 
           <LayoutGroup>
             <div className="ml-auto flex items-center gap-2">
+              {view?.type === "note" && (
+                <>
+                  <Tooltip
+                    label={markdownSource ? "Show rich editor" : "Show Markdown source"}
+                    side="bottom"
+                  >
+                    <button
+                      type="button"
+                      aria-pressed={markdownSource}
+                      onClick={toggleMarkdownSource}
+                      className={cx(
+                        "grid h-7 w-7 place-items-center rounded-md border transition-colors duration-100",
+                        markdownSource
+                          ? "border-invert bg-invert text-invert-ink"
+                          : "border-line bg-hover text-muted hover:bg-active hover:text-ink",
+                      )}
+                    >
+                      <FileCode2 size={14} strokeWidth={1.9} />
+                    </button>
+                  </Tooltip>
+                  <Tooltip label="Note actions" side="bottom">
+                    <button
+                      type="button"
+                      aria-haspopup="menu"
+                      aria-expanded={noteMenu !== null}
+                      onClick={(event) => {
+                        const rect = event.currentTarget.getBoundingClientRect();
+                        setNoteMenu({ x: rect.right, y: rect.bottom + 4 });
+                      }}
+                      className="grid h-7 w-7 place-items-center rounded-md border border-line bg-hover text-muted transition-colors duration-100 hover:bg-active hover:text-ink"
+                    >
+                      <MoreHorizontal size={15} strokeWidth={2} />
+                    </button>
+                  </Tooltip>
+                </>
+              )}
               {path && (
                 <motion.div layout transition={SPRING_LAYOUT}>
                   <CopyButton
@@ -130,6 +171,30 @@ export function AppShell() {
               )}
             </div>
           </LayoutGroup>
+          {noteMenu && view?.type === "note" && (
+            <ContextMenu
+              position={noteMenu}
+              onClose={() => setNoteMenu(null)}
+              items={[
+                {
+                  label: "Export as Markdown",
+                  icon: Download,
+                  onSelect: () => dispatchNoteAction("export"),
+                },
+                {
+                  label: "Copy Markdown",
+                  icon: Copy,
+                  onSelect: () => dispatchNoteAction("copy"),
+                },
+                {
+                  label: "Delete note",
+                  icon: Trash2,
+                  danger: true,
+                  onSelect: () => dispatchNoteAction("delete"),
+                },
+              ]}
+            />
+          )}
         </div>
 
         <div className="relative min-h-0 flex-1">
@@ -150,6 +215,14 @@ export function AppShell() {
         </div>
       </main>
     </div>
+  );
+}
+
+type NoteAction = "export" | "copy" | "delete";
+
+function dispatchNoteAction(action: NoteAction) {
+  window.dispatchEvent(
+    new CustomEvent("markd:note-action", { detail: { action } }),
   );
 }
 

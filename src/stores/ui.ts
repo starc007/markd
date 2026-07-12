@@ -6,10 +6,12 @@ interface UiState {
   paletteOpen: boolean;
   settingsOpen: boolean;
   sidebarHidden: boolean;
+  markdownSource: boolean;
   saveState: SaveState;
   setPaletteOpen: (open: boolean) => void;
   setSettingsOpen: (open: boolean) => void;
   toggleSidebar: () => void;
+  toggleMarkdownSource: () => void;
   setSaveState: (state: SaveState) => void;
 }
 
@@ -17,9 +19,12 @@ export const useUi = create<UiState>((set, get) => ({
   paletteOpen: false,
   settingsOpen: false,
   sidebarHidden: false,
+  markdownSource: false,
   saveState: "idle",
   setPaletteOpen: (paletteOpen) => set({ paletteOpen }),
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
   toggleSidebar: () => set({ sidebarHidden: !get().sidebarHidden }),
+  toggleMarkdownSource: () =>
+    set({ markdownSource: !get().markdownSource }),
   setSaveState: (saveState) => set({ saveState }),
 }));

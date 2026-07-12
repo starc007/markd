@@ -46,12 +46,14 @@ export const NoteEditor = memo(function NoteEditor({
   const vaultRoot = useVault((s) => s.root);
   const renameEntry = useVault((s) => s.renameEntry);
   const setSaveState = useUi((s) => s.setSaveState);
+  const markdownSource = useUi((s) => s.markdownSource);
 
   const [slashMenu, setSlashMenu] = useState<SlashMenuState | null>(null);
   const [linkPicker, setLinkPicker] = useState<LinkPickerState | null>(null);
   const [words, setWords] = useState(0);
   const [missing, setMissing] = useState(false);
   const [properties, setProperties] = useState<Property[]>([]);
+  const [rawText, setRawText] = useState("");
 
   const relRef = useRef(rel);
   // Frontmatter of the loaded note, kept out of the editor and re-attached on
@@ -237,6 +239,7 @@ export const NoteEditor = memo(function NoteEditor({
         // text; rewrites only reach the file if the user edits the note.
         const { frontmatter: fm, body } = splitFrontmatter(text);
         frontmatter.current = fm;
+        setRawText(text);
         setProperties(parseFrontmatter(fm));
         const notes = flattenNotes(useVault.getState().tree);
         swapping.current = true;
@@ -248,7 +251,12 @@ export const NoteEditor = memo(function NoteEditor({
         // A freshly loaded note starts at the top.
         savedScroll.current = 0;
         if (scrollRef.current) scrollRef.current.scrollTop = 0;
-        if (body.length === 0 && activeRef.current) {
+        const titleFocus = useTabs.getState().titleFocusReq;
+        if (
+          body.length === 0 &&
+          activeRef.current &&
+          titleFocus?.rel !== rel
+        ) {
           editor.commands.focus("start");
         }
       })
@@ -260,6 +268,27 @@ export const NoteEditor = memo(function NoteEditor({
       cancelled = true;
     };
   }, [editor, rel, persist, debouncedPersist]);
+
+  const previousSource = useRef(markdownSource);
+  useEffect(() => {
+    if (!editor || previousSource.current === markdownSource) return;
+    previousSource.current = markdownSource;
+
+    if (markdownSource) {
+      setRawText(joinFrontmatter(frontmatter.current, editor.getMarkdown()));
+      return;
+    }
+
+    const { frontmatter: fm, body } = splitFrontmatter(rawText);
+    frontmatter.current = fm;
+    setProperties(parseFrontmatter(fm));
+    const notes = flattenNotes(useVault.getState().tree);
+    swapping.current = true;
+    editor.commands.setContent(wikiToMarkdown(body, notes), {
+      contentType: "markdown",
+    });
+    swapping.current = false;
+  }, [editor, markdownSource, rawText]);
 
   // Flush any unsaved edit when the editor unmounts (tab closed / view gone).
   useEffect(() => {
@@ -280,6 +309,7 @@ export const NoteEditor = memo(function NoteEditor({
       if (cur !== relRef.current || pending.current !== null) return;
       if (disk !== lastSaved.current) {
         lastSaved.current = disk;
+        setRawText(disk);
         const { frontmatter: fm, body } = splitFrontmatter(disk);
         frontmatter.current = fm;
         setProperties(parseFrontmatter(fm));
@@ -345,6 +375,7 @@ export const NoteEditor = memo(function NoteEditor({
 
   // Honor a scroll-to-top request for this note (fired when opened via a link).
   const scrollTopReq = useTabs((s) => s.scrollTopReq);
+  const titleFocusReq = useTabs((s) => s.titleFocusReq);
   useEffect(() => {
     if (!scrollTopReq || scrollTopReq.rel !== rel) return;
     savedScroll.current = 0;
@@ -359,6 +390,36 @@ export const NoteEditor = memo(function NoteEditor({
         : Promise.resolve();
     flush.then(action);
   };
+
+  useEffect(() => {
+    if (!active || !editor) return;
+    const handle = async (event: Event) => {
+      try {
+        const action = (event as CustomEvent<{ action?: string }>).detail?.action;
+        const markdown = markdownSource
+          ? rawText
+          : joinFrontmatter(frontmatter.current, editor.getMarkdown());
+
+        if (action === "copy") {
+          await navigator.clipboard.writeText(markdown);
+          toast("Markdown copied");
+        } else if (action === "export") {
+          const path = await ipc.exportNote(relRef.current, markdown);
+          if (path) toast("Note exported", { description: path });
+        } else if (action === "delete") {
+          debouncedPersist.cancel();
+          if (pending.current !== null) {
+            await persist(pending.current, relRef.current);
+          }
+          await useVault.getState().deleteEntry(relRef.current);
+        }
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : String(err));
+      }
+    };
+    window.addEventListener("markd:note-action", handle);
+    return () => window.removeEventListener("markd:note-action", handle);
+  }, [active, debouncedPersist, editor, markdownSource, persist, rawText]);
 
   // Insert a page link to `rel` over the slash range, as a link mark whose
   // href is the note path (serializes to `[title](rel)` markdown on save).
@@ -397,15 +458,42 @@ export const NoteEditor = memo(function NoteEditor({
           <TitleInput
             key={rel}
             title={noteTitle(rel)}
+            focusNonce={
+              titleFocusReq?.rel === rel ? titleFocusReq.nonce : undefined
+            }
             onRename={(name) => flushThen(() => renameEntry(rel, name))}
           />
         )}
         <div className={cx(missing && "hidden")}>
-          <NoteProperties properties={properties} />
-          <EditorContent editor={editor} />
+          {markdownSource ? (
+            <textarea
+              value={rawText}
+              aria-label="Markdown source"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+              onChange={(event) => {
+                const text = event.target.value;
+                setRawText(text);
+                const { frontmatter: fm, body } = splitFrontmatter(text);
+                frontmatter.current = fm;
+                setProperties(parseFrontmatter(fm));
+                pending.current = body;
+                setSaveState("saving");
+                debouncedPersist(body);
+                setWords(countWords(body));
+              }}
+              className="min-h-[calc(100vh-190px)] w-full resize-none bg-transparent pb-20 font-mono text-[13px] leading-6 text-ink outline-none placeholder:text-faint"
+            />
+          ) : (
+            <>
+              <NoteProperties properties={properties} />
+              <EditorContent editor={editor} />
+            </>
+          )}
         </div>
-        {active && editor && <SelectionMenu editor={editor} />}
-        {active && (
+        {active && editor && !markdownSource && <SelectionMenu editor={editor} />}
+        {active && !markdownSource && (
           <SlashMenu
             editor={editor}
             menu={slashMenu}
@@ -422,7 +510,7 @@ export const NoteEditor = memo(function NoteEditor({
             }}
           />
         )}
-        {active && linkPicker && (
+        {active && !markdownSource && linkPicker && (
           <NoteLinkPicker
             state={linkPicker}
             currentRel={rel}
@@ -449,12 +537,20 @@ type EditorInstance = ReturnType<typeof useEditor>;
 
 function TitleInput({
   title,
+  focusNonce,
   onRename,
 }: {
   title: string;
+  focusNonce?: number;
   onRename: (name: string) => void;
 }) {
   const ref = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (focusNonce === undefined) return;
+    ref.current?.focus();
+    ref.current?.select();
+  }, [focusNonce]);
 
   const submit = () => {
     const value = ref.current?.value.trim();

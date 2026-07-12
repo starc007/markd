@@ -81,6 +81,8 @@ export const ipc = {
   bookmarkDelete: (id: string) => call<void>("bookmark_delete", { id }),
   bookmarkFetchMeta: (id: string) => call<Bookmark>("bookmark_fetch_meta", { id }),
   exportBookmarks: () => call<string | null>("export_bookmarks"),
+  exportNote: (rel: string, content: string) =>
+    call<string | null>("export_note", { rel, content }),
 
   saveImageAsset: (data: string, extension: string) =>
     call<string>("save_image_asset", { data, extension }),

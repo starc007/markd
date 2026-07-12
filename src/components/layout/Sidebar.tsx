@@ -23,7 +23,6 @@ export function Sidebar() {
   const createFolder = useVault((s) => s.createFolder);
   const setSettingsOpen = useUi((s) => s.setSettingsOpen);
   const setPaletteOpen = useUi((s) => s.setPaletteOpen);
-  const saveState = useUi((s) => s.saveState);
 
   return (
     <aside className="flex h-full w-[240px] shrink-0 flex-col border-r border-line-soft bg-panel">
@@ -94,20 +93,10 @@ export function Sidebar() {
 
       <UpdateRow />
 
-      <div className="flex items-center justify-between border-t border-line-soft px-2 py-1.5">
+      <div className="flex items-center border-t border-line-soft px-2 py-1.5">
         <IconAction label="Settings" onClick={() => setSettingsOpen(true)}>
           <Settings size={15} strokeWidth={1.75} />
         </IconAction>
-        <span
-          className={cx(
-            "pr-2 text-[11px] transition-opacity duration-300",
-            saveState === "idle" && "opacity-0",
-            saveState === "saving" && "text-faint opacity-100",
-            saveState === "error" && "text-danger opacity-100",
-          )}
-        >
-          {saveState === "error" ? "not saved" : "saving…"}
-        </span>
       </div>
     </aside>
   );

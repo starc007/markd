@@ -346,6 +346,45 @@ pub async fn export_bookmarks(
     Ok(Some(path.display().to_string()))
 }
 
+/// Export the current note contents to a markdown file chosen by the user.
+/// The frontend supplies its live editor contents so an in-flight autosave
+/// cannot make the exported copy stale.
+#[tauri::command]
+pub async fn export_note(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    rel: String,
+    content: String,
+) -> AppResult<Option<String>> {
+    // Validate that the source note still exists and `rel` stays in the vault.
+    notes::read_note(&state.root()?, &rel)?;
+    let file_name = PathBuf::from(&rel)
+        .file_name()
+        .map(|name| name.to_string_lossy().to_string())
+        .unwrap_or_else(|| "note.md".to_string());
+
+    let picked = tauri::async_runtime::spawn_blocking({
+        let app = app.clone();
+        move || {
+            app.dialog()
+                .file()
+                .set_file_name(file_name)
+                .blocking_save_file()
+        }
+    })
+    .await
+    .map_err(|e| AppError::Other(e.to_string()))?;
+
+    let Some(dest) = picked else {
+        return Ok(None);
+    };
+    let path = dest
+        .into_path()
+        .map_err(|e| AppError::InvalidPath(e.to_string()))?;
+    std::fs::write(&path, content)?;
+    Ok(Some(path.display().to_string()))
+}
+
 /// Fetch title/preview-image/favicon for a bookmark and persist them.
 /// Marks the bookmark as fetched even on failure so the UI can offer retry
 /// without hammering the network on every load.
