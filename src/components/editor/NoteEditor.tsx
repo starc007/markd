@@ -10,6 +10,11 @@ import {
   type Property,
 } from "@/lib/frontmatter";
 import { hrefToRel, relToHref, wikiToMarkdown } from "@/lib/noteLinks";
+import {
+  containsMdx,
+  isMarkdownPaste,
+  stripMdxComponents,
+} from "@/lib/markdownPaste";
 import { flattenNotes } from "@/lib/tree";
 import { cx, debounce, noteTitle } from "@/lib/utils";
 import { useTabs } from "@/stores/tabs";
@@ -77,6 +82,10 @@ export const NoteEditor = memo(function NoteEditor({
   // True only while we're programmatically replacing the document, so the
   // resulting onUpdate doesn't mark the fresh content as an unsaved edit.
   const swapping = useRef(false);
+  // Editor props are installed when useEditor first runs, before the hook has
+  // returned its instance. A ref keeps paste and drop handlers connected to
+  // the live editor instead of the initial null render.
+  const editorRef = useRef<EditorInstance>(null);
 
   const persist = useCallback(
     async (markdown: string, targetRel: string) => {
@@ -161,13 +170,14 @@ export const NoteEditor = memo(function NoteEditor({
           "data-gramm": "false",
         },
         handlePaste(view, event) {
+          const currentEditor = editorRef.current;
           const image = Array.from(event.clipboardData?.files ?? []).find((f) =>
             f.type.startsWith("image/"),
           );
-          if (image && editor) {
+          if (image && currentEditor) {
             event.preventDefault();
             insertImageFile({
-              editor,
+              editor: currentEditor,
               file: image,
               range: {
                 from: view.state.selection.from,
@@ -177,13 +187,72 @@ export const NoteEditor = memo(function NoteEditor({
             });
             return true;
           }
+
+          const text = event.clipboardData?.getData("text/plain") ?? "";
+          const inCodeBlock = Boolean(
+            view.state.selection.$from.parent.type.spec.code,
+          );
+
+          const pasted = splitFrontmatter(text);
+          const importsDocument = Boolean(
+            currentEditor &&
+              !inCodeBlock &&
+              currentEditor.isEmpty &&
+              !frontmatter.current &&
+              pasted.frontmatter,
+          );
+          if (currentEditor && importsDocument) {
+            frontmatter.current = pasted.frontmatter;
+            setProperties(parseFrontmatter(pasted.frontmatter));
+            const notes = flattenNotes(useVault.getState().tree);
+            const richBody = containsMdx(pasted.body)
+              ? stripMdxComponents(pasted.body)
+              : pasted.body;
+            try {
+              const inserted = currentEditor.commands.insertContent(
+                wikiToMarkdown(richBody, notes),
+                { contentType: "markdown" },
+              );
+              if (inserted) {
+                event.preventDefault();
+                return true;
+              }
+            } catch {
+              // Fall through to native paste after restoring the prior state.
+            }
+            frontmatter.current = "";
+            setProperties([]);
+          }
+
+          if (currentEditor && !inCodeBlock && isMarkdownPaste(text)) {
+            const notes = flattenNotes(useVault.getState().tree);
+            const richText = containsMdx(text)
+              ? stripMdxComponents(text)
+              : text;
+            try {
+              const inserted = currentEditor.commands.insertContent(
+                wikiToMarkdown(richText, notes),
+                { contentType: "markdown" },
+              );
+              if (inserted) {
+                event.preventDefault();
+                return true;
+              }
+            } catch {
+              // MDX and other unsupported Markdown extensions cannot always be
+              // represented by the rich editor. Let native paste preserve the
+              // clipboard text instead of blocking the paste completely.
+            }
+          }
+
           return false;
         },
         handleDrop(view, event) {
+          const currentEditor = editorRef.current;
           const image = Array.from(event.dataTransfer?.files ?? []).find((f) =>
             f.type.startsWith("image/"),
           );
-          if (!image || !editor) return false;
+          if (!image || !currentEditor) return false;
           event.preventDefault();
           const coords = view.posAtCoords({
             left: event.clientX,
@@ -191,7 +260,7 @@ export const NoteEditor = memo(function NoteEditor({
           });
           const position = coords?.pos ?? view.state.selection.from;
           insertImageFile({
-            editor,
+            editor: currentEditor,
             file: image,
             range: { from: position, to: position },
             vaultRoot,
@@ -217,6 +286,7 @@ export const NoteEditor = memo(function NoteEditor({
     },
     [extensions],
   );
+  editorRef.current = editor;
 
   // Load the note (and swap in its content) whenever `rel` changes. The old
   // note's pending edit is flushed to *its* path first, before we switch.
