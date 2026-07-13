@@ -22,7 +22,10 @@ export function NotesWorkspace({ visible }: { visible: boolean }) {
       {tabs.map((rel) => (
         <div
           key={rel}
-          className={cx("absolute inset-0", rel !== active && "hidden")}
+          className={cx(
+            "absolute inset-0 overflow-hidden",
+            rel !== active && "hidden",
+          )}
         >
           <NoteEditor rel={rel} active={visible && rel === active} />
         </div>

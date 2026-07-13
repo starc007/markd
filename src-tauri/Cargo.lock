@@ -6,6 +6,7 @@ version = 4
 name = "Markd"
 version = "0.1.4"
 dependencies = [
+ "regex",
  "reqwest",
  "scraper",
  "serde",

@@ -2,6 +2,10 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import {
+  NOTES_REWRITTEN,
+  notifyBacklinksChanged,
+} from "@/lib/backlinks";
 import { ipc } from "@/lib/ipc";
 import {
   joinFrontmatter,
@@ -10,6 +14,11 @@ import {
   type Property,
 } from "@/lib/frontmatter";
 import { hrefToRel, relToHref, wikiToMarkdown } from "@/lib/noteLinks";
+import {
+  containsMdx,
+  isMarkdownPaste,
+  stripMdxComponents,
+} from "@/lib/markdownPaste";
 import { flattenNotes } from "@/lib/tree";
 import { cx, debounce, noteTitle } from "@/lib/utils";
 import { useTabs } from "@/stores/tabs";
@@ -60,6 +69,7 @@ export const NoteEditor = memo(function NoteEditor({
   const [missing, setMissing] = useState(false);
   const [properties, setProperties] = useState<Property[]>([]);
   const [rawText, setRawText] = useState("");
+  const [loadNonce, setLoadNonce] = useState(0);
 
   const relRef = useRef(rel);
   // Frontmatter of the loaded note, kept out of the editor and re-attached on
@@ -77,6 +87,10 @@ export const NoteEditor = memo(function NoteEditor({
   // True only while we're programmatically replacing the document, so the
   // resulting onUpdate doesn't mark the fresh content as an unsaved edit.
   const swapping = useRef(false);
+  // Editor props are installed when useEditor first runs, before the hook has
+  // returned its instance. A ref keeps paste and drop handlers connected to
+  // the live editor instead of the initial null render.
+  const editorRef = useRef<EditorInstance>(null);
 
   const persist = useCallback(
     async (markdown: string, targetRel: string) => {
@@ -86,6 +100,7 @@ export const NoteEditor = memo(function NoteEditor({
       const fullText = joinFrontmatter(frontmatter.current, markdown);
       try {
         await ipc.writeNote(targetRel, fullText);
+        notifyBacklinksChanged();
         if (relRef.current === targetRel) {
           lastSaved.current = fullText;
           setSaveState("idle");
@@ -161,13 +176,14 @@ export const NoteEditor = memo(function NoteEditor({
           "data-gramm": "false",
         },
         handlePaste(view, event) {
+          const currentEditor = editorRef.current;
           const image = Array.from(event.clipboardData?.files ?? []).find((f) =>
             f.type.startsWith("image/"),
           );
-          if (image && editor) {
+          if (image && currentEditor) {
             event.preventDefault();
             insertImageFile({
-              editor,
+              editor: currentEditor,
               file: image,
               range: {
                 from: view.state.selection.from,
@@ -177,13 +193,72 @@ export const NoteEditor = memo(function NoteEditor({
             });
             return true;
           }
+
+          const text = event.clipboardData?.getData("text/plain") ?? "";
+          const inCodeBlock = Boolean(
+            view.state.selection.$from.parent.type.spec.code,
+          );
+
+          const pasted = splitFrontmatter(text);
+          const importsDocument = Boolean(
+            currentEditor &&
+              !inCodeBlock &&
+              currentEditor.isEmpty &&
+              !frontmatter.current &&
+              pasted.frontmatter,
+          );
+          if (currentEditor && importsDocument) {
+            frontmatter.current = pasted.frontmatter;
+            setProperties(parseFrontmatter(pasted.frontmatter));
+            const notes = flattenNotes(useVault.getState().tree);
+            const richBody = containsMdx(pasted.body)
+              ? stripMdxComponents(pasted.body)
+              : pasted.body;
+            try {
+              const inserted = currentEditor.commands.insertContent(
+                wikiToMarkdown(richBody, notes, relRef.current),
+                { contentType: "markdown" },
+              );
+              if (inserted) {
+                event.preventDefault();
+                return true;
+              }
+            } catch {
+              // Fall through to native paste after restoring the prior state.
+            }
+            frontmatter.current = "";
+            setProperties([]);
+          }
+
+          if (currentEditor && !inCodeBlock && isMarkdownPaste(text)) {
+            const notes = flattenNotes(useVault.getState().tree);
+            const richText = containsMdx(text)
+              ? stripMdxComponents(text)
+              : text;
+            try {
+              const inserted = currentEditor.commands.insertContent(
+                wikiToMarkdown(richText, notes, relRef.current),
+                { contentType: "markdown" },
+              );
+              if (inserted) {
+                event.preventDefault();
+                return true;
+              }
+            } catch {
+              // MDX and other unsupported Markdown extensions cannot always be
+              // represented by the rich editor. Let native paste preserve the
+              // clipboard text instead of blocking the paste completely.
+            }
+          }
+
           return false;
         },
         handleDrop(view, event) {
+          const currentEditor = editorRef.current;
           const image = Array.from(event.dataTransfer?.files ?? []).find((f) =>
             f.type.startsWith("image/"),
           );
-          if (!image || !editor) return false;
+          if (!image || !currentEditor) return false;
           event.preventDefault();
           const coords = view.posAtCoords({
             left: event.clientX,
@@ -191,7 +266,7 @@ export const NoteEditor = memo(function NoteEditor({
           });
           const position = coords?.pos ?? view.state.selection.from;
           insertImageFile({
-            editor,
+            editor: currentEditor,
             file: image,
             range: { from: position, to: position },
             vaultRoot,
@@ -217,6 +292,7 @@ export const NoteEditor = memo(function NoteEditor({
     },
     [extensions],
   );
+  editorRef.current = editor;
 
   // Load the note (and swap in its content) whenever `rel` changes. The old
   // note's pending edit is flushed to *its* path first, before we switch.
@@ -249,10 +325,11 @@ export const NoteEditor = memo(function NoteEditor({
         setProperties(parseFrontmatter(fm));
         const notes = flattenNotes(useVault.getState().tree);
         swapping.current = true;
-        editor.commands.setContent(wikiToMarkdown(body, notes), {
+        editor.commands.setContent(wikiToMarkdown(body, notes, rel), {
           contentType: "markdown",
         });
         swapping.current = false;
+        setLoadNonce((value) => value + 1);
         setWords(countWords(body));
         // A freshly loaded note starts at the top.
         savedScroll.current = 0;
@@ -290,7 +367,7 @@ export const NoteEditor = memo(function NoteEditor({
     setProperties(parseFrontmatter(fm));
     const notes = flattenNotes(useVault.getState().tree);
     swapping.current = true;
-    editor.commands.setContent(wikiToMarkdown(body, notes), {
+    editor.commands.setContent(wikiToMarkdown(body, notes, relRef.current), {
       contentType: "markdown",
     });
     swapping.current = false;
@@ -321,10 +398,11 @@ export const NoteEditor = memo(function NoteEditor({
         setProperties(parseFrontmatter(fm));
         const notes = flattenNotes(useVault.getState().tree);
         swapping.current = true;
-        editor.commands.setContent(wikiToMarkdown(body, notes), {
+        editor.commands.setContent(wikiToMarkdown(body, notes, cur), {
           contentType: "markdown",
         });
         swapping.current = false;
+        setLoadNonce((value) => value + 1);
         setWords(countWords(body));
       }
     } catch {
@@ -336,8 +414,13 @@ export const NoteEditor = memo(function NoteEditor({
     const onFocus = () => {
       if (activeRef.current) reloadIfChanged();
     };
+    const onNotesRewritten = () => reloadIfChanged();
     window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
+    window.addEventListener(NOTES_REWRITTEN, onNotesRewritten);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener(NOTES_REWRITTEN, onNotesRewritten);
+    };
   }, [reloadIfChanged]);
 
   // On tab activation: restore the pane's scroll offset (display:none wiped
@@ -382,11 +465,61 @@ export const NoteEditor = memo(function NoteEditor({
   // Honor a scroll-to-top request for this note (fired when opened via a link).
   const scrollTopReq = useTabs((s) => s.scrollTopReq);
   const titleFocusReq = useTabs((s) => s.titleFocusReq);
+  const mentionFocusReq = useTabs((s) =>
+    s.mentionFocusReq?.rel === rel ? s.mentionFocusReq : null,
+  );
   useEffect(() => {
     if (!scrollTopReq || scrollTopReq.rel !== rel) return;
     savedScroll.current = 0;
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
   }, [scrollTopReq, rel]);
+
+  useEffect(() => {
+    if (
+      !active ||
+      !editor ||
+      !mentionFocusReq ||
+      loadedRel.current !== rel
+    ) {
+      return;
+    }
+
+    let seen = -1;
+    let previousEnd = -1;
+    let match: { from: number; to: number } | null = null;
+    editor.state.doc.descendants((node, position) => {
+      if (!node.isText || match) return !match;
+      const linksToTarget = node.marks.some(
+        (mark) =>
+          mark.type.name === "link" &&
+          hrefToRel(mark.attrs.href as string | undefined) ===
+            mentionFocusReq.targetRel,
+      );
+      if (!linksToTarget) {
+        previousEnd = -1;
+        return true;
+      }
+      if (position !== previousEnd) seen += 1;
+      previousEnd = position + node.nodeSize;
+      if (seen === mentionFocusReq.occurrence) {
+        match = { from: position, to: position + node.nodeSize };
+        return false;
+      }
+      return true;
+    });
+
+    if (match) {
+      editor
+        .chain()
+        .focus()
+        .setTextSelection(match)
+        .scrollIntoView()
+        .run();
+    } else {
+      savedScroll.current = 0;
+      if (scrollRef.current) scrollRef.current.scrollTop = 0;
+    }
+  }, [active, editor, loadNonce, mentionFocusReq, rel]);
 
   const flushThen = (action: () => void) => {
     debouncedPersist.cancel();
@@ -524,7 +657,7 @@ export const NoteEditor = memo(function NoteEditor({
       {active && (
         <div
           className={cx(
-            "pointer-events-none fixed bottom-3 right-4 text-[11px] tabular-nums text-faint transition-opacity duration-300",
+            "pointer-events-none absolute bottom-3 right-4 text-[11px] tabular-nums text-faint transition-opacity duration-300",
             (words === 0 || missing) && "opacity-0",
           )}
         >

@@ -27,6 +27,7 @@ thiserror = "2"
 reqwest = { version = "0.12", default-features = false, features = ["native-tls", "gzip"] }
 scraper = "0.23"
 trash = "5"
+regex = "1"
 
 [dev-dependencies]
 tempfile = "3"

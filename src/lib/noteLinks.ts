@@ -29,6 +29,16 @@ export function relToHref(rel: string): string {
   return rel.split("/").map(encodeURIComponent).join("/");
 }
 
+/** Vault rel → visible label, relative when it sits below the current note. */
+export function relToLabel(rel: string, fromRel?: string): string {
+  const label = rel.replace(/\.md$/i, "");
+  const fromDir = fromRel?.split("/").slice(0, -1).join("/");
+  if (fromDir && label.startsWith(`${fromDir}/`)) {
+    return label.slice(fromDir.length + 1);
+  }
+  return label;
+}
+
 /**
  * Resolve a `[[wiki]]` target to a note. Matches by full rel first, then by
  * bare filename anywhere in the vault (wiki-style); falls back to a
@@ -37,6 +47,7 @@ export function relToHref(rel: string): string {
 export function resolveWiki(
   target: string,
   notes: { rel: string }[],
+  fromRel?: string,
 ): { rel: string; title: string } {
   const clean = target.trim().replace(/\.md$/i, "");
   const lower = clean.toLowerCase();
@@ -51,7 +62,7 @@ export function resolveWiki(
           lower,
       );
   const rel = (byRel ?? byName)?.rel ?? `${clean}.md`;
-  const title = (rel.split("/").pop() ?? rel).replace(/\.md$/i, "");
+  const title = relToLabel(rel, fromRel);
   return { rel, title };
 }
 
@@ -63,13 +74,56 @@ export function resolveWiki(
 export function wikiToMarkdown(
   markdown: string,
   notes: { rel: string }[],
+  fromRel?: string,
 ): string {
-  return markdown.replace(
+  const withWikiLinks = markdown.replace(
     /\[\[([^[\]|]+)(?:\|([^[\]]+))?\]\]/g,
     (_, target: string, alias?: string) => {
-      const { rel, title } = resolveWiki(target, notes);
+      const { rel, title } = resolveWiki(target, notes, fromRel);
       const text = (alias ?? title).trim();
       return `[${text}](${relToHref(rel)})`;
+    },
+  );
+
+  return expandDefaultLinkLabels(withWikiLinks, notes, fromRel);
+}
+
+/** Expand basename-only labels for existing links to nested notes. */
+export function expandDefaultLinkLabels(
+  markdown: string,
+  notes: { rel: string }[],
+  fromRel?: string,
+): string {
+  const noteRels = new Map(
+    notes.map((note) => [note.rel.toLowerCase(), note.rel]),
+  );
+
+  return markdown.replace(
+    /(?<!!)\[([^\]]+)\]\(([^)\s]+)(?:\s+("[^"]*"|'[^']*'))?\)/g,
+    (match, label: string, href: string, title?: string) => {
+      let candidate: string | null;
+      try {
+        candidate = hrefToRel(href);
+      } catch {
+        return match;
+      }
+      if (!candidate) return match;
+
+      const rel = noteRels.get(candidate.toLowerCase());
+      if (!rel || !rel.includes("/")) return match;
+
+      const filename = rel.split("/").pop()?.replace(/\.md$/i, "") ?? "";
+      const fullLabel = relToLabel(rel);
+      const currentLabel = label.trim().toLowerCase();
+      if (
+        currentLabel !== filename.toLowerCase() &&
+        currentLabel !== fullLabel.toLowerCase()
+      ) {
+        return match;
+      }
+
+      const suffix = title ? ` ${title}` : "";
+      return `[${relToLabel(rel, fromRel)}](${href}${suffix})`;
     },
   );
 }

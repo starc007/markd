@@ -1,5 +1,7 @@
 mod agent_docs;
 mod assets;
+mod backlink_links;
+mod backlinks;
 mod bookmarks;
 mod commands;
 mod config;
@@ -34,6 +36,7 @@ pub fn run() {
             commands::move_entry,
             commands::delete_entry,
             commands::search_notes,
+            commands::backlinks_for,
             commands::todos_list,
             commands::todo_add,
             commands::todo_toggle,

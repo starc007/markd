@@ -5,6 +5,7 @@ use serde::Serialize;
 use tauri::{AppHandle, Manager, State};
 use tauri_plugin_dialog::DialogExt;
 
+use crate::backlinks::{self, BacklinkMention};
 use crate::bookmarks::{self, Bookmark};
 use crate::config::{self, Theme};
 use crate::error::{AppError, AppResult};
@@ -194,6 +195,11 @@ pub fn search_notes(
     limit: Option<usize>,
 ) -> AppResult<Vec<SearchHit>> {
     search::search_notes(&state.root()?, &query, limit.unwrap_or(30))
+}
+
+#[tauri::command]
+pub fn backlinks_for(state: State<'_, AppState>, rel: String) -> AppResult<Vec<BacklinkMention>> {
+    backlinks::find_backlinks(&state.root()?, &rel)
 }
 
 // ---- todos ----
