@@ -45,6 +45,13 @@ export interface SearchHit {
   titleMatch: boolean;
 }
 
+export interface BacklinkMention {
+  sourceRel: string;
+  context: string;
+  line: number;
+  occurrence: number;
+}
+
 export type View =
   | { type: "note"; rel: string }
   | { type: "todos" }

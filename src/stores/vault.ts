@@ -1,6 +1,10 @@
 import { create } from "zustand";
 import { toast } from "sonner";
 import { ipc } from "@/lib/ipc";
+import {
+  notifyBacklinksChanged,
+  notifyNotesRewritten,
+} from "@/lib/backlinks";
 import type { Theme, TreeNode, VaultSnapshot, View } from "@/lib/types";
 import { parentDir } from "@/lib/utils";
 import { useTabs } from "@/stores/tabs";
@@ -209,6 +213,7 @@ export const useVault = create<VaultState>((set, get) => ({
       // Route through setView so the tab opens (blank pane otherwise).
       get().setView({ type: "note", rel });
       useTabs.getState().requestTitleFocus(rel);
+      notifyBacklinksChanged();
     } catch (err) {
       oops(err);
     }
@@ -240,6 +245,7 @@ export const useVault = create<VaultState>((set, get) => ({
           set({ view: { type: "note", rel: view.rel.replace(rel, next) } });
         }
       }
+      notifyNotesRewritten();
     } catch (err) {
       oops(err);
     }
@@ -260,6 +266,7 @@ export const useVault = create<VaultState>((set, get) => ({
           set({ view: { type: "note", rel: view.rel.replace(rel, next) } });
         }
       }
+      notifyNotesRewritten();
     } catch (err) {
       oops(err);
     }
@@ -287,6 +294,7 @@ export const useVault = create<VaultState>((set, get) => ({
       toast("Moved to Trash", {
         description: rel.split("/").pop()?.replace(/\.md$/, ""),
       });
+      notifyBacklinksChanged();
     } catch (err) {
       oops(err);
     }

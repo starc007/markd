@@ -1,6 +1,23 @@
-import { Check, Code2, Copy, Download, FilePlus, MoreVertical, PanelLeft, Pilcrow, Search, Tag, Trash2, X } from "lucide-react";
+import {
+  Check,
+  Code2,
+  Copy,
+  Download,
+  FilePlus,
+  MoreVertical,
+  PanelLeft,
+  Pilcrow,
+  Search,
+  Tag,
+  Trash2,
+  X,
+} from "lucide-react";
 import { AnimatePresence, LayoutGroup, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
+import {
+  BacklinksSidebar,
+  BacklinksToggle,
+} from "@/components/editor/BacklinksSidebar";
 import { NoteBreadcrumb } from "@/components/editor/NoteBreadcrumb";
 import { NotesWorkspace } from "@/components/editor/NotesWorkspace";
 import { TabBar } from "@/components/editor/TabBar";
@@ -43,8 +60,10 @@ export function AppShell() {
   const view = useVault((s) => s.view);
   const root = useVault((s) => s.root);
   const sidebarHidden = useUi((s) => s.sidebarHidden);
+  const backlinksHidden = useUi((s) => s.backlinksHidden);
   const markdownSource = useUi((s) => s.markdownSource);
   const toggleSidebar = useUi((s) => s.toggleSidebar);
+  const toggleBacklinks = useUi((s) => s.toggleBacklinks);
   const toggleMarkdownSource = useUi((s) => s.toggleMarkdownSource);
   const createBookmarkTag = useBookmarks((s) => s.createTag);
   const exportBookmarks = useBookmarks((s) => s.exportAll);
@@ -113,6 +132,12 @@ export function AppShell() {
 
           <LayoutGroup>
             <div className="ml-auto flex items-center gap-2">
+              {view?.type === "note" && (
+                <BacklinksToggle
+                  open={!backlinksHidden}
+                  onToggle={toggleBacklinks}
+                />
+              )}
               {view?.type === "note" && (
                 <Tooltip
                   label={markdownSource ? "Show rich editor" : "Show Markdown source"}
@@ -240,6 +265,12 @@ export function AppShell() {
           {!view && <EmptyState />}
         </div>
       </main>
+
+      <BacklinksSidebar
+        rel={view?.type === "note" ? view.rel : null}
+        open={!backlinksHidden}
+        onClose={toggleBacklinks}
+      />
     </div>
   );
 }

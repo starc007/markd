@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use crate::backlinks;
 use crate::error::{AppError, AppResult};
 use crate::util::sanitize_name;
 use crate::vault::{notes_root, rel_of, resolve_rel};
@@ -111,7 +112,9 @@ pub fn rename_entry(root: &Path, rel: &str, new_name: &str) -> AppResult<String>
         available_path(&dir, &name, Some("md"))
     };
     fs::rename(&path, &target)?;
-    rel_of(root, &target)
+    let next = rel_of(root, &target)?;
+    backlinks::rewrite_links(root, rel, &next)?;
+    Ok(next)
 }
 
 /// Move a note or folder into `target_dir_rel`. Returns the new rel path.
@@ -149,7 +152,9 @@ pub fn move_entry(root: &Path, rel: &str, target_dir_rel: &str) -> AppResult<Str
         available_path(&target_dir, &stem, Some("md"))
     };
     fs::rename(&path, &target)?;
-    rel_of(root, &target)
+    let next = rel_of(root, &target)?;
+    backlinks::rewrite_links(root, rel, &next)?;
+    Ok(next)
 }
 
 /// Move a note or folder to the OS trash.

@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
+  BacklinkMention,
   Bookmark,
   SearchHit,
   Theme,
@@ -53,6 +54,8 @@ export const ipc = {
   deleteEntry: (rel: string) => call<void>("delete_entry", { rel }),
   searchNotes: (query: string, limit?: number) =>
     call<SearchHit[]>("search_notes", { query, limit }),
+  backlinksFor: (rel: string) =>
+    call<BacklinkMention[]>("backlinks_for", { rel }),
 
   todosList: () => call<Todo[]>("todos_list"),
   todoAdd: (text: string) => call<Todo>("todo_add", { text }),

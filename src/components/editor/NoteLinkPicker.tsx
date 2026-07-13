@@ -2,6 +2,7 @@ import { FileText } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { flattenNotes } from "@/lib/tree";
+import { relToLabel } from "@/lib/noteLinks";
 import { cx, noteTitle, parentDir } from "@/lib/utils";
 import { useVault } from "@/stores/vault";
 
@@ -66,7 +67,7 @@ export function NoteLinkPicker({
 
   const choose = (index: number) => {
     const note = filtered[index];
-    if (note) onPick(note.rel, noteTitle(note.rel));
+    if (note) onPick(note.rel, relToLabel(note.rel, currentRel));
   };
 
   return (

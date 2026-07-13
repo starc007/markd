@@ -2,6 +2,10 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import {
+  NOTES_REWRITTEN,
+  notifyBacklinksChanged,
+} from "@/lib/backlinks";
 import { ipc } from "@/lib/ipc";
 import {
   joinFrontmatter,
@@ -65,6 +69,7 @@ export const NoteEditor = memo(function NoteEditor({
   const [missing, setMissing] = useState(false);
   const [properties, setProperties] = useState<Property[]>([]);
   const [rawText, setRawText] = useState("");
+  const [loadNonce, setLoadNonce] = useState(0);
 
   const relRef = useRef(rel);
   // Frontmatter of the loaded note, kept out of the editor and re-attached on
@@ -95,6 +100,7 @@ export const NoteEditor = memo(function NoteEditor({
       const fullText = joinFrontmatter(frontmatter.current, markdown);
       try {
         await ipc.writeNote(targetRel, fullText);
+        notifyBacklinksChanged();
         if (relRef.current === targetRel) {
           lastSaved.current = fullText;
           setSaveState("idle");
@@ -210,7 +216,7 @@ export const NoteEditor = memo(function NoteEditor({
               : pasted.body;
             try {
               const inserted = currentEditor.commands.insertContent(
-                wikiToMarkdown(richBody, notes),
+                wikiToMarkdown(richBody, notes, relRef.current),
                 { contentType: "markdown" },
               );
               if (inserted) {
@@ -231,7 +237,7 @@ export const NoteEditor = memo(function NoteEditor({
               : text;
             try {
               const inserted = currentEditor.commands.insertContent(
-                wikiToMarkdown(richText, notes),
+                wikiToMarkdown(richText, notes, relRef.current),
                 { contentType: "markdown" },
               );
               if (inserted) {
@@ -319,10 +325,11 @@ export const NoteEditor = memo(function NoteEditor({
         setProperties(parseFrontmatter(fm));
         const notes = flattenNotes(useVault.getState().tree);
         swapping.current = true;
-        editor.commands.setContent(wikiToMarkdown(body, notes), {
+        editor.commands.setContent(wikiToMarkdown(body, notes, rel), {
           contentType: "markdown",
         });
         swapping.current = false;
+        setLoadNonce((value) => value + 1);
         setWords(countWords(body));
         // A freshly loaded note starts at the top.
         savedScroll.current = 0;
@@ -360,7 +367,7 @@ export const NoteEditor = memo(function NoteEditor({
     setProperties(parseFrontmatter(fm));
     const notes = flattenNotes(useVault.getState().tree);
     swapping.current = true;
-    editor.commands.setContent(wikiToMarkdown(body, notes), {
+    editor.commands.setContent(wikiToMarkdown(body, notes, relRef.current), {
       contentType: "markdown",
     });
     swapping.current = false;
@@ -391,10 +398,11 @@ export const NoteEditor = memo(function NoteEditor({
         setProperties(parseFrontmatter(fm));
         const notes = flattenNotes(useVault.getState().tree);
         swapping.current = true;
-        editor.commands.setContent(wikiToMarkdown(body, notes), {
+        editor.commands.setContent(wikiToMarkdown(body, notes, cur), {
           contentType: "markdown",
         });
         swapping.current = false;
+        setLoadNonce((value) => value + 1);
         setWords(countWords(body));
       }
     } catch {
@@ -406,8 +414,13 @@ export const NoteEditor = memo(function NoteEditor({
     const onFocus = () => {
       if (activeRef.current) reloadIfChanged();
     };
+    const onNotesRewritten = () => reloadIfChanged();
     window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
+    window.addEventListener(NOTES_REWRITTEN, onNotesRewritten);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener(NOTES_REWRITTEN, onNotesRewritten);
+    };
   }, [reloadIfChanged]);
 
   // On tab activation: restore the pane's scroll offset (display:none wiped
@@ -452,11 +465,61 @@ export const NoteEditor = memo(function NoteEditor({
   // Honor a scroll-to-top request for this note (fired when opened via a link).
   const scrollTopReq = useTabs((s) => s.scrollTopReq);
   const titleFocusReq = useTabs((s) => s.titleFocusReq);
+  const mentionFocusReq = useTabs((s) =>
+    s.mentionFocusReq?.rel === rel ? s.mentionFocusReq : null,
+  );
   useEffect(() => {
     if (!scrollTopReq || scrollTopReq.rel !== rel) return;
     savedScroll.current = 0;
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
   }, [scrollTopReq, rel]);
+
+  useEffect(() => {
+    if (
+      !active ||
+      !editor ||
+      !mentionFocusReq ||
+      loadedRel.current !== rel
+    ) {
+      return;
+    }
+
+    let seen = -1;
+    let previousEnd = -1;
+    let match: { from: number; to: number } | null = null;
+    editor.state.doc.descendants((node, position) => {
+      if (!node.isText || match) return !match;
+      const linksToTarget = node.marks.some(
+        (mark) =>
+          mark.type.name === "link" &&
+          hrefToRel(mark.attrs.href as string | undefined) ===
+            mentionFocusReq.targetRel,
+      );
+      if (!linksToTarget) {
+        previousEnd = -1;
+        return true;
+      }
+      if (position !== previousEnd) seen += 1;
+      previousEnd = position + node.nodeSize;
+      if (seen === mentionFocusReq.occurrence) {
+        match = { from: position, to: position + node.nodeSize };
+        return false;
+      }
+      return true;
+    });
+
+    if (match) {
+      editor
+        .chain()
+        .focus()
+        .setTextSelection(match)
+        .scrollIntoView()
+        .run();
+    } else {
+      savedScroll.current = 0;
+      if (scrollRef.current) scrollRef.current.scrollTop = 0;
+    }
+  }, [active, editor, loadNonce, mentionFocusReq, rel]);
 
   const flushThen = (action: () => void) => {
     debouncedPersist.cancel();
@@ -594,7 +657,7 @@ export const NoteEditor = memo(function NoteEditor({
       {active && (
         <div
           className={cx(
-            "pointer-events-none fixed bottom-3 right-4 text-[11px] tabular-nums text-faint transition-opacity duration-300",
+            "pointer-events-none absolute bottom-3 right-4 text-[11px] tabular-nums text-faint transition-opacity duration-300",
             (words === 0 || missing) && "opacity-0",
           )}
         >

@@ -11,6 +11,13 @@ interface TabsState {
   scrollTopReq: { rel: string; nonce: number } | null;
   /** Bumped to ask a newly created note to select its title. */
   titleFocusReq: { rel: string; nonce: number } | null;
+  /** Bumped to focus a specific link occurrence after opening a backlink. */
+  mentionFocusReq: {
+    rel: string;
+    targetRel: string;
+    occurrence: number;
+    nonce: number;
+  } | null;
   /** Add a tab for `rel` if not already open (no-op otherwise). */
   open: (rel: string) => void;
   close: (rel: string) => void;
@@ -22,6 +29,12 @@ interface TabsState {
   requestScrollTop: (rel: string) => void;
   /** Request that `rel`'s title input receive focus and select its text. */
   requestTitleFocus: (rel: string) => void;
+  /** Request that a source note reveal its link to `targetRel`. */
+  requestMentionFocus: (
+    rel: string,
+    targetRel: string,
+    occurrence: number,
+  ) => void;
   clear: () => void;
 }
 
@@ -29,6 +42,7 @@ export const useTabs = create<TabsState>((set, get) => ({
   tabs: [],
   scrollTopReq: null,
   titleFocusReq: null,
+  mentionFocusReq: null,
 
   open: (rel) => {
     if (!get().tabs.includes(rel)) set({ tabs: [...get().tabs, rel] });
@@ -61,7 +75,23 @@ export const useTabs = create<TabsState>((set, get) => ({
       },
     }),
 
-  clear: () => set({ tabs: [], scrollTopReq: null, titleFocusReq: null }),
+  requestMentionFocus: (rel, targetRel, occurrence) =>
+    set({
+      mentionFocusReq: {
+        rel,
+        targetRel,
+        occurrence,
+        nonce: (get().mentionFocusReq?.nonce ?? 0) + 1,
+      },
+    }),
+
+  clear: () =>
+    set({
+      tabs: [],
+      scrollTopReq: null,
+      titleFocusReq: null,
+      mentionFocusReq: null,
+    }),
 }));
 
 /** Tab to activate after closing `rel`: right neighbor, else left, else none. */
