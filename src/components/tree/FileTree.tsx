@@ -11,13 +11,9 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import {
-  FilePlus,
   FileText,
   Folder,
   FolderOpen,
-  FolderPlus,
-  Pencil,
-  Trash2,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -25,13 +21,16 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useRef,
+  useMemo,
   useState,
 } from "react";
 import type { TreeNode } from "@/lib/types";
 import { EASE_OUT } from "@/lib/ease";
 import { cx, parentDir } from "@/lib/utils";
 import { useVault } from "@/stores/vault";
+import { usePins } from "@/stores/pins";
+import { RenameInput } from "./RenameInput";
+import { entryMenuItems } from "./treeMenu";
 import {
   ContextMenu,
   type MenuItem,
@@ -62,6 +61,7 @@ const TreeContext = createContext<TreeApi | null>(null);
 
 export function FileTree() {
   const tree = useVault((s) => s.tree);
+  const pins = usePins((s) => s.pins);
   const moveEntry = useVault((s) => s.moveEntry);
   const [renaming, setRenaming] = useState<string | null>(null);
   const [focusRel, setFocusRel] = useState<string | null>(null);
@@ -72,6 +72,10 @@ export function FileTree() {
   } | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
+  const visibleTree = useMemo(
+    () => withoutPinnedEntries(tree, new Set(pins)),
+    [pins, tree],
   );
 
   const openMenu = useCallback(
@@ -89,14 +93,18 @@ export function FileTree() {
     }
     moveEntry(rel, dir);
   };
-  const draggedNode = dragging ? findNode(tree, dragging) : null;
+  const draggedNode = dragging ? findNode(visibleTree, dragging) : null;
 
   useEffect(() => {
     const currentView = useVault.getState().view;
     const activeRel = currentView?.type === "note" ? currentView.rel : null;
-    if (focusRel && findNode(tree, focusRel)) return;
-    setFocusRel(activeRel && findNode(tree, activeRel) ? activeRel : tree[0]?.rel ?? null);
-  }, [tree, focusRel]);
+    if (focusRel && findNode(visibleTree, focusRel)) return;
+    setFocusRel(
+      activeRel && findNode(visibleTree, activeRel)
+        ? activeRel
+        : visibleTree[0]?.rel ?? null,
+    );
+  }, [visibleTree, focusRel]);
 
   return (
     <DndContext
@@ -116,7 +124,11 @@ export function FileTree() {
           openMenu,
         }}
       >
-        <TreeList tree={tree} dragging={dragging} />
+        <TreeList
+          tree={visibleTree}
+          dragging={dragging}
+          showEmpty={tree.length === 0}
+        />
         {menu && (
           <ContextMenu
             position={menu.position}
@@ -132,40 +144,26 @@ export function FileTree() {
   );
 
   function menuItems(node: TreeNode): MenuItem[] {
-    const vault = useVault.getState();
-    const items: MenuItem[] = [];
-    if (node.kind === "folder") {
-      items.push(
-        {
-          label: "New note",
-          icon: FilePlus,
-          onSelect: () => vault.createNote(node.rel),
-        },
-        {
-          label: "New folder",
-          icon: FolderPlus,
-          onSelect: async () => {
-            const rel = await vault.createFolder(node.rel, "Untitled");
-            if (rel) setRenaming(rel);
-          },
-        },
-      );
-    }
-    items.push(
-      {
-        label: "Rename",
-        icon: Pencil,
-        onSelect: () => setRenaming(node.rel),
-      },
-      {
-        label: "Move to Trash",
-        icon: Trash2,
-        danger: true,
-        onSelect: () => vault.deleteEntry(node.rel),
-      },
-    );
-    return items;
+    return entryMenuItems(node, {
+      onRename: setRenaming,
+      pinMode: "toggle",
+    });
   }
+}
+
+function withoutPinnedEntries(nodes: TreeNode[], pins: Set<string>): TreeNode[] {
+  return nodes.flatMap((node) => {
+    if (pins.has(node.rel)) return [];
+    if (node.kind === "note") return [node];
+    return [
+      {
+        ...node,
+        children: node.children
+          ? withoutPinnedEntries(node.children, pins)
+          : node.children,
+      },
+    ];
+  });
 }
 
 function findNode(nodes: TreeNode[], rel: string): TreeNode | null {
@@ -196,9 +194,11 @@ function DragPreview({ node }: { node: TreeNode }) {
 function TreeList({
   tree,
   dragging,
+  showEmpty,
 }: {
   tree: TreeNode[];
   dragging: string | null;
+  showEmpty: boolean;
 }) {
   const eligible = Boolean(dragging && parentDir(dragging) !== "");
   const { setNodeRef } = useDroppable({
@@ -217,7 +217,7 @@ function TreeList({
       {tree.map((node) => (
         <Row key={node.rel} node={node} depth={0} />
       ))}
-      {tree.length === 0 && (
+      {showEmpty && (
         <p className="px-2 pt-2 text-[12.5px] leading-relaxed text-faint">
           No notes yet. Press{" "}
           <kbd className="rounded border border-line bg-bg px-1 font-mono text-[10.5px]">
@@ -372,7 +372,7 @@ function Row({ node, depth }: { node: TreeNode; depth: number }) {
         )}
 
         {isRenaming ? (
-          <RenameInput node={node} />
+          <RenameInput node={node} onDone={() => api?.setRenaming(null)} />
         ) : (
           <span className={cx("truncate", isFolder && "font-medium")}>
             {node.name}
@@ -405,43 +405,5 @@ function Row({ node, depth }: { node: TreeNode; depth: number }) {
         )}
       </AnimatePresence>
     </>
-  );
-}
-
-function RenameInput({ node }: { node: TreeNode }) {
-  const api = useContext(TreeContext);
-  const renameEntry = useVault((s) => s.renameEntry);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const submitted = useRef(false);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-    inputRef.current?.select();
-  }, []);
-
-  const submit = () => {
-    if (submitted.current) return;
-    submitted.current = true;
-    const value = inputRef.current?.value.trim();
-    api?.setRenaming(null);
-    if (value && value !== node.name) renameEntry(node.rel, value);
-  };
-
-  return (
-    <input
-      ref={inputRef}
-      defaultValue={node.name}
-      className="w-full min-w-0 rounded-sm bg-bg px-1 text-[13px] text-ink outline-none ring-1 ring-line"
-      onClick={(event) => event.stopPropagation()}
-      onBlur={submit}
-      onKeyDown={(event) => {
-        event.stopPropagation();
-        if (event.key === "Enter") submit();
-        if (event.key === "Escape") {
-          submitted.current = true;
-          api?.setRenaming(null);
-        }
-      }}
-    />
   );
 }

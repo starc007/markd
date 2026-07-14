@@ -8,6 +8,7 @@ mod config;
 mod error;
 mod link_meta;
 mod notes;
+mod pins;
 mod search;
 mod todos;
 mod util;
@@ -37,6 +38,9 @@ pub fn run() {
             commands::delete_entry,
             commands::search_notes,
             commands::backlinks_for,
+            commands::pins_list,
+            commands::pin_note,
+            commands::unpin_note,
             commands::todos_list,
             commands::todo_add,
             commands::todo_toggle,

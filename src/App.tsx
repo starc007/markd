@@ -5,6 +5,7 @@ import { Welcome } from "@/components/welcome/Welcome";
 import { initSessionSync, restoreSession } from "@/lib/session";
 import { activeDir, useVault } from "@/stores/vault";
 import { useUi } from "@/stores/ui";
+import { usePins } from "@/stores/pins";
 import { useUpdater } from "@/stores/updater";
 
 const AppShell = lazy(() =>
@@ -40,6 +41,15 @@ export default function App() {
   // whenever the active vault changes).
   useEffect(() => {
     if (status === "ready" && root) restoreSession(root);
+  }, [status, root]);
+
+  useEffect(() => {
+    if (status === "ready" && root) {
+      usePins.getState().clear();
+      void usePins.getState().load();
+    } else {
+      usePins.getState().clear();
+    }
   }, [status, root]);
 
   // Pick up edits made outside the app when the window regains focus.
