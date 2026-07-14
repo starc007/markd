@@ -1,7 +1,6 @@
-import { FileText, Folder, FolderOpen, Pin } from "lucide-react";
+import { FileText, Pin } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useMemo, useState } from "react";
-import { ActionSwapIcon } from "@/components/motion/action-swap";
 import {
   ContextMenu,
   type MenuPosition,
@@ -12,6 +11,7 @@ import { cx } from "@/lib/utils";
 import { usePins } from "@/stores/pins";
 import { useVault } from "@/stores/vault";
 import { RenameInput } from "./RenameInput";
+import { FolderMorphIcon } from "./FolderMorphIcon";
 import { entryMenuItems } from "./treeMenu";
 
 interface PinnedMenu {
@@ -169,17 +169,10 @@ function PinnedRow({
         }}
       >
         {isFolder ? (
-          <ActionSwapIcon
-            value={isOpen ? "open" : "closed"}
-            animation="roll"
-            className="mr-2 h-[14px] w-[14px] text-faint"
-          >
-            {isOpen ? (
-              <FolderOpen size={14} strokeWidth={1.75} />
-            ) : (
-              <Folder size={14} strokeWidth={1.75} />
-            )}
-          </ActionSwapIcon>
+          <FolderMorphIcon
+            open={isOpen}
+            className="mr-2 h-[14px] w-[14px] shrink-0 text-faint"
+          />
         ) : (
           <FileText
             size={14}

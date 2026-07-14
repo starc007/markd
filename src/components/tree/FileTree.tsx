@@ -12,8 +12,6 @@ import {
 } from "@dnd-kit/core";
 import {
   FileText,
-  Folder,
-  FolderOpen,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -36,7 +34,7 @@ import {
   type MenuItem,
   type MenuPosition,
 } from "@/components/ui/ContextMenu";
-import { ActionSwapIcon } from "@/components/motion/action-swap";
+import { FolderMorphIcon } from "./FolderMorphIcon";
 
 const ROOT_DROP_ID = "markd:notes-root";
 
@@ -180,7 +178,10 @@ function DragPreview({ node }: { node: TreeNode }) {
   return (
     <div className="flex h-[30px] w-[208px] items-center rounded-md border border-line bg-panel px-2 text-[13px] text-ink shadow-lg shadow-black/10">
       {isFolder ? (
-        <Folder size={14} strokeWidth={1.75} className="mr-2 text-faint" />
+        <FolderMorphIcon
+          open={false}
+          className="mr-2 h-[14px] w-[14px] text-faint"
+        />
       ) : (
         <FileText size={14} strokeWidth={1.75} className="mr-2 text-faint" />
       )}
@@ -349,20 +350,13 @@ function Row({ node, depth }: { node: TreeNode; depth: number }) {
         data-rel={node.rel}
       >
         {isFolder ? (
-          <ActionSwapIcon
-            value={isOpen ? "open" : "closed"}
-            animation="roll"
+          <FolderMorphIcon
+            open={isOpen}
             className={cx(
-              "mr-2 h-[14px] w-[14px]",
+              "mr-2 h-[14px] w-[14px] shrink-0",
               isActive ? "text-ink" : "text-faint",
             )}
-          >
-            {isOpen ? (
-              <FolderOpen size={14} strokeWidth={1.75} />
-            ) : (
-              <Folder size={14} strokeWidth={1.75} />
-            )}
-          </ActionSwapIcon>
+          />
         ) : (
           <FileText
             size={14}
