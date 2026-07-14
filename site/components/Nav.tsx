@@ -6,9 +6,10 @@ import { DownloadButton } from "./ui/download-button";
 import { GITHUB } from "@/lib/config";
 
 const LINKS = [
-  { label: "Features", href: "#features" },
-  { label: "Agent", href: "#agent" },
-  { label: "FAQ", href: "#faq" },
+  { label: "Features", href: "/#features" },
+  { label: "Agent", href: "/#agent" },
+  { label: "FAQ", href: "/#faq" },
+  { label: "Changelog", href: "/changelog" },
   { label: "GitHub", href: GITHUB },
 ];
 

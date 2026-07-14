@@ -14,8 +14,9 @@ const COLUMNS = [
   {
     title: "Product",
     links: [
-      { label: "Features", href: "#features" },
-      { label: "Agent", href: "#agent" },
+      { label: "Features", href: "/#features" },
+      { label: "Agent", href: "/#agent" },
+      { label: "Changelog", href: "/changelog" },
       { label: "Releases", href: GITHUB + "/releases" },
     ],
   },
