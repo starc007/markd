@@ -9,6 +9,7 @@ import {
   Settings,
 } from "lucide-react";
 import { FileTree } from "@/components/tree/FileTree";
+import { PinnedNotes } from "@/components/tree/PinnedNotes";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { cx } from "@/lib/utils";
 import { useUi } from "@/stores/ui";
@@ -68,6 +69,8 @@ export function Sidebar() {
       </nav>
 
       <div className="mx-4 my-2 border-t border-line-soft" />
+
+      <PinnedNotes />
 
       <div className="flex items-center justify-between pl-4 pr-2 pb-1">
         <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">

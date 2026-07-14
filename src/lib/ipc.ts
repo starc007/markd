@@ -56,6 +56,9 @@ export const ipc = {
     call<SearchHit[]>("search_notes", { query, limit }),
   backlinksFor: (rel: string) =>
     call<BacklinkMention[]>("backlinks_for", { rel }),
+  pinsList: () => call<string[]>("pins_list"),
+  pinNote: (rel: string) => call<string[]>("pin_note", { rel }),
+  unpinNote: (rel: string) => call<string[]>("unpin_note", { rel }),
 
   todosList: () => call<Todo[]>("todos_list"),
   todoAdd: (text: string) => call<Todo>("todo_add", { text }),

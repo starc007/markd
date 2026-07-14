@@ -12,7 +12,7 @@ use crate::error::{AppError, AppResult};
 use crate::search::SearchHit;
 use crate::todos::{self, Todo};
 use crate::vault::{self, TreeNode};
-use crate::{agent_docs, assets, link_meta, notes, search};
+use crate::{agent_docs, assets, link_meta, notes, pins, search};
 
 #[derive(Default)]
 pub struct AppState {
@@ -200,6 +200,23 @@ pub fn search_notes(
 #[tauri::command]
 pub fn backlinks_for(state: State<'_, AppState>, rel: String) -> AppResult<Vec<BacklinkMention>> {
     backlinks::find_backlinks(&state.root()?, &rel)
+}
+
+// ---- pins ----
+
+#[tauri::command]
+pub fn pins_list(state: State<'_, AppState>) -> AppResult<Vec<String>> {
+    pins::list(&state.root()?)
+}
+
+#[tauri::command]
+pub fn pin_note(state: State<'_, AppState>, rel: String) -> AppResult<Vec<String>> {
+    pins::pin(&state.root()?, &rel)
+}
+
+#[tauri::command]
+pub fn unpin_note(state: State<'_, AppState>, rel: String) -> AppResult<Vec<String>> {
+    pins::unpin(&state.root()?, &rel)
 }
 
 // ---- todos ----

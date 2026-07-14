@@ -8,6 +8,7 @@ import {
 import type { Theme, TreeNode, VaultSnapshot, View } from "@/lib/types";
 import { parentDir } from "@/lib/utils";
 import { useTabs } from "@/stores/tabs";
+import { usePins } from "@/stores/pins";
 
 type Status = "loading" | "welcome" | "ready";
 
@@ -163,6 +164,7 @@ export const useVault = create<VaultState>((set, get) => ({
     if (get().status !== "ready") return;
     try {
       set({ tree: await ipc.loadTree() });
+      await usePins.getState().load();
     } catch {
       // transient (e.g. vault briefly unavailable) — next refresh wins
     }

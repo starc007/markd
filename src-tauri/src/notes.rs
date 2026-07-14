@@ -1,10 +1,10 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::backlinks;
 use crate::error::{AppError, AppResult};
 use crate::util::sanitize_name;
 use crate::vault::{notes_root, rel_of, resolve_rel};
+use crate::{backlinks, pins};
 
 const WELCOME: &str = r#"# Welcome to Markd
 
@@ -114,6 +114,7 @@ pub fn rename_entry(root: &Path, rel: &str, new_name: &str) -> AppResult<String>
     fs::rename(&path, &target)?;
     let next = rel_of(root, &target)?;
     backlinks::rewrite_links(root, rel, &next)?;
+    pins::remap(root, rel, &next)?;
     Ok(next)
 }
 
@@ -154,6 +155,7 @@ pub fn move_entry(root: &Path, rel: &str, target_dir_rel: &str) -> AppResult<Str
     fs::rename(&path, &target)?;
     let next = rel_of(root, &target)?;
     backlinks::rewrite_links(root, rel, &next)?;
+    pins::remap(root, rel, &next)?;
     Ok(next)
 }
 
@@ -164,12 +166,14 @@ pub fn delete_entry(root: &Path, rel: &str) -> AppResult<()> {
         return Err(AppError::NotFound(rel.to_string()));
     }
     trash::delete(&path).map_err(|e| AppError::Other(format!("trash: {e}")))?;
+    pins::remove_under(root, rel)?;
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::pins;
     use crate::vault::ensure_layout;
     use tempfile::tempdir;
 
@@ -201,10 +205,13 @@ mod tests {
         let dir = setup();
         let folder = create_folder(dir.path(), "", "projects").unwrap();
         let rel = create_note(dir.path(), "", "Idea").unwrap();
+        pins::pin(dir.path(), &rel).unwrap();
         let renamed = rename_entry(dir.path(), &rel, "Big Idea").unwrap();
         assert_eq!(renamed, "Big Idea.md");
+        assert_eq!(pins::list(dir.path()).unwrap(), ["Big Idea.md"]);
         let moved = move_entry(dir.path(), &renamed, &folder).unwrap();
         assert_eq!(moved, "projects/Big Idea.md");
+        assert_eq!(pins::list(dir.path()).unwrap(), ["projects/Big Idea.md"]);
     }
 
     #[test]

@@ -6,6 +6,8 @@ import {
   FilePlus,
   MoreVertical,
   PanelLeft,
+  Pin,
+  PinOff,
   Pilcrow,
   Search,
   Tag,
@@ -39,6 +41,7 @@ import { CopyButton } from "@/components/ui/CopyButton";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { useBookmarks } from "@/stores/bookmarks";
 import { useTodos } from "@/stores/todos";
+import { usePins } from "@/stores/pins";
 import { useUi } from "@/stores/ui";
 import { useVault } from "@/stores/vault";
 
@@ -68,6 +71,8 @@ export function AppShell() {
   const createBookmarkTag = useBookmarks((s) => s.createTag);
   const exportBookmarks = useBookmarks((s) => s.exportAll);
   const createTodoTag = useTodos((s) => s.createTag);
+  const pins = usePins((s) => s.pins);
+  const togglePin = usePins((s) => s.toggle);
   const [noteMenuOpen, setNoteMenuOpen] = useState(false);
 
   const path = viewPath(root, view);
@@ -215,6 +220,14 @@ export function AppShell() {
                     radius={10}
                     className="w-48 bg-bg p-1"
                   >
+                    <NoteMenuButton
+                      icon={pins.includes(view.rel) ? PinOff : Pin}
+                      label={pins.includes(view.rel) ? "Unpin note" : "Pin note"}
+                      onClick={() => {
+                        setNoteMenuOpen(false);
+                        void togglePin(view.rel);
+                      }}
+                    />
                     <NoteMenuButton
                       icon={Download}
                       label="Export as Markdown"
