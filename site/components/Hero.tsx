@@ -2,6 +2,7 @@
 
 import { motion, useReducedMotion } from "motion/react";
 import { AppDemo } from "./AppDemo";
+import { GitHubIcon } from "./ui/github-icon";
 import { ButtonLink } from "./ui/button";
 import { DownloadButton } from "./ui/download-button";
 import { EASE_OUT } from "@/lib/ease";
@@ -70,6 +71,7 @@ export function Hero() {
             className="w-full sm:w-auto"
             target="_blank"
           >
+            <GitHubIcon className="size-[17px]" />
             GitHub
           </ButtonLink>
         </motion.div>

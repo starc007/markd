@@ -7,6 +7,7 @@ import { LogoMark } from "./Logo";
 import { TextReveal } from "./ui/text-reveal";
 import { ButtonLink } from "./ui/button";
 import { DownloadButton } from "./ui/download-button";
+import { GitHubIcon } from "./ui/github-icon";
 import { EASE_OUT } from "@/lib/ease";
 import { GITHUB, VERSION } from "@/lib/config";
 
@@ -71,6 +72,7 @@ export function Footer() {
                 size="lg"
                 target="_blank"
               >
+                <GitHubIcon className="size-[17px]" />
                 Star on GitHub
               </ButtonLink>
             </motion.div>
