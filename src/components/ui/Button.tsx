@@ -40,7 +40,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         whileTap={reduce || disabled ? undefined : { scale: 0.96 }}
         transition={SPRING_PRESS}
         className={cn(
-          "inline-flex select-none items-center justify-center font-medium transition-colors duration-100",
+          "flex select-none items-center justify-center font-medium transition-colors duration-100",
           "disabled:pointer-events-none disabled:opacity-50",
           VARIANT[variant],
           SIZE[size],

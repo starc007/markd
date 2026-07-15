@@ -4,6 +4,7 @@ import {
   Copy,
   Download,
   FilePlus,
+  ListPlus,
   MoreVertical,
   PanelLeft,
   Pin,
@@ -229,6 +230,16 @@ export function AppShell() {
                       }}
                     />
                     <NoteMenuButton
+                      icon={ListPlus}
+                      label="Add property"
+                      onClick={() => {
+                        setNoteMenuOpen(false);
+                        if (markdownSource) toggleMarkdownSource();
+                        dispatchNoteAction("add-property");
+                      }}
+                    />
+                    <div className="mx-1 my-1 border-t border-line-soft" />
+                    <NoteMenuButton
                       icon={Download}
                       label="Export as Markdown"
                       onClick={() => {
@@ -288,7 +299,7 @@ export function AppShell() {
   );
 }
 
-type NoteAction = "export" | "copy" | "delete";
+type NoteAction = "add-property" | "export" | "copy" | "delete";
 
 function dispatchNoteAction(action: NoteAction) {
   window.dispatchEvent(
