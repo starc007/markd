@@ -1,66 +1,106 @@
+import { emit, listen } from "@tauri-apps/api/event";
 import { CornerDownLeft, Feather, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { motion } from "motion/react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { toast, Toaster } from "sonner";
 import { Button } from "@/components/ui/Button";
-import { Modal } from "@/components/ui/Modal";
-import { useUi } from "@/stores/ui";
-import { useVault } from "@/stores/vault";
+import { ipc } from "@/lib/ipc";
+import { EASE_OUT } from "@/lib/ease";
+import { applyTheme } from "@/lib/theme";
 
-export function QuickCaptureModal() {
-  const open = useUi((state) => state.quickCaptureOpen);
-  const setOpen = useUi((state) => state.setQuickCaptureOpen);
-  const createCapturedNote = useVault((state) => state.createCapturedNote);
+const OPEN_EVENT = "markd:quick-capture-open";
+const NOTES_CHANGED_EVENT = "markd:notes-changed";
+
+export function QuickCaptureWindow() {
   const [title, setTitle] = useState("");
   const [value, setValue] = useState("");
   const [saving, setSaving] = useState(false);
+  const [openNonce, setOpenNonce] = useState(0);
   const titleRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    requestAnimationFrame(() => titleRef.current?.focus());
-  }, [open]);
-
-  const close = () => {
-    if (saving) return;
-    setOpen(false);
+  const reset = useCallback(() => {
     setTitle("");
     setValue("");
-  };
+    setSaving(false);
+    setOpenNonce((nonce) => nonce + 1);
+    requestAnimationFrame(() => titleRef.current?.focus());
+  }, []);
+
+  useEffect(() => {
+    void ipc.getTheme().then(applyTheme);
+    let unlisten: (() => void) | undefined;
+    let disposed = false;
+    void listen(OPEN_EVENT, reset).then((stop) => {
+      if (disposed) stop();
+      else unlisten = stop;
+    });
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, [reset]);
+
+  const close = useCallback(async () => {
+    if (saving) return;
+    setTitle("");
+    setValue("");
+    await ipc.closeQuickCapture();
+  }, [saving]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      void close();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [close]);
 
   const save = async () => {
-    const markdown = value.trim();
     const noteTitle = title.trim();
+    const markdown = value.trim();
     if ((!noteTitle && !markdown) || saving) return;
     setSaving(true);
-    const saved = await createCapturedNote(noteTitle || "Quick note", markdown);
-    setSaving(false);
-    if (saved) {
-      setOpen(false);
+    try {
+      const rel = await ipc.createNoteWithContent(
+        "",
+        noteTitle || "Quick note",
+        markdown,
+      );
+      await emit(NOTES_CHANGED_EVENT, { rel });
       setTitle("");
       setValue("");
+      await ipc.closeQuickCapture();
+    } catch (error) {
+      setSaving(false);
+      toast.error("Note could not be captured", {
+        description: error instanceof Error ? error.message : String(error),
+      });
     }
   };
 
   return (
-    <Modal
-      open={open}
-      onClose={close}
-      ariaLabel="Quick capture"
-      align="top"
-      className="mt-[18vh] w-[500px]"
+    <motion.main
+      key={openNonce}
+      initial={{ opacity: 0, y: 6, scale: 0.985 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.14, ease: EASE_OUT }}
+      className="h-full overflow-hidden border border-line bg-bg shadow-2xl shadow-black/20 dark:shadow-black/60"
     >
-      <header className="flex items-center gap-3 px-4 pb-2 pt-4">
+      <header data-tauri-drag-region className="flex items-center gap-3 px-4 pb-2 pt-4">
         <div className="grid h-8 w-8 place-items-center rounded-lg bg-panel text-muted">
           <Feather size={15} strokeWidth={1.8} />
         </div>
-        <div>
-          <h2 className="text-[14px] font-semibold tracking-[-0.01em]">Quick capture</h2>
+        <div className="pointer-events-none">
+          <h1 className="text-[14px] font-semibold tracking-[-0.01em]">Quick capture</h1>
           <p className="mt-0.5 text-[11.5px] text-faint">Save a thought without leaving your flow</p>
         </div>
         <button
           type="button"
           aria-label="Close Quick Capture"
-          onClick={close}
+          onClick={() => void close()}
           className="ml-auto grid h-8 w-8 place-items-center rounded-md text-faint transition-colors hover:bg-hover hover:text-ink"
         >
           <X size={15} strokeWidth={2} />
@@ -110,6 +150,7 @@ export function QuickCaptureModal() {
           </Button>
         </div>
       </div>
-    </Modal>
+      <Toaster position="top-center" offset={12} />
+    </motion.main>
   );
 }

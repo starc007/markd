@@ -103,7 +103,7 @@ export function CommandPalette() {
         label: "Quick capture",
         hint: "⌃⇧Space",
         icon: Feather,
-        run: () => useUi.getState().setQuickCaptureOpen(true),
+        run: () => void ipc.showQuickCapture(),
       },
       {
         id: "daily-note",

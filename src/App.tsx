@@ -1,9 +1,10 @@
 import { lazy, Suspense, useEffect } from "react";
+import { listen } from "@tauri-apps/api/event";
 import { Toaster } from "sonner";
 import { closeTab } from "@/components/editor/TabBar";
 import { Welcome } from "@/components/welcome/Welcome";
 import { initSessionSync, restoreSession } from "@/lib/session";
-import { startQuickCaptureShortcut } from "@/lib/quickCaptureShortcut";
+import { notifyBacklinksChanged } from "@/lib/backlinks";
 import { activeDir, useVault } from "@/stores/vault";
 import { useUi } from "@/stores/ui";
 import { usePins } from "@/stores/pins";
@@ -24,12 +25,6 @@ const SettingsModal = lazy(() =>
     default: module.SettingsModal,
   })),
 );
-const QuickCaptureModal = lazy(() =>
-  import("@/components/capture/QuickCaptureModal").then((module) => ({
-    default: module.QuickCaptureModal,
-  })),
-);
-
 export default function App() {
   const status = useVault((s) => s.status);
   const root = useVault((s) => s.root);
@@ -41,7 +36,6 @@ export default function App() {
     startup();
     // Look for an app update in the background; surfaces in the sidebar.
     useUpdater.getState().check();
-    void startQuickCaptureShortcut();
   }, [startup]);
 
   // Restore the saved tabs / view / filters once a vault is loaded (and again
@@ -67,6 +61,22 @@ export default function App() {
   }, [refreshTree]);
 
   useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    let disposed = false;
+    void listen("markd:notes-changed", () => {
+      void refreshTree();
+      notifyBacklinksChanged();
+    }).then((stop) => {
+      if (disposed) stop();
+      else unlisten = stop;
+    });
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, [refreshTree]);
+
+  useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const mod = event.metaKey || event.ctrlKey;
       if (!mod) return;
@@ -82,14 +92,6 @@ export default function App() {
       } else if (event.key === "k") {
         event.preventDefault();
         ui.setPaletteOpen(!ui.paletteOpen);
-      } else if (
-        event.ctrlKey &&
-        event.shiftKey &&
-        event.code === "Space" &&
-        vault.status === "ready"
-      ) {
-        event.preventDefault();
-        ui.setQuickCaptureOpen(true);
       } else if (event.key === "n" && vault.status === "ready") {
         event.preventDefault();
         vault.createNote(activeDir(vault));
@@ -115,7 +117,6 @@ export default function App() {
         {status === "ready" && <AppShell />}
         <CommandPalette />
         <SettingsModal />
-        <QuickCaptureModal />
       </Suspense>
       <Toaster
         position="top-right"

@@ -10,13 +10,13 @@ mod error;
 mod link_meta;
 mod notes;
 mod pins;
+mod quick_capture;
 mod search;
 mod todos;
 mod util;
 mod vault;
 
 use commands::AppState;
-use tauri::{Emitter, Manager};
 use tauri_plugin_global_shortcut::ShortcutState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -28,11 +28,7 @@ pub fn run() {
             if event.state() != ShortcutState::Pressed {
                 return;
             }
-            if let Some(window) = app.get_webview_window("main") {
-                let _ = window.show();
-                let _ = window.set_focus();
-            }
-            let _ = app.emit("markd:quick-capture", ());
+            let _ = quick_capture::show(app);
         })
         .build();
 
@@ -53,6 +49,8 @@ pub fn run() {
             commands::create_note,
             commands::create_note_with_content,
             commands::open_daily_note,
+            commands::show_quick_capture,
+            commands::close_quick_capture,
             commands::create_folder,
             commands::rename_entry,
             commands::move_entry,
@@ -85,6 +83,7 @@ pub fn run() {
             commands::export_note,
             commands::save_image_asset,
             commands::set_theme,
+            commands::get_theme,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

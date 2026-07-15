@@ -7,6 +7,7 @@ import {
 } from "@/lib/backlinks";
 import type { Theme, TreeNode, VaultSnapshot, View } from "@/lib/types";
 import { parentDir } from "@/lib/utils";
+import { applyTheme } from "@/lib/theme";
 import { useTabs } from "@/stores/tabs";
 import { usePins } from "@/stores/pins";
 
@@ -33,7 +34,6 @@ interface VaultState {
   expandTo: (rel: string) => void;
 
   createNote: (dir: string) => Promise<void>;
-  createCapturedNote: (title: string, content: string) => Promise<boolean>;
   openDailyNote: () => Promise<void>;
   createFolder: (dir: string, name: string) => Promise<string | null>;
   renameEntry: (rel: string, name: string) => Promise<void>;
@@ -42,12 +42,6 @@ interface VaultState {
 
   setTheme: (theme: Theme) => Promise<void>;
   cycleTheme: () => Promise<void>;
-}
-
-function applyTheme(theme: Theme) {
-  const media = window.matchMedia("(prefers-color-scheme: dark)");
-  const dark = theme === "dark" || (theme === "system" && media.matches);
-  document.documentElement.classList.toggle("dark", dark);
 }
 
 let systemThemeListener: (() => void) | null = null;
@@ -220,20 +214,6 @@ export const useVault = create<VaultState>((set, get) => ({
       notifyBacklinksChanged();
     } catch (err) {
       oops(err);
-    }
-  },
-
-  createCapturedNote: async (title, content) => {
-    try {
-      const rel = await ipc.createNoteWithContent("", title, content);
-      await get().refreshTree();
-      get().pushRecent(rel);
-      notifyBacklinksChanged();
-      toast("Note captured", { description: rel.replace(/\.md$/, "") });
-      return true;
-    } catch (err) {
-      oops(err);
-      return false;
     }
   },
 

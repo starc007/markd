@@ -12,7 +12,7 @@ use crate::error::{AppError, AppResult};
 use crate::search::SearchHit;
 use crate::todos::{self, Todo};
 use crate::vault::{self, TreeNode};
-use crate::{agent_docs, assets, daily_notes, link_meta, notes, pins, search};
+use crate::{agent_docs, assets, daily_notes, link_meta, notes, pins, quick_capture, search};
 
 #[derive(Default)]
 pub struct AppState {
@@ -181,6 +181,16 @@ pub fn create_note_with_content(
 #[tauri::command]
 pub fn open_daily_note(state: State<'_, AppState>, date: String) -> AppResult<String> {
     daily_notes::open_or_create(&state.root()?, &date)
+}
+
+#[tauri::command]
+pub fn show_quick_capture(app: AppHandle) -> AppResult<()> {
+    quick_capture::show(&app)
+}
+
+#[tauri::command]
+pub fn close_quick_capture(app: AppHandle) -> AppResult<()> {
+    quick_capture::close(&app)
 }
 
 #[tauri::command]
@@ -460,4 +470,9 @@ pub fn set_theme(app: AppHandle, theme: Theme) -> AppResult<()> {
     let mut cfg = config::load(&app);
     cfg.theme = theme;
     config::save(&app, &cfg)
+}
+
+#[tauri::command]
+pub fn get_theme(app: AppHandle) -> Theme {
+    config::load(&app).theme
 }

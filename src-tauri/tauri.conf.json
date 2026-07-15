@@ -12,6 +12,7 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "Markd",
         "width": 1200,
         "height": 800,
@@ -22,6 +23,27 @@
         "hiddenTitle": true,
         "decorations": true,
         "transparent": false
+      },
+      {
+        "label": "quick-capture",
+        "title": "Quick Capture",
+        "width": 500,
+        "height": 356,
+        "minWidth": 500,
+        "minHeight": 356,
+        "maxWidth": 500,
+        "maxHeight": 356,
+        "center": true,
+        "visible": false,
+        "focus": false,
+        "resizable": false,
+        "maximizable": false,
+        "minimizable": false,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "visibleOnAllWorkspaces": true,
+        "skipTaskbar": true,
+        "shadow": true
       }
     ],
     "security": {
