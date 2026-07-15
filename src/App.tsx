@@ -1,8 +1,10 @@
 import { lazy, Suspense, useEffect } from "react";
+import { listen } from "@tauri-apps/api/event";
 import { Toaster } from "sonner";
 import { closeTab } from "@/components/editor/TabBar";
 import { Welcome } from "@/components/welcome/Welcome";
 import { initSessionSync, restoreSession } from "@/lib/session";
+import { notifyBacklinksChanged } from "@/lib/backlinks";
 import { activeDir, useVault } from "@/stores/vault";
 import { useUi } from "@/stores/ui";
 import { usePins } from "@/stores/pins";
@@ -23,7 +25,6 @@ const SettingsModal = lazy(() =>
     default: module.SettingsModal,
   })),
 );
-
 export default function App() {
   const status = useVault((s) => s.status);
   const root = useVault((s) => s.root);
@@ -60,13 +61,32 @@ export default function App() {
   }, [refreshTree]);
 
   useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    let disposed = false;
+    void listen("markd:notes-changed", () => {
+      void refreshTree();
+      notifyBacklinksChanged();
+    }).then((stop) => {
+      if (disposed) stop();
+      else unlisten = stop;
+    });
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, [refreshTree]);
+
+  useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const mod = event.metaKey || event.ctrlKey;
       if (!mod) return;
       const ui = useUi.getState();
       const vault = useVault.getState();
 
-      if (event.shiftKey && event.key.toLowerCase() === "d") {
+      if (event.shiftKey && event.key.toLowerCase() === "y" && vault.status === "ready") {
+        event.preventDefault();
+        void vault.openDailyNote();
+      } else if (event.shiftKey && event.key.toLowerCase() === "d") {
         event.preventDefault();
         vault.cycleTheme();
       } else if (event.key === "k") {

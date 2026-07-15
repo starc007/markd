@@ -5,21 +5,36 @@ mod backlinks;
 mod bookmarks;
 mod commands;
 mod config;
+mod daily_notes;
 mod error;
 mod link_meta;
 mod notes;
 mod pins;
+mod quick_capture;
 mod search;
 mod todos;
 mod util;
 mod vault;
 
 use commands::AppState;
+use tauri_plugin_global_shortcut::ShortcutState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let quick_capture = tauri_plugin_global_shortcut::Builder::new()
+        .with_shortcut("Control+Shift+Space")
+        .expect("valid Quick Capture shortcut")
+        .with_handler(|app, _shortcut, event| {
+            if event.state() != ShortcutState::Pressed {
+                return;
+            }
+            let _ = quick_capture::show(app);
+        })
+        .build();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(quick_capture)
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -32,6 +47,10 @@ pub fn run() {
             commands::read_note,
             commands::write_note,
             commands::create_note,
+            commands::create_note_with_content,
+            commands::open_daily_note,
+            commands::show_quick_capture,
+            commands::close_quick_capture,
             commands::create_folder,
             commands::rename_entry,
             commands::move_entry,
@@ -64,6 +83,7 @@ pub fn run() {
             commands::export_note,
             commands::save_image_asset,
             commands::set_theme,
+            commands::get_theme,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

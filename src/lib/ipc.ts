@@ -45,6 +45,11 @@ export const ipc = {
     call<void>("write_note", { rel, content }),
   createNote: (dir: string, title: string) =>
     call<string>("create_note", { dir, title }),
+  createNoteWithContent: (dir: string, title: string, content: string) =>
+    call<string>("create_note_with_content", { dir, title, content }),
+  openDailyNote: (date: string) => call<string>("open_daily_note", { date }),
+  showQuickCapture: () => call<void>("show_quick_capture"),
+  closeQuickCapture: () => call<void>("close_quick_capture"),
   createFolder: (dir: string, name: string) =>
     call<string>("create_folder", { dir, name }),
   renameEntry: (rel: string, name: string) =>
@@ -93,4 +98,5 @@ export const ipc = {
   saveImageAsset: (data: string, extension: string) =>
     call<string>("save_image_asset", { data, extension }),
   setTheme: (theme: Theme) => call<void>("set_theme", { theme }),
+  getTheme: () => call<Theme>("get_theme"),
 };

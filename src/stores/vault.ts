@@ -7,6 +7,7 @@ import {
 } from "@/lib/backlinks";
 import type { Theme, TreeNode, VaultSnapshot, View } from "@/lib/types";
 import { parentDir } from "@/lib/utils";
+import { applyTheme } from "@/lib/theme";
 import { useTabs } from "@/stores/tabs";
 import { usePins } from "@/stores/pins";
 
@@ -33,6 +34,7 @@ interface VaultState {
   expandTo: (rel: string) => void;
 
   createNote: (dir: string) => Promise<void>;
+  openDailyNote: () => Promise<void>;
   createFolder: (dir: string, name: string) => Promise<string | null>;
   renameEntry: (rel: string, name: string) => Promise<void>;
   moveEntry: (rel: string, dir: string) => Promise<void>;
@@ -40,12 +42,6 @@ interface VaultState {
 
   setTheme: (theme: Theme) => Promise<void>;
   cycleTheme: () => Promise<void>;
-}
-
-function applyTheme(theme: Theme) {
-  const media = window.matchMedia("(prefers-color-scheme: dark)");
-  const dark = theme === "dark" || (theme === "system" && media.matches);
-  document.documentElement.classList.toggle("dark", dark);
 }
 
 let systemThemeListener: (() => void) | null = null;
@@ -215,6 +211,24 @@ export const useVault = create<VaultState>((set, get) => ({
       // Route through setView so the tab opens (blank pane otherwise).
       get().setView({ type: "note", rel });
       useTabs.getState().requestTitleFocus(rel);
+      notifyBacklinksChanged();
+    } catch (err) {
+      oops(err);
+    }
+  },
+
+  openDailyNote: async () => {
+    try {
+      const now = new Date();
+      const date = [
+        now.getFullYear(),
+        String(now.getMonth() + 1).padStart(2, "0"),
+        String(now.getDate()).padStart(2, "0"),
+      ].join("-");
+      const rel = await ipc.openDailyNote(date);
+      await get().refreshTree();
+      get().expandTo(rel);
+      get().setView({ type: "note", rel });
       notifyBacklinksChanged();
     } catch (err) {
       oops(err);
