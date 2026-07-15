@@ -24,8 +24,8 @@ const THEMES: Array<{ value: Theme; label: string; icon: typeof Sun }> = [
 const SHORTCUTS: Array<{ label: string; keys: string[] }> = [
   { label: "Command palette", keys: ["⌘", "K"] },
   { label: "New note", keys: ["⌘", "N"] },
-  { label: "Quick capture", keys: ["⌘", "⇧", "N"] },
-  { label: "Today's note", keys: ["⌥", "⌘", "D"] },
+  { label: "Quick capture", keys: ["⌃", "⇧", "Space"] },
+  { label: "Today's note", keys: ["⌘", "⇧", "Y"] },
   { label: "Toggle sidebar", keys: ["⌘", "\\"] },
   { label: "Cycle theme", keys: ["⌘", "⇧", "D"] },
   { label: "Settings", keys: ["⌘", ","] },
@@ -52,7 +52,7 @@ export function SettingsModal() {
       className="w-[460px]"
     >
       <header className="flex items-center gap-3 border-b border-line-soft px-5 py-4">
-        <div className="grid h-8 w-8 place-items-center rounded-lg bg-invert text-invert-ink">
+        <div className="grid h-8 w-8 place-items-center rounded-lg bg-panel text-muted">
           <Settings size={15} strokeWidth={1.8} />
         </div>
         <div className="min-w-0">

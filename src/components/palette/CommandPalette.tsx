@@ -101,14 +101,14 @@ export function CommandPalette() {
       {
         id: "quick-capture",
         label: "Quick capture",
-        hint: "⌘⇧N",
+        hint: "⌃⇧Space",
         icon: Feather,
         run: () => useUi.getState().setQuickCaptureOpen(true),
       },
       {
         id: "daily-note",
         label: "Open today's note",
-        hint: "⌥⌘D",
+        hint: "⇧⌘Y",
         icon: CalendarDays,
         run: () => void vault.openDailyNote(),
       },

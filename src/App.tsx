@@ -73,7 +73,7 @@ export default function App() {
       const ui = useUi.getState();
       const vault = useVault.getState();
 
-      if (event.altKey && event.key.toLowerCase() === "d" && vault.status === "ready") {
+      if (event.shiftKey && event.key.toLowerCase() === "y" && vault.status === "ready") {
         event.preventDefault();
         void vault.openDailyNote();
       } else if (event.shiftKey && event.key.toLowerCase() === "d") {
@@ -82,7 +82,12 @@ export default function App() {
       } else if (event.key === "k") {
         event.preventDefault();
         ui.setPaletteOpen(!ui.paletteOpen);
-      } else if (event.shiftKey && event.key.toLowerCase() === "n" && vault.status === "ready") {
+      } else if (
+        event.ctrlKey &&
+        event.shiftKey &&
+        event.code === "Space" &&
+        vault.status === "ready"
+      ) {
         event.preventDefault();
         ui.setQuickCaptureOpen(true);
       } else if (event.key === "n" && vault.status === "ready") {

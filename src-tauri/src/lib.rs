@@ -16,12 +16,29 @@ mod util;
 mod vault;
 
 use commands::AppState;
+use tauri::{Emitter, Manager};
+use tauri_plugin_global_shortcut::ShortcutState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let quick_capture = tauri_plugin_global_shortcut::Builder::new()
+        .with_shortcut("Control+Shift+Space")
+        .expect("valid Quick Capture shortcut")
+        .with_handler(|app, _shortcut, event| {
+            if event.state() != ShortcutState::Pressed {
+                return;
+            }
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+            let _ = app.emit("markd:quick-capture", ());
+        })
+        .build();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(quick_capture)
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
