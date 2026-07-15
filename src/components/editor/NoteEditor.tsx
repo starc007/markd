@@ -10,8 +10,10 @@ import { ipc } from "@/lib/ipc";
 import {
   joinFrontmatter,
   parseFrontmatter,
+  removeFrontmatterProperty,
   splitFrontmatter,
   type Property,
+  upsertFrontmatterProperty,
 } from "@/lib/frontmatter";
 import { hrefToRel, relToHref, wikiToMarkdown } from "@/lib/noteLinks";
 import {
@@ -68,6 +70,7 @@ export const NoteEditor = memo(function NoteEditor({
   const [words, setWords] = useState(0);
   const [missing, setMissing] = useState(false);
   const [properties, setProperties] = useState<Property[]>([]);
+  const [propertyAddRequest, setPropertyAddRequest] = useState(0);
   const [rawText, setRawText] = useState("");
   const [loadNonce, setLoadNonce] = useState(0);
 
@@ -293,6 +296,40 @@ export const NoteEditor = memo(function NoteEditor({
     [extensions],
   );
   editorRef.current = editor;
+
+  const applyFrontmatter = useCallback(
+    (nextFrontmatter: string) => {
+      if (!editor) return;
+      frontmatter.current = nextFrontmatter;
+      setProperties(parseFrontmatter(nextFrontmatter));
+      const markdown = editor.getMarkdown();
+      pending.current = markdown;
+      setSaveState("saving");
+      debouncedPersist(markdown);
+    },
+    [debouncedPersist, editor, setSaveState],
+  );
+
+  const upsertProperty = useCallback(
+    (previousKey: string | null, property: Property) => {
+      applyFrontmatter(
+        upsertFrontmatterProperty(frontmatter.current, previousKey, property),
+      );
+    },
+    [applyFrontmatter],
+  );
+
+  const removeProperty = useCallback(
+    (key: string) => {
+      applyFrontmatter(removeFrontmatterProperty(frontmatter.current, key));
+    },
+    [applyFrontmatter],
+  );
+
+  const consumePropertyAddRequest = useCallback(
+    () => setPropertyAddRequest(0),
+    [],
+  );
 
   // Load the note (and swap in its content) whenever `rel` changes. The old
   // note's pending edit is flushed to *its* path first, before we switch.
@@ -539,7 +576,9 @@ export const NoteEditor = memo(function NoteEditor({
           ? rawText
           : joinFrontmatter(frontmatter.current, editor.getMarkdown());
 
-        if (action === "copy") {
+        if (action === "add-property") {
+          setPropertyAddRequest((request) => request + 1);
+        } else if (action === "copy") {
           await navigator.clipboard.writeText(markdown);
           toast("Markdown copied");
         } else if (action === "export") {
@@ -622,7 +661,13 @@ export const NoteEditor = memo(function NoteEditor({
             </Suspense>
           ) : (
             <>
-              <NoteProperties properties={properties} />
+              <NoteProperties
+                properties={properties}
+                addRequest={propertyAddRequest}
+                onAddRequestHandled={consumePropertyAddRequest}
+                onUpsert={upsertProperty}
+                onRemove={removeProperty}
+              />
               <EditorContent editor={editor} />
             </>
           )}
