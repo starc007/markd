@@ -43,7 +43,7 @@ Double-click Markd → click **Done** → **System Settings → Privacy & Securi
 - **⌘K command palette** — jump to any note, folder, or page instantly
 - **Instant search** — title + content, ranked, in milliseconds
 - **Monochrome UI** — light, dark, or system theme; no color noise
-- **Portable vault** — plain files, no IDs, no frontmatter, no lock-in
+- **Portable vault** — plain files, no IDs, no required metadata, no lock-in
 
 ---
 

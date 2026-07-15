@@ -1,8 +1,7 @@
 /**
- * YAML frontmatter handling. The app never authors frontmatter, but notes
- * clipped from external tools carry a leading `---` block. We split it off so
- * the editor shows only the body, then re-attach it verbatim on save — the file
- * keeps its metadata, the editor stays clean.
+ * YAML frontmatter handling. Frontmatter stays outside the rich editor and is
+ * re-attached on save. UI property edits only touch the selected flat property
+ * so comments and unsupported YAML structures continue to round-trip.
  */
 
 // Leading `---\n … \n---` block at the very start of the document.
@@ -35,11 +34,18 @@ export interface Property {
 }
 
 function unquote(raw: string): string {
-  return raw
-    .trim()
-    .replace(/^["']|["']$/g, "")
-    .replace(/^\[\[|\]\]$/g, "")
-    .trim();
+  const value = raw.trim();
+  if (value.startsWith('"') && value.endsWith('"')) {
+    try {
+      return JSON.parse(value) as string;
+    } catch {
+      return value.slice(1, -1);
+    }
+  }
+  if (value.startsWith("'") && value.endsWith("'")) {
+    return value.slice(1, -1).replace(/''/g, "'");
+  }
+  return value.replace(/^\[\[|\]\]$/g, "").trim();
 }
 
 /**
@@ -83,4 +89,87 @@ export function parseFrontmatter(frontmatter: string): Property[] {
     }
   }
   return props;
+}
+
+const PROPERTY_KEY_RE = /^[A-Za-z0-9_][\w -]*$/;
+
+export function isValidPropertyKey(key: string): boolean {
+  return PROPERTY_KEY_RE.test(key.trim());
+}
+
+function propertyLines(property: Property): string[] {
+  const key = property.key.trim();
+  if (Array.isArray(property.value)) {
+    return [
+      `${key}:`,
+      ...property.value.map((item) => `  - ${JSON.stringify(item)}`),
+    ];
+  }
+  return [`${key}: ${JSON.stringify(property.value)}`];
+}
+
+function propertyRange(lines: string[], key: string, closing: number) {
+  for (let start = 1; start < closing; start += 1) {
+    const match = /^([A-Za-z0-9_][\w -]*?):[ \t]*(.*)$/.exec(lines[start]);
+    if (!match || match[1].trim() !== key) continue;
+    let end = start + 1;
+    while (end < closing && /^[ \t]*-[ \t]+/.test(lines[end])) end += 1;
+    return { start, end };
+  }
+  return null;
+}
+
+function closingDelimiterIndex(lines: string[]): number {
+  for (let index = lines.length - 1; index > 0; index -= 1) {
+    if (lines[index].trim() === "---") return index;
+  }
+  return -1;
+}
+
+/** Add or replace one flat property without reserializing the full YAML block. */
+export function upsertFrontmatterProperty(
+  frontmatter: string,
+  previousKey: string | null,
+  property: Property,
+): string {
+  const next = { ...property, key: property.key.trim() };
+  if (!isValidPropertyKey(next.key)) return frontmatter;
+
+  if (!frontmatter) {
+    return ["---", ...propertyLines(next), "---", ""].join("\n");
+  }
+
+  const newline = frontmatter.includes("\r\n") ? "\r\n" : "\n";
+  const lines = frontmatter.split(/\r?\n/);
+  const closing = closingDelimiterIndex(lines);
+  if (closing < 0) return frontmatter;
+
+  const range = propertyRange(lines, previousKey ?? next.key, closing);
+  if (range) {
+    lines.splice(range.start, range.end - range.start, ...propertyLines(next));
+  } else {
+    lines.splice(closing, 0, ...propertyLines(next));
+  }
+  return lines.join(newline);
+}
+
+/** Remove one flat property while leaving unrelated YAML untouched. */
+export function removeFrontmatterProperty(
+  frontmatter: string,
+  key: string,
+): string {
+  if (!frontmatter) return "";
+  const newline = frontmatter.includes("\r\n") ? "\r\n" : "\n";
+  const lines = frontmatter.split(/\r?\n/);
+  const closing = closingDelimiterIndex(lines);
+  if (closing < 0) return frontmatter;
+  const range = propertyRange(lines, key, closing);
+  if (!range) return frontmatter;
+
+  lines.splice(range.start, range.end - range.start);
+  const nextClosing = closingDelimiterIndex(lines);
+  const isEmpty = lines
+    .slice(1, nextClosing)
+    .every((line) => line.trim().length === 0);
+  return isEmpty ? "" : lines.join(newline);
 }

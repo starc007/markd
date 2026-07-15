@@ -25,8 +25,8 @@ and edit it directly with ordinary file tools.
 
 - Plain Markdown (CommonMark + GFM — tables, task lists, fenced code).
 - A note may begin with a YAML frontmatter block delimited by `---`.
-  **Preserve it** when editing; Markd renders it as a read-only properties
-  panel and never authors it itself.
+  **Preserve it** when editing; Markd renders it as an editable properties
+  panel and only authors it after an explicit user action.
 - Internal page links are Markdown links whose target is a note path relative
   to `notes/`, e.g. `[Roadmap](projects/roadmap.md)`. `[[wiki]]` and
   `[[target|alias]]` links are also understood.

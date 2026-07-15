@@ -10,8 +10,10 @@ import { ipc } from "@/lib/ipc";
 import {
   joinFrontmatter,
   parseFrontmatter,
+  removeFrontmatterProperty,
   splitFrontmatter,
   type Property,
+  upsertFrontmatterProperty,
 } from "@/lib/frontmatter";
 import { hrefToRel, relToHref, wikiToMarkdown } from "@/lib/noteLinks";
 import {
@@ -293,6 +295,35 @@ export const NoteEditor = memo(function NoteEditor({
     [extensions],
   );
   editorRef.current = editor;
+
+  const applyFrontmatter = useCallback(
+    (nextFrontmatter: string) => {
+      if (!editor) return;
+      frontmatter.current = nextFrontmatter;
+      setProperties(parseFrontmatter(nextFrontmatter));
+      const markdown = editor.getMarkdown();
+      pending.current = markdown;
+      setSaveState("saving");
+      debouncedPersist(markdown);
+    },
+    [debouncedPersist, editor, setSaveState],
+  );
+
+  const upsertProperty = useCallback(
+    (previousKey: string | null, property: Property) => {
+      applyFrontmatter(
+        upsertFrontmatterProperty(frontmatter.current, previousKey, property),
+      );
+    },
+    [applyFrontmatter],
+  );
+
+  const removeProperty = useCallback(
+    (key: string) => {
+      applyFrontmatter(removeFrontmatterProperty(frontmatter.current, key));
+    },
+    [applyFrontmatter],
+  );
 
   // Load the note (and swap in its content) whenever `rel` changes. The old
   // note's pending edit is flushed to *its* path first, before we switch.
@@ -622,7 +653,11 @@ export const NoteEditor = memo(function NoteEditor({
             </Suspense>
           ) : (
             <>
-              <NoteProperties properties={properties} />
+              <NoteProperties
+                properties={properties}
+                onUpsert={upsertProperty}
+                onRemove={removeProperty}
+              />
               <EditorContent editor={editor} />
             </>
           )}

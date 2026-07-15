@@ -18,7 +18,7 @@ Rust owns the filesystem; the frontend is UI + state only. All IO goes through t
 
 User picks any folder as a vault:
 
-- `<vault>/notes/` — plain `.md` files, filename = title, no IDs. Folders are real folders. Portable plain-markdown. The app never *authors* frontmatter, but preserves and renders any that external tools (e.g. web clippers) added — see below.
+- `<vault>/notes/` — plain `.md` files, filename = title, no IDs. Folders are real folders. Portable plain-markdown. Frontmatter is optional: Markd preserves external YAML and only authors flat properties after an explicit user action in the Properties UI.
 - `<vault>/.markd/` — app data: `todos.json`, `bookmarks.json`, `assets/` (pasted images).
 - Vault path + theme persist in the app config dir (`config.json`).
 
@@ -47,7 +47,7 @@ Blocking dialogs (`blocking_pick_folder`) must run in async commands via `spawn_
 - Tabs: `NotesWorkspace` keeps one live editor per open tab, inactive panes hidden via `display:none` — tab switch is a CSS toggle, never a remount/re-parse. Keep it that way.
 - Session: `lib/session.ts` persists per-vault UI layout (open tabs, active view, todo/bookmark tag filters) to localStorage keyed by vault root, restoring it on launch. Tag filters live in the `todos`/`bookmarks` stores (not component state) so they're subscribable.
 - Page links: internal note links are plain markdown links whose href is a vault-relative note path (`[Title](projects/app.md)`). `lib/noteLinks.ts` converts href↔rel and rewrites `[[wiki]]`/`[[target|alias]]` syntax (on type + on load) into those markdown links; clicking one opens the note; `/link` slash command + `NoteLinkPicker` also insert them.
-- Frontmatter: `lib/frontmatter.ts` splits a leading `---` YAML block off the body on load and re-attaches it verbatim on save (so metadata round-trips), and parses it for the read-only `NoteProperties` panel shown above the editor. The editor body never contains the raw YAML.
+- Frontmatter: `lib/frontmatter.ts` splits a leading `---` YAML block off the body on load and re-attaches it on save. `NoteProperties` can add, edit, and remove flat text or list properties while preserving unrelated YAML. The editor body never contains the raw YAML.
 
 ## UI conventions
 
@@ -76,4 +76,4 @@ Our `Modal` (`components/ui/Modal.tsx`) is built on the same tokens; keep new di
 
 - Never add "Co-Authored-By" or any AI attribution to commits or PRs.
 - Commit messages: conventional commits, subject ≤50 chars where possible.
-- Don't reintroduce: sticky notes, note IDs, plugin-fs. Don't *author* frontmatter (external frontmatter is preserved/rendered, not written by us). `[[wiki]]` is accepted as input but stored as standard markdown `[title](path.md)` links.
+- Don't reintroduce: sticky notes, note IDs, plugin-fs. Never add frontmatter automatically; only explicit actions in the Properties UI may author it. `[[wiki]]` is accepted as input but stored as standard markdown `[title](path.md)` links.
