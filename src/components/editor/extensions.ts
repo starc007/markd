@@ -14,6 +14,7 @@ import Underline from "@tiptap/extension-underline";
 import StarterKit from "@tiptap/starter-kit";
 import { CodeBlockWithCopy } from "./CodeBlock";
 import { WikiLink } from "./wikiLink";
+import { textColorExtensions } from "./textColors";
 
 function isRemoteSource(src: string) {
   return /^(?:[a-z][a-z0-9+.-]*:|#|\/)/i.test(src);
@@ -61,6 +62,7 @@ export function createExtensions(vaultRoot: string) {
       markedOptions: { breaks: true, gfm: true },
     }),
     StarterKit.configure({ link: false, codeBlock: false }),
+    ...textColorExtensions,
     CodeBlockWithCopy,
     Underline,
     Typography,

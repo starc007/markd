@@ -24,6 +24,8 @@ const THEMES: Array<{ value: Theme; label: string; icon: typeof Sun }> = [
 const SHORTCUTS: Array<{ label: string; keys: string[] }> = [
   { label: "Command palette", keys: ["⌘", "K"] },
   { label: "New note", keys: ["⌘", "N"] },
+  { label: "Quick capture", keys: ["⌘", "⇧", "N"] },
+  { label: "Today's note", keys: ["⌥", "⌘", "D"] },
   { label: "Toggle sidebar", keys: ["⌘", "\\"] },
   { label: "Cycle theme", keys: ["⌘", "⇧", "D"] },
   { label: "Settings", keys: ["⌘", ","] },

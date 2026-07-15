@@ -251,6 +251,12 @@ body {
     font-weight: 650;
 }
 
+.prose-note span[style*="background-color"] {
+    color: #191919;
+    border-radius: 0.18em;
+    padding: 0.04em 0.12em;
+}
+
 .prose-note blockquote {
     border-left: 2px solid var(--ink);
     margin: 0.8em 0;

@@ -45,6 +45,9 @@ export const ipc = {
     call<void>("write_note", { rel, content }),
   createNote: (dir: string, title: string) =>
     call<string>("create_note", { dir, title }),
+  createNoteWithContent: (dir: string, title: string, content: string) =>
+    call<string>("create_note_with_content", { dir, title, content }),
+  openDailyNote: (date: string) => call<string>("open_daily_note", { date }),
   createFolder: (dir: string, name: string) =>
     call<string>("create_folder", { dir, name }),
   renameEntry: (rel: string, name: string) =>

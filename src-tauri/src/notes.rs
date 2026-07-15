@@ -75,12 +75,23 @@ fn available_path(dir: &Path, stem: &str, ext: Option<&str>) -> PathBuf {
 
 /// Create an empty note inside `dir_rel` ("" = notes root). Returns its rel path.
 pub fn create_note(root: &Path, dir_rel: &str, title: &str) -> AppResult<String> {
+    create_note_with_content(root, dir_rel, title, "")
+}
+
+/// Create a note with initial Markdown content. Used by capture flows that
+/// should never expose an empty file between create and write operations.
+pub fn create_note_with_content(
+    root: &Path,
+    dir_rel: &str,
+    title: &str,
+    content: &str,
+) -> AppResult<String> {
     let dir = resolve_rel(root, dir_rel)?;
     if !dir.is_dir() {
         return Err(AppError::NotFound(dir_rel.to_string()));
     }
     let path = available_path(&dir, &sanitize_name(title), Some("md"));
-    fs::write(&path, "")?;
+    fs::write(&path, content)?;
     rel_of(root, &path)
 }
 
@@ -190,6 +201,14 @@ mod tests {
         assert_eq!(rel, "My Note.md");
         write_note(dir.path(), &rel, "# hello").unwrap();
         assert_eq!(read_note(dir.path(), &rel).unwrap(), "# hello");
+    }
+
+    #[test]
+    fn create_with_content_is_immediately_readable() {
+        let dir = setup();
+        let rel = create_note_with_content(dir.path(), "", "Captured", "remember this").unwrap();
+        assert_eq!(rel, "Captured.md");
+        assert_eq!(read_note(dir.path(), &rel).unwrap(), "remember this");
     }
 
     #[test]

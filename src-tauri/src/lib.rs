@@ -5,6 +5,7 @@ mod backlinks;
 mod bookmarks;
 mod commands;
 mod config;
+mod daily_notes;
 mod error;
 mod link_meta;
 mod notes;
@@ -20,6 +21,7 @@ use commands::AppState;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -32,6 +34,8 @@ pub fn run() {
             commands::read_note,
             commands::write_note,
             commands::create_note,
+            commands::create_note_with_content,
+            commands::open_daily_note,
             commands::create_folder,
             commands::rename_entry,
             commands::move_entry,

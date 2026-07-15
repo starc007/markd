@@ -1,14 +1,14 @@
 import {
   Bookmark,
+  CalendarDays,
   CheckSquare,
+  Feather,
   FilePlus,
   FileText,
-  FolderOpen,
   Search,
   Settings,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { openPath } from "@tauri-apps/plugin-opener";
 import { motion } from "motion/react";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { ipc } from "@/lib/ipc";
@@ -99,6 +99,20 @@ export function CommandPalette() {
         run: () => vault.createNote(activeDir(vault)),
       },
       {
+        id: "quick-capture",
+        label: "Quick capture",
+        hint: "⌘⇧N",
+        icon: Feather,
+        run: () => useUi.getState().setQuickCaptureOpen(true),
+      },
+      {
+        id: "daily-note",
+        label: "Open today's note",
+        hint: "⌥⌘D",
+        icon: CalendarDays,
+        run: () => void vault.openDailyNote(),
+      },
+      {
         id: "todos",
         label: "Open Todos",
         icon: CheckSquare,
@@ -109,14 +123,6 @@ export function CommandPalette() {
         label: "Open Bookmarks",
         icon: Bookmark,
         run: () => vault.setView({ type: "bookmarks" }),
-      },
-      {
-        id: "reveal-vault",
-        label: "Reveal vault in Finder",
-        icon: FolderOpen,
-        run: () => {
-          if (vault.root) void openPath(vault.root);
-        },
       },
       {
         id: "settings",

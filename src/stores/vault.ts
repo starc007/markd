@@ -33,6 +33,8 @@ interface VaultState {
   expandTo: (rel: string) => void;
 
   createNote: (dir: string) => Promise<void>;
+  createCapturedNote: (title: string, content: string) => Promise<boolean>;
+  openDailyNote: () => Promise<void>;
   createFolder: (dir: string, name: string) => Promise<string | null>;
   renameEntry: (rel: string, name: string) => Promise<void>;
   moveEntry: (rel: string, dir: string) => Promise<void>;
@@ -215,6 +217,38 @@ export const useVault = create<VaultState>((set, get) => ({
       // Route through setView so the tab opens (blank pane otherwise).
       get().setView({ type: "note", rel });
       useTabs.getState().requestTitleFocus(rel);
+      notifyBacklinksChanged();
+    } catch (err) {
+      oops(err);
+    }
+  },
+
+  createCapturedNote: async (title, content) => {
+    try {
+      const rel = await ipc.createNoteWithContent("", title, content);
+      await get().refreshTree();
+      get().pushRecent(rel);
+      notifyBacklinksChanged();
+      toast("Note captured", { description: rel.replace(/\.md$/, "") });
+      return true;
+    } catch (err) {
+      oops(err);
+      return false;
+    }
+  },
+
+  openDailyNote: async () => {
+    try {
+      const now = new Date();
+      const date = [
+        now.getFullYear(),
+        String(now.getMonth() + 1).padStart(2, "0"),
+        String(now.getDate()).padStart(2, "0"),
+      ].join("-");
+      const rel = await ipc.openDailyNote(date);
+      await get().refreshTree();
+      get().expandTo(rel);
+      get().setView({ type: "note", rel });
       notifyBacklinksChanged();
     } catch (err) {
       oops(err);

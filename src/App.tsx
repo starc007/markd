@@ -3,6 +3,7 @@ import { Toaster } from "sonner";
 import { closeTab } from "@/components/editor/TabBar";
 import { Welcome } from "@/components/welcome/Welcome";
 import { initSessionSync, restoreSession } from "@/lib/session";
+import { startQuickCaptureShortcut } from "@/lib/quickCaptureShortcut";
 import { activeDir, useVault } from "@/stores/vault";
 import { useUi } from "@/stores/ui";
 import { usePins } from "@/stores/pins";
@@ -23,6 +24,11 @@ const SettingsModal = lazy(() =>
     default: module.SettingsModal,
   })),
 );
+const QuickCaptureModal = lazy(() =>
+  import("@/components/capture/QuickCaptureModal").then((module) => ({
+    default: module.QuickCaptureModal,
+  })),
+);
 
 export default function App() {
   const status = useVault((s) => s.status);
@@ -35,6 +41,7 @@ export default function App() {
     startup();
     // Look for an app update in the background; surfaces in the sidebar.
     useUpdater.getState().check();
+    void startQuickCaptureShortcut();
   }, [startup]);
 
   // Restore the saved tabs / view / filters once a vault is loaded (and again
@@ -66,12 +73,18 @@ export default function App() {
       const ui = useUi.getState();
       const vault = useVault.getState();
 
-      if (event.shiftKey && event.key.toLowerCase() === "d") {
+      if (event.altKey && event.key.toLowerCase() === "d" && vault.status === "ready") {
+        event.preventDefault();
+        void vault.openDailyNote();
+      } else if (event.shiftKey && event.key.toLowerCase() === "d") {
         event.preventDefault();
         vault.cycleTheme();
       } else if (event.key === "k") {
         event.preventDefault();
         ui.setPaletteOpen(!ui.paletteOpen);
+      } else if (event.shiftKey && event.key.toLowerCase() === "n" && vault.status === "ready") {
+        event.preventDefault();
+        ui.setQuickCaptureOpen(true);
       } else if (event.key === "n" && vault.status === "ready") {
         event.preventDefault();
         vault.createNote(activeDir(vault));
@@ -97,6 +110,7 @@ export default function App() {
         {status === "ready" && <AppShell />}
         <CommandPalette />
         <SettingsModal />
+        <QuickCaptureModal />
       </Suspense>
       <Toaster
         position="top-right"
