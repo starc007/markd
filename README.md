@@ -16,7 +16,7 @@ Your notes live on your Mac as plain `.md` files. Markd simply makes writing and
 
 Download the latest `.dmg` from [usemarkd.app](https://usemarkd.app) and drag Markd to Applications.
 
-Markd is signed but **not yet notarized**, so on the first launch macOS asks to verify it. Open it once, either way:
+The current `0.1.4` download predates the notarized release pipeline, so macOS may ask you to verify it on first launch. Open it once, either way:
 
 **Terminal**
 
@@ -30,7 +30,7 @@ Then open Markd normally.
 
 Double-click Markd → click **Done** → **System Settings → Privacy & Security** → **Open Anyway** → authenticate. macOS remembers the choice after that.
 
-> Notarization (which removes this prompt entirely) needs an active Apple Developer account and is planned for a future release.
+Future releases are Developer ID signed and notarized through Apple before distribution.
 
 ---
 
@@ -75,6 +75,8 @@ Build a release bundle:
 ```bash
 bun tauri build    # produces a .app and .dmg under src-tauri/target/release/bundle
 ```
+
+Maintainers can follow [NOTARIZATION.md](./NOTARIZATION.md) to configure Developer ID signing and Apple notarization for releases.
 
 See [AGENTS.md](./AGENTS.md) for architecture details, or [CONTRIBUTING.md](./CONTRIBUTING.md) to send a PR.
 

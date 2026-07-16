@@ -69,7 +69,6 @@
     "shortDescription": "A fast, local-first notes app for developers and content creators",
     "longDescription": "Markd is a macOS-first, local-only, ultra high-performance notes app designed for developers and content creators who care deeply about speed, privacy, and data ownership.",
     "macOS": {
-      "signingIdentity": "-",
       "entitlements": "./Entitlements.plist",
       "dmg": {
         "windowSize": {

@@ -28,6 +28,7 @@ dist-ssr
 !CLAUDE.md
 !CONTRIBUTING.md
 !brand.md
+!NOTARIZATION.md
 
 # Secrets and keys (never commit these!)
 *.key

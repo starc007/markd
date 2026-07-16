@@ -1,12 +1,19 @@
 #!/bin/bash
 
-# Release script for Draft app
+# Release script for Markd
 # This script automates the release process: build, prepare, and generate update manifest
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+if [ -f "$PROJECT_ROOT/.env.notarization.local" ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$PROJECT_ROOT/.env.notarization.local"
+  set +a
+fi
 
 # Colors for output
 RED='\033[0;31m'
@@ -31,14 +38,19 @@ NOTES="${@:2}" # All remaining arguments as release notes
 echo -e "${GREEN}🚀 Starting release process for version ${VERSION}${NC}"
 echo ""
 
-# Step 1: Build the app
-echo -e "${YELLOW}📦 Step 1: Building app...${NC}"
+# Step 0: Verify Developer ID signing and notarization credentials
+echo -e "${YELLOW}🔐 Step 0: Checking macOS release credentials...${NC}"
 cd "$PROJECT_ROOT"
+bun run release:check
+echo ""
+
+# Step 1: Build, sign, notarize, and staple the app
+echo -e "${YELLOW}📦 Step 1: Building and notarizing app...${NC}"
 
 # Check if private key is set for signing updates
 if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then
-  echo -e "${YELLOW}ℹ️  Note: TAURI_PRIVATE_KEY not set. Updates will not be signed.${NC}"
-  echo "   To sign updates, set: export TAURI_PRIVATE_KEY=\"path/to/key\""
+  echo -e "${YELLOW}ℹ️  Note: TAURI_SIGNING_PRIVATE_KEY not set. Updates will not be signed.${NC}"
+  echo "   To sign updates, set TAURI_SIGNING_PRIVATE_KEY to the key or its path."
   echo "   See UPDATE_KEYS_EXPLAINED.md for details"
   echo ""
 fi
@@ -50,16 +62,12 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-echo -e "${GREEN}✅ Build completed${NC}"
+echo -e "${GREEN}✅ Signed and notarized build completed${NC}"
 echo ""
 
-# Step 2: Prepare DMG (remove quarantine)
-echo -e "${YELLOW}🔓 Step 2: Preparing DMG for distribution...${NC}"
+# Step 2: Verify the notarized DMG
+echo -e "${YELLOW}🔎 Step 2: Verifying notarized DMG...${NC}"
 bun run prepare:dmg
-
-if [ $? -ne 0 ]; then
-  echo -e "${YELLOW}⚠️  Warning: DMG preparation failed (this is okay if DMG doesn't exist)${NC}"
-fi
 
 echo ""
 

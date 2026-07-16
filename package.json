@@ -17,6 +17,7 @@
     "update:test-server": "node scripts/test-update-server.cjs",
     "icon:generate": "bash scripts/generate-icns.sh",
     "prepare:dmg": "bash scripts/prepare-dmg.sh",
+    "release:check": "bash scripts/check-macos-release.sh",
     "release": "bash scripts/release.sh"
   },
   "dependencies": {
@@ -30,10 +31,10 @@
     "@fontsource-variable/jetbrains-mono": "^5.2.8",
     "@lezer/highlight": "^1.2.3",
     "@tailwindcss/vite": "^4.1.18",
-    "@tauri-apps/api": "^2",
-    "@tauri-apps/plugin-opener": "^2",
+    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/plugin-opener": "^2.5.4",
     "@tauri-apps/plugin-process": "^2.3.1",
-    "@tauri-apps/plugin-updater": "^2.9.0",
+    "@tauri-apps/plugin-updater": "^2.10.1",
     "@tiptap/extension-code-block": "3.23.6",
     "@tiptap/extension-image": "^3.23.6",
     "@tiptap/extension-link": "^3.23.6",
@@ -61,7 +62,7 @@
     "zustand": "^5.0.9"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2",
+    "@tauri-apps/cli": "^2.11.4",
     "@types/node": "^25.0.3",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
