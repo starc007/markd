@@ -1,7 +1,21 @@
-import { FolderOpen, Monitor, Moon, RefreshCw, Sun } from "lucide-react";
-import type { Theme } from "@/lib/types";
+import { openUrl } from "@tauri-apps/plugin-opener";
+import {
+  ArrowUpRight,
+  Check,
+  Cloud,
+  FolderOpen,
+  Globe2,
+  LogIn,
+  Monitor,
+  Moon,
+  RefreshCw,
+  Sun,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import type { CloudAccountStatus, Theme } from "@/lib/types";
 import { cx, isMac } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
+import { ipc } from "@/lib/ipc";
 import { useUpdater } from "@/stores/updater";
 import { useVault } from "@/stores/vault";
 
@@ -30,6 +44,8 @@ const THEMES: Array<{
     icon: Moon,
   },
 ];
+
+const CLOUD_LOGIN_URL = "https://usemarkd.app/login?source=desktop";
 
 function shortcuts(mac: boolean): Array<{ label: string; keys: string[] }> {
   const mod = mac ? "⌘" : "Ctrl";
@@ -126,6 +142,116 @@ export function GeneralSettings() {
             </Button>
           )}
         </div>
+      </SettingsGroup>
+    </div>
+  );
+}
+
+export function CloudSettings() {
+  const [status, setStatus] = useState<CloudAccountStatus | null>(null);
+
+  useEffect(() => {
+    let disposed = false;
+    void ipc
+      .cloudAccountStatus()
+      .then((next) => {
+        if (!disposed) setStatus(next);
+      })
+      .catch(() => {
+        if (!disposed) setStatus({ account: null, loginUrl: CLOUD_LOGIN_URL });
+      });
+    return () => {
+      disposed = true;
+    };
+  }, []);
+
+  const account = status?.account ?? null;
+  const loginUrl = status?.loginUrl ?? CLOUD_LOGIN_URL;
+  const loading = status === null;
+
+  return (
+    <div className="space-y-6">
+      <SettingsGroup
+        title="Account"
+        description="Sign in once to manage public pages and future synced devices."
+      >
+        <div className="rounded-xl bg-panel p-1">
+          <div className="flex items-center gap-3 rounded-[10px] bg-bg px-3.5 py-3">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-line bg-panel text-muted">
+              {account ? (
+                <span className="text-[12px] font-semibold uppercase text-ink">
+                  {account.email.slice(0, 1)}
+                </span>
+              ) : (
+                <Cloud size={16} strokeWidth={1.7} />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <p className="truncate text-[12.5px] font-semibold text-ink">
+                  {loading ? "Checking account…" : (account?.email ?? "Not signed in")}
+                </p>
+                {account && (
+                  <span className="rounded-full border border-line px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-faint">
+                    {account.plan === "cloud" ? "Cloud" : "Free"}
+                  </span>
+                )}
+              </div>
+              <p className="mt-0.5 text-[10.5px] text-faint">
+                {loading
+                  ? "Looking for a Markd account on this device."
+                  : account
+                  ? "Your publishing identity is connected to this device."
+                  : "Your local notes stay available without an account."}
+              </p>
+            </div>
+            <Button
+              variant={account ? "outline" : "primary"}
+              size="sm"
+              className="shrink-0"
+              disabled={loading}
+              onClick={() => openUrl(loginUrl)}
+            >
+              {account ? (
+                <>
+                  Account
+                  <ArrowUpRight size={12.5} strokeWidth={1.8} />
+                </>
+              ) : (
+                <>
+                  <LogIn size={13} strokeWidth={1.8} />
+                  Sign in
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </SettingsGroup>
+
+      <SettingsGroup
+        title="Plans"
+        description="Start free. Upgrade only when you need more publishing or sync."
+      >
+        <div className="grid grid-cols-2 gap-2">
+          <PlanCard
+            name="Free"
+            price="$0"
+            description="For trying public pages"
+            features={["1 active published note", "Local notes stay unlimited"]}
+            active={account?.plan === "free"}
+          />
+          <PlanCard
+            name="Markd Cloud"
+            price="$6/mo yearly"
+            description="$8 when billed monthly"
+            features={["Unlimited publishing", "Cross-device sync"]}
+            active={account?.plan === "cloud"}
+          />
+        </div>
+        <p className="mt-2.5 flex items-center gap-1.5 text-[10.5px] text-faint">
+          <Globe2 size={11.5} strokeWidth={1.7} />
+          Publishing is being built first. Sync will follow.
+        </p>
       </SettingsGroup>
     </div>
   );
@@ -236,6 +362,48 @@ function SettingsGroup({
       </div>
       <div className="mt-3">{children}</div>
     </section>
+  );
+}
+
+function PlanCard({
+  name,
+  price,
+  description,
+  features,
+  active,
+}: {
+  name: string;
+  price: string;
+  description: string;
+  features: string[];
+  active: boolean;
+}) {
+  return (
+    <div
+      className={cx(
+        "relative min-h-[142px] rounded-xl border p-3.5",
+        active ? "border-ink bg-bg" : "border-line-soft bg-panel",
+      )}
+    >
+      {active && (
+        <span className="absolute right-3 top-3 rounded-full bg-invert px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-invert-ink">
+          Current
+        </span>
+      )}
+      <p className="text-[12px] font-semibold text-ink">{name}</p>
+      <p className="mt-2 text-[13px] font-semibold tracking-[-0.01em] text-ink">
+        {price}
+      </p>
+      <p className="mt-0.5 text-[10px] text-faint">{description}</p>
+      <ul className="mt-3 space-y-1.5">
+        {features.map((feature) => (
+          <li key={feature} className="flex items-center gap-1.5 text-[10.5px] text-muted">
+            <Check size={11} strokeWidth={2} />
+            {feature}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

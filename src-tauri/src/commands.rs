@@ -232,6 +232,11 @@ pub fn backlinks_for(state: State<'_, AppState>, rel: String) -> AppResult<Vec<B
 // ---- publishing ----
 
 #[tauri::command]
+pub fn cloud_account_status(app: AppHandle) -> cloud::CloudAccountStatus {
+    cloud::account_status(&app)
+}
+
+#[tauri::command]
 pub fn published_note_status(
     app: AppHandle,
     state: State<'_, AppState>,

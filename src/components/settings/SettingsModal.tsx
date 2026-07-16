@@ -1,4 +1,5 @@
 import {
+  Cloud,
   Keyboard,
   Palette,
   Settings,
@@ -10,6 +11,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import {
   AppearanceSettings,
+  CloudSettings,
   GeneralSettings,
   ShortcutSettings,
 } from "@/components/settings/SettingsPanels";
@@ -18,7 +20,7 @@ import { EASE_OUT } from "@/lib/ease";
 import { cx } from "@/lib/utils";
 import { useUi } from "@/stores/ui";
 
-type SettingsPage = "general" | "appearance" | "shortcuts";
+type SettingsPage = "general" | "cloud" | "appearance" | "shortcuts";
 
 const PAGES: Array<{
   id: SettingsPage;
@@ -31,6 +33,12 @@ const PAGES: Array<{
     label: "General",
     description: "Vault and updates",
     icon: SlidersHorizontal,
+  },
+  {
+    id: "cloud",
+    label: "Markd Cloud",
+    description: "Account, publishing, and sync",
+    icon: Cloud,
   },
   {
     id: "appearance",
@@ -48,6 +56,7 @@ const PAGES: Array<{
 
 const PAGE_CONTENT: Record<SettingsPage, React.ComponentType> = {
   general: GeneralSettings,
+  cloud: CloudSettings,
   appearance: AppearanceSettings,
   shortcuts: ShortcutSettings,
 };

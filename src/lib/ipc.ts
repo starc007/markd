@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
   BacklinkMention,
+  CloudAccountStatus,
   Bookmark,
   PublishedNoteStatus,
   PublishedShare,
@@ -63,6 +64,7 @@ export const ipc = {
     call<SearchHit[]>("search_notes", { query, limit }),
   backlinksFor: (rel: string) =>
     call<BacklinkMention[]>("backlinks_for", { rel }),
+  cloudAccountStatus: () => call<CloudAccountStatus>("cloud_account_status"),
   publishedNoteStatus: (rel: string, content: string) =>
     call<PublishedNoteStatus>("published_note_status", { rel, content }),
   publishNote: (rel: string, title: string, content: string) =>

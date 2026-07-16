@@ -10,6 +10,7 @@ use crate::cloud_metadata::{self, PublishedShare};
 use crate::error::{AppError, AppResult};
 
 const API_BASE: &str = "https://api.usemarkd.app";
+const LOGIN_URL: &str = "https://usemarkd.app/login?source=desktop";
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -51,6 +52,20 @@ pub struct PublishedNoteStatus {
 pub struct CloudAccount {
     pub email: String,
     pub plan: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CloudAccountStatus {
+    pub account: Option<CloudAccount>,
+    pub login_url: &'static str,
+}
+
+pub fn account_status(_app: &tauri::AppHandle) -> CloudAccountStatus {
+    CloudAccountStatus {
+        account: None,
+        login_url: LOGIN_URL,
+    }
 }
 
 fn access_token(_app: &tauri::AppHandle) -> AppResult<String> {

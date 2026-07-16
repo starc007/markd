@@ -59,6 +59,7 @@ pub fn run() {
             commands::delete_entry,
             commands::search_notes,
             commands::backlinks_for,
+            commands::cloud_account_status,
             commands::published_note_status,
             commands::publish_note,
             commands::update_published_note,

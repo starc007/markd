@@ -63,8 +63,18 @@ export interface PublishedShare {
   updatedAt: number;
 }
 
+export interface CloudAccount {
+  email: string;
+  plan: "free" | "cloud";
+}
+
+export interface CloudAccountStatus {
+  account: CloudAccount | null;
+  loginUrl: string;
+}
+
 export interface PublishedNoteStatus {
-  account: { email: string; plan: "free" | "cloud" } | null;
+  account: CloudAccount | null;
   share: PublishedShare | null;
   isOutdated: boolean;
   freeShareLimit: number;
