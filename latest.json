@@ -1,14 +1,10 @@
 {
-  "version": "0.1.4",
-  "notes": "Markdown source editing, reliable nested note moves, code block copy actions, and improved keyboard accessibility.",
-  "pub_date": "2026-07-12T13:48:34.947Z",
+  "version": "0.1.5",
+  "notes": "Backlinks and linked mentions, pinned notes and folders, editable properties, Quick Capture, daily notes, editor colors, and a redesigned Settings experience.",
+  "pub_date": "2026-07-16T10:12:10.067Z",
   "platforms": {
-    "darwin-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUais5QS9oMXBYdFp2RmtwbVBUT1FNaXRnVTlsMzIxdjRMQ0hyVWpoa28zMGdPd3FOL2dFUnRqYmhUVVpqYi9weWdtekJRWmdWelpqbnBsY0dsVGZvdjBSbFRtZGJNRGc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgzODY0MTA2CWZpbGU6TWFya2QuYXBwLnRhci5negp0ZWlRTDNtM2FOZlJpRjNpZW1XZnVPU0lEMi9PUW0va2psOW8zWnNXendUNFBDb2d0WlpXd1lLUU5wRSsvWFdOK3hZa3hLUjRQSmk2cEUrU1pKZjJCQT09Cg==",
-      "url": "https://usemarkd.app/updates/Markd.app.tar.gz"
-    },
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUais5QS9oMXBYdFp2RmtwbVBUT1FNaXRnVTlsMzIxdjRMQ0hyVWpoa28zMGdPd3FOL2dFUnRqYmhUVVpqYi9weWdtekJRWmdWelpqbnBsY0dsVGZvdjBSbFRtZGJNRGc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgzODY0MTA2CWZpbGU6TWFya2QuYXBwLnRhci5negp0ZWlRTDNtM2FOZlJpRjNpZW1XZnVPU0lEMi9PUW0va2psOW8zWnNXendUNFBDb2d0WlpXd1lLUU5wRSsvWFdOK3hZa3hLUjRQSmk2cEUrU1pKZjJCQT09Cg==",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUais5QS9oMXBYdFliZ2cyb3JQTzY5QWRsaytiWDlEMlc1d09mbE9ZNktZUEZmQU1ERFMzMEhsb3hnMm1lM3YyZTh3K3V6N0l0cGRyTmJIUWxETnVYTllPNWEwSGI0V1F3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0MTk2NTk0CWZpbGU6TWFya2QuYXBwLnRhci5negpZVDZzZUx5eWZET0FOYVR3c2FzS2Jlelp0bHdLU20wdUVVVThhcXk2NDdtNVZiUEQ4MUw2Sk1QSUlFbE10ZnExc0tSc3J6YTVqaTRzYy8yV2R0SXZCdz09Cg==",
       "url": "https://usemarkd.app/updates/Markd.app.tar.gz"
     }
   }

@@ -1,7 +1,7 @@
 {
   "name": "Markd",
   "private": true,
-  "version": "0.1.4",
+  "version": "0.1.5",
   "license": "MIT",
   "type": "module",
   "scripts": {
@@ -16,6 +16,7 @@
     "update:generate": "bun scripts/generate-latest-json.js",
     "update:test-server": "node scripts/test-update-server.cjs",
     "icon:generate": "bash scripts/generate-icns.sh",
+    "notarize:dmg": "bash scripts/notarize-dmg.sh",
     "prepare:dmg": "bash scripts/prepare-dmg.sh",
     "release:check": "bash scripts/check-macos-release.sh",
     "release": "bash scripts/release.sh"

@@ -16,21 +16,7 @@ Your notes live on your Mac as plain `.md` files. Markd simply makes writing and
 
 Download the latest `.dmg` from [usemarkd.app](https://usemarkd.app) and drag Markd to Applications.
 
-The current `0.1.4` download predates the notarized release pipeline, so macOS may ask you to verify it on first launch. Open it once, either way:
-
-**Terminal**
-
-```bash
-xattr -dr com.apple.quarantine /Applications/Markd.app
-```
-
-Then open Markd normally.
-
-**Or via Settings**
-
-Double-click Markd → click **Done** → **System Settings → Privacy & Security** → **Open Anyway** → authenticate. macOS remembers the choice after that.
-
-Future releases are Developer ID signed and notarized through Apple before distribution.
+Markd releases are Developer ID signed and notarized by Apple before distribution.
 
 ---
 

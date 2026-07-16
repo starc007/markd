@@ -105,17 +105,14 @@ const latestJson = {
   platforms: {},
 };
 
-// Add macOS platforms (Intel and Apple Silicon)
+// The current release build produces an Apple Silicon bundle. Do not advertise
+// the same archive to Intel clients until an x86_64 or universal build exists.
 if (macosSig) {
-  latestJson.platforms["darwin-x86_64"] = {
-    signature: macosSig,
-    url: `${WEBSITE_URL}/${APP_NAME}.app.tar.gz`,
-  };
   latestJson.platforms["darwin-aarch64"] = {
     signature: macosSig,
     url: `${WEBSITE_URL}/${APP_NAME}.app.tar.gz`,
   };
-  console.log("✓ Added macOS (Intel & Apple Silicon) platform");
+  console.log("✓ Added macOS Apple Silicon platform");
 } else {
   console.warn("⚠ Skipping macOS (signature file not found)");
 }

@@ -10,6 +10,25 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.1.5",
+    date: "2026-07-16",
+    displayDate: "July 16, 2026",
+    title: "Capture and connect",
+    summary:
+      "A faster way to keep important notes close and see how ideas relate.",
+    changes: [
+      "Capture a thought over any app with the global Quick Capture window.",
+      "Open today's daily note from the command palette or keyboard.",
+      "See backlinks and linked mentions with context in a dedicated sidebar.",
+      "Pin important notes and folders above the regular note tree.",
+      "Add and edit note properties without writing YAML by hand.",
+      "Apply text and highlight colors from the editor selection menu.",
+      "Move through the new sidebar-based Settings layout.",
+      "Install a Developer ID signed and Apple-notarized release.",
+    ],
+    releaseUrl: "https://github.com/starc007/markd/releases/tag/v0.1.5",
+  },
+  {
     version: "0.1.4",
     date: "2026-07-12",
     displayDate: "July 12, 2026",

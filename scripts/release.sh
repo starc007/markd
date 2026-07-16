@@ -65,9 +65,19 @@ fi
 echo -e "${GREEN}✅ Signed and notarized build completed${NC}"
 echo ""
 
+# Step 1.5: Notarize and staple the DMG created after app notarization
+echo -e "${YELLOW}🎟️  Step 1.5: Notarizing DMG...${NC}"
+DMG_PATH=$(find "$PROJECT_ROOT/src-tauri/target/release/bundle/dmg" -name "*_${VERSION}_*.dmg" -type f 2>/dev/null | head -n 1)
+[ -n "$DMG_PATH" ] || {
+  echo -e "${RED}❌ Release DMG not found for version ${VERSION}${NC}"
+  exit 1
+}
+bun run notarize:dmg -- "$DMG_PATH"
+echo ""
+
 # Step 2: Verify the notarized DMG
 echo -e "${YELLOW}🔎 Step 2: Verifying notarized DMG...${NC}"
-bun run prepare:dmg
+bun run prepare:dmg -- "$VERSION"
 
 echo ""
 
@@ -88,7 +98,7 @@ SITE_UPDATES="$PROJECT_ROOT/site/public/updates"
 SITE_DOWNLOADS="$PROJECT_ROOT/site/public/downloads"
 mkdir -p "$SITE_UPDATES" "$SITE_DOWNLOADS"
 
-STAGE_DMG=$(find "$PROJECT_ROOT/src-tauri/target/release/bundle/dmg" -name "*.dmg" -type f 2>/dev/null | head -n 1)
+STAGE_DMG=$(find "$PROJECT_ROOT/src-tauri/target/release/bundle/dmg" -name "*_${VERSION}_*.dmg" -type f 2>/dev/null | head -n 1)
 STAGE_BUNDLE=$(find "$PROJECT_ROOT/src-tauri/target/release/bundle/macos" -name "*.tar.gz" -type f 2>/dev/null | head -n 1)
 
 cp "$PROJECT_ROOT/latest.json" "$SITE_UPDATES/latest.json"
@@ -106,7 +116,7 @@ echo -e "${YELLOW}📋 Files ready for upload:${NC}"
 echo ""
 
 # Find DMG file
-DMG_PATH=$(find "$PROJECT_ROOT/src-tauri/target/release/bundle/dmg" -name "*.dmg" -type f 2>/dev/null | head -n 1)
+DMG_PATH=$(find "$PROJECT_ROOT/src-tauri/target/release/bundle/dmg" -name "*_${VERSION}_*.dmg" -type f 2>/dev/null | head -n 1)
 if [ -n "$DMG_PATH" ]; then
   echo -e "  ${GREEN}✓${NC} DMG: $DMG_PATH"
   echo "     → Upload to: /downloads/$(basename "$DMG_PATH")"

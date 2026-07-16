@@ -6,11 +6,16 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+VERSION="${1:-}"
 
 echo "🔎 Verifying notarized DMG..."
 
-# Find DMG file in the build directory
-DMG_PATH=$(find "$PROJECT_ROOT/src-tauri/target/release/bundle/dmg" -name "*.dmg" -type f 2>/dev/null | head -n 1)
+# Find the requested release DMG without accidentally selecting an older build.
+if [ -n "$VERSION" ]; then
+  DMG_PATH=$(find "$PROJECT_ROOT/src-tauri/target/release/bundle/dmg" -name "*_${VERSION}_*.dmg" -type f 2>/dev/null | head -n 1)
+else
+  DMG_PATH=$(find "$PROJECT_ROOT/src-tauri/target/release/bundle/dmg" -name "*.dmg" -type f 2>/dev/null | head -n 1)
+fi
 
 if [ -z "$DMG_PATH" ]; then
   echo "❌ Error: DMG file not found in build directory"
