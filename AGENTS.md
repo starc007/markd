@@ -1,6 +1,6 @@
 # Markd — agent guide
 
-Local-first markdown notes app for macOS. Tauri 2 (Rust) + React 19 + Vite + Tailwind v4 + Tiptap 3 + Zustand.
+Local-first markdown notes app for macOS and GNU/Linux. Tauri 2 (Rust) + React 19 + Vite + Tailwind v4 + Tiptap 3 + Zustand.
 
 ## Commands
 
@@ -8,7 +8,8 @@ Local-first markdown notes app for macOS. Tauri 2 (Rust) + React 19 + Vite + Tai
 - `bun run build` — typecheck (tsc) + vite production build
 - `bunx tsc --noEmit` — typecheck only
 - `cd src-tauri && cargo test` — Rust unit tests
-- `bun run release` — full signed release (scripts/release.sh)
+- `bun run release`: full signed and notarized macOS release (scripts/release.sh)
+- `.github/workflows/release-linux.yml`: signed x86_64 AppImage and Debian release
 
 ## Architecture
 

@@ -1,0 +1,100 @@
+name: Release Linux
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag, for example v0.1.5
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-linux-${{ github.event.inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Linux x86_64
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    env:
+      RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Check out release source
+        uses: actions/checkout@v6
+
+      - name: Install Tauri system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            libwebkit2gtk-4.1-dev \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.0
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Validate release inputs
+        run: |
+          : "${TAURI_SIGNING_PRIVATE_KEY:?TAURI_SIGNING_PRIVATE_KEY is not configured}"
+          VERSION="${RELEASE_TAG#v}"
+          CONFIG_VERSION="$(node -p "require('./src-tauri/tauri.conf.json').version")"
+          test "$VERSION" = "$CONFIG_VERSION" || {
+            echo "Tag $RELEASE_TAG does not match app version $CONFIG_VERSION"
+            exit 1
+          }
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Build AppImage and Debian package
+        run: bunx tauri build --bundles appimage,deb
+
+      - name: Prepare release artifacts
+        run: |
+          APPIMAGE="$(find src-tauri/target/release/bundle/appimage -maxdepth 1 -name '*.AppImage' -print -quit)"
+          DEB="$(find src-tauri/target/release/bundle/deb -maxdepth 1 -name '*.deb' -print -quit)"
+          test -n "$APPIMAGE" && test -f "$APPIMAGE.sig"
+          test -n "$DEB"
+
+          mkdir -p release-artifacts
+          install -m 755 "$APPIMAGE" "release-artifacts/Markd_${VERSION}_amd64.AppImage"
+          cp "$APPIMAGE.sig" "release-artifacts/Markd_${VERSION}_amd64.AppImage.sig"
+          cp "$DEB" "release-artifacts/Markd_${VERSION}_amd64.deb"
+
+          bun scripts/generate-linux-update-manifest.js \
+            "$VERSION" \
+            "release-artifacts/Markd_${VERSION}_amd64.AppImage.sig" \
+            "release-artifacts/latest-linux.json" \
+            "Markd ${VERSION} for Linux"
+
+      - name: Keep a workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: markd-linux-${{ env.VERSION }}
+          path: release-artifacts/
+          if-no-files-found: error
+
+      - name: Upload to GitHub release
+        run: |
+          gh release view "$RELEASE_TAG" >/dev/null 2>&1 || \
+            gh release create "$RELEASE_TAG" --verify-tag --generate-notes --title "Markd ${VERSION}"
+          gh release upload "$RELEASE_TAG" release-artifacts/* --clobber

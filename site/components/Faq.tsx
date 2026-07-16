@@ -22,8 +22,8 @@ const FAQS: { q: string; a: string }[] = [
     a: "Yes — free and open source under the MIT license. No subscription, no upsell.",
   },
   {
-    q: "Windows or Linux?",
-    a: "macOS first. Markd is built on Tauri, which is cross-platform, so other platforms may follow — but macOS is where it's polished today.",
+    q: "Which platforms are supported?",
+    a: "Markd is available for Apple Silicon Macs and x86_64 Linux systems. Linux downloads are provided as AppImage and Debian packages. Windows support may follow.",
   },
   {
     q: "What's the AI agent?",

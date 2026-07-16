@@ -15,6 +15,7 @@ cloudflare-env.d.ts
 # Only latest.json (tiny, versioned) is committed; the bundles are not.
 public/downloads/*
 public/updates/*.tar.gz
+public/updates/*.AppImage
 !public/downloads/.gitkeep
 
 # TS build cache

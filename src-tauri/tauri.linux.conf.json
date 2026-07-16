@@ -1,0 +1,13 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "targets": ["appimage", "deb"]
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/starc007/markd/releases/latest/download/latest-linux.json"
+      ]
+    }
+  }
+}

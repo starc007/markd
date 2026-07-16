@@ -50,7 +50,7 @@ export function Hero() {
           className="mx-auto mt-6 max-w-xl text-pretty text-[16px] leading-7 text-muted-foreground sm:text-[18px]"
         >
           Everyone&apos;s built one; most don&apos;t survive their own v2. Markd
-          is the fast, local-first markdown editor for macOS you actually keep.
+          is the fast, local-first markdown editor you actually keep.
           Clean UI, instant everything, and AI that reads and writes your notes.
           Plain{" "}
           <code className="rounded bg-card px-1.5 py-0.5 font-mono text-[0.85em] text-fg-soft">
@@ -80,7 +80,7 @@ export function Hero() {
           {...rise(0.24)}
           className="mt-5 font-mono text-[11.5px] uppercase tracking-[0.14em] text-faint"
         >
-          Free &amp; open source · Apple Silicon · macOS 12+ · v{VERSION}
+          Free &amp; open source · macOS 12+ · Linux x86_64 · v{VERSION}
         </motion.p>
       </div>
 

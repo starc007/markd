@@ -66,8 +66,8 @@
       "icons/icon.png"
     ],
     "category": "Productivity",
-    "shortDescription": "A fast, local-first notes app for developers and content creators",
-    "longDescription": "Markd is a macOS-first, local-only, ultra high-performance notes app designed for developers and content creators who care deeply about speed, privacy, and data ownership.",
+    "shortDescription": "A fast, local-first Markdown notes app",
+    "longDescription": "Markd is a local-first Markdown notes app built for speed, privacy, and data ownership.",
     "macOS": {
       "entitlements": "./Entitlements.plist",
       "dmg": {

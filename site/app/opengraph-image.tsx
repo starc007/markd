@@ -50,8 +50,15 @@ export default function Image() {
             <span style={{ color: "#191917" }}>The last notes app&nbsp;</span>
             <span style={{ color: "#9c9c95" }}>you&rsquo;ll download.</span>
           </div>
-          <div style={{ display: "flex", fontSize: 30, color: "#6a6a64", maxWidth: 860 }}>
-            Local-first markdown for macOS — with AI that reads your notes.
+          <div
+            style={{
+              display: "flex",
+              fontSize: 30,
+              color: "#6a6a64",
+              maxWidth: 860,
+            }}
+          >
+            Local-first markdown for macOS and Linux, with AI that reads your notes.
           </div>
         </div>
 
@@ -66,7 +73,7 @@ export default function Image() {
           }}
         >
           <div style={{ display: "flex" }}>usemarkd.app</div>
-          <div style={{ display: "flex" }}>Free · Apple Silicon · macOS 12+</div>
+          <div style={{ display: "flex" }}>Free · macOS · Linux</div>
         </div>
       </div>
     ),

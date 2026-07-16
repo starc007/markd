@@ -90,8 +90,8 @@ export function Footer() {
                 </span>
               </div>
               <p className="mt-4 text-[13.5px] leading-6 text-muted-foreground">
-                Local-first markdown notes for macOS. Your words stay on your
-                disk.
+                Local-first markdown notes for macOS and Linux. Your words stay
+                on your disk.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-12 sm:gap-20">

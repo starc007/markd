@@ -56,5 +56,8 @@ export function hostOf(url: string) {
 }
 
 export function isMac() {
-  return navigator.platform.toLowerCase().includes("mac");
+  return (
+    typeof navigator !== "undefined" &&
+    navigator.platform.toLowerCase().includes("mac")
+  );
 }

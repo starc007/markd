@@ -9,7 +9,7 @@ import { GITHUB } from "@/lib/config";
 export const metadata: Metadata = {
   title: "Changelog | Markd",
   description:
-    "See what is new in Markd, the local-first Markdown notes app for macOS.",
+    "See what is new in Markd, the local-first Markdown notes app for macOS and Linux.",
   alternates: {
     canonical: "/changelog",
   },

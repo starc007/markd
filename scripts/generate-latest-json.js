@@ -67,7 +67,7 @@ const windowsSigPath = join(
 const linuxSigPath = join(
   buildDir,
   "appimage",
-  `${APP_NAME}_${version}_amd64.AppImage.tar.gz.sig`
+  `${APP_NAME}_${version}_amd64.AppImage.sig`
 );
 
 // Also try alternative paths (Tauri v2 might use different structure)
@@ -132,7 +132,7 @@ if (windowsSig) {
 if (linuxSig) {
   latestJson.platforms["linux-x86_64"] = {
     signature: linuxSig,
-    url: `${WEBSITE_URL}/${APP_NAME}_${version}_amd64.AppImage.tar.gz`,
+    url: `${WEBSITE_URL}/${APP_NAME}_${version}_amd64.AppImage`,
   };
   console.log("✓ Added Linux platform");
 } else {
