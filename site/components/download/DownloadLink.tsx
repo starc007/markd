@@ -1,9 +1,10 @@
 "use client";
 
-import { Download } from "lucide-react";
+import { Apple } from "lucide-react";
 import { track } from "@/lib/analytics";
 import { VERSION } from "@/lib/config";
 import { ButtonLink } from "@/components/ui/button";
+import { LinuxIcon } from "./PlatformIcons";
 
 type DownloadLinkProps = {
   href: string;
@@ -20,6 +21,8 @@ export function DownloadLink({
   format,
   primary = false,
 }: DownloadLinkProps) {
+  const PlatformIcon = platform === "macos" ? Apple : LinuxIcon;
+
   return (
     <ButtonLink
       href={href}
@@ -28,7 +31,7 @@ export function DownloadLink({
       className="w-full sm:w-auto"
       onClick={() => track("Download", { version: VERSION, platform, format })}
     >
-      <Download className="size-4" strokeWidth={1.8} aria-hidden />
+      <PlatformIcon className="size-4" strokeWidth={1.8} aria-hidden />
       {label}
     </ButtonLink>
   );
