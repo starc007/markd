@@ -1,0 +1,25 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "markd-cloud-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-16",
+  "workers_dev": true,
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "PUBLIC_SITE_ORIGIN": "https://usemarkd.app"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "markd-cloud",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "PUBLISHED_NOTES"
+    }
+  ]
+}

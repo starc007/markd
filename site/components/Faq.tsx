@@ -3,7 +3,7 @@ import { Plus } from "lucide-react";
 const FAQS: { q: string; a: string }[] = [
   {
     q: "Where are my notes stored?",
-    a: "On your Mac, as plain Markdown files in a folder you choose. No database, no cloud, no account — open the folder in Finder anytime. The app sends nothing anywhere.",
+    a: "On your Mac, as plain Markdown files in a folder you choose. No database or account is required — open the folder in Finder anytime. Markd only uploads a separate copy when you explicitly publish a note.",
   },
   {
     q: "Is there sync?",

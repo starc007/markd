@@ -55,7 +55,7 @@ export function Footer() {
               transition={{ duration: 0.5, ease: EASE_OUT, delay: 0.15 }}
               className="mx-auto mt-5 max-w-md text-pretty text-[15px] leading-7 text-muted-foreground"
             >
-              No account, no cloud, no lock-in. Just the last notes app
+              No required account, no lock-in. Just the last notes app
               you&apos;ll download. Probably. Grab it and start writing.
             </motion.p>
             <motion.div

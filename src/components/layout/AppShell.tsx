@@ -4,6 +4,7 @@ import {
   Copy,
   Download,
   FilePlus,
+  Globe2,
   ListPlus,
   MoreVertical,
   PanelLeft,
@@ -240,6 +241,15 @@ export function AppShell() {
                     />
                     <div className="mx-1 my-1 border-t border-line-soft" />
                     <NoteMenuButton
+                      icon={Globe2}
+                      label="Publish on web"
+                      onClick={() => {
+                        setNoteMenuOpen(false);
+                        dispatchNoteAction("publish");
+                      }}
+                    />
+                    <div className="mx-1 my-1 border-t border-line-soft" />
+                    <NoteMenuButton
                       icon={Download}
                       label="Export as Markdown"
                       onClick={() => {
@@ -299,7 +309,7 @@ export function AppShell() {
   );
 }
 
-type NoteAction = "add-property" | "export" | "copy" | "delete";
+type NoteAction = "add-property" | "publish" | "export" | "copy" | "delete";
 
 function dispatchNoteAction(action: NoteAction) {
   window.dispatchEvent(

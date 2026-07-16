@@ -52,6 +52,24 @@ export interface BacklinkMention {
   occurrence: number;
 }
 
+export interface PublishedShare {
+  id: string;
+  entryId: string;
+  slug: string;
+  url: string;
+  title: string;
+  contentHash: string;
+  publishedAt: number;
+  updatedAt: number;
+}
+
+export interface PublishedNoteStatus {
+  account: { email: string; plan: "free" | "cloud" } | null;
+  share: PublishedShare | null;
+  isOutdated: boolean;
+  freeShareLimit: number;
+}
+
 export type View =
   | { type: "note"; rel: string }
   | { type: "todos" }

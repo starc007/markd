@@ -3,6 +3,8 @@ mod assets;
 mod backlink_links;
 mod backlinks;
 mod bookmarks;
+mod cloud;
+mod cloud_metadata;
 mod commands;
 mod config;
 mod daily_notes;
@@ -57,6 +59,10 @@ pub fn run() {
             commands::delete_entry,
             commands::search_notes,
             commands::backlinks_for,
+            commands::published_note_status,
+            commands::publish_note,
+            commands::update_published_note,
+            commands::revoke_published_note,
             commands::pins_list,
             commands::pin_note,
             commands::unpin_note,
