@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { ArrowUpRight } from "lucide-react";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
-import { DownloadModal } from "@/components/DownloadModal";
 import { ChangelogEntry } from "@/components/changelog/ChangelogEntry";
 import { CHANGELOG } from "@/lib/changelog";
 import { GITHUB } from "@/lib/config";
@@ -74,7 +73,6 @@ export default function ChangelogPage() {
         </section>
       </main>
       <Footer />
-      <DownloadModal />
     </>
   );
 }

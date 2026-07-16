@@ -1,7 +1,6 @@
 "use client";
 
 import { ButtonLink, type ButtonSize } from "./button";
-import { DOWNLOAD_EVENT } from "../DownloadModal";
 import { track } from "@/lib/analytics";
 import { DMG, VERSION } from "@/lib/config";
 
@@ -29,7 +28,6 @@ export function DownloadButton({
       className={className}
       onClick={() => {
         track("Download", { version: VERSION });
-        window.dispatchEvent(new CustomEvent(DOWNLOAD_EVENT));
       }}
     >
       <AppleLogo />

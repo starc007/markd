@@ -4,7 +4,6 @@ import { FeaturesBento } from "@/components/FeaturesBento";
 import { AgentTrace } from "@/components/AgentTrace";
 import { Faq } from "@/components/Faq";
 import { Footer } from "@/components/Footer";
-import { DownloadModal } from "@/components/DownloadModal";
 
 export default function Home() {
   return (
@@ -17,7 +16,6 @@ export default function Home() {
         <Faq />
       </main>
       <Footer />
-      <DownloadModal />
     </>
   );
 }

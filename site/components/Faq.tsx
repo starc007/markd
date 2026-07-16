@@ -14,8 +14,8 @@ const FAQS: { q: string; a: string }[] = [
     a: "Yes. Markd uses the same plain-Markdown vault with real folders, and preserves frontmatter from other tools. Point Markd and Obsidian at the same folder and both just work.",
   },
   {
-    q: "Why does macOS say the app can't be verified?",
-    a: "Markd is signed but not yet notarized. On first launch, right-click the app and choose Open (or use System Settings → Privacy & Security → Open Anyway). Notarization is planned.",
+    q: "Is the macOS download verified?",
+    a: "Yes. Every Markd release is signed with a Developer ID certificate and notarized by Apple before distribution.",
   },
   {
     q: "Is it free?",
