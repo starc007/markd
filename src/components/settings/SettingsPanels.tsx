@@ -1,6 +1,6 @@
 import { FolderOpen, Monitor, Moon, RefreshCw, Sun } from "lucide-react";
 import type { Theme } from "@/lib/types";
-import { cx } from "@/lib/utils";
+import { cx, isMac } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { useUpdater } from "@/stores/updater";
 import { useVault } from "@/stores/vault";
@@ -14,7 +14,7 @@ const THEMES: Array<{
   {
     value: "system",
     label: "System",
-    description: "Match macOS",
+    description: "Match your system",
     icon: Monitor,
   },
   {
@@ -31,16 +31,22 @@ const THEMES: Array<{
   },
 ];
 
-const SHORTCUTS: Array<{ label: string; keys: string[] }> = [
-  { label: "Command palette", keys: ["⌘", "K"] },
-  { label: "New note", keys: ["⌘", "N"] },
-  { label: "Quick capture", keys: ["⌃", "⇧", "Space"] },
-  { label: "Today's note", keys: ["⌘", "⇧", "Y"] },
-  { label: "Toggle sidebar", keys: ["⌘", "\\"] },
-  { label: "Cycle theme", keys: ["⌘", "⇧", "D"] },
-  { label: "Settings", keys: ["⌘", ","] },
-  { label: "Close tab", keys: ["⌘", "W"] },
-];
+function shortcuts(mac: boolean): Array<{ label: string; keys: string[] }> {
+  const mod = mac ? "⌘" : "Ctrl";
+  const shift = mac ? "⇧" : "Shift";
+  const control = mac ? "⌃" : "Ctrl";
+
+  return [
+    { label: "Command palette", keys: [mod, "K"] },
+    { label: "New note", keys: [mod, "N"] },
+    { label: "Quick capture", keys: [control, shift, "Space"] },
+    { label: "Today's note", keys: [mod, shift, "Y"] },
+    { label: "Toggle sidebar", keys: [mod, "\\"] },
+    { label: "Cycle theme", keys: [mod, shift, "D"] },
+    { label: "Settings", keys: [mod, ","] },
+    { label: "Close tab", keys: [mod, "W"] },
+  ];
+}
 
 export function GeneralSettings() {
   const root = useVault((state) => state.root);
@@ -128,6 +134,8 @@ export function GeneralSettings() {
 export function AppearanceSettings() {
   const theme = useVault((state) => state.theme);
   const setTheme = useVault((state) => state.setTheme);
+  const mod = isMac() ? "⌘" : "Ctrl";
+  const shift = isMac() ? "⇧" : "Shift";
 
   return (
     <SettingsGroup
@@ -135,8 +143,8 @@ export function AppearanceSettings() {
       description="Choose how Markd looks across the editor and navigation."
       aside={
         <span className="flex items-center text-[10.5px] text-faint">
-          <Kbd>⌘</Kbd>
-          <Kbd>⇧</Kbd>
+          <Kbd>{mod}</Kbd>
+          <Kbd>{shift}</Kbd>
           <Kbd>D</Kbd>
           <span className="ml-1.5">to cycle</span>
         </span>
@@ -177,13 +185,15 @@ export function AppearanceSettings() {
 }
 
 export function ShortcutSettings() {
+  const platformShortcuts = shortcuts(isMac());
+
   return (
     <SettingsGroup
       title="Keyboard shortcuts"
       description="Fast ways to move through Markd without leaving the keyboard."
     >
       <div className="overflow-hidden rounded-xl bg-panel">
-        {SHORTCUTS.map((shortcut, index) => (
+        {platformShortcuts.map((shortcut, index) => (
           <div
             key={shortcut.label}
             className={cx(

@@ -10,7 +10,7 @@ const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jbmono" });
 
 const TITLE = "Markd — the last notes app you'll download";
 const DESCRIPTION =
-  "Everyone's built a notes app; few are worth keeping. Markd is a fast, local-first markdown editor for macOS — real UI, real speed, and AI that reads your notes. Plain .md files in a folder you own.";
+  "Everyone's built a notes app; few are worth keeping. Markd is a fast, local-first markdown editor for macOS and Linux, with real UI, real speed, and AI that reads your notes. Plain .md files in a folder you own.";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://usemarkd.app"),
@@ -20,6 +20,7 @@ export const metadata: Metadata = {
   keywords: [
     "markdown notes app",
     "notes app for macOS",
+    "notes app for Linux",
     "local-first notes",
     "markdown editor mac",
     "Obsidian alternative",
@@ -49,7 +50,7 @@ const JSON_LD = {
   "@type": "SoftwareApplication",
   name: "Markd",
   applicationCategory: "ProductivityApplication",
-  operatingSystem: "macOS 12+",
+  operatingSystem: "macOS 12+, Linux x86_64",
   description: DESCRIPTION,
   url: "https://usemarkd.app",
   offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },

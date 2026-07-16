@@ -9,15 +9,15 @@ use crate::{backlinks, pins};
 const WELCOME: &str = r#"# Welcome to Markd
 
 A fast, local-first place to write. Every note here is a plain `.md` file in the
-folder you picked — open it in Finder, sync it with iCloud, version it with git.
+folder you picked. Open it in your file manager, sync it your way, or version it with git.
 Delete this note whenever you like.
 
 ## Try these
 
-- [ ] Press **⌘K** to jump to any note or run a command
-- [ ] Press **⌘N** to create a new note
+- [ ] Press **Ctrl/Cmd+K** to jump to any note or run a command
+- [ ] Press **Ctrl/Cmd+N** to create a new note
 - [ ] Type `[[` to link to another note
-- [ ] Press **⌘⇧D** to toggle light / dark
+- [ ] Press **Ctrl/Cmd+Shift+D** to toggle light / dark
 - [ ] Drag notes and folders in the sidebar to organize
 
 ## Markdown just works

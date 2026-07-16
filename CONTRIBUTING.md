@@ -41,4 +41,4 @@ See [AGENTS.md](./AGENTS.md) for the full architecture guide. The short version:
 
 ## Reporting bugs
 
-Open an issue with: macOS version, Markd version, and repro steps. If it's a vault/data issue, mention whether it reproduces with a fresh vault folder.
+Open an issue with your operating system, Markd version, and reproduction steps. If it is a vault or data issue, mention whether it reproduces with a fresh vault folder.
