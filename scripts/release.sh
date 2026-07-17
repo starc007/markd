@@ -92,21 +92,15 @@ fi
 
 echo ""
 
-# Step 3.5: Stage artifacts into the website (site/public serves them as-is).
-echo -e "${YELLOW}🌐 Step 3.5: Staging artifacts into the website...${NC}"
+# Step 3.5: Stage only the updater manifest into the website. Release binaries
+# live on GitHub Releases so Git-based site builds never depend on ignored files.
+echo -e "${YELLOW}🌐 Step 3.5: Staging update manifest into the website...${NC}"
 SITE_UPDATES="$PROJECT_ROOT/site/public/updates"
-SITE_DOWNLOADS="$PROJECT_ROOT/site/public/downloads"
-mkdir -p "$SITE_UPDATES" "$SITE_DOWNLOADS"
-
-STAGE_DMG=$(find "$PROJECT_ROOT/src-tauri/target/release/bundle/dmg" -name "*_${VERSION}_*.dmg" -type f 2>/dev/null | head -n 1)
-STAGE_BUNDLE=$(find "$PROJECT_ROOT/src-tauri/target/release/bundle/macos" -name "*.tar.gz" -type f 2>/dev/null | head -n 1)
+mkdir -p "$SITE_UPDATES"
 
 cp "$PROJECT_ROOT/latest.json" "$SITE_UPDATES/latest.json"
-[ -n "$STAGE_BUNDLE" ] && cp "$STAGE_BUNDLE" "$SITE_UPDATES/"
-[ -n "$STAGE_DMG" ] && cp "$STAGE_DMG" "$SITE_DOWNLOADS/"
 
-echo -e "${GREEN}✅ Staged latest.json + bundles into site/public${NC}"
-echo -e "   ${YELLOW}Deploy with: cd site && bun run deploy${NC}"
+echo -e "${GREEN}✅ Staged latest.json into site/public/updates${NC}"
 echo ""
 
 # Step 4: Show summary
@@ -119,7 +113,7 @@ echo ""
 DMG_PATH=$(find "$PROJECT_ROOT/src-tauri/target/release/bundle/dmg" -name "*_${VERSION}_*.dmg" -type f 2>/dev/null | head -n 1)
 if [ -n "$DMG_PATH" ]; then
   echo -e "  ${GREEN}✓${NC} DMG: $DMG_PATH"
-  echo "     → Upload to: /downloads/$(basename "$DMG_PATH")"
+  echo "     → Upload to GitHub release v${VERSION}"
 else
   echo -e "  ${YELLOW}⚠${NC}  DMG not found"
 fi
@@ -128,7 +122,7 @@ fi
 UPDATE_BUNDLE=$(find "$PROJECT_ROOT/src-tauri/target/release/bundle/macos" -name "*.tar.gz" -type f 2>/dev/null | head -n 1)
 if [ -n "$UPDATE_BUNDLE" ]; then
   echo -e "  ${GREEN}✓${NC} Update bundle: $UPDATE_BUNDLE"
-  echo "     → Upload to: /updates/$(basename "$UPDATE_BUNDLE")"
+  echo "     → Upload to GitHub release v${VERSION}"
 else
   echo -e "  ${YELLOW}⚠${NC}  Update bundle not found"
 fi
@@ -144,7 +138,7 @@ fi
 echo ""
 echo -e "${YELLOW}📝 Next steps:${NC}"
 echo "  1. Review the generated files"
-echo "  2. Upload files to your website (see PUBLIC_DISTRIBUTION.md)"
-echo "  3. Update your download page with the new version"
-echo "  4. Test the download and update flow"
+echo "  2. Upload the DMG and update bundle to GitHub release v${VERSION}"
+echo "  3. Commit site/public/updates/latest.json and update the site version"
+echo "  4. Test the GitHub download and automatic update flow"
 echo ""

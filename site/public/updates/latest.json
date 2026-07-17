@@ -5,7 +5,7 @@
   "platforms": {
     "darwin-aarch64": {
       "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUais5QS9oMXBYdFliZ2cyb3JQTzY5QWRsaytiWDlEMlc1d09mbE9ZNktZUEZmQU1ERFMzMEhsb3hnMm1lM3YyZTh3K3V6N0l0cGRyTmJIUWxETnVYTllPNWEwSGI0V1F3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0MTk2NTk0CWZpbGU6TWFya2QuYXBwLnRhci5negpZVDZzZUx5eWZET0FOYVR3c2FzS2Jlelp0bHdLU20wdUVVVThhcXk2NDdtNVZiUEQ4MUw2Sk1QSUlFbE10ZnExc0tSc3J6YTVqaTRzYy8yV2R0SXZCdz09Cg==",
-      "url": "https://usemarkd.app/updates/Markd.app.tar.gz"
+      "url": "https://github.com/starc007/markd/releases/download/v0.1.5/Markd.app.tar.gz"
     }
   }
 }

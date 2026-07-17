@@ -21,9 +21,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const projectRoot = join(__dirname, "..");
 
-// Configuration - Update these with your website URL
-// For Next.js: Use /api/updates if serving through API routes, or /updates if using public folder
-const WEBSITE_URL = "https://usemarkd.app/updates"; // Update this to your actual website URL
+const GITHUB_REPO = "starc007/markd";
 const APP_NAME = "Markd";
 
 // Get command line arguments
@@ -39,6 +37,7 @@ if (args.length < 2) {
 const version = args[0];
 const notes = args.slice(1).join(" "); // Join remaining args as notes
 const pubDate = new Date().toISOString();
+const releaseUrl = `https://github.com/${GITHUB_REPO}/releases/download/v${version}`;
 
 // Paths to signature files (adjust these based on your build output structure)
 const buildDir = join(projectRoot, "src-tauri", "target", "release", "bundle");
@@ -110,7 +109,7 @@ const latestJson = {
 if (macosSig) {
   latestJson.platforms["darwin-aarch64"] = {
     signature: macosSig,
-    url: `${WEBSITE_URL}/${APP_NAME}.app.tar.gz`,
+    url: `${releaseUrl}/${APP_NAME}.app.tar.gz`,
   };
   console.log("✓ Added macOS Apple Silicon platform");
 } else {
@@ -121,7 +120,7 @@ if (macosSig) {
 if (windowsSig) {
   latestJson.platforms["windows-x86_64"] = {
     signature: windowsSig,
-    url: `${WEBSITE_URL}/${APP_NAME}_${version}_x64-setup.nsis.zip`,
+    url: `${releaseUrl}/${APP_NAME}_${version}_x64-setup.nsis.zip`,
   };
   console.log("✓ Added Windows platform");
 } else {
@@ -132,7 +131,7 @@ if (windowsSig) {
 if (linuxSig) {
   latestJson.platforms["linux-x86_64"] = {
     signature: linuxSig,
-    url: `${WEBSITE_URL}/${APP_NAME}_${version}_amd64.AppImage`,
+    url: `${releaseUrl}/${APP_NAME}_${version}_amd64.AppImage`,
   };
   console.log("✓ Added Linux platform");
 } else {
@@ -169,13 +168,7 @@ if (platformCount === 0) {
 } else {
   console.log("📋 Next steps:");
   console.log("   1. Review the generated latest.json file");
-  console.log("   2. Update WEBSITE_URL in this script if needed");
-  console.log(
-    "   3. Upload latest.json to your website at:",
-    `${WEBSITE_URL}/latest.json`
-  );
-  console.log(
-    "   4. Upload the update bundles (.tar.gz, .zip files) to your website"
-  );
+  console.log(`   2. Upload the update bundles to GitHub release v${version}`);
+  console.log("   3. Publish latest.json at /updates/latest.json");
 }
 console.log("");
