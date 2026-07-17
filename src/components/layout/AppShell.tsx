@@ -4,6 +4,7 @@ import {
   Copy,
   Download,
   FilePlus,
+  FolderOpen,
   Globe2,
   ListPlus,
   MoreVertical,
@@ -16,6 +17,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { AnimatePresence, LayoutGroup, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -30,7 +32,7 @@ import { BookmarksPage } from "@/components/bookmarks/BookmarksPage";
 import { TodosPage } from "@/components/todos/TodosPage";
 import { EASE_OUT, SPRING_LAYOUT, SPRING_PANEL } from "@/lib/ease";
 import { ipc } from "@/lib/ipc";
-import { cx } from "@/lib/utils";
+import { cx, isMac } from "@/lib/utils";
 import {
   ActionSwapIcon,
   ActionSwapText,
@@ -312,17 +314,34 @@ export function AppShell() {
                     />
                     <div className="mx-1 my-1 border-t border-line-soft" />
                     {path && (
-                      <NoteMenuButton
-                        icon={Copy}
-                        label="Copy path"
-                        onClick={() => {
-                          setNoteMenuOpen(false);
-                          void navigator.clipboard.writeText(path).then(
-                            () => toast("Path copied"),
-                            () => toast.error("Path could not be copied"),
-                          );
-                        }}
-                      />
+                      <>
+                        <NoteMenuButton
+                          icon={Copy}
+                          label="Copy path"
+                          onClick={() => {
+                            setNoteMenuOpen(false);
+                            void navigator.clipboard.writeText(path).then(
+                              () => toast("Path copied"),
+                              () => toast.error("Path could not be copied"),
+                            );
+                          }}
+                        />
+                        <NoteMenuButton
+                          icon={FolderOpen}
+                          label={isMac() ? "Reveal in Finder" : "Reveal in File Manager"}
+                          onClick={() => {
+                            setNoteMenuOpen(false);
+                            void revealItemInDir(path).catch((error) =>
+                              toast.error("Could not reveal note", {
+                                description:
+                                  error instanceof Error
+                                    ? error.message
+                                    : String(error),
+                              }),
+                            );
+                          }}
+                        />
+                      </>
                     )}
                     <div className="mx-1 my-1 border-t border-line-soft" />
                     <NoteMenuButton

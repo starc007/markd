@@ -1,15 +1,19 @@
 import {
   FilePlus,
+  FolderOpen,
   FolderPlus,
   Pencil,
   Pin,
   PinOff,
   Trash2,
 } from "lucide-react";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
+import { toast } from "sonner";
 import type { TreeNode } from "@/lib/types";
 import type { MenuItem } from "@/components/ui/ContextMenu";
 import { usePins } from "@/stores/pins";
 import { useVault } from "@/stores/vault";
+import { isMac } from "@/lib/utils";
 
 type PinMode = "toggle" | "unpin" | "none";
 
@@ -65,6 +69,18 @@ export function entryMenuItems(
   }
 
   items.push(
+    {
+      label: isMac() ? "Reveal in Finder" : "Reveal in File Manager",
+      icon: FolderOpen,
+      onSelect: () => {
+        if (!vault.root) return;
+        void revealItemInDir(`${vault.root}/notes/${node.rel}`).catch((error) =>
+          toast.error("Could not reveal item", {
+            description: error instanceof Error ? error.message : String(error),
+          }),
+        );
+      },
+    },
     {
       label: "Rename",
       icon: Pencil,

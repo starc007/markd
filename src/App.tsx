@@ -87,6 +87,20 @@ export default function App() {
       if (event.shiftKey && event.key.toLowerCase() === "y" && vault.status === "ready") {
         event.preventDefault();
         void vault.openDailyNote();
+      } else if (
+        event.shiftKey &&
+        event.key.toLowerCase() === "t" &&
+        vault.status === "ready"
+      ) {
+        event.preventDefault();
+        vault.setView({ type: "todos" });
+      } else if (
+        event.shiftKey &&
+        event.key.toLowerCase() === "b" &&
+        vault.status === "ready"
+      ) {
+        event.preventDefault();
+        vault.setView({ type: "bookmarks" });
       } else if (event.shiftKey && event.key.toLowerCase() === "d") {
         event.preventDefault();
         vault.cycleTheme();

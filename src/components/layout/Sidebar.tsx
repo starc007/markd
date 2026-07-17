@@ -1,7 +1,9 @@
 import {
+  ArrowBigUp,
   ArrowDownToLine,
   Bookmark,
   CheckSquare,
+  Command,
   FilePlus,
   FolderPlus,
   Loader2,
@@ -11,7 +13,7 @@ import {
 import { FileTree } from "@/components/tree/FileTree";
 import { PinnedNotes } from "@/components/tree/PinnedNotes";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { cx } from "@/lib/utils";
+import { cx, isMac } from "@/lib/utils";
 import { useUi } from "@/stores/ui";
 import { useUpdater } from "@/stores/updater";
 import { activeDir, useVault } from "@/stores/vault";
@@ -38,9 +40,7 @@ export function Sidebar() {
         >
           <Search size={14} strokeWidth={2} className="shrink-0" />
           <span>Search…</span>
-          <kbd className="ml-auto rounded border border-line bg-panel px-1 font-mono text-[10px] leading-4 text-faint">
-            ⌘K
-          </kbd>
+          <ShortcutHint keyName="K" boxed />
         </button>
       </div>
 
@@ -58,12 +58,14 @@ export function Sidebar() {
           active={view?.type === "todos"}
           icon={<CheckSquare size={15} strokeWidth={1.75} />}
           label="Todos"
+          shortcutKey="T"
           onClick={() => setView({ type: "todos" })}
         />
         <PageLink
           active={view?.type === "bookmarks"}
           icon={<Bookmark size={15} strokeWidth={1.75} />}
           label="Bookmarks"
+          shortcutKey="B"
           onClick={() => setView({ type: "bookmarks" })}
         />
       </nav>
@@ -183,11 +185,13 @@ function PageLink({
   active,
   icon,
   label,
+  shortcutKey,
   onClick,
 }: {
   active: boolean;
   icon: React.ReactNode;
   label: string;
+  shortcutKey?: string;
   onClick: () => void;
 }) {
   return (
@@ -203,6 +207,38 @@ function PageLink({
     >
       {icon}
       <span className="font-medium">{label}</span>
+      {shortcutKey && (
+        <ShortcutHint keyName={shortcutKey} shift active={active} />
+      )}
     </button>
+  );
+}
+
+function ShortcutHint({
+  keyName,
+  shift = false,
+  active = false,
+  boxed = false,
+}: {
+  keyName: string;
+  shift?: boolean;
+  active?: boolean;
+  boxed?: boolean;
+}) {
+  const mac = isMac();
+  return (
+    <kbd
+      aria-label={`${mac ? "Command" : "Control"}${shift ? " Shift" : ""} ${keyName}`}
+      className={cx(
+        "ml-auto flex shrink-0 items-center gap-0.5 font-mono text-[10px] font-normal",
+        boxed && "rounded border border-line bg-panel px-1 leading-4",
+        active ? "text-muted" : "text-faint",
+      )}
+    >
+      {mac ? <Command size={10.5} strokeWidth={1.8} /> : <span>Ctrl</span>}
+      {shift &&
+        (mac ? <ArrowBigUp size={10.5} strokeWidth={1.8} /> : <span>Shift</span>)}
+      <span>{keyName}</span>
+    </kbd>
   );
 }

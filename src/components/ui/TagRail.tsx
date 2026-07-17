@@ -39,7 +39,7 @@ export function TagRail({
   const confirmCount = confirmTag ? (counts[confirmTag] ?? 0) : 0;
 
   return (
-    <aside className="sticky top-0 hidden w-[152px] shrink-0 sm:block">
+    <aside className="sticky top-6 hidden w-[152px] shrink-0 self-start sm:block">
       <p className="px-2 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
         Tags
       </p>
