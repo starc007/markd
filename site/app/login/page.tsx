@@ -8,15 +8,16 @@ export default function LoginPage() {
           Markd account
         </p>
         <h1 className="mt-4 text-2xl font-semibold tracking-[-0.03em]">
-          Sign in to publish
+          Cloud publishing is coming next
         </h1>
         <p className="mt-3 text-sm leading-6 text-black/60">
-          Open Markd Settings, choose Markd Cloud, and enter your email. We’ll send
-          a six-digit code to finish signing in securely.
+          Email sign-in and publishing are not available in the current Markd
+          release. They’ll be included in the next app version.
         </p>
         <div className="mt-7 rounded-xl bg-black/[0.045] p-4 text-sm leading-6 text-black/55">
-          Free accounts include one active public note. Markd Cloud accounts include
-          unlimited publishing and cross-device sync.
+          Once the update is live, open Markd Settings and choose Markd Cloud to
+          sign in with a six-digit email code. Free accounts will include one active
+          public note.
         </div>
         <Link
           href="/"
