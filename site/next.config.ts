@@ -10,18 +10,6 @@ const nextConfig: NextConfig = {
         destination: "/download",
         permanent: true,
       },
-      {
-        source: "/downloads/Markd_0.1.4_aarch64.dmg",
-        destination:
-          "https://github.com/starc007/markd/releases/download/v0.1.4/Markd_0.1.4_aarch64.dmg",
-        permanent: true,
-      },
-      {
-        source: "/downloads/Markd_0.1.5_aarch64.dmg",
-        destination:
-          "https://github.com/starc007/markd/releases/download/v0.1.5/Markd_0.1.5_aarch64.dmg",
-        permanent: true,
-      },
     ];
   },
   async headers() {
