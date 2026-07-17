@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "markd-cloud-api",
+  "name": "markd-api",
   "main": "src/index.ts",
   "compatibility_date": "2026-07-16",
   "workers_dev": false,
