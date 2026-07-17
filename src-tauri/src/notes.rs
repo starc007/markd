@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use crate::error::{AppError, AppResult};
 use crate::util::sanitize_name;
 use crate::vault::{notes_root, rel_of, resolve_rel};
-use crate::{backlinks, pins};
+use crate::{backlinks, cloud_metadata, pins};
 
 const WELCOME: &str = r#"# Welcome to Markd
 
@@ -126,6 +126,7 @@ pub fn rename_entry(root: &Path, rel: &str, new_name: &str) -> AppResult<String>
     let next = rel_of(root, &target)?;
     backlinks::rewrite_links(root, rel, &next)?;
     pins::remap(root, rel, &next)?;
+    cloud_metadata::remap(root, rel, &next)?;
     Ok(next)
 }
 
@@ -167,6 +168,7 @@ pub fn move_entry(root: &Path, rel: &str, target_dir_rel: &str) -> AppResult<Str
     let next = rel_of(root, &target)?;
     backlinks::rewrite_links(root, rel, &next)?;
     pins::remap(root, rel, &next)?;
+    cloud_metadata::remap(root, rel, &next)?;
     Ok(next)
 }
 
@@ -175,6 +177,11 @@ pub fn delete_entry(root: &Path, rel: &str) -> AppResult<()> {
     let path = resolve_rel(root, rel)?;
     if !path.exists() {
         return Err(AppError::NotFound(rel.to_string()));
+    }
+    if cloud_metadata::has_published_under(root, rel)? {
+        return Err(AppError::InvalidInput(
+            "stop publishing this note before deleting it".to_string(),
+        ));
     }
     trash::delete(&path).map_err(|e| AppError::Other(format!("trash: {e}")))?;
     pins::remove_under(root, rel)?;

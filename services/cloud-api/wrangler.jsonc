@@ -1,0 +1,36 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "markd-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-16",
+  "workers_dev": false,
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "PUBLIC_SITE_ORIGIN": "https://usemarkd.app"
+  },
+  "secrets": {
+    "required": ["OTP_PEPPER"]
+  },
+  "send_email": [
+    {
+      "name": "EMAIL",
+      "allowed_sender_addresses": ["no-reply@usemarkd.app"]
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "markd-cloud",
+      "database_id": "015f6402-fda5-43c2-8cbd-b86711368448",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "PUBLISHED_NOTES",
+      "bucket_name": "markd-published-notes"
+    }
+  ]
+}

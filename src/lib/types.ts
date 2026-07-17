@@ -52,6 +52,40 @@ export interface BacklinkMention {
   occurrence: number;
 }
 
+export interface PublishedShare {
+  id: string;
+  entryId: string;
+  slug: string;
+  url: string;
+  title: string;
+  contentHash: string;
+  publishedAt: number;
+  updatedAt: number;
+}
+
+export interface CloudAccount {
+  email: string;
+  plan: "free" | "cloud";
+}
+
+export interface CloudAccountStatus {
+  account: CloudAccount | null;
+}
+
+export interface OtpChallenge {
+  challengeId: string;
+  email: string;
+  expiresIn: number;
+  resendAfter: number;
+}
+
+export interface PublishedNoteStatus {
+  account: CloudAccount | null;
+  share: PublishedShare | null;
+  isOutdated: boolean;
+  freeShareLimit: number;
+}
+
 export type View =
   | { type: "note"; rel: string }
   | { type: "todos" }

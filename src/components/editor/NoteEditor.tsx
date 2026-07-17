@@ -30,6 +30,7 @@ import { createExtensions } from "./extensions";
 import { insertImageFile } from "./insertImage";
 import { NoteLinkPicker, type LinkPickerState } from "./NoteLinkPicker";
 import { NoteProperties } from "./NoteProperties";
+import { PublishNoteModal } from "./PublishNoteModal";
 import { SelectionMenu } from "./SelectionMenu";
 import { SlashMenu, type SlashMenuState } from "./SlashMenu";
 
@@ -73,6 +74,10 @@ export const NoteEditor = memo(function NoteEditor({
   const [propertyAddRequest, setPropertyAddRequest] = useState(0);
   const [rawText, setRawText] = useState("");
   const [loadNonce, setLoadNonce] = useState(0);
+  const [publishSnapshot, setPublishSnapshot] = useState<{
+    rel: string;
+    markdown: string;
+  } | null>(null);
 
   const relRef = useRef(rel);
   // Frontmatter of the loaded note, kept out of the editor and re-attached on
@@ -584,6 +589,12 @@ export const NoteEditor = memo(function NoteEditor({
         } else if (action === "export") {
           const path = await ipc.exportNote(relRef.current, markdown);
           if (path) toast("Note exported", { description: path });
+        } else if (action === "publish") {
+          debouncedPersist.cancel();
+          if (pending.current !== null) {
+            await persist(pending.current, relRef.current);
+          }
+          setPublishSnapshot({ rel: relRef.current, markdown });
         } else if (action === "delete") {
           debouncedPersist.cancel();
           if (pending.current !== null) {
@@ -708,6 +719,14 @@ export const NoteEditor = memo(function NoteEditor({
         >
           {words} {words === 1 ? "word" : "words"}
         </div>
+      )}
+      {active && publishSnapshot && (
+        <PublishNoteModal
+          open
+          rel={publishSnapshot.rel}
+          markdown={publishSnapshot.markdown}
+          onClose={() => setPublishSnapshot(null)}
+        />
       )}
     </div>
   );

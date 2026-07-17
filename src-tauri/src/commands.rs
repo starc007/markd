@@ -12,7 +12,9 @@ use crate::error::{AppError, AppResult};
 use crate::search::SearchHit;
 use crate::todos::{self, Todo};
 use crate::vault::{self, TreeNode};
-use crate::{agent_docs, assets, daily_notes, link_meta, notes, pins, quick_capture, search};
+use crate::{
+    agent_docs, assets, cloud, daily_notes, link_meta, notes, pins, quick_capture, search,
+};
 
 #[derive(Default)]
 pub struct AppState {
@@ -225,6 +227,72 @@ pub fn search_notes(
 #[tauri::command]
 pub fn backlinks_for(state: State<'_, AppState>, rel: String) -> AppResult<Vec<BacklinkMention>> {
     backlinks::find_backlinks(&state.root()?, &rel)
+}
+
+// ---- publishing ----
+
+#[tauri::command]
+pub fn cloud_account_status(app: AppHandle) -> AppResult<cloud::CloudAccountStatus> {
+    cloud::account_status(&app)
+}
+
+#[tauri::command]
+pub async fn cloud_request_otp(email: String) -> AppResult<cloud::OtpChallenge> {
+    cloud::request_otp(&email).await
+}
+
+#[tauri::command]
+pub async fn cloud_verify_otp(
+    challenge_id: String,
+    code: String,
+) -> AppResult<cloud::CloudAccount> {
+    cloud::verify_otp(&challenge_id, &code).await
+}
+
+#[tauri::command]
+pub async fn cloud_sign_out(app: AppHandle) -> AppResult<()> {
+    cloud::sign_out(&app).await
+}
+
+#[tauri::command]
+pub fn published_note_status(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    rel: String,
+    content: String,
+) -> AppResult<cloud::PublishedNoteStatus> {
+    cloud::status(&app, &state.root()?, &rel, &content)
+}
+
+#[tauri::command]
+pub async fn publish_note(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    rel: String,
+    title: String,
+    content: String,
+) -> AppResult<crate::cloud_metadata::PublishedShare> {
+    cloud::publish(&app, &state.root()?, &rel, &title, &content).await
+}
+
+#[tauri::command]
+pub async fn update_published_note(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    rel: String,
+    title: String,
+    content: String,
+) -> AppResult<crate::cloud_metadata::PublishedShare> {
+    cloud::update(&app, &state.root()?, &rel, &title, &content).await
+}
+
+#[tauri::command]
+pub async fn revoke_published_note(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    rel: String,
+) -> AppResult<()> {
+    cloud::revoke(&app, &state.root()?, &rel).await
 }
 
 // ---- pins ----

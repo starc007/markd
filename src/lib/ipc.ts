@@ -1,7 +1,12 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
   BacklinkMention,
+  CloudAccountStatus,
+  CloudAccount,
   Bookmark,
+  PublishedNoteStatus,
+  PublishedShare,
+  OtpChallenge,
   SearchHit,
   Theme,
   Todo,
@@ -61,6 +66,20 @@ export const ipc = {
     call<SearchHit[]>("search_notes", { query, limit }),
   backlinksFor: (rel: string) =>
     call<BacklinkMention[]>("backlinks_for", { rel }),
+  cloudAccountStatus: () => call<CloudAccountStatus>("cloud_account_status"),
+  cloudRequestOtp: (email: string) =>
+    call<OtpChallenge>("cloud_request_otp", { email }),
+  cloudVerifyOtp: (challengeId: string, code: string) =>
+    call<CloudAccount>("cloud_verify_otp", { challengeId, code }),
+  cloudSignOut: () => call<void>("cloud_sign_out"),
+  publishedNoteStatus: (rel: string, content: string) =>
+    call<PublishedNoteStatus>("published_note_status", { rel, content }),
+  publishNote: (rel: string, title: string, content: string) =>
+    call<PublishedShare>("publish_note", { rel, title, content }),
+  updatePublishedNote: (rel: string, title: string, content: string) =>
+    call<PublishedShare>("update_published_note", { rel, title, content }),
+  revokePublishedNote: (rel: string) =>
+    call<void>("revoke_published_note", { rel }),
   pinsList: () => call<string[]>("pins_list"),
   pinNote: (rel: string) => call<string[]>("pin_note", { rel }),
   unpinNote: (rel: string) => call<string[]>("unpin_note", { rel }),

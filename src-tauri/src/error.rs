@@ -17,6 +17,12 @@ pub enum AppError {
     #[error("network error: {0}")]
     Network(String),
     #[error("{0}")]
+    Cloud(String),
+    #[error("{0}")]
+    CloudLoginRequired(String),
+    #[error("{0}")]
+    CloudSubscriptionRequired(String),
+    #[error("{0}")]
     Other(String),
 }
 
@@ -38,6 +44,9 @@ impl Serialize for AppError {
             AppError::InvalidInput(_) => "invalid_input",
             AppError::Io(_) => "io",
             AppError::Network(_) => "network",
+            AppError::Cloud(_) => "cloud",
+            AppError::CloudLoginRequired(_) => "cloud_login_required",
+            AppError::CloudSubscriptionRequired(_) => "cloud_subscription_required",
             AppError::Other(_) => "other",
         };
         ErrorPayload {

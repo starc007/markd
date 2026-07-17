@@ -115,3 +115,155 @@
     scroll-behavior: auto;
   }
 }
+
+/* Public notes use the marketing site's editorial type system, but keep the
+   reading surface deliberately quieter than the landing page. */
+.published-note {
+  color: var(--fg-soft);
+  font-size: 16px;
+  line-height: 1.82;
+  overflow-wrap: anywhere;
+}
+
+.published-note > :first-child {
+  margin-top: 0;
+}
+
+.published-note > :last-child {
+  margin-bottom: 0;
+}
+
+.published-note h1,
+.published-note h2,
+.published-note h3,
+.published-note h4 {
+  color: var(--fg);
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  font-weight: 560;
+  letter-spacing: -0.025em;
+  line-height: 1.18;
+  margin: 2.2em 0 0.65em;
+}
+
+.published-note h1 { font-size: 2rem; }
+.published-note h2 { font-size: 1.65rem; }
+.published-note h3 { font-size: 1.3rem; }
+.published-note h4 { font-size: 1.08rem; }
+
+.published-note p,
+.published-note ul,
+.published-note ol,
+.published-note blockquote,
+.published-note pre,
+.published-note table {
+  margin: 1.15em 0;
+}
+
+.published-note ul,
+.published-note ol {
+  padding-left: 1.4em;
+}
+
+.published-note li {
+  margin: 0.35em 0;
+  padding-left: 0.2em;
+}
+
+.published-note li::marker {
+  color: var(--faint);
+}
+
+.published-note a {
+  color: var(--fg);
+  text-decoration: underline;
+  text-decoration-color: var(--border-strong);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 120ms ease-out;
+}
+
+.published-note a:hover {
+  text-decoration-color: var(--fg);
+}
+
+.published-note blockquote {
+  border-left: 2px solid var(--border-strong);
+  color: var(--fg-muted);
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  font-size: 1.08em;
+  font-style: italic;
+  padding: 0.15em 0 0.15em 1.25em;
+}
+
+.published-note code {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--fg);
+  font-family: var(--font-jbmono), ui-monospace, monospace;
+  font-size: 0.82em;
+  padding: 0.15em 0.38em;
+}
+
+.published-note pre {
+  background: var(--fg);
+  border-radius: 12px;
+  color: #efefe9;
+  overflow-x: auto;
+  padding: 1.15rem 1.25rem;
+}
+
+.published-note pre code {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font-size: 12.5px;
+  line-height: 1.75;
+  padding: 0;
+}
+
+.published-note hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 2.6em 0;
+}
+
+.published-note table {
+  border-collapse: collapse;
+  display: block;
+  font-size: 14px;
+  overflow-x: auto;
+  width: 100%;
+}
+
+.published-note th,
+.published-note td {
+  border-bottom: 1px solid var(--border);
+  padding: 0.65rem 0.8rem;
+  text-align: left;
+}
+
+.published-note th {
+  color: var(--fg);
+  font-weight: 650;
+}
+
+.published-note input[type="checkbox"] {
+  accent-color: var(--fg);
+  margin-right: 0.5em;
+}
+
+.published-note__asset-placeholder {
+  align-items: center;
+  background: var(--panel);
+  border: 1px dashed var(--border-strong);
+  border-radius: 10px;
+  color: var(--faint);
+  display: flex;
+  font-family: var(--font-jbmono), ui-monospace, monospace;
+  font-size: 11px;
+  justify-content: center;
+  margin: 1.4rem 0;
+  min-height: 120px;
+  padding: 1rem;
+}

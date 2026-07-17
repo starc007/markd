@@ -1,4 +1,5 @@
 import {
+  Cloud,
   Keyboard,
   Palette,
   Settings,
@@ -7,18 +8,16 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
 import {
   AppearanceSettings,
+  CloudSettings,
   GeneralSettings,
   ShortcutSettings,
 } from "@/components/settings/SettingsPanels";
 import { Modal } from "@/components/ui/Modal";
 import { EASE_OUT } from "@/lib/ease";
 import { cx } from "@/lib/utils";
-import { useUi } from "@/stores/ui";
-
-type SettingsPage = "general" | "appearance" | "shortcuts";
+import { useUi, type SettingsPage } from "@/stores/ui";
 
 const PAGES: Array<{
   id: SettingsPage;
@@ -31,6 +30,12 @@ const PAGES: Array<{
     label: "General",
     description: "Vault and updates",
     icon: SlidersHorizontal,
+  },
+  {
+    id: "cloud",
+    label: "Markd Cloud",
+    description: "Account, publishing, and sync",
+    icon: Cloud,
   },
   {
     id: "appearance",
@@ -48,6 +53,7 @@ const PAGES: Array<{
 
 const PAGE_CONTENT: Record<SettingsPage, React.ComponentType> = {
   general: GeneralSettings,
+  cloud: CloudSettings,
   appearance: AppearanceSettings,
   shortcuts: ShortcutSettings,
 };
@@ -55,7 +61,8 @@ const PAGE_CONTENT: Record<SettingsPage, React.ComponentType> = {
 export function SettingsModal() {
   const open = useUi((state) => state.settingsOpen);
   const setOpen = useUi((state) => state.setSettingsOpen);
-  const [page, setPage] = useState<SettingsPage>("general");
+  const page = useUi((state) => state.settingsPage);
+  const setPage = useUi((state) => state.setSettingsPage);
   const current = PAGES.find((item) => item.id === page) ?? PAGES[0];
   const PageContent = PAGE_CONTENT[page];
 

@@ -1,7 +1,17 @@
-import { FolderOpen, Monitor, Moon, RefreshCw, Sun } from "lucide-react";
-import type { Theme } from "@/lib/types";
+import {
+  Check,
+  FolderOpen,
+  Globe2,
+  Monitor,
+  Moon,
+  RefreshCw,
+  Sun,
+} from "lucide-react";
+import { useState } from "react";
+import type { CloudAccount, Theme } from "@/lib/types";
 import { cx, isMac } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
+import { CloudAccountCard } from "@/components/settings/CloudAccountCard";
 import { useUpdater } from "@/stores/updater";
 import { useVault } from "@/stores/vault";
 
@@ -131,6 +141,47 @@ export function GeneralSettings() {
   );
 }
 
+export function CloudSettings() {
+  const [account, setAccount] = useState<CloudAccount | null>(null);
+
+  return (
+    <div className="space-y-6">
+      <SettingsGroup
+        title="Account"
+        description="Sign in once to manage public pages and future synced devices."
+      >
+        <CloudAccountCard onAccountChange={setAccount} />
+      </SettingsGroup>
+
+      <SettingsGroup
+        title="Plans"
+        description="Start free. Upgrade only when you need more publishing or sync."
+      >
+        <div className="grid grid-cols-2 gap-2">
+          <PlanCard
+            name="Free"
+            price="$0"
+            description="For trying public pages"
+            features={["1 active published note", "Local notes stay unlimited"]}
+            active={account?.plan === "free"}
+          />
+          <PlanCard
+            name="Markd Cloud"
+            price="$6/mo yearly"
+            description="$8 when billed monthly"
+            features={["Unlimited publishing", "Cross-device sync"]}
+            active={account?.plan === "cloud"}
+          />
+        </div>
+        <p className="mt-2.5 flex items-center gap-1.5 text-[10.5px] text-faint">
+          <Globe2 size={11.5} strokeWidth={1.7} />
+          Publishing is being built first. Sync will follow.
+        </p>
+      </SettingsGroup>
+    </div>
+  );
+}
+
 export function AppearanceSettings() {
   const theme = useVault((state) => state.theme);
   const setTheme = useVault((state) => state.setTheme);
@@ -236,6 +287,48 @@ function SettingsGroup({
       </div>
       <div className="mt-3">{children}</div>
     </section>
+  );
+}
+
+function PlanCard({
+  name,
+  price,
+  description,
+  features,
+  active,
+}: {
+  name: string;
+  price: string;
+  description: string;
+  features: string[];
+  active: boolean;
+}) {
+  return (
+    <div
+      className={cx(
+        "relative min-h-[142px] rounded-xl border p-3.5",
+        active ? "border-ink bg-bg" : "border-line-soft bg-panel",
+      )}
+    >
+      {active && (
+        <span className="absolute right-3 top-3 rounded-full bg-invert px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-invert-ink">
+          Current
+        </span>
+      )}
+      <p className="text-[12px] font-semibold text-ink">{name}</p>
+      <p className="mt-2 text-[13px] font-semibold tracking-[-0.01em] text-ink">
+        {price}
+      </p>
+      <p className="mt-0.5 text-[10px] text-faint">{description}</p>
+      <ul className="mt-3 space-y-1.5">
+        {features.map((feature) => (
+          <li key={feature} className="flex items-center gap-1.5 text-[10.5px] text-muted">
+            <Check size={11} strokeWidth={2} />
+            {feature}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
