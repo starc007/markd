@@ -42,6 +42,9 @@
     --color-invert: var(--invert);
     --color-invert-ink: var(--invert-ink);
     --color-danger: var(--danger);
+    --color-success: var(--success);
+    --color-success-bg: var(--success-bg);
+    --color-success-line: var(--success-line);
 
     /* shadcn/beui semantic tokens mapped onto our monochrome palette so any
      component pulled from the beui registry inherits our theme unchanged. */
@@ -84,6 +87,9 @@
     --invert: #1c1c1c;
     --invert-ink: #fbfbfa;
     --danger: #b3261e;
+    --success: #166534;
+    --success-bg: #dcfce7;
+    --success-line: #86efac;
 }
 
 .dark {
@@ -100,6 +106,9 @@
     --invert: #ebebe8;
     --invert-ink: #131313;
     --danger: #e5484d;
+    --success: #86efac;
+    --success-bg: rgba(34, 197, 94, 0.14);
+    --success-line: rgba(74, 222, 128, 0.3);
 }
 
 html,

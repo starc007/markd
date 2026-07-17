@@ -23,8 +23,8 @@ export function BacklinksToggle({
         className={cx(
           "grid h-7 w-7 place-items-center rounded-md border transition-[color,background-color,border-color,transform] duration-100 active:scale-[0.96]",
           open
-            ? "border-invert bg-invert text-invert-ink"
-            : "border-line bg-hover text-muted hover:bg-active hover:text-ink",
+            ? "border-line-soft bg-invert text-invert-ink"
+            : "border-line-soft bg-hover text-muted hover:bg-active hover:text-ink",
         )}
       >
         <PanelRight size={15} strokeWidth={1.85} />

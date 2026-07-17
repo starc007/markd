@@ -108,7 +108,7 @@ export function Modal({
             }}
             transition={SPRING_PANEL}
             className={cn(
-              "relative max-w-[calc(100vw-48px)] z-50 overflow-hidden rounded-xl border border-border bg-background shadow-2xl shadow-black/20 will-change-transform dark:shadow-black/60",
+              "relative max-w-[calc(100vw-48px)] z-50 overflow-hidden rounded-2xl border border-border/50 bg-background shadow-2xl shadow-black/20 will-change-transform dark:shadow-black/60",
               className,
             )}
             onMouseDown={(event) => event.stopPropagation()}

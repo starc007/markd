@@ -243,10 +243,11 @@ pub async fn cloud_request_otp(email: String) -> AppResult<cloud::OtpChallenge> 
 
 #[tauri::command]
 pub async fn cloud_verify_otp(
+    app: AppHandle,
     challenge_id: String,
     code: String,
 ) -> AppResult<cloud::CloudAccount> {
-    cloud::verify_otp(&challenge_id, &code).await
+    cloud::verify_otp(&app, &challenge_id, &code).await
 }
 
 #[tauri::command]
@@ -262,6 +263,11 @@ pub fn published_note_status(
     content: String,
 ) -> AppResult<cloud::PublishedNoteStatus> {
     cloud::status(&app, &state.root()?, &rel, &content)
+}
+
+#[tauri::command]
+pub fn is_note_published(state: State<'_, AppState>, rel: String) -> AppResult<bool> {
+    crate::cloud_metadata::has_published_under(&state.root()?, &rel)
 }
 
 #[tauri::command]
@@ -335,11 +341,7 @@ pub fn todo_update(state: State<'_, AppState>, id: String, text: String) -> AppR
 }
 
 #[tauri::command]
-pub fn todo_set_tags(
-    state: State<'_, AppState>,
-    id: String,
-    tags: Vec<String>,
-) -> AppResult<Todo> {
+pub fn todo_set_tags(state: State<'_, AppState>, id: String, tags: Vec<String>) -> AppResult<Todo> {
     todos::set_tags(&state.root()?, &id, tags)
 }
 
@@ -349,18 +351,12 @@ pub fn todo_tags_list(state: State<'_, AppState>) -> AppResult<Vec<String>> {
 }
 
 #[tauri::command]
-pub fn todo_tag_create(
-    state: State<'_, AppState>,
-    name: String,
-) -> AppResult<Vec<String>> {
+pub fn todo_tag_create(state: State<'_, AppState>, name: String) -> AppResult<Vec<String>> {
     todos::create_tag(&state.root()?, &name)
 }
 
 #[tauri::command]
-pub fn todo_tag_delete(
-    state: State<'_, AppState>,
-    name: String,
-) -> AppResult<Vec<String>> {
+pub fn todo_tag_delete(state: State<'_, AppState>, name: String) -> AppResult<Vec<String>> {
     todos::delete_tag(&state.root()?, &name)
 }
 
@@ -410,18 +406,12 @@ pub fn bookmark_tags_list(state: State<'_, AppState>) -> AppResult<Vec<String>> 
 }
 
 #[tauri::command]
-pub fn bookmark_tag_create(
-    state: State<'_, AppState>,
-    name: String,
-) -> AppResult<Vec<String>> {
+pub fn bookmark_tag_create(state: State<'_, AppState>, name: String) -> AppResult<Vec<String>> {
     bookmarks::create_tag(&state.root()?, &name)
 }
 
 #[tauri::command]
-pub fn bookmark_tag_delete(
-    state: State<'_, AppState>,
-    name: String,
-) -> AppResult<Vec<String>> {
+pub fn bookmark_tag_delete(state: State<'_, AppState>, name: String) -> AppResult<Vec<String>> {
     bookmarks::delete_tag(&state.root()?, &name)
 }
 
@@ -505,10 +495,7 @@ pub async fn export_note(
 /// Marks the bookmark as fetched even on failure so the UI can offer retry
 /// without hammering the network on every load.
 #[tauri::command]
-pub async fn bookmark_fetch_meta(
-    state: State<'_, AppState>,
-    id: String,
-) -> AppResult<Bookmark> {
+pub async fn bookmark_fetch_meta(state: State<'_, AppState>, id: String) -> AppResult<Bookmark> {
     let root = state.root()?;
     let bookmark = bookmarks::list(&root)?
         .into_iter()

@@ -1,6 +1,7 @@
 import { Trash2, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { MorphingModal } from "@/components/motion/morphing-modal";
 import {
   Tabs,
@@ -104,7 +105,7 @@ export function PropertyEditorModal({
           <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
             Name
           </span>
-          <input
+          <Input
             ref={nameRef}
             data-autofocus
             value={name}
@@ -113,7 +114,7 @@ export function PropertyEditorModal({
             autoCapitalize="off"
             autoComplete="off"
             spellCheck={false}
-            className="mt-2 h-9 w-full rounded-lg border border-line bg-panel px-3 text-[13px] text-ink outline-none transition-colors placeholder:text-faint focus:border-faint"
+            className="mt-2 text-[13px]"
           />
         </label>
         {(invalidName || duplicate) && (
@@ -151,11 +152,11 @@ export function PropertyEditorModal({
               Value
             </span>
             {valueType === "text" ? (
-              <input
+              <Input
                 value={value}
                 onChange={(event) => setValue(event.target.value)}
                 placeholder="active"
-                className="mt-2 h-9 w-full rounded-lg border border-line bg-panel px-3 text-[13px] text-ink outline-none transition-colors placeholder:text-faint focus:border-faint"
+                className="mt-2 text-[13px]"
               />
             ) : (
               <textarea

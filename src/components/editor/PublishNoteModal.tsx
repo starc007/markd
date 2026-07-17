@@ -12,6 +12,7 @@ import {
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { IpcError, ipc } from "@/lib/ipc";
 import type { PublishedShare } from "@/lib/types";
@@ -53,6 +54,7 @@ export function PublishNoteModal({
       .then((status) => {
         if (disposed) return;
         setShare(status.share);
+        notifyPublishStatus(rel, Boolean(status.share));
         setAccount(status.account);
         setOutdated(status.isOutdated);
         setTitle(status.share?.title ?? noteTitle(rel));
@@ -79,6 +81,7 @@ export function PublishNoteModal({
       if (action === "revoke") {
         await ipc.revokePublishedNote(rel);
         setShare(null);
+        notifyPublishStatus(rel, false);
         setOutdated(false);
         setConfirmRevoke(false);
         toast("Note unpublished");
@@ -89,6 +92,7 @@ export function PublishNoteModal({
           ? await ipc.publishNote(rel, title.trim(), markdown)
           : await ipc.updatePublishedNote(rel, title.trim(), markdown);
       setShare(next);
+      notifyPublishStatus(rel, true);
       setTitle(next.title);
       setOutdated(false);
       toast(action === "publish" ? "Note published" : "Published note updated");
@@ -186,12 +190,12 @@ export function PublishNoteModal({
           <div className="space-y-5">
             <label className="block">
               <span className="text-[11.5px] font-medium text-muted">Page title</span>
-              <input
+              <Input
                 value={title}
                 maxLength={200}
                 disabled={Boolean(busy)}
                 onChange={(event) => setTitle(event.target.value)}
-                className="mt-2 h-10 w-full rounded-lg border border-line bg-bg px-3 text-[13px] text-ink outline-none transition-colors focus:border-ink disabled:opacity-60"
+                className="mt-2 h-10 bg-bg text-[13px]"
               />
             </label>
 
@@ -231,11 +235,13 @@ export function PublishNoteModal({
               <div className="rounded-xl bg-panel p-3.5 text-[12px] leading-5 text-muted">
                 Publishing uploads a separate snapshot. Future edits remain private until
                 you update the published version.
-                <p className="mt-2 text-[10.5px] text-faint">
-                  {account.plan === "cloud"
-                    ? `Signed in as ${account.email}`
-                    : `Free account · one active public note · ${account.email}`}
-                </p>
+                {account && (
+                  <p className="mt-2 text-[10.5px] text-faint">
+                    {account.plan === "cloud"
+                      ? `Signed in as ${account.email}`
+                      : `Free account · one active public note · ${account.email}`}
+                  </p>
+                )}
               </div>
             )}
 
@@ -246,9 +252,18 @@ export function PublishNoteModal({
               >
                 {error.message}
                 {error.kind === "cloud_subscription_required" && (
-                  <p className="mt-1 text-[10.5px] opacity-75">
-                    Account creation and Markd Cloud checkout are the next step.
-                  </p>
+                  <div className="mt-2">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => {
+                        onClose();
+                        openSettings("cloud");
+                      }}
+                    >
+                      Upgrade
+                    </Button>
+                  </div>
                 )}
               </div>
             )}
@@ -318,5 +333,13 @@ export function PublishNoteModal({
         )}
       </div>
     </Modal>
+  );
+}
+
+function notifyPublishStatus(rel: string, published: boolean) {
+  window.dispatchEvent(
+    new CustomEvent("markd:publish-status", {
+      detail: { rel, published },
+    }),
   );
 }

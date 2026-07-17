@@ -1,18 +1,19 @@
-use std::path::Path;
+use std::fs::{self, OpenOptions};
+use std::io::{ErrorKind, Write};
+use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use keyring::Entry;
 use reqwest::{Client, StatusCode};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use tauri::Manager;
 use uuid::Uuid;
 
 use crate::cloud_metadata::{self, PublishedShare};
 use crate::error::{AppError, AppResult};
 
 const API_BASE: &str = "https://api.usemarkd.app";
-const KEYRING_SERVICE: &str = "app.usemarkd.markd";
-const KEYRING_ACCOUNT: &str = "cloud-session";
+const SESSION_FILE: &str = "cloud-session.json";
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -106,53 +107,65 @@ fn now_millis() -> u64 {
         .as_millis() as u64
 }
 
-fn keyring_entry() -> AppResult<Entry> {
-    Entry::new(KEYRING_SERVICE, KEYRING_ACCOUNT)
-        .map_err(|error| AppError::Cloud(format!("could not open secure account storage: {error}")))
+fn session_file(app: &tauri::AppHandle) -> AppResult<PathBuf> {
+    let dir = app
+        .path()
+        .app_config_dir()
+        .map_err(|error| AppError::Other(error.to_string()))?;
+    fs::create_dir_all(&dir)?;
+    Ok(dir.join(SESSION_FILE))
 }
 
-fn load_session() -> AppResult<Option<StoredSession>> {
-    let entry = keyring_entry()?;
-    let value = match entry.get_password() {
+fn load_session(app: &tauri::AppHandle) -> AppResult<Option<StoredSession>> {
+    let path = session_file(app)?;
+    let value = match fs::read_to_string(&path) {
         Ok(value) => value,
-        Err(keyring::Error::NoEntry) => return Ok(None),
-        Err(error) => {
-            return Err(AppError::Cloud(format!(
-                "could not read the saved Markd account: {error}"
-            )))
-        }
+        Err(error) if error.kind() == ErrorKind::NotFound => return Ok(None),
+        Err(error) => return Err(error.into()),
     };
     let session: StoredSession = serde_json::from_str(&value)?;
     if session.expires_at <= now_millis() {
-        let _ = entry.delete_credential();
+        let _ = fs::remove_file(path);
         return Ok(None);
     }
     Ok(Some(session))
 }
 
-fn save_session(session: &StoredSession) -> AppResult<()> {
-    keyring_entry()?
-        .set_password(&serde_json::to_string(session)?)
-        .map_err(|error| AppError::Cloud(format!("could not save the Markd account: {error}")))
+fn save_session(app: &tauri::AppHandle, session: &StoredSession) -> AppResult<()> {
+    let path = session_file(app)?;
+    let mut options = OpenOptions::new();
+    options.create(true).truncate(true).write(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600);
+    }
+    let mut file = options.open(&path)?;
+    file.write_all(serde_json::to_string(session)?.as_bytes())?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        file.set_permissions(fs::Permissions::from_mode(0o600))?;
+    }
+    Ok(())
 }
 
-fn clear_session() -> AppResult<()> {
-    match keyring_entry()?.delete_credential() {
-        Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
-        Err(error) => Err(AppError::Cloud(format!(
-            "could not remove the saved Markd account: {error}"
-        ))),
+fn clear_session(app: &tauri::AppHandle) -> AppResult<()> {
+    match fs::remove_file(session_file(app)?) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(error.into()),
     }
 }
 
-pub fn account_status(_app: &tauri::AppHandle) -> AppResult<CloudAccountStatus> {
+pub fn account_status(app: &tauri::AppHandle) -> AppResult<CloudAccountStatus> {
     Ok(CloudAccountStatus {
-        account: load_session()?.map(|session| session.account),
+        account: load_session(app)?.map(|session| session.account),
     })
 }
 
-fn access_token(_app: &tauri::AppHandle) -> AppResult<String> {
-    load_session()?
+fn access_token(app: &tauri::AppHandle) -> AppResult<String> {
+    load_session(app)?
         .map(|session| session.access_token)
         .ok_or_else(|| {
             AppError::CloudLoginRequired("Sign in to Markd before publishing a note.".to_string())
@@ -210,7 +223,11 @@ pub async fn request_otp(email: &str) -> AppResult<OtpChallenge> {
         .map_err(|error| AppError::Cloud(format!("invalid OTP response: {error}")))
 }
 
-pub async fn verify_otp(challenge_id: &str, code: &str) -> AppResult<CloudAccount> {
+pub async fn verify_otp(
+    app: &tauri::AppHandle,
+    challenge_id: &str,
+    code: &str,
+) -> AppResult<CloudAccount> {
     let response = client()?
         .post(format!("{API_BASE}/v1/auth/otp/verify"))
         .json(&OtpVerifyRequest { challenge_id, code })
@@ -229,13 +246,13 @@ pub async fn verify_otp(challenge_id: &str, code: &str) -> AppResult<CloudAccoun
         expires_at: response.expires_at,
         account: response.user,
     };
-    save_session(&session)?;
+    save_session(app, &session)?;
     Ok(session.account)
 }
 
 pub async fn sign_out(app: &tauri::AppHandle) -> AppResult<()> {
     let token = access_token(app).ok();
-    clear_session()?;
+    clear_session(app)?;
     if let Some(token) = token {
         tauri::async_runtime::spawn(async move {
             let Ok(client) = client() else {
@@ -285,7 +302,7 @@ async fn parse_response(response: reqwest::Response) -> AppResult<PublishedShare
 }
 
 pub fn status(
-    _app: &tauri::AppHandle,
+    app: &tauri::AppHandle,
     root: &Path,
     rel: &str,
     content: &str,
@@ -295,7 +312,7 @@ pub fn status(
         .as_ref()
         .is_some_and(|published| published.content_hash != content_hash(content));
     Ok(PublishedNoteStatus {
-        account: load_session()?.map(|session| session.account),
+        account: load_session(app)?.map(|session| session.account),
         share,
         is_outdated,
         free_share_limit: 1,

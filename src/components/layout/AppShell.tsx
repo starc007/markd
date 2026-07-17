@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, LayoutGroup, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import {
   BacklinksSidebar,
   BacklinksToggle,
@@ -28,6 +29,7 @@ import { TabBar } from "@/components/editor/TabBar";
 import { BookmarksPage } from "@/components/bookmarks/BookmarksPage";
 import { TodosPage } from "@/components/todos/TodosPage";
 import { EASE_OUT, SPRING_LAYOUT, SPRING_PANEL } from "@/lib/ease";
+import { ipc } from "@/lib/ipc";
 import { cx } from "@/lib/utils";
 import {
   ActionSwapIcon,
@@ -76,8 +78,62 @@ export function AppShell() {
   const pins = usePins((s) => s.pins);
   const togglePin = usePins((s) => s.toggle);
   const [noteMenuOpen, setNoteMenuOpen] = useState(false);
+  const [publishedByRel, setPublishedByRel] = useState<Record<string, boolean>>(
+    {},
+  );
+  const [cloudSignedIn, setCloudSignedIn] = useState(false);
 
   const path = viewPath(root, view);
+  const noteRel = view?.type === "note" ? view.rel : null;
+  const notePublished = noteRel
+    ? cloudSignedIn && publishedByRel[noteRel] === true
+    : false;
+
+  useEffect(() => {
+    if (!noteRel) return;
+    let disposed = false;
+    void Promise.all([ipc.isNotePublished(noteRel), ipc.cloudAccountStatus()]).then(
+      ([published, status]) => {
+        if (disposed) return;
+        setPublishedByRel((current) => ({ ...current, [noteRel]: published }));
+        setCloudSignedIn(Boolean(status.account));
+      },
+      (error) => {
+        if (disposed) return;
+        toast.error("Publish status could not be loaded", {
+          description: error instanceof Error ? error.message : String(error),
+        });
+      },
+    );
+    return () => {
+      disposed = true;
+    };
+  }, [noteRel]);
+
+  useEffect(() => {
+    const update = (event: Event) => {
+      const detail = (event as CustomEvent<{ signedIn?: boolean }>).detail;
+      if (typeof detail?.signedIn !== "boolean") return;
+      setCloudSignedIn(detail.signedIn);
+    };
+    window.addEventListener("markd:cloud-account", update);
+    return () => window.removeEventListener("markd:cloud-account", update);
+  }, []);
+
+  useEffect(() => {
+    const update = (event: Event) => {
+      const detail = (
+        event as CustomEvent<{ rel?: string; published?: boolean }>
+      ).detail;
+      if (!detail?.rel || typeof detail.published !== "boolean") return;
+      setPublishedByRel((current) => ({
+        ...current,
+        [detail.rel as string]: detail.published as boolean,
+      }));
+    };
+    window.addEventListener("markd:publish-status", update);
+    return () => window.removeEventListener("markd:publish-status", update);
+  }, []);
 
   return (
     <div className="flex h-full bg-bg">
@@ -146,18 +202,6 @@ export function AppShell() {
                 />
               )}
               {view?.type === "note" && (
-                <Tooltip label="Find in note ⌘F" side="bottom">
-                  <button
-                    type="button"
-                    aria-label="Find in note"
-                    onClick={() => dispatchNoteAction("find")}
-                    className="grid h-7 w-7 place-items-center rounded-md border border-line bg-hover text-muted transition-[color,background-color,border-color,transform] duration-100 hover:bg-active hover:text-ink active:scale-[0.96]"
-                  >
-                    <Search size={15} strokeWidth={1.9} />
-                  </button>
-                </Tooltip>
-              )}
-              {view?.type === "note" && (
                 <Tooltip
                   label={markdownSource ? "Show rich editor" : "Show Markdown source"}
                   side="bottom"
@@ -169,8 +213,8 @@ export function AppShell() {
                     className={cx(
                       "grid h-7 w-7 place-items-center rounded-md border transition-[color,background-color,border-color,transform] duration-100 active:scale-[0.96]",
                       markdownSource
-                        ? "border-invert bg-invert text-invert-ink"
-                        : "border-line bg-hover text-muted hover:bg-active hover:text-ink",
+                        ? "border-line-soft bg-invert text-invert-ink"
+                        : "border-line-soft bg-hover text-muted hover:bg-active hover:text-ink",
                     )}
                   >
                     <ActionSwapIcon
@@ -187,7 +231,22 @@ export function AppShell() {
                   </button>
                 </Tooltip>
               )}
-              {path && (
+              {view?.type === "note" && (
+                <button
+                  type="button"
+                  onClick={() => dispatchNoteAction("publish")}
+                  className={cx(
+                    "inline-flex h-7 select-none items-center gap-1.5 rounded-md border px-2.5 text-[12.5px] font-medium transition-colors duration-100",
+                    notePublished
+                      ? "border-line-soft bg-success-bg text-success hover:brightness-95"
+                      : "border-line-soft bg-hover text-ink hover:bg-active",
+                  )}
+                >
+                  <Globe2 size={13} strokeWidth={1.9} />
+                  {notePublished ? "Published" : "Publish"}
+                </button>
+              )}
+              {path && view?.type !== "note" && (
                 <motion.div layout transition={SPRING_LAYOUT}>
                   <CopyButton
                     value={path}
@@ -223,7 +282,7 @@ export function AppShell() {
                     <button
                       type="button"
                       aria-label="Note actions"
-                      className="grid h-7 w-7 place-items-center rounded-md text-muted transition-colors duration-100 hover:text-ink"
+                      className="grid h-7 w-7 place-items-center rounded-md border border-line-soft bg-hover text-muted transition-colors duration-100 hover:bg-active hover:text-ink"
                     >
                       <MoreVertical size={15} strokeWidth={2} />
                     </button>
@@ -252,14 +311,19 @@ export function AppShell() {
                       }}
                     />
                     <div className="mx-1 my-1 border-t border-line-soft" />
-                    <NoteMenuButton
-                      icon={Globe2}
-                      label="Publish on web"
-                      onClick={() => {
-                        setNoteMenuOpen(false);
-                        dispatchNoteAction("publish");
-                      }}
-                    />
+                    {path && (
+                      <NoteMenuButton
+                        icon={Copy}
+                        label="Copy path"
+                        onClick={() => {
+                          setNoteMenuOpen(false);
+                          void navigator.clipboard.writeText(path).then(
+                            () => toast("Path copied"),
+                            () => toast.error("Path could not be copied"),
+                          );
+                        }}
+                      />
+                    )}
                     <div className="mx-1 my-1 border-t border-line-soft" />
                     <NoteMenuButton
                       icon={Download}

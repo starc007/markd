@@ -74,6 +74,8 @@ export const ipc = {
   cloudSignOut: () => call<void>("cloud_sign_out"),
   publishedNoteStatus: (rel: string, content: string) =>
     call<PublishedNoteStatus>("published_note_status", { rel, content }),
+  isNotePublished: (rel: string) =>
+    call<boolean>("is_note_published", { rel }),
   publishNote: (rel: string, title: string, content: string) =>
     call<PublishedShare>("publish_note", { rel, title, content }),
   updatePublishedNote: (rel: string, title: string, content: string) =>

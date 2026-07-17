@@ -1,6 +1,7 @@
 import { Check, Cloud, LogIn, LogOut, Mail, RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { IpcError, ipc } from "@/lib/ipc";
 import type { CloudAccount, OtpChallenge } from "@/lib/types";
 
@@ -24,6 +25,11 @@ export function CloudAccountCard({
   const updateAccount = (next: CloudAccount | null) => {
     setAccount(next);
     onAccountChange(next);
+    window.dispatchEvent(
+      new CustomEvent("markd:cloud-account", {
+        detail: { signedIn: Boolean(next) },
+      }),
+    );
   };
 
   useEffect(() => {
@@ -189,7 +195,7 @@ export function CloudAccountCard({
             </div>
             <label className="mt-3 block">
               <span className="sr-only">Email address</span>
-              <input
+              <Input
                 autoFocus
                 type="email"
                 inputMode="email"
@@ -199,7 +205,6 @@ export function CloudAccountCard({
                 disabled={busy}
                 placeholder="you@example.com"
                 onChange={(event) => setEmail(event.target.value)}
-                className="h-9 w-full rounded-lg border border-line bg-panel px-3 text-[12.5px] text-ink outline-none transition-colors duration-100 placeholder:text-faint focus:border-ink disabled:opacity-60"
               />
             </label>
             <div className="mt-3 flex items-center gap-2">
@@ -237,7 +242,7 @@ export function CloudAccountCard({
             </div>
             <label className="mt-3 block">
               <span className="sr-only">Six-digit verification code</span>
-              <input
+              <Input
                 autoFocus
                 inputMode="numeric"
                 autoComplete="one-time-code"
@@ -248,7 +253,7 @@ export function CloudAccountCard({
                 disabled={busy}
                 placeholder="000000"
                 onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))}
-                className="h-11 w-full rounded-lg border border-line bg-panel px-3 text-center font-mono text-[18px] font-semibold tracking-[0.32em] text-ink outline-none transition-colors duration-100 placeholder:text-faint focus:border-ink disabled:opacity-60"
+                className="h-11 text-center font-mono text-[18px] font-semibold tracking-[0.32em]"
               />
             </label>
             <div className="mt-3 flex items-center gap-2">

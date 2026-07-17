@@ -64,6 +64,7 @@ pub fn run() {
             commands::cloud_verify_otp,
             commands::cloud_sign_out,
             commands::published_note_status,
+            commands::is_note_published,
             commands::publish_note,
             commands::update_published_note,
             commands::revoke_published_note,
