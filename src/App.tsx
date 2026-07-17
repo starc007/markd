@@ -6,9 +6,11 @@ import { Welcome } from "@/components/welcome/Welcome";
 import { initSessionSync, restoreSession } from "@/lib/session";
 import { notifyBacklinksChanged } from "@/lib/backlinks";
 import { activeDir, useVault } from "@/stores/vault";
+import { useTabs } from "@/stores/tabs";
 import { useUi } from "@/stores/ui";
 import { usePins } from "@/stores/pins";
 import { useUpdater } from "@/stores/updater";
+import { isMac } from "@/lib/utils";
 
 const AppShell = lazy(() =>
   import("@/components/layout/AppShell").then((module) => ({
@@ -79,7 +81,7 @@ export default function App() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      const mod = event.metaKey || event.ctrlKey;
+      const mod = isMac() ? event.metaKey : event.ctrlKey;
       if (!mod) return;
       const ui = useUi.getState();
       const vault = useVault.getState();
@@ -101,6 +103,9 @@ export default function App() {
       ) {
         event.preventDefault();
         vault.setView({ type: "bookmarks" });
+      } else if (event.shiftKey && event.key.toLowerCase() === "e") {
+        event.preventDefault();
+        toggleSidebarEditorFocus();
       } else if (event.shiftKey && event.key.toLowerCase() === "d") {
         event.preventDefault();
         vault.cycleTheme();
@@ -119,6 +124,12 @@ export default function App() {
       } else if (event.key === "w" && vault.view?.type === "note") {
         event.preventDefault();
         closeTab(vault.view.rel);
+      } else if (!event.shiftKey && /^[1-9]$/.test(event.key)) {
+        const rel = useTabs.getState().tabs[Number(event.key) - 1];
+        if (rel) {
+          event.preventDefault();
+          vault.setView({ type: "note", rel });
+        }
       }
     };
     window.addEventListener("keydown", onKeyDown);
@@ -150,4 +161,30 @@ export default function App() {
       />
     </>
   );
+}
+
+function toggleSidebarEditorFocus() {
+  const sidebar = document.querySelector<HTMLElement>("[data-markd-sidebar]");
+  if (sidebar?.contains(document.activeElement)) {
+    document
+      .querySelector<HTMLElement>(
+        '[data-note-editor="active"] .cm-content, [data-note-editor="active"] .ProseMirror',
+      )
+      ?.focus();
+    return;
+  }
+
+  const focusSidebar = () =>
+    sidebar
+      ?.querySelector<HTMLElement>(
+        '[role="treeitem"][aria-selected="true"], [aria-current="page"], [role="treeitem"], [data-sidebar-focus-fallback]',
+      )
+      ?.focus();
+  const ui = useUi.getState();
+  if (ui.sidebarHidden) {
+    ui.toggleSidebar();
+    requestAnimationFrame(focusSidebar);
+  } else {
+    focusSidebar();
+  }
 }

@@ -15,7 +15,7 @@ import {
   TextQuote,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cx } from "@/lib/utils";
 
 export interface SlashMenuState {
@@ -133,6 +133,7 @@ export function SlashMenu({
   onLinkToNote: (range: { from: number; to: number }) => void;
 }) {
   const [selected, setSelected] = useState(0);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const filtered = useMemo(() => {
     const query = menu?.query.toLowerCase().trim() ?? "";
@@ -143,6 +144,12 @@ export function SlashMenu({
   }, [menu?.query]);
 
   useEffect(() => setSelected(0), [menu?.query]);
+
+  useEffect(() => {
+    menuRef.current
+      ?.querySelector<HTMLElement>('[data-selected="true"]')
+      ?.scrollIntoView({ block: "nearest" });
+  }, [selected]);
 
   useEffect(() => {
     if (!menu || !editor) return;
@@ -162,11 +169,15 @@ export function SlashMenu({
       if (event.key === "Escape") {
         event.preventDefault();
         onClose();
+      } else if (event.key === " ") {
+        onClose();
       } else if (event.key === "ArrowDown") {
         event.preventDefault();
+        if (filtered.length === 0) return;
         setSelected((i) => (i + 1) % filtered.length);
       } else if (event.key === "ArrowUp") {
         event.preventDefault();
+        if (filtered.length === 0) return;
         setSelected((i) => (i - 1 + filtered.length) % filtered.length);
       } else if (event.key === "Enter" || event.key === "Tab") {
         event.preventDefault();
@@ -182,6 +193,7 @@ export function SlashMenu({
 
   return (
     <motion.div
+      ref={menuRef}
       initial={{ opacity: 0, y: menu.side === "bottom" ? -4 : 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.12, ease: "easeOut" }}
@@ -192,6 +204,7 @@ export function SlashMenu({
         <button
           key={command.id}
           type="button"
+          data-selected={index === selected}
           className={cx(
             "flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors duration-75",
             index === selected ? "bg-hover text-ink" : "text-muted",

@@ -113,7 +113,7 @@ function PinnedRow({
         tabIndex={0}
         data-rel={node.rel}
         className={cx(
-          "group flex h-[30px] cursor-pointer items-center rounded-md pr-1.5 text-[13px] transition-colors duration-100",
+          "group flex h-[30px] cursor-pointer items-center rounded-md pr-1.5 text-[13px] transition-colors duration-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ink",
           isActive
             ? "bg-active text-ink"
             : "text-muted hover:bg-hover hover:text-ink",

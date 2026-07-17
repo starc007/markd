@@ -1,4 +1,9 @@
-import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import {
+  defaultKeymap,
+  history,
+  historyKeymap,
+  indentWithTab,
+} from "@codemirror/commands";
 import {
   HighlightStyle,
   syntaxHighlighting,
@@ -77,7 +82,7 @@ export function MarkdownSourceEditor({
           history(),
           drawSelection(),
           highlightActiveLine(),
-          keymap.of([...defaultKeymap, ...historyKeymap]),
+          keymap.of([indentWithTab, ...defaultKeymap, ...historyKeymap]),
           markdown(),
           syntaxHighlighting(markdHighlight),
           EditorView.lineWrapping,

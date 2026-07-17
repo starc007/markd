@@ -155,7 +155,7 @@ export const NoteEditor = memo(function NoteEditor({
       undefined,
       "￼",
     );
-    const match = /(?:^|\s)\/([a-z0-9 ]*)$/i.exec(textBefore);
+    const match = /(?:^|\s)\/([a-z0-9]+(?: [a-z0-9]+)*)?$/i.exec(textBefore);
     if (!match) {
       setSlashMenu(null);
       return;
@@ -190,6 +190,51 @@ export const NoteEditor = memo(function NoteEditor({
           autoCorrect: "off",
           spellCheck: "false",
           "data-gramm": "false",
+        },
+        handleKeyDown(view, event) {
+          if (event.defaultPrevented || event.key !== "Tab") return false;
+          const currentEditor = editorRef.current;
+          if (!currentEditor) return false;
+
+          event.preventDefault();
+          const { $from } = view.state.selection;
+          let listItem: "listItem" | "taskItem" | null = null;
+          for (let depth = $from.depth; depth > 0; depth -= 1) {
+            const name = $from.node(depth).type.name;
+            if (name === "listItem" || name === "taskItem") {
+              listItem = name;
+              break;
+            }
+          }
+          if (listItem) {
+            if (event.shiftKey) currentEditor.commands.liftListItem(listItem);
+            else currentEditor.commands.sinkListItem(listItem);
+            return true;
+          }
+
+          const { from, to } = view.state.selection;
+          if (!event.shiftKey) {
+            view.dispatch(view.state.tr.insertText("  ", from, to).scrollIntoView());
+            return true;
+          }
+
+          const blockStart = $from.start();
+          const textBefore = view.state.doc.textBetween(blockStart, from);
+          const indent = textBefore.match(/ {1,2}$/)?.[0].length ?? 0;
+          if (indent > 0) {
+            view.dispatch(view.state.tr.delete(from - indent, from).scrollIntoView());
+          } else {
+            const leadingIndent = $from.parent.textContent.match(/^ {1,2}/)?.[0]
+              .length;
+            if (leadingIndent) {
+              view.dispatch(
+                view.state.tr
+                  .delete(blockStart, blockStart + leadingIndent)
+                  .scrollIntoView(),
+              );
+            }
+          }
+          return true;
         },
         handlePaste(view, event) {
           const currentEditor = editorRef.current;
@@ -677,6 +722,7 @@ export const NoteEditor = memo(function NoteEditor({
   return (
     <div
       ref={scrollRef}
+      data-note-editor={active ? "active" : undefined}
       className="page-scroll relative"
       onScroll={(event) => {
         savedScroll.current = event.currentTarget.scrollTop;
@@ -715,6 +761,7 @@ export const NoteEditor = memo(function NoteEditor({
             focusNonce={
               titleFocusReq?.rel === rel ? titleFocusReq.nonce : undefined
             }
+            onEnter={() => editor?.commands.focus("start")}
             onRename={(name) => flushThen(() => renameEntry(rel, name))}
           />
         )}

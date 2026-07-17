@@ -28,12 +28,16 @@ export function Sidebar() {
   const setPaletteOpen = useUi((s) => s.setPaletteOpen);
 
   return (
-    <aside className="flex h-full w-[240px] shrink-0 flex-col border-r border-line-soft bg-panel">
+    <aside
+      data-markd-sidebar
+      className="flex h-full w-[240px] shrink-0 flex-col border-r border-line-soft bg-panel"
+    >
       {/* drag region + traffic-light clearance */}
       <div data-tauri-drag-region className="flex h-12 items-end px-3 pb-1" />
 
       <div className="px-2 pb-2">
         <button
+          data-sidebar-focus-fallback
           type="button"
           onClick={() => setPaletteOpen(true)}
           className="flex w-full items-center gap-2 rounded-md border border-line-soft bg-bg px-2.5 py-1.5 text-[12.5px] text-faint transition-colors duration-100 hover:border-line hover:text-muted"
@@ -197,6 +201,7 @@ function PageLink({
   return (
     <button
       type="button"
+      aria-current={active ? "page" : undefined}
       onClick={onClick}
       className={cx(
         "flex h-[30px] w-full items-center gap-2.5 rounded-md px-2 text-[13px] transition-colors duration-100",

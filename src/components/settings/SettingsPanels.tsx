@@ -54,6 +54,8 @@ function shortcuts(mac: boolean): Array<{ label: string; keys: string[] }> {
     { label: "Today's note", keys: [mod, shift, "Y"] },
     { label: "Open Todos", keys: [mod, shift, "T"] },
     { label: "Open Bookmarks", keys: [mod, shift, "B"] },
+    { label: "Focus sidebar or editor", keys: [mod, shift, "E"] },
+    { label: "Open note tab", keys: [mod, "1–9"] },
     { label: "Toggle sidebar", keys: [mod, "\\"] },
     { label: "Cycle theme", keys: [mod, shift, "D"] },
     { label: "Settings", keys: [mod, ","] },

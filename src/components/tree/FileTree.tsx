@@ -277,7 +277,7 @@ function Row({ node, depth }: { node: TreeNode; depth: number }) {
         aria-expanded={isFolder ? isOpen : undefined}
         tabIndex={api?.focusRel === node.rel ? 0 : -1}
         className={cx(
-          "group relative flex h-[30px] touch-none cursor-pointer items-center rounded-md pr-1.5 text-[13px] transition-colors duration-100",
+          "group relative flex h-[30px] touch-none cursor-pointer items-center rounded-md pr-1.5 text-[13px] transition-colors duration-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ink",
           isActive
             ? "bg-active text-ink"
             : "text-muted hover:bg-hover hover:text-ink",
