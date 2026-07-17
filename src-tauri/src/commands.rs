@@ -232,8 +232,26 @@ pub fn backlinks_for(state: State<'_, AppState>, rel: String) -> AppResult<Vec<B
 // ---- publishing ----
 
 #[tauri::command]
-pub fn cloud_account_status(app: AppHandle) -> cloud::CloudAccountStatus {
+pub fn cloud_account_status(app: AppHandle) -> AppResult<cloud::CloudAccountStatus> {
     cloud::account_status(&app)
+}
+
+#[tauri::command]
+pub async fn cloud_request_otp(email: String) -> AppResult<cloud::OtpChallenge> {
+    cloud::request_otp(&email).await
+}
+
+#[tauri::command]
+pub async fn cloud_verify_otp(
+    challenge_id: String,
+    code: String,
+) -> AppResult<cloud::CloudAccount> {
+    cloud::verify_otp(&challenge_id, &code).await
+}
+
+#[tauri::command]
+pub async fn cloud_sign_out(app: AppHandle) -> AppResult<()> {
+    cloud::sign_out(&app).await
 }
 
 #[tauri::command]

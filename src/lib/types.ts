@@ -70,7 +70,13 @@ export interface CloudAccount {
 
 export interface CloudAccountStatus {
   account: CloudAccount | null;
-  loginUrl: string;
+}
+
+export interface OtpChallenge {
+  challengeId: string;
+  email: string;
+  expiresIn: number;
+  resendAfter: number;
 }
 
 export interface PublishedNoteStatus {

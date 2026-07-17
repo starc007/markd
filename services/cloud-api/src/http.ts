@@ -30,7 +30,7 @@ export async function readJson(
 ): Promise<unknown> {
   const buffer = await request.arrayBuffer();
   if (buffer.byteLength > maxBytes) {
-    throw new RequestBodyError(413, "payload_too_large", "The note is too large to publish.");
+    throw new RequestBodyError(413, "payload_too_large", "The request body is too large.");
   }
   try {
     return JSON.parse(new TextDecoder().decode(buffer));

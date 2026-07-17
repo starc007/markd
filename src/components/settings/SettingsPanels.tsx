@@ -1,21 +1,17 @@
-import { openUrl } from "@tauri-apps/plugin-opener";
 import {
-  ArrowUpRight,
   Check,
-  Cloud,
   FolderOpen,
   Globe2,
-  LogIn,
   Monitor,
   Moon,
   RefreshCw,
   Sun,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import type { CloudAccountStatus, Theme } from "@/lib/types";
+import { useState } from "react";
+import type { CloudAccount, Theme } from "@/lib/types";
 import { cx, isMac } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
-import { ipc } from "@/lib/ipc";
+import { CloudAccountCard } from "@/components/settings/CloudAccountCard";
 import { useUpdater } from "@/stores/updater";
 import { useVault } from "@/stores/vault";
 
@@ -44,8 +40,6 @@ const THEMES: Array<{
     icon: Moon,
   },
 ];
-
-const CLOUD_LOGIN_URL = "https://usemarkd.app/login?source=desktop";
 
 function shortcuts(mac: boolean): Array<{ label: string; keys: string[] }> {
   const mod = mac ? "⌘" : "Ctrl";
@@ -148,26 +142,7 @@ export function GeneralSettings() {
 }
 
 export function CloudSettings() {
-  const [status, setStatus] = useState<CloudAccountStatus | null>(null);
-
-  useEffect(() => {
-    let disposed = false;
-    void ipc
-      .cloudAccountStatus()
-      .then((next) => {
-        if (!disposed) setStatus(next);
-      })
-      .catch(() => {
-        if (!disposed) setStatus({ account: null, loginUrl: CLOUD_LOGIN_URL });
-      });
-    return () => {
-      disposed = true;
-    };
-  }, []);
-
-  const account = status?.account ?? null;
-  const loginUrl = status?.loginUrl ?? CLOUD_LOGIN_URL;
-  const loading = status === null;
+  const [account, setAccount] = useState<CloudAccount | null>(null);
 
   return (
     <div className="space-y-6">
@@ -175,57 +150,7 @@ export function CloudSettings() {
         title="Account"
         description="Sign in once to manage public pages and future synced devices."
       >
-        <div className="rounded-xl bg-panel p-1">
-          <div className="flex items-center gap-3 rounded-[10px] bg-bg px-3.5 py-3">
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-line bg-panel text-muted">
-              {account ? (
-                <span className="text-[12px] font-semibold uppercase text-ink">
-                  {account.email.slice(0, 1)}
-                </span>
-              ) : (
-                <Cloud size={16} strokeWidth={1.7} />
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <p className="truncate text-[12.5px] font-semibold text-ink">
-                  {loading ? "Checking account…" : (account?.email ?? "Not signed in")}
-                </p>
-                {account && (
-                  <span className="rounded-full border border-line px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-faint">
-                    {account.plan === "cloud" ? "Cloud" : "Free"}
-                  </span>
-                )}
-              </div>
-              <p className="mt-0.5 text-[10.5px] text-faint">
-                {loading
-                  ? "Looking for a Markd account on this device."
-                  : account
-                  ? "Your publishing identity is connected to this device."
-                  : "Your local notes stay available without an account."}
-              </p>
-            </div>
-            <Button
-              variant={account ? "outline" : "primary"}
-              size="sm"
-              className="shrink-0"
-              disabled={loading}
-              onClick={() => openUrl(loginUrl)}
-            >
-              {account ? (
-                <>
-                  Account
-                  <ArrowUpRight size={12.5} strokeWidth={1.8} />
-                </>
-              ) : (
-                <>
-                  <LogIn size={13} strokeWidth={1.8} />
-                  Sign in
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
+        <CloudAccountCard onAccountChange={setAccount} />
       </SettingsGroup>
 
       <SettingsGroup

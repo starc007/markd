@@ -1,6 +1,7 @@
 use std::path::Path;
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+use keyring::Entry;
 use reqwest::{Client, StatusCode};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -10,7 +11,8 @@ use crate::cloud_metadata::{self, PublishedShare};
 use crate::error::{AppError, AppResult};
 
 const API_BASE: &str = "https://api.usemarkd.app";
-const LOGIN_URL: &str = "https://usemarkd.app/login?source=desktop";
+const KEYRING_SERVICE: &str = "app.usemarkd.markd";
+const KEYRING_ACCOUNT: &str = "cloud-session";
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -18,6 +20,27 @@ struct PublishRequest<'a> {
     entry_id: &'a str,
     title: &'a str,
     markdown: &'a str,
+}
+
+#[derive(Debug, Serialize)]
+struct OtpRequest<'a> {
+    email: &'a str,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct OtpVerifyRequest<'a> {
+    challenge_id: &'a str,
+    code: &'a str,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OtpChallenge {
+    pub challenge_id: String,
+    pub email: String,
+    pub expires_in: u64,
+    pub resend_after: u64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -58,20 +81,82 @@ pub struct CloudAccount {
 #[serde(rename_all = "camelCase")]
 pub struct CloudAccountStatus {
     pub account: Option<CloudAccount>,
-    pub login_url: &'static str,
 }
 
-pub fn account_status(_app: &tauri::AppHandle) -> CloudAccountStatus {
-    CloudAccountStatus {
-        account: None,
-        login_url: LOGIN_URL,
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct StoredSession {
+    access_token: String,
+    expires_at: u64,
+    account: CloudAccount,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SessionResponse {
+    access_token: String,
+    expires_at: u64,
+    user: CloudAccount,
+}
+
+fn now_millis() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64
+}
+
+fn keyring_entry() -> AppResult<Entry> {
+    Entry::new(KEYRING_SERVICE, KEYRING_ACCOUNT)
+        .map_err(|error| AppError::Cloud(format!("could not open secure account storage: {error}")))
+}
+
+fn load_session() -> AppResult<Option<StoredSession>> {
+    let entry = keyring_entry()?;
+    let value = match entry.get_password() {
+        Ok(value) => value,
+        Err(keyring::Error::NoEntry) => return Ok(None),
+        Err(error) => {
+            return Err(AppError::Cloud(format!(
+                "could not read the saved Markd account: {error}"
+            )))
+        }
+    };
+    let session: StoredSession = serde_json::from_str(&value)?;
+    if session.expires_at <= now_millis() {
+        let _ = entry.delete_credential();
+        return Ok(None);
+    }
+    Ok(Some(session))
+}
+
+fn save_session(session: &StoredSession) -> AppResult<()> {
+    keyring_entry()?
+        .set_password(&serde_json::to_string(session)?)
+        .map_err(|error| AppError::Cloud(format!("could not save the Markd account: {error}")))
+}
+
+fn clear_session() -> AppResult<()> {
+    match keyring_entry()?.delete_credential() {
+        Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
+        Err(error) => Err(AppError::Cloud(format!(
+            "could not remove the saved Markd account: {error}"
+        ))),
     }
 }
 
+pub fn account_status(_app: &tauri::AppHandle) -> AppResult<CloudAccountStatus> {
+    Ok(CloudAccountStatus {
+        account: load_session()?.map(|session| session.account),
+    })
+}
+
 fn access_token(_app: &tauri::AppHandle) -> AppResult<String> {
-    Err(AppError::CloudLoginRequired(
-        "Sign in to Markd before publishing a note.".to_string(),
-    ))
+    load_session()?
+        .map(|session| session.access_token)
+        .ok_or_else(|| {
+            AppError::CloudLoginRequired("Sign in to Markd before publishing a note.".to_string())
+        })
 }
 
 fn client() -> AppResult<Client> {
@@ -88,6 +173,82 @@ fn content_hash(content: &str) -> String {
 
 fn request_key() -> String {
     format!("publish_{}", Uuid::new_v4().simple())
+}
+
+async fn cloud_error(response: reqwest::Response) -> AppError {
+    let status = response.status();
+    let body = response.text().await.unwrap_or_default();
+    let error = serde_json::from_str::<ErrorEnvelope>(&body)
+        .map(|envelope| envelope.error)
+        .unwrap_or(CloudError {
+            code: "cloud_request_failed".to_string(),
+            message: format!("Markd Cloud returned {status}"),
+            share: None,
+        });
+    if status == StatusCode::UNAUTHORIZED {
+        AppError::CloudLoginRequired(error.message)
+    } else if status == StatusCode::PAYMENT_REQUIRED {
+        AppError::CloudSubscriptionRequired(error.message)
+    } else {
+        AppError::Cloud(error.message)
+    }
+}
+
+pub async fn request_otp(email: &str) -> AppResult<OtpChallenge> {
+    let response = client()?
+        .post(format!("{API_BASE}/v1/auth/otp/request"))
+        .json(&OtpRequest { email })
+        .send()
+        .await
+        .map_err(|error| AppError::Network(error.to_string()))?;
+    if !response.status().is_success() {
+        return Err(cloud_error(response).await);
+    }
+    response
+        .json::<OtpChallenge>()
+        .await
+        .map_err(|error| AppError::Cloud(format!("invalid OTP response: {error}")))
+}
+
+pub async fn verify_otp(challenge_id: &str, code: &str) -> AppResult<CloudAccount> {
+    let response = client()?
+        .post(format!("{API_BASE}/v1/auth/otp/verify"))
+        .json(&OtpVerifyRequest { challenge_id, code })
+        .send()
+        .await
+        .map_err(|error| AppError::Network(error.to_string()))?;
+    if !response.status().is_success() {
+        return Err(cloud_error(response).await);
+    }
+    let response = response
+        .json::<SessionResponse>()
+        .await
+        .map_err(|error| AppError::Cloud(format!("invalid session response: {error}")))?;
+    let session = StoredSession {
+        access_token: response.access_token,
+        expires_at: response.expires_at,
+        account: response.user,
+    };
+    save_session(&session)?;
+    Ok(session.account)
+}
+
+pub async fn sign_out(app: &tauri::AppHandle) -> AppResult<()> {
+    let token = access_token(app).ok();
+    clear_session()?;
+    if let Some(token) = token {
+        tauri::async_runtime::spawn(async move {
+            let Ok(client) = client() else {
+                return;
+            };
+            let _ = client
+                .delete(format!("{API_BASE}/v1/session"))
+                .bearer_auth(token)
+                .send()
+                .await;
+        });
+    }
+    Ok(())
 }
 
 async fn parse_response(response: reqwest::Response) -> AppResult<PublishedShare> {
@@ -134,7 +295,7 @@ pub fn status(
         .as_ref()
         .is_some_and(|published| published.content_hash != content_hash(content));
     Ok(PublishedNoteStatus {
-        account: None,
+        account: load_session()?.map(|session| session.account),
         share,
         is_outdated,
         free_share_limit: 1,

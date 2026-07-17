@@ -1,7 +1,9 @@
 export interface Env {
   DB: D1Database;
   PUBLISHED_NOTES: R2Bucket;
+  EMAIL: SendEmail;
   PUBLIC_SITE_ORIGIN: string;
+  OTP_PEPPER: string;
 }
 
 export interface PublishInput {

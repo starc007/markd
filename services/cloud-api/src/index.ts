@@ -12,7 +12,9 @@ import {
   authenticatedUser,
   AuthenticationError,
   authenticationRequired,
+  revokeSession,
 } from "./auth";
+import { OtpError, requestOtp, verifyOtp } from "./otp";
 
 const SHARE_ID = /^\/v1\/shares\/(share_[a-f0-9]{32})$/;
 const PUBLIC_SLUG = /^\/v1\/public\/shares\/([a-zA-Z0-9_-]{20,24})$/;
@@ -26,6 +28,15 @@ async function route(
 
   if (request.method === "GET" && url.pathname === "/health") {
     return json({ ok: true });
+  }
+  if (request.method === "POST" && url.pathname === "/v1/auth/otp/request") {
+    return requestOtp(request, env);
+  }
+  if (request.method === "POST" && url.pathname === "/v1/auth/otp/verify") {
+    return verifyOtp(request, env);
+  }
+  if (request.method === "DELETE" && url.pathname === "/v1/session") {
+    return revokeSession(request, env);
   }
   if (request.method === "GET" && url.pathname === "/v1/me") {
     const user = await authenticatedUser(request, env);
@@ -62,6 +73,7 @@ export default {
       return await route(request, env, ctx);
     } catch (cause) {
       if (cause instanceof AuthenticationError) return authenticationRequired();
+      if (cause instanceof OtpError) return error(cause.status, cause.code, cause.message);
       if (cause instanceof ValidationError) {
         return error(400, cause.code, cause.message);
       }

@@ -16,6 +16,7 @@ import { Modal } from "@/components/ui/Modal";
 import { IpcError, ipc } from "@/lib/ipc";
 import type { PublishedShare } from "@/lib/types";
 import { noteTitle } from "@/lib/utils";
+import { useUi } from "@/stores/ui";
 
 type BusyAction = "publish" | "update" | "revoke" | null;
 
@@ -38,6 +39,7 @@ export function PublishNoteModal({
   const [busy, setBusy] = useState<BusyAction>(null);
   const [confirmRevoke, setConfirmRevoke] = useState(false);
   const [error, setError] = useState<{ kind: string; message: string } | null>(null);
+  const openSettings = useUi((state) => state.openSettings);
 
   useEffect(() => {
     if (!open) return;
@@ -170,10 +172,13 @@ export function PublishNoteModal({
               <Button
                 variant="primary"
                 size="sm"
-                onClick={() => openUrl("https://usemarkd.app/login?source=desktop")}
+                onClick={() => {
+                  onClose();
+                  openSettings("cloud");
+                }}
               >
                 <LogIn size={13} strokeWidth={1.9} />
-                Sign in to Markd
+                Open Cloud settings
               </Button>
             </div>
           </div>

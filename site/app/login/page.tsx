@@ -11,12 +11,12 @@ export default function LoginPage() {
           Sign in to publish
         </h1>
         <p className="mt-3 text-sm leading-6 text-black/60">
-          Account sign-in is being connected to the desktop app. Publishing stays
-          disabled until a verified Markd session is available.
+          Open Markd Settings, choose Markd Cloud, and enter your email. We’ll send
+          a six-digit code to finish signing in securely.
         </p>
         <div className="mt-7 rounded-xl bg-black/[0.045] p-4 text-sm leading-6 text-black/55">
-          Free accounts will include one active public note. Markd Cloud accounts
-          will include unlimited publishing and cross-device sync.
+          Free accounts include one active public note. Markd Cloud accounts include
+          unlimited publishing and cross-device sync.
         </div>
         <Link
           href="/"
