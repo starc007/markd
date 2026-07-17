@@ -8,6 +8,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import { version as appVersion } from "../../../package.json";
 import {
   AppearanceSettings,
   CloudSettings,
@@ -110,11 +111,14 @@ export function SettingsModal() {
             })}
           </nav>
 
-          <p className="mt-auto px-4 pb-4 text-[10.5px] leading-4 text-faint">
-            Notes as plain markdown,
-            <br />
-            stored on your disk.
-          </p>
+          <div className="mt-auto px-4 pb-4 text-[10.5px] leading-4 text-faint">
+            <p>
+              Notes as plain markdown,
+              <br />
+              stored on your disk.
+            </p>
+            <p className="mt-2 font-mono">Version {appVersion}</p>
+          </div>
         </aside>
 
         <section className="flex min-w-0 flex-1 flex-col bg-bg">

@@ -164,6 +164,68 @@ body {
     }
 }
 
+.palette-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    background: color-mix(in srgb, var(--bg) 5%, transparent);
+    backdrop-filter: blur(8px);
+}
+
+.palette-dialog {
+    position: fixed;
+    left: 50%;
+    top: 16vh;
+    z-index: 81;
+    width: min(560px, calc(100vw - 32px));
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--bg);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.18);
+    transform: translateX(-50%);
+}
+.dark .palette-dialog {
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.42);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .palette-overlay[data-state="open"] {
+        animation: palette-overlay-in 100ms var(--ease-out) both;
+    }
+    .palette-overlay[data-state="closed"] {
+        animation: palette-overlay-out 80ms var(--ease-out) both;
+    }
+    .palette-dialog[data-state="open"] {
+        animation: palette-dialog-in 100ms var(--ease-out) both;
+    }
+    .palette-dialog[data-state="closed"] {
+        animation: palette-dialog-out 80ms var(--ease-out) both;
+    }
+}
+@keyframes palette-overlay-in {
+    from {
+        opacity: 0;
+    }
+}
+@keyframes palette-overlay-out {
+    to {
+        opacity: 0;
+    }
+}
+@keyframes palette-dialog-in {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-4px) scale(0.985);
+    }
+}
+@keyframes palette-dialog-out {
+    to {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-3px) scale(0.985);
+    }
+}
+
 /* hide scrollbar entirely (sidebar note list) while keeping scroll */
 .no-scrollbar {
     scrollbar-width: none;

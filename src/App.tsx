@@ -15,11 +15,11 @@ const AppShell = lazy(() =>
     default: module.AppShell,
   })),
 );
-const CommandPalette = lazy(() =>
+const loadCommandPalette = () =>
   import("@/components/palette/CommandPalette").then((module) => ({
     default: module.CommandPalette,
-  })),
-);
+  }));
+const CommandPalette = lazy(loadCommandPalette);
 const SettingsModal = lazy(() =>
   import("@/components/settings/SettingsModal").then((module) => ({
     default: module.SettingsModal,
@@ -34,6 +34,7 @@ export default function App() {
   useEffect(() => {
     initSessionSync();
     startup();
+    void loadCommandPalette();
     // Look for an app update in the background; surfaces in the sidebar.
     useUpdater.getState().check();
   }, [startup]);
