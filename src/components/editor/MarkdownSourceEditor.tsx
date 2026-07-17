@@ -4,7 +4,7 @@ import {
   syntaxHighlighting,
 } from "@codemirror/language";
 import { markdown } from "@codemirror/lang-markdown";
-import { EditorState } from "@codemirror/state";
+import { EditorSelection, EditorState } from "@codemirror/state";
 import {
   drawSelection,
   EditorView,
@@ -54,9 +54,11 @@ const markdHighlight = HighlightStyle.define([
 export function MarkdownSourceEditor({
   value,
   onChange,
+  selection,
 }: {
   value: string;
   onChange: (value: string) => void;
+  selection?: { from: number; to: number; nonce: number } | null;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -109,6 +111,15 @@ export function MarkdownSourceEditor({
     });
     syncingRef.current = false;
   }, [value]);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view || !selection) return;
+    view.dispatch({
+      selection: EditorSelection.range(selection.from, selection.to),
+      scrollIntoView: true,
+    });
+  }, [selection]);
 
   return <div ref={hostRef} className="min-h-[calc(100vh-190px)] w-full" />;
 }

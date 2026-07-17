@@ -10,7 +10,7 @@ import { createPortal } from "react-dom";
 type Side = "top" | "bottom" | "left" | "right";
 
 const GAP = 6;
-const DELAY_MS = 450;
+const DELAY_MS = 120;
 
 export function Tooltip({
   label,

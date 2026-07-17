@@ -48,6 +48,7 @@ function shortcuts(mac: boolean): Array<{ label: string; keys: string[] }> {
 
   return [
     { label: "Command palette", keys: [mod, "K"] },
+    { label: "Find in note", keys: [mod, "F"] },
     { label: "New note", keys: [mod, "N"] },
     { label: "Quick capture", keys: [control, shift, "Space"] },
     { label: "Today's note", keys: [mod, shift, "Y"] },

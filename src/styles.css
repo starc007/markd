@@ -319,6 +319,33 @@ body {
     padding: 0.04em 0.12em;
 }
 
+.prose-note .markd-find-match {
+    border-radius: 0.18em;
+    background: color-mix(in srgb, var(--ink) 12%, transparent);
+}
+.prose-note .markd-find-match-active {
+    background: color-mix(in srgb, var(--ink) 22%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 22%, transparent);
+}
+
+.note-find-panel input[type="search"]::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .note-find-enter {
+        animation: note-find-enter 150ms var(--ease-out) both;
+    }
+}
+
+@keyframes note-find-enter {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+}
+
 .prose-note blockquote {
     border-left: 2px solid var(--ink);
     margin: 0.8em 0;

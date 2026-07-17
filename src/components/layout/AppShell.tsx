@@ -146,6 +146,18 @@ export function AppShell() {
                 />
               )}
               {view?.type === "note" && (
+                <Tooltip label="Find in note ⌘F" side="bottom">
+                  <button
+                    type="button"
+                    aria-label="Find in note"
+                    onClick={() => dispatchNoteAction("find")}
+                    className="grid h-7 w-7 place-items-center rounded-md border border-line bg-hover text-muted transition-[color,background-color,border-color,transform] duration-100 hover:bg-active hover:text-ink active:scale-[0.96]"
+                  >
+                    <Search size={15} strokeWidth={1.9} />
+                  </button>
+                </Tooltip>
+              )}
+              {view?.type === "note" && (
                 <Tooltip
                   label={markdownSource ? "Show rich editor" : "Show Markdown source"}
                   side="bottom"
@@ -309,7 +321,13 @@ export function AppShell() {
   );
 }
 
-type NoteAction = "add-property" | "publish" | "export" | "copy" | "delete";
+type NoteAction =
+  | "find"
+  | "add-property"
+  | "publish"
+  | "export"
+  | "copy"
+  | "delete";
 
 function dispatchNoteAction(action: NoteAction) {
   window.dispatchEvent(

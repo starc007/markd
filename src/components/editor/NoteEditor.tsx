@@ -27,12 +27,16 @@ import { useTabs } from "@/stores/tabs";
 import { useUi } from "@/stores/ui";
 import { useVault } from "@/stores/vault";
 import { createExtensions } from "./extensions";
+import { FindReplaceBar } from "./FindReplaceBar";
 import { insertImageFile } from "./insertImage";
+import { FindHighlightExtension } from "./noteFind";
 import { NoteLinkPicker, type LinkPickerState } from "./NoteLinkPicker";
 import { NoteProperties } from "./NoteProperties";
 import { PublishNoteModal } from "./PublishNoteModal";
 import { SelectionMenu } from "./SelectionMenu";
 import { SlashMenu, type SlashMenuState } from "./SlashMenu";
+import { TitleInput } from "./TitleInput";
+import { useNoteFindReplace } from "./useNoteFindReplace";
 
 const MarkdownSourceEditor = lazy(() =>
   import("./MarkdownSourceEditor").then((module) => ({
@@ -74,6 +78,7 @@ export const NoteEditor = memo(function NoteEditor({
   const [propertyAddRequest, setPropertyAddRequest] = useState(0);
   const [rawText, setRawText] = useState("");
   const [loadNonce, setLoadNonce] = useState(0);
+  const [contentVersion, setContentVersion] = useState(0);
   const [publishSnapshot, setPublishSnapshot] = useState<{
     rel: string;
     markdown: string;
@@ -131,7 +136,10 @@ export const NoteEditor = memo(function NoteEditor({
     [persist],
   );
 
-  const extensions = useMemo(() => createExtensions(vaultRoot), [vaultRoot]);
+  const extensions = useMemo(
+    () => [...createExtensions(vaultRoot), FindHighlightExtension],
+    [vaultRoot],
+  );
 
   const updateSlashMenu = useCallback((editor: NonNullable<EditorInstance>) => {
     const { selection } = editor.state;
@@ -292,6 +300,7 @@ export const NoteEditor = memo(function NoteEditor({
         setSaveState("saving");
         debouncedPersist(markdown);
         setWords(countWords(markdown));
+        setContentVersion((value) => value + 1);
         updateSlashMenu(editor);
       },
       onSelectionUpdate({ editor }) {
@@ -301,6 +310,31 @@ export const NoteEditor = memo(function NoteEditor({
     [extensions],
   );
   editorRef.current = editor;
+
+  const applyRawTextChange = useCallback(
+    (text: string) => {
+      setRawText(text);
+      const { frontmatter: fm, body } = splitFrontmatter(text);
+      frontmatter.current = fm;
+      setProperties(parseFrontmatter(fm));
+      pending.current = body;
+      setSaveState("saving");
+      debouncedPersist(body);
+      setWords(countWords(body));
+      setContentVersion((value) => value + 1);
+    },
+    [debouncedPersist, setSaveState],
+  );
+
+  const noteFind = useNoteFindReplace({
+    active,
+    contentVersion,
+    editor,
+    markdownSource,
+    rawText,
+    rel,
+    applyRawTextChange,
+  });
 
   const applyFrontmatter = useCallback(
     (nextFrontmatter: string) => {
@@ -581,7 +615,9 @@ export const NoteEditor = memo(function NoteEditor({
           ? rawText
           : joinFrontmatter(frontmatter.current, editor.getMarkdown());
 
-        if (action === "add-property") {
+        if (action === "find") {
+          noteFind.openFind();
+        } else if (action === "add-property") {
           setPropertyAddRequest((request) => request + 1);
         } else if (action === "copy") {
           await navigator.clipboard.writeText(markdown);
@@ -608,7 +644,15 @@ export const NoteEditor = memo(function NoteEditor({
     };
     window.addEventListener("markd:note-action", handle);
     return () => window.removeEventListener("markd:note-action", handle);
-  }, [active, debouncedPersist, editor, markdownSource, persist, rawText]);
+  }, [
+    active,
+    debouncedPersist,
+    editor,
+    markdownSource,
+    noteFind.openFind,
+    persist,
+    rawText,
+  ]);
 
   // Insert a page link to `rel` over the slash range, as a link mark whose
   // href is the note path (serializes to `[title](rel)` markdown on save).
@@ -633,11 +677,32 @@ export const NoteEditor = memo(function NoteEditor({
   return (
     <div
       ref={scrollRef}
-      className="page-scroll"
+      className="page-scroll relative"
       onScroll={(event) => {
         savedScroll.current = event.currentTarget.scrollTop;
       }}
     >
+      {active && !missing && noteFind.open && (
+        <div className="pointer-events-none sticky top-3 z-40 h-0 px-4">
+          <div className="pointer-events-auto ml-auto w-fit">
+            <FindReplaceBar
+              query={noteFind.query}
+              replaceText={noteFind.replaceText}
+              replaceOpen={noteFind.replaceOpen}
+              current={noteFind.current}
+              total={noteFind.total}
+              onQueryChange={noteFind.setQuery}
+              onReplaceTextChange={noteFind.setReplaceText}
+              onReplaceOpenChange={noteFind.setReplaceOpen}
+              onPrevious={noteFind.previous}
+              onNext={noteFind.next}
+              onReplace={noteFind.replaceCurrent}
+              onReplaceAll={noteFind.replaceAll}
+              onClose={noteFind.closeFind}
+            />
+          </div>
+        </div>
+      )}
       <div className="mx-auto w-full max-w-[720px] px-10 pt-6">
         {missing ? (
           <p className="pt-16 text-center text-[14px] text-faint">
@@ -658,16 +723,8 @@ export const NoteEditor = memo(function NoteEditor({
             <Suspense fallback={null}>
               <MarkdownSourceEditor
                 value={rawText}
-                onChange={(text) => {
-                setRawText(text);
-                const { frontmatter: fm, body } = splitFrontmatter(text);
-                frontmatter.current = fm;
-                setProperties(parseFrontmatter(fm));
-                pending.current = body;
-                setSaveState("saving");
-                debouncedPersist(body);
-                setWords(countWords(body));
-              }}
+                onChange={applyRawTextChange}
+                selection={noteFind.sourceSelection}
               />
             </Suspense>
           ) : (
@@ -683,7 +740,9 @@ export const NoteEditor = memo(function NoteEditor({
             </>
           )}
         </div>
-        {active && editor && !markdownSource && <SelectionMenu editor={editor} />}
+        {active && editor && !markdownSource && !noteFind.open && (
+          <SelectionMenu editor={editor} />
+        )}
         {active && !markdownSource && (
           <SlashMenu
             editor={editor}
@@ -733,49 +792,6 @@ export const NoteEditor = memo(function NoteEditor({
 });
 
 type EditorInstance = ReturnType<typeof useEditor>;
-
-function TitleInput({
-  title,
-  focusNonce,
-  onRename,
-}: {
-  title: string;
-  focusNonce?: number;
-  onRename: (name: string) => void;
-}) {
-  const ref = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (focusNonce === undefined) return;
-    ref.current?.focus();
-    ref.current?.select();
-  }, [focusNonce]);
-
-  const submit = () => {
-    const value = ref.current?.value.trim();
-    if (value && value !== title) onRename(value);
-    else if (ref.current) ref.current.value = title;
-  };
-
-  return (
-    <input
-      ref={ref}
-      defaultValue={title}
-      placeholder="Untitled"
-      className="w-full bg-transparent text-[30px] font-[680] tracking-[-0.025em] text-ink outline-none placeholder:text-faint"
-      onBlur={submit}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === "Escape") {
-          event.preventDefault();
-          if (event.key === "Escape" && ref.current) {
-            ref.current.value = title;
-          }
-          event.currentTarget.blur();
-        }
-      }}
-    />
-  );
-}
 
 function countWords(markdown: string) {
   const text = markdown.trim();
