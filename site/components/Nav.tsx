@@ -12,7 +12,6 @@ const LINKS = [
   { label: "Features", href: "/#features" },
   { label: "Agent", href: "/#agent" },
   { label: "FAQ", href: "/#faq" },
-  { label: "Pricing", href: "/pricing" },
   { label: "Changelog", href: "/changelog" },
 ];
 
