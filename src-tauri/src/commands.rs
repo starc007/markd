@@ -232,8 +232,8 @@ pub fn backlinks_for(state: State<'_, AppState>, rel: String) -> AppResult<Vec<B
 // ---- publishing ----
 
 #[tauri::command]
-pub fn cloud_account_status(app: AppHandle) -> AppResult<cloud::CloudAccountStatus> {
-    cloud::account_status(&app)
+pub async fn cloud_account_status(app: AppHandle) -> AppResult<cloud::CloudAccountStatus> {
+    cloud::account_status(&app).await
 }
 
 #[tauri::command]
@@ -256,7 +256,7 @@ pub async fn cloud_sign_out(app: AppHandle) -> AppResult<()> {
 }
 
 #[tauri::command]
-pub fn published_note_status(
+pub async fn published_note_status(
     app: AppHandle,
     state: State<'_, AppState>,
     rel: String,
@@ -264,7 +264,7 @@ pub fn published_note_status(
     content: String,
     pages: Vec<cloud::PublishPageDraft>,
 ) -> AppResult<cloud::PublishedNoteStatus> {
-    cloud::status(&app, &state.root()?, &rel, &title, &content, pages)
+    cloud::status(&app, &state.root()?, &rel, &title, &content, pages).await
 }
 
 #[tauri::command]

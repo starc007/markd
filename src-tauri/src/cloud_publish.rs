@@ -91,7 +91,7 @@ struct SiteEnvelope {
     site: PublishedShare,
 }
 
-pub fn status(
+pub async fn status(
     app: &AppHandle,
     root: &Path,
     rel: &str,
@@ -113,7 +113,7 @@ pub fn status(
         .unwrap_or(title);
     let local_hash = prepare_release(root, rel, release_title, content, pages)?.manifest_hash()?;
     Ok(PublishedNoteStatus {
-        account: cloud::stored_account(app)?,
+        account: cloud::refreshed_account(app).await?,
         is_outdated: share
             .as_ref()
             .is_some_and(|published| published.content_hash != local_hash),

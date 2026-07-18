@@ -84,6 +84,11 @@ struct SessionResponse {
     user: CloudAccount,
 }
 
+#[derive(Debug, Deserialize)]
+struct AccountResponse {
+    user: CloudAccount,
+}
+
 fn now_millis() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -142,9 +147,9 @@ fn clear_session(app: &tauri::AppHandle) -> AppResult<()> {
     }
 }
 
-pub fn account_status(app: &tauri::AppHandle) -> AppResult<CloudAccountStatus> {
+pub async fn account_status(app: &tauri::AppHandle) -> AppResult<CloudAccountStatus> {
     Ok(CloudAccountStatus {
-        account: load_session(app)?.map(|session| session.account),
+        account: refreshed_account(app).await?,
     })
 }
 
@@ -182,8 +187,33 @@ pub(crate) async fn cloud_error(response: reqwest::Response) -> AppError {
     }
 }
 
-pub(crate) fn stored_account(app: &tauri::AppHandle) -> AppResult<Option<CloudAccount>> {
-    Ok(load_session(app)?.map(|session| session.account))
+pub(crate) async fn refreshed_account(
+    app: &tauri::AppHandle,
+) -> AppResult<Option<CloudAccount>> {
+    let Some(mut session) = load_session(app)? else {
+        return Ok(None);
+    };
+    let response = client()?
+        .get(format!("{API_BASE}/v1/me"))
+        .bearer_auth(&session.access_token)
+        .send()
+        .await
+        .map_err(|error| AppError::Network(error.to_string()))?;
+    if response.status() == StatusCode::UNAUTHORIZED {
+        clear_session(app)?;
+        return Ok(None);
+    }
+    if !response.status().is_success() {
+        return Err(cloud_error(response).await);
+    }
+    let account = response
+        .json::<AccountResponse>()
+        .await
+        .map_err(|error| AppError::Cloud(format!("invalid account response: {error}")))?
+        .user;
+    session.account = account.clone();
+    save_session(app, &session)?;
+    Ok(Some(account))
 }
 
 pub async fn request_otp(email: &str) -> AppResult<OtpChallenge> {
@@ -247,7 +277,7 @@ pub async fn sign_out(app: &tauri::AppHandle) -> AppResult<()> {
     Ok(())
 }
 
-pub fn status(
+pub async fn status(
     app: &tauri::AppHandle,
     root: &Path,
     rel: &str,
@@ -255,7 +285,7 @@ pub fn status(
     content: &str,
     pages: Vec<PublishPageDraft>,
 ) -> AppResult<PublishedNoteStatus> {
-    crate::cloud_publish::status(app, root, rel, title, content, pages)
+    crate::cloud_publish::status(app, root, rel, title, content, pages).await
 }
 
 pub async fn publish(
