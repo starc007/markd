@@ -14,9 +14,16 @@ export interface Env {
   R2_SECRET_ACCESS_KEY: string;
   CACHE_ZONE_ID: string;
   CACHE_PURGE_TOKEN: string;
+  DODO_PAYMENTS_API_KEY: string;
+  DODO_PAYMENTS_WEBHOOK_KEY: string;
+  DODO_PAYMENTS_ENVIRONMENT: "test_mode" | "live_mode";
+  DODO_BUSINESS_ID: string;
+  DODO_MONTHLY_PRODUCT_ID: string;
+  DODO_YEARLY_PRODUCT_ID: string;
 }
 
 export type AccountPlan = "free" | "cloud";
+export type BillingInterval = "monthly" | "yearly";
 
 export interface AuthenticatedUser {
   id: string;

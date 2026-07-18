@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { MARKD_CLOUD_PLANS_URL } from "@/lib/cloud";
+import { openCloudPlans } from "@/lib/cloud";
 import { IpcError, ipc } from "@/lib/ipc";
 import { collectPublishBundle, type PublishBundle } from "@/lib/publishBundle";
 import type { PublishedShare } from "@/lib/types";
@@ -21,7 +21,7 @@ import { noteTitle } from "@/lib/utils";
 import { useUi } from "@/stores/ui";
 import { useVault } from "@/stores/vault";
 
-type BusyAction = "publish" | "update" | "revoke" | null;
+type BusyAction = "publish" | "update" | "revoke" | "plans" | null;
 
 export function PublishNoteModal({
   open,
@@ -125,6 +125,19 @@ export function PublishNoteModal({
     toast("Public link copied");
   };
 
+  const openPlans = async () => {
+    if (busy) return;
+    setBusy("plans");
+    try {
+      await openCloudPlans();
+      onClose();
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : "Pricing could not be opened.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <Modal
       open={open}
@@ -214,12 +227,11 @@ export function PublishNoteModal({
               <Button
                 variant="primary"
                 size="sm"
-                onClick={() => {
-                  onClose();
-                  openUrl(MARKD_CLOUD_PLANS_URL);
-                }}
+                loading={busy === "plans"}
+                disabled={Boolean(busy)}
+                onClick={openPlans}
               >
-                View plans
+                {busy === "plans" ? "Opening…" : "View plans"}
               </Button>
             </div>
           </div>
@@ -292,12 +304,11 @@ export function PublishNoteModal({
                     <Button
                       variant="primary"
                       size="sm"
-                      onClick={() => {
-                        onClose();
-                        openUrl(MARKD_CLOUD_PLANS_URL);
-                      }}
+                      loading={busy === "plans"}
+                      disabled={Boolean(busy)}
+                      onClick={openPlans}
                     >
-                      View plans
+                      {busy === "plans" ? "Opening…" : "View plans"}
                     </Button>
                   </div>
                 )}
@@ -333,12 +344,11 @@ export function PublishNoteModal({
                       variant="primary"
                       size="sm"
                       className="ml-auto"
-                      onClick={() => {
-                        onClose();
-                        openUrl(MARKD_CLOUD_PLANS_URL);
-                      }}
+                      loading={busy === "plans"}
+                      disabled={Boolean(busy)}
+                      onClick={openPlans}
                     >
-                      View plans
+                      {busy === "plans" ? "Opening…" : "View plans"}
                     </Button>
                   )}
                 </>

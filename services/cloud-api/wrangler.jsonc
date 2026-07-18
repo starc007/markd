@@ -33,7 +33,11 @@
   "vars": {
     "PUBLIC_SITE_ORIGIN": "https://usemarkd.app",
     "PUBLIC_API_ORIGIN": "https://api.usemarkd.app",
-    "R2_BUCKET_NAME": "markd-published-notes"
+    "R2_BUCKET_NAME": "markd-published-notes",
+    "DODO_PAYMENTS_ENVIRONMENT": "test_mode",
+    "DODO_BUSINESS_ID": "replace_with_dodo_business_id",
+    "DODO_MONTHLY_PRODUCT_ID": "replace_with_dodo_monthly_product_id",
+    "DODO_YEARLY_PRODUCT_ID": "replace_with_dodo_yearly_product_id"
   },
   "secrets": {
     "required": [
@@ -42,7 +46,9 @@
       "R2_ACCESS_KEY_ID",
       "R2_SECRET_ACCESS_KEY",
       "CACHE_ZONE_ID",
-      "CACHE_PURGE_TOKEN"
+      "CACHE_PURGE_TOKEN",
+      "DODO_PAYMENTS_API_KEY",
+      "DODO_PAYMENTS_WEBHOOK_KEY"
     ]
   },
   "send_email": [

@@ -89,6 +89,11 @@ struct AccountResponse {
     user: CloudAccount,
 }
 
+#[derive(Debug, Deserialize)]
+struct BillingUrlResponse {
+    url: String,
+}
+
 fn now_millis() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -275,6 +280,31 @@ pub async fn sign_out(app: &tauri::AppHandle) -> AppResult<()> {
         });
     }
     Ok(())
+}
+
+async fn billing_url(app: &tauri::AppHandle, path: &str) -> AppResult<String> {
+    let response = client()?
+        .post(format!("{API_BASE}{path}"))
+        .bearer_auth(access_token(app)?)
+        .send()
+        .await
+        .map_err(|error| AppError::Network(error.to_string()))?;
+    if !response.status().is_success() {
+        return Err(cloud_error(response).await);
+    }
+    response
+        .json::<BillingUrlResponse>()
+        .await
+        .map(|result| result.url)
+        .map_err(|error| AppError::Cloud(format!("invalid billing response: {error}")))
+}
+
+pub async fn plans_url(app: &tauri::AppHandle) -> AppResult<String> {
+    billing_url(app, "/v1/billing/handoffs").await
+}
+
+pub async fn portal_url(app: &tauri::AppHandle) -> AppResult<String> {
+    billing_url(app, "/v1/billing/portal").await
 }
 
 pub async fn status(

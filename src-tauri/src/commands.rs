@@ -256,6 +256,16 @@ pub async fn cloud_sign_out(app: AppHandle) -> AppResult<()> {
 }
 
 #[tauri::command]
+pub async fn cloud_plans_url(app: AppHandle) -> AppResult<String> {
+    cloud::plans_url(&app).await
+}
+
+#[tauri::command]
+pub async fn cloud_billing_portal_url(app: AppHandle) -> AppResult<String> {
+    cloud::portal_url(&app).await
+}
+
+#[tauri::command]
 pub async fn published_note_status(
     app: AppHandle,
     state: State<'_, AppState>,

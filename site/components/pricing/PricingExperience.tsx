@@ -1,11 +1,11 @@
 "use client";
 
-import { ArrowUpRight, Check, Globe2 } from "lucide-react";
+import { ArrowUpRight, Check, Globe2, LoaderCircle } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Grainient } from "@/components/Grainient";
 import { MONO_SOFT } from "@/components/grainient-presets";
-import { ButtonLink } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { EASE_OUT } from "@/lib/ease";
 
 type Billing = "yearly" | "monthly";
@@ -17,13 +17,49 @@ const FEATURES = [
   "Cross-device sync when available",
 ];
 
-export function PricingExperience() {
+export function PricingExperience({
+  billingToken,
+  checkoutStatus,
+}: {
+  billingToken?: string;
+  checkoutStatus?: string;
+}) {
   const [billing, setBilling] = useState<Billing>("yearly");
+  const [checkoutBusy, setCheckoutBusy] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const reduce = useReducedMotion();
   const yearly = billing === "yearly";
-  const checkoutUrl = yearly
-    ? process.env.NEXT_PUBLIC_MARKD_CLOUD_YEARLY_CHECKOUT_URL
-    : process.env.NEXT_PUBLIC_MARKD_CLOUD_MONTHLY_CHECKOUT_URL;
+
+  useEffect(() => {
+    if (!billingToken) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("billing_token");
+    window.history.replaceState(null, "", url);
+  }, [billingToken]);
+
+  const startCheckout = async () => {
+    if (!billingToken || checkoutBusy) return;
+    setCheckoutBusy(true);
+    setCheckoutError(null);
+    try {
+      const response = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ token: billingToken, interval: billing }),
+      });
+      const result = await response.json() as {
+        checkoutUrl?: string;
+        error?: { message?: string };
+      };
+      if (!response.ok || !result.checkoutUrl) {
+        throw new Error(result.error?.message ?? "Checkout could not be started.");
+      }
+      window.location.assign(result.checkoutUrl);
+    } catch (cause) {
+      setCheckoutError(cause instanceof Error ? cause.message : "Checkout could not be started.");
+      setCheckoutBusy(false);
+    }
+  };
 
   const rise = (delay: number) =>
     reduce
@@ -62,6 +98,12 @@ export function PricingExperience() {
           One subscription for linked pages, hosted images, controlled updates,
           and future cross-device sync.
         </motion.p>
+
+        {checkoutStatus === "success" ? (
+          <p className="mx-auto mt-4 w-fit rounded-full border border-border bg-card px-3 py-1 text-[11.5px] text-fg-soft">
+            Payment received. Open Markd to refresh your Cloud access.
+          </p>
+        ) : null}
 
         <motion.div
           {...rise(0.18)}
@@ -134,17 +176,33 @@ export function PricingExperience() {
                 {yearly ? "One yearly payment of $72" : "$8 billed every month"}
               </p>
             </div>
-            <ButtonLink
-              href={checkoutUrl}
-              aria-disabled={!checkoutUrl}
-              tabIndex={checkoutUrl ? undefined : -1}
-              size="md"
-              className={`w-full sm:w-auto ${checkoutUrl ? "" : "pointer-events-none opacity-55"}`}
-            >
-              Buy {yearly ? "yearly" : "monthly"}
-              <ArrowUpRight className="size-[15px]" aria-hidden />
-            </ButtonLink>
+            {billingToken ? (
+              <Button
+                type="button"
+                size="md"
+                disabled={checkoutBusy}
+                onClick={startCheckout}
+                className="w-full sm:w-auto"
+              >
+                {checkoutBusy ? (
+                  <LoaderCircle className="size-[15px] animate-spin" aria-hidden />
+                ) : (
+                  <ArrowUpRight className="size-[15px]" aria-hidden />
+                )}
+                {checkoutBusy ? "Opening checkout…" : `Buy ${yearly ? "yearly" : "monthly"}`}
+              </Button>
+            ) : (
+              <ButtonLink href="/download" size="md" className="w-full sm:w-auto">
+                Get Markd to subscribe
+                <ArrowUpRight className="size-[15px]" aria-hidden />
+              </ButtonLink>
+            )}
           </div>
+          {checkoutError ? (
+            <p role="alert" className="border-t border-black/[0.07] bg-white/70 px-6 py-2.5 text-[11px] text-red-700">
+              {checkoutError}
+            </p>
+          ) : null}
         </motion.div>
 
         <motion.p

@@ -29,9 +29,10 @@ export async function authenticatedUser(
      JOIN users ON users.id = sessions.user_id
      LEFT JOIN entitlements ON entitlements.user_id = users.id
        AND entitlements.status IN ('active', 'trialing')
+       AND (entitlements.current_period_end IS NULL OR entitlements.current_period_end > ?)
      WHERE sessions.token_hash = ? AND sessions.expires_at > ?`,
   )
-    .bind(await sha256(token), Date.now())
+    .bind(Date.now(), await sha256(token), Date.now())
     .first<SessionRow>();
   if (!row) throw new AuthenticationError();
 

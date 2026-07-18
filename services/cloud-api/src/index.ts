@@ -4,6 +4,14 @@ import {
   authenticationRequired,
   revokeSession,
 } from "./auth";
+import {
+  beginCheckout,
+  billingPortal,
+  BillingError,
+  cleanupBillingRecords,
+  createBillingHandoff,
+  dodoWebhook,
+} from "./billing";
 import { error, json, RequestBodyError } from "./http";
 import { cleanupExpiredAuthRecords, OtpError, requestOtp, verifyOtp } from "./otp";
 import {
@@ -30,6 +38,18 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   if (request.method === "POST" && url.pathname === "/v1/auth/otp/request") return requestOtp(request, env);
   if (request.method === "POST" && url.pathname === "/v1/auth/otp/verify") return verifyOtp(request, env);
   if (request.method === "DELETE" && url.pathname === "/v1/session") return revokeSession(request, env);
+  if (request.method === "POST" && url.pathname === "/v1/billing/handoffs") {
+    return createBillingHandoff(request, env);
+  }
+  if (request.method === "POST" && url.pathname === "/v1/billing/checkout") {
+    return beginCheckout(request, env);
+  }
+  if (request.method === "POST" && url.pathname === "/v1/billing/portal") {
+    return billingPortal(request, env);
+  }
+  if (request.method === "POST" && url.pathname === "/v1/webhooks/dodo") {
+    return dodoWebhook(request, env);
+  }
   if (request.method === "GET" && url.pathname === "/v1/me") {
     const user = await authenticatedUser(request, env);
     return json({ user: { id: user.id, email: user.email, plan: user.plan } });
@@ -65,6 +85,7 @@ export default {
       return await route(request, env, ctx);
     } catch (cause) {
       if (cause instanceof AuthenticationError) return authenticationRequired();
+      if (cause instanceof BillingError) return error(cause.status, cause.code, cause.message);
       if (cause instanceof PaidPublishingError) {
         return error(402, "cloud_subscription_required", cause.message, {
           upgradeUrl: cause.upgradeUrl,
@@ -79,7 +100,11 @@ export default {
   },
   async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext) {
     ctx.waitUntil(
-      Promise.all([cleanupExpiredAuthRecords(env), cleanupExpiredPublishSessions(env)]).then(
+      Promise.all([
+        cleanupExpiredAuthRecords(env),
+        cleanupExpiredPublishSessions(env),
+        cleanupBillingRecords(env),
+      ]).then(
         () => undefined,
       ),
     );

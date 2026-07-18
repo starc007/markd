@@ -1,4 +1,3 @@
-import { openUrl } from "@tauri-apps/plugin-opener";
 import {
   FolderOpen,
   Globe2,
@@ -9,6 +8,7 @@ import {
   Sun,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import type { CloudAccount, Theme } from "@/lib/types";
 import {
   findShortcutConflict,
@@ -23,7 +23,7 @@ import { cx, isMac } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { CloudAccountCard } from "@/components/settings/CloudAccountCard";
-import { MARKD_CLOUD_PLANS_URL } from "@/lib/cloud";
+import { openCloudBillingPortal, openCloudPlans } from "@/lib/cloud";
 import { useShortcuts } from "@/stores/shortcuts";
 import { useUpdater } from "@/stores/updater";
 import { useVault } from "@/stores/vault";
@@ -139,6 +139,16 @@ export function GeneralSettings() {
 
 export function CloudSettings() {
   const [account, setAccount] = useState<CloudAccount | null>(null);
+  const [billingBusy, setBillingBusy] = useState<"plans" | "portal" | null>(null);
+
+  const openBilling = (kind: "plans" | "portal", action: () => Promise<void>) => {
+    setBillingBusy(kind);
+    void action()
+      .catch((cause) => {
+        toast.error(cause instanceof Error ? cause.message : "Billing could not be opened.");
+      })
+      .finally(() => setBillingBusy(null));
+  };
 
   return (
     <div className="space-y-6">
@@ -170,16 +180,29 @@ export function CloudSettings() {
                 : "Publish connected notes and hosted images on the web."}
             </p>
           </div>
-          {account?.plan !== "cloud" && (
+          {account?.plan === "cloud" ? (
             <Button
               variant="outline"
               size="sm"
               className="shrink-0 bg-bg"
-              onClick={() => openUrl(MARKD_CLOUD_PLANS_URL)}
+              loading={billingBusy === "portal"}
+              disabled={Boolean(billingBusy)}
+              onClick={() => openBilling("portal", openCloudBillingPortal)}
             >
-              View plans
+              {billingBusy === "portal" ? "Opening…" : "Manage billing"}
             </Button>
-          )}
+          ) : account ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 bg-bg"
+              loading={billingBusy === "plans"}
+              disabled={Boolean(billingBusy)}
+              onClick={() => openBilling("plans", openCloudPlans)}
+            >
+              {billingBusy === "plans" ? "Opening…" : "View plans"}
+            </Button>
+          ) : null}
         </div>
         <p className="mt-2.5 text-[10.5px] text-faint">
           Billing and subscription changes are managed on the web.

@@ -73,6 +73,8 @@ export const ipc = {
   cloudVerifyOtp: (challengeId: string, code: string) =>
     call<CloudAccount>("cloud_verify_otp", { challengeId, code }),
   cloudSignOut: () => call<void>("cloud_sign_out"),
+  cloudPlansUrl: () => call<string>("cloud_plans_url"),
+  cloudBillingPortalUrl: () => call<string>("cloud_billing_portal_url"),
   publishedNoteStatus: (
     rel: string,
     title: string,

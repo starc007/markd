@@ -1,1 +1,10 @@
-export const MARKD_CLOUD_PLANS_URL = "https://usemarkd.app/pricing";
+import { openUrl } from "@tauri-apps/plugin-opener";
+import { ipc } from "@/lib/ipc";
+
+export async function openCloudPlans(): Promise<void> {
+  await openUrl(await ipc.cloudPlansUrl());
+}
+
+export async function openCloudBillingPortal(): Promise<void> {
+  await openUrl(await ipc.cloudBillingPortalUrl());
+}
