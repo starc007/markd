@@ -4,6 +4,14 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-07-16",
   "workers_dev": false,
+  "preview_urls": false,
+  "routes": [
+    {
+      "pattern": "api.usemarkd.app",
+      "zone_name": "usemarkd.app",
+      "custom_domain": true
+    }
+  ],
   "observability": {
     "enabled": true
   },
