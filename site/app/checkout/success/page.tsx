@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Check, CircleDot, X } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { Nav } from "@/components/Nav";
+import { AnalyticsEvent } from "@/components/analytics/AnalyticsEvent";
 
 export const metadata: Metadata = {
   title: "Welcome to Markd Cloud",
@@ -19,6 +20,10 @@ export default async function CheckoutSuccessPage({
 
   return (
     <>
+      <AnalyticsEvent
+        event="checkout_result_viewed"
+        properties={{ outcome: failed ? "failed" : "success" }}
+      />
       <Nav />
       <main className="flex min-h-[calc(100svh-5rem)] items-center px-5 pb-20 pt-28 sm:px-8">
         <section className="mx-auto w-full max-w-lg text-center">

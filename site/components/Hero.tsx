@@ -63,7 +63,7 @@ export function Hero() {
           {...rise(0.18)}
           className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center"
         >
-          <DownloadButton size="lg" className="w-full sm:w-auto" />
+          <DownloadButton size="lg" className="w-full sm:w-auto" placement="hero" />
           <ButtonLink
             href={GITHUB}
             variant="outline"

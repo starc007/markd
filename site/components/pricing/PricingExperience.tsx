@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Grainient } from "@/components/Grainient";
 import { MONO_SOFT } from "@/components/grainient-presets";
 import { Button } from "@/components/ui/button";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { EASE_OUT } from "@/lib/ease";
 
 type Billing = "yearly" | "monthly";
@@ -26,7 +27,9 @@ export function PricingExperience({
   const [checkoutBusy, setCheckoutBusy] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const reduce = useReducedMotion();
+  const track = useAnalytics();
   const yearly = billing === "yearly";
+  const source = billingToken ? "app" : "website";
 
   useEffect(() => {
     if (!billingToken) return;
@@ -37,6 +40,7 @@ export function PricingExperience({
 
   const startCheckout = async () => {
     if (checkoutBusy) return;
+    track("pricing_checkout_started", { interval: billing, source });
     setCheckoutBusy(true);
     setCheckoutError(null);
     try {
@@ -55,8 +59,10 @@ export function PricingExperience({
       if (!response.ok || !result.checkoutUrl) {
         throw new Error(result.error?.message ?? "Checkout could not be started.");
       }
+      track("pricing_checkout_opened", { interval: billing });
       window.location.assign(result.checkoutUrl);
     } catch (cause) {
+      track("pricing_checkout_failed", { interval: billing });
       setCheckoutError(cause instanceof Error ? cause.message : "Checkout could not be started.");
       setCheckoutBusy(false);
     }
@@ -127,7 +133,14 @@ export function PricingExperience({
                 Markd Cloud
               </h2>
             </div>
-            <BillingToggle value={billing} onChange={setBilling} reduceMotion={reduce} />
+            <BillingToggle
+              value={billing}
+              onChange={(interval) => {
+                setBilling(interval);
+                track("pricing_interval_changed", { interval });
+              }}
+              reduceMotion={reduce}
+            />
           </div>
 
           <div className="flex flex-col gap-6 bg-white/28 p-5 backdrop-blur-[1px] sm:flex-row sm:items-center sm:px-6">

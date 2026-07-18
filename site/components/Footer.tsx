@@ -65,7 +65,7 @@ export function Footer() {
               transition={{ duration: 0.5, ease: EASE_OUT, delay: 0.22 }}
               className="mt-9 flex flex-wrap items-center justify-center gap-3"
             >
-              <DownloadButton size="lg" />
+              <DownloadButton size="lg" placement="footer" />
               <ButtonLink
                 href={GITHUB}
                 variant="outline"

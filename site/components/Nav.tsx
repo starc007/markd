@@ -45,7 +45,7 @@ export function Nav() {
           <div className="hidden md:block">
             <GitHubStars />
           </div>
-          <DownloadButton label="Download" size="sm" />
+          <DownloadButton label="Download" size="sm" placement="nav" />
           <button
             type="button"
             aria-label={

@@ -5,6 +5,7 @@ import { Nav } from "@/components/Nav";
 import { DownloadLink } from "@/components/download/DownloadLink";
 import { PlatformCard } from "@/components/download/PlatformCard";
 import { LinuxIcon } from "@/components/download/PlatformIcons";
+import { AnalyticsEvent } from "@/components/analytics/AnalyticsEvent";
 import { DMG, LINUX_APPIMAGE, LINUX_DEB, VERSION } from "@/lib/config";
 
 export const metadata: Metadata = {
@@ -19,6 +20,7 @@ export const metadata: Metadata = {
 export default function DownloadPage() {
   return (
     <>
+      <AnalyticsEvent event="download_page_viewed" properties={{}} />
       <Nav />
       <main className="px-5 pb-14 pt-24 sm:px-8 sm:pt-28">
         <section className="mx-auto w-full max-w-5xl text-center">

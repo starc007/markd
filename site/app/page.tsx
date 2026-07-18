@@ -4,10 +4,12 @@ import { FeaturesBento } from "@/components/FeaturesBento";
 import { AgentTrace } from "@/components/AgentTrace";
 import { Faq } from "@/components/Faq";
 import { Footer } from "@/components/Footer";
+import { AnalyticsEvent } from "@/components/analytics/AnalyticsEvent";
 
 export default function Home() {
   return (
     <>
+      <AnalyticsEvent event="landing_page_viewed" properties={{}} />
       <Nav />
       <main>
         <Hero />
