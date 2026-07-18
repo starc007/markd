@@ -55,7 +55,7 @@ async function dodoRequest<T>(
 
 export async function createCheckoutSession(
   env: Env,
-  user: AuthenticatedUser,
+  user: AuthenticatedUser | null,
   interval: BillingInterval,
 ): Promise<string> {
   const productId = interval === "yearly"
@@ -64,18 +64,19 @@ export async function createCheckoutSession(
   if (!productId) throw new DodoApiError("The selected billing plan is not configured.");
 
   const origin = env.PUBLIC_SITE_ORIGIN.replace(/\/$/, "");
+  const checkout = {
+    product_cart: [{ product_id: productId, quantity: 1 }],
+    metadata: {
+      ...(user ? { markd_user_id: user.id } : {}),
+      markd_billing_interval: interval,
+    },
+    return_url: `${origin}/pricing?checkout=success`,
+    cancel_url: `${origin}/pricing?checkout=cancelled`,
+    ...(user ? { customer: { email: user.email, name: user.email.split("@")[0] } } : {}),
+  };
   const result = await dodoRequest<{ checkout_url: string | null }>(env, "/checkouts", {
     method: "POST",
-    body: JSON.stringify({
-      product_cart: [{ product_id: productId, quantity: 1 }],
-      customer: { email: user.email, name: user.email.split("@")[0] },
-      metadata: {
-        markd_user_id: user.id,
-        markd_billing_interval: interval,
-      },
-      return_url: `${origin}/pricing?checkout=success`,
-      cancel_url: `${origin}/pricing?checkout=cancelled`,
-    }),
+    body: JSON.stringify(checkout),
   });
   if (!result.checkout_url) throw new DodoApiError("Dodo did not return a checkout URL.");
   return result.checkout_url;

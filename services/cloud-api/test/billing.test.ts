@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { entitlementStatus } from "../src/billing";
+import { BillingError, checkoutInput, entitlementStatus } from "../src/billing";
 import { hmacBytes } from "../src/crypto";
 import { DodoWebhookError, verifyDodoWebhook } from "../src/dodo";
 
@@ -57,5 +57,20 @@ describe("Dodo entitlement mapping", () => {
   test("removes access for expired and on-hold subscriptions", () => {
     expect(entitlementStatus("subscription.expired", "expired", null)).toBe("canceled");
     expect(entitlementStatus("subscription.on_hold", "on_hold", null)).toBe("past_due");
+  });
+});
+
+describe("Dodo checkout input", () => {
+  test("allows checkout without an app handoff", () => {
+    expect(checkoutInput({ interval: "yearly" })).toEqual({ interval: "yearly" });
+  });
+
+  test("preserves a valid app handoff", () => {
+    const token = "a".repeat(43);
+    expect(checkoutInput({ token, interval: "monthly" })).toEqual({ token, interval: "monthly" });
+  });
+
+  test("rejects a malformed optional handoff", () => {
+    expect(() => checkoutInput({ token: "bad", interval: "monthly" })).toThrow(BillingError);
   });
 });

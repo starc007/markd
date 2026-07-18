@@ -1,5 +1,5 @@
 import { authenticatedUser } from "./auth";
-import { randomToken, sha256 } from "./crypto";
+import { newId, randomToken, sha256 } from "./crypto";
 import {
   createCheckoutSession,
   createPortalSession,
@@ -9,6 +9,7 @@ import {
   verifyDodoWebhook,
 } from "./dodo";
 import { json, readJson } from "./http";
+import { normalizeEmail } from "./otp";
 import type { AuthenticatedUser, BillingInterval, Env } from "./types";
 
 const HANDOFF_TTL_MS = 15 * 60 * 1000;
@@ -58,24 +59,32 @@ export async function createBillingHandoff(request: Request, env: Env): Promise<
 
 export async function beginCheckout(request: Request, env: Env): Promise<Response> {
   const input = checkoutInput(await readJson(request, 4_096));
-  const tokenHash = await sha256(input.token);
-  const usedAt = Date.now();
-  const handoff = await env.DB.prepare(
-    `UPDATE billing_handoffs SET used_at = ?
-     WHERE token_hash = ? AND used_at IS NULL AND expires_at > ?
-     RETURNING user_id, (SELECT email FROM users WHERE id = user_id) AS email`,
-  ).bind(usedAt, tokenHash, usedAt).first<HandoffRow>();
-  if (!handoff) {
-    throw new BillingError(401, "billing_link_expired", "Open pricing from Markd again to continue.");
+  let user: AuthenticatedUser | null = null;
+  let consumedHandoff: { tokenHash: string; usedAt: number } | null = null;
+
+  if (input.token) {
+    const tokenHash = await sha256(input.token);
+    const usedAt = Date.now();
+    const handoff = await env.DB.prepare(
+      `UPDATE billing_handoffs SET used_at = ?
+       WHERE token_hash = ? AND used_at IS NULL AND expires_at > ?
+       RETURNING user_id, (SELECT email FROM users WHERE id = user_id) AS email`,
+    ).bind(usedAt, tokenHash, usedAt).first<HandoffRow>();
+    if (!handoff) {
+      throw new BillingError(401, "billing_link_expired", "Open pricing from Markd again to continue.");
+    }
+    user = { id: handoff.user_id, email: handoff.email, plan: "free" };
+    consumedHandoff = { tokenHash, usedAt };
   }
 
-  const user: AuthenticatedUser = { id: handoff.user_id, email: handoff.email, plan: "free" };
   try {
     return json({ checkoutUrl: await createCheckoutSession(env, user, input.interval) });
   } catch (cause) {
-    await env.DB.prepare(
-      "UPDATE billing_handoffs SET used_at = NULL WHERE token_hash = ? AND used_at = ?",
-    ).bind(tokenHash, usedAt).run();
+    if (consumedHandoff) {
+      await env.DB.prepare(
+        "UPDATE billing_handoffs SET used_at = NULL WHERE token_hash = ? AND used_at = ?",
+      ).bind(consumedHandoff.tokenHash, consumedHandoff.usedAt).run();
+    }
     if (cause instanceof DodoApiError) throw new BillingError(502, "checkout_unavailable", cause.message);
     throw cause;
   }
@@ -189,23 +198,28 @@ async function subscriptionUserId(env: Env, subscription: DodoSubscription): Pro
     ).bind(customerId).first<EntitlementLookup>();
     if (entitlement) return entitlement.user_id;
   }
-  const email = subscription.customer?.email?.trim().toLowerCase();
-  if (!email) return null;
+  if (!subscription.customer?.email) return null;
+  const email = normalizeEmail(subscription.customer.email);
+  await env.DB.prepare(
+    "INSERT OR IGNORE INTO users (id, email, created_at) VALUES (?, ?, ?)",
+  ).bind(newId("user"), email, Date.now()).run();
   const user = await env.DB.prepare("SELECT id AS user_id FROM users WHERE email = ?")
     .bind(email).first<EntitlementLookup>();
   return user?.user_id ?? null;
 }
 
-function checkoutInput(value: unknown): { token: string; interval: BillingInterval } {
+export function checkoutInput(value: unknown): { token?: string; interval: BillingInterval } {
   if (!value || typeof value !== "object") throw new BillingError(400, "invalid_checkout", "Checkout details are required.");
   const input = value as Record<string, unknown>;
-  if (typeof input.token !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(input.token)) {
+  if (input.token !== undefined && (typeof input.token !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(input.token))) {
     throw new BillingError(400, "invalid_checkout", "The billing link is invalid.");
   }
   if (input.interval !== "monthly" && input.interval !== "yearly") {
     throw new BillingError(400, "invalid_checkout", "Choose monthly or yearly billing.");
   }
-  return { token: input.token, interval: input.interval };
+  return input.token
+    ? { token: input.token, interval: input.interval }
+    : { interval: input.interval };
 }
 
 function productInterval(env: Env, productId: string): BillingInterval | null {

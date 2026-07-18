@@ -5,7 +5,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
 import { Grainient } from "@/components/Grainient";
 import { MONO_SOFT } from "@/components/grainient-presets";
-import { Button, ButtonLink } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { EASE_OUT } from "@/lib/ease";
 
 type Billing = "yearly" | "monthly";
@@ -38,14 +38,17 @@ export function PricingExperience({
   }, [billingToken]);
 
   const startCheckout = async () => {
-    if (!billingToken || checkoutBusy) return;
+    if (checkoutBusy) return;
     setCheckoutBusy(true);
     setCheckoutError(null);
     try {
       const response = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ token: billingToken, interval: billing }),
+        body: JSON.stringify({
+          ...(billingToken ? { token: billingToken } : {}),
+          interval: billing,
+        }),
       });
       const result = await response.json() as {
         checkoutUrl?: string;
@@ -176,27 +179,20 @@ export function PricingExperience({
                 {yearly ? "One yearly payment of $72" : "$8 billed every month"}
               </p>
             </div>
-            {billingToken ? (
-              <Button
-                type="button"
-                size="md"
-                disabled={checkoutBusy}
-                onClick={startCheckout}
-                className="w-full sm:w-auto"
-              >
-                {checkoutBusy ? (
-                  <LoaderCircle className="size-[15px] animate-spin" aria-hidden />
-                ) : (
-                  <ArrowUpRight className="size-[15px]" aria-hidden />
-                )}
-                {checkoutBusy ? "Opening checkout…" : `Buy ${yearly ? "yearly" : "monthly"}`}
-              </Button>
-            ) : (
-              <ButtonLink href="/download" size="md" className="w-full sm:w-auto">
-                Get Markd to subscribe
+            <Button
+              type="button"
+              size="md"
+              disabled={checkoutBusy}
+              onClick={startCheckout}
+              className="w-full sm:w-auto"
+            >
+              {checkoutBusy ? (
+                <LoaderCircle className="size-[15px] animate-spin" aria-hidden />
+              ) : (
                 <ArrowUpRight className="size-[15px]" aria-hidden />
-              </ButtonLink>
-            )}
+              )}
+              {checkoutBusy ? "Opening checkout…" : `Buy ${yearly ? "yearly" : "monthly"}`}
+            </Button>
           </div>
           {checkoutError ? (
             <p role="alert" className="border-t border-black/[0.07] bg-white/70 px-6 py-2.5 text-[11px] text-red-700">
