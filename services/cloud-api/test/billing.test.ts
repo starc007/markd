@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { BillingError, checkoutInput, entitlementStatus } from "../src/billing";
 import { hmacBytes } from "../src/crypto";
-import { DodoWebhookError, verifyDodoWebhook } from "../src/dodo";
+import { createCheckoutSession, DodoWebhookError, verifyDodoWebhook } from "../src/dodo";
+import type { Env } from "../src/types";
 
 function base64(bytes: Uint8Array): string {
   let binary = "";
@@ -72,5 +73,34 @@ describe("Dodo checkout input", () => {
 
   test("rejects a malformed optional handoff", () => {
     expect(() => checkoutInput({ token: "bad", interval: "monthly" })).toThrow(BillingError);
+  });
+});
+
+describe("Dodo checkout session", () => {
+  test("uses minimal address collection and the Markd success page", async () => {
+    const originalFetch = globalThis.fetch;
+    let requestBody: Record<string, unknown> | undefined;
+    globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+      requestBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      return Response.json({ checkout_url: "https://checkout.dodopayments.com/test" });
+    }) as typeof fetch;
+
+    try {
+      const env = {
+        DODO_PAYMENTS_API_KEY: "test_key",
+        DODO_PAYMENTS_ENVIRONMENT: "test_mode",
+        DODO_MONTHLY_PRODUCT_ID: "monthly_product",
+        DODO_YEARLY_PRODUCT_ID: "yearly_product",
+        PUBLIC_SITE_ORIGIN: "https://usemarkd.app/",
+      } as Env;
+      await createCheckoutSession(env, null, "yearly");
+
+      expect(requestBody?.minimal_address).toBe(true);
+      expect(requestBody?.customer).toBeUndefined();
+      expect(requestBody?.return_url).toBe("https://usemarkd.app/checkout/success");
+      expect(requestBody?.customization).toEqual({ redirect_immediately: true, theme: "light" });
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 });

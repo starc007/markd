@@ -12,13 +12,13 @@ export const metadata: Metadata = {
 export default async function PricingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ billing_token?: string; checkout?: string }>;
+  searchParams: Promise<{ billing_token?: string }>;
 }) {
   const query = await searchParams;
   return (
     <>
       <Nav />
-      <PricingExperience billingToken={query.billing_token} checkoutStatus={query.checkout} />
+      <PricingExperience billingToken={query.billing_token} />
       <Footer />
     </>
   );

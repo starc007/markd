@@ -19,10 +19,8 @@ const FEATURES = [
 
 export function PricingExperience({
   billingToken,
-  checkoutStatus,
 }: {
   billingToken?: string;
-  checkoutStatus?: string;
 }) {
   const [billing, setBilling] = useState<Billing>("yearly");
   const [checkoutBusy, setCheckoutBusy] = useState(false);
@@ -101,12 +99,6 @@ export function PricingExperience({
           One subscription for linked pages, hosted images, controlled updates,
           and future cross-device sync.
         </motion.p>
-
-        {checkoutStatus === "success" ? (
-          <p className="mx-auto mt-4 w-fit rounded-full border border-border bg-card px-3 py-1 text-[11.5px] text-fg-soft">
-            Payment received. Open Markd to refresh your Cloud access.
-          </p>
-        ) : null}
 
         <motion.div
           {...rise(0.18)}

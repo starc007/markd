@@ -66,12 +66,17 @@ export async function createCheckoutSession(
   const origin = env.PUBLIC_SITE_ORIGIN.replace(/\/$/, "");
   const checkout = {
     product_cart: [{ product_id: productId, quantity: 1 }],
+    minimal_address: true,
     metadata: {
       ...(user ? { markd_user_id: user.id } : {}),
       markd_billing_interval: interval,
     },
-    return_url: `${origin}/pricing?checkout=success`,
-    cancel_url: `${origin}/pricing?checkout=cancelled`,
+    customization: {
+      redirect_immediately: true,
+      theme: "light",
+    },
+    return_url: `${origin}/checkout/success`,
+    cancel_url: `${origin}/pricing`,
     ...(user ? { customer: { email: user.email, name: user.email.split("@")[0] } } : {}),
   };
   const result = await dodoRequest<{ checkout_url: string | null }>(env, "/checkouts", {
