@@ -2,7 +2,7 @@ import { Wordmark } from "@/components/Logo";
 
 export default function PublishedNoteNotFound() {
   return (
-    <main className="grid min-h-dvh place-items-center bg-background px-6 text-foreground">
+    <main className="published-page grid min-h-dvh place-items-center bg-background px-6 text-foreground">
       <div className="w-full max-w-md text-center">
         <a
           href="/"

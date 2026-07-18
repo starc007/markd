@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import { PublishedHeaderActions } from "@/components/published/PublishedHeaderActions";
 import { PublishedMarkdown } from "@/components/published/PublishedMarkdown";
@@ -8,6 +8,14 @@ import {
 } from "@/lib/published-note";
 
 export const dynamic = "force-dynamic";
+
+export const viewport: Viewport = {
+  colorScheme: "light dark",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fbfbfa" },
+    { media: "(prefers-color-scheme: dark)", color: "#1a1a1a" },
+  ],
+};
 
 interface SharePageProps {
   params: Promise<{ slug: string }>;
@@ -45,7 +53,7 @@ export default async function SharePage({ params }: SharePageProps) {
   }).format(new Date(note.publishedAt));
 
   return (
-    <main className="min-h-dvh bg-background text-foreground">
+    <main className="published-page min-h-dvh bg-background text-foreground">
       <header className="fixed top-0 z-20 w-full border-b border-border/20 bg-background/60 backdrop-blur-xl">
         <div className="mx-auto flex h-11 w-full items-center gap-3 px-3">
           <p className="min-w-0 flex-1 truncate text-[14px] font-semibold text-foreground">

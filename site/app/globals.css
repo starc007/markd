@@ -26,8 +26,13 @@
   --accent-glow: rgba(25, 25, 23, 0.12);
 }
 
+.published-page {
+  color-scheme: light;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  .published-page {
+    color-scheme: dark;
     --bg: #1a1a1a;
     --paper: #151515;
     --panel: #151515;
@@ -83,7 +88,7 @@
   html {
     background: var(--bg);
     color: var(--fg);
-    color-scheme: light dark;
+    color-scheme: light;
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

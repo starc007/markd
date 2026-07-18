@@ -99,7 +99,7 @@ export function Hero() {
             style={{ backgroundImage: "url('/herobg.webp')" }}
           />
           {/* frosted blur frame around the demo */}
-          <div className="relative px-5 pt-16 sm:px-32 sm:pt-16">
+          <div className="relative px-2 pt-8 sm:px-32 sm:pt-16">
             <div className="rounded-t-2xl bg-white/25 px-2 pt-2 shadow-[0_40px_100px_-40px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:px-2 sm:pt-2">
               <AppDemo />
             </div>

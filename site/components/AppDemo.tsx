@@ -116,7 +116,7 @@ const TABS = ["Q3 Roadmap", "Release notes", "App architecture"];
 
 function Tabs() {
   return (
-    <div className="flex h-11 shrink-0 items-stretch gap-1.5 bg-sunken pl-2.5 pr-3">
+    <div className="flex h-10 shrink-0 items-stretch gap-1 bg-sunken pl-2 pr-2 sm:h-11 sm:gap-1.5 sm:pl-2.5 sm:pr-3">
       <div className="flex shrink-0 items-center">
         <span className="grid h-7 w-7 place-items-center rounded-md text-faint">
           <PanelLeft size={15.5} strokeWidth={1.75} />
@@ -127,8 +127,11 @@ function Tabs() {
           <div
             key={t}
             className={cn(
-              "relative flex h-full min-w-0 max-w-[180px] shrink-0 items-center gap-1 pl-3 pr-1.5 text-[12.5px]",
+              "relative h-full min-w-0 items-center gap-1 pl-3 pr-1.5 text-[12.5px]",
               i === 0 ? "bg-background text-foreground" : "text-muted-foreground",
+              i === 0
+                ? "flex flex-1 sm:max-w-[180px] sm:flex-none sm:shrink-0"
+                : "hidden max-w-[180px] shrink-0 sm:flex",
             )}
           >
             <span className="relative z-10 truncate">{t}</span>
@@ -144,30 +147,30 @@ function Tabs() {
 
 function Pill({ icon: Icon, children }: { icon: typeof Copy; children: React.ReactNode }) {
   return (
-    <span className="inline-flex h-7 select-none items-center gap-1.5 rounded-md border border-border bg-hover px-2.5 text-[12.5px] font-medium text-foreground">
+    <span className="inline-flex h-8 w-8 select-none items-center justify-center rounded-md border border-border bg-hover px-0 text-[12.5px] font-medium text-foreground min-[460px]:w-auto min-[460px]:justify-start min-[460px]:gap-1.5 min-[460px]:px-2.5 sm:h-7">
       <Icon size={12.5} strokeWidth={2} />
-      {children}
+      <span className="hidden whitespace-nowrap min-[460px]:inline">{children}</span>
     </span>
   );
 }
 
 function TopRow({ view }: { view: View }) {
   return (
-    <div className="flex h-10 shrink-0 items-center px-3">
-      <div className="flex min-w-0 items-center gap-1.5 text-[13.5px]">
+    <div className="flex min-h-10 shrink-0 items-center gap-2 px-3 py-1 sm:h-10 sm:py-0">
+      <div className="flex min-w-0 flex-1 items-center gap-1.5 text-[13.5px]">
         {view === "note" ? (
           <>
-            <span className="shrink-0 truncate text-muted-foreground">Projects</span>
-            <ChevronRight size={13} strokeWidth={2} className="shrink-0 text-faint" />
-            <span className="shrink-0 font-semibold text-foreground">Q3 Roadmap</span>
+            <span className="hidden shrink-0 truncate text-muted-foreground min-[460px]:inline">Projects</span>
+            <ChevronRight size={13} strokeWidth={2} className="hidden shrink-0 text-faint min-[460px]:block" />
+            <span className="min-w-0 truncate font-semibold text-foreground">Q3 Roadmap</span>
           </>
         ) : (
-          <span className="shrink-0 font-semibold text-foreground">
+          <span className="min-w-0 truncate font-semibold text-foreground">
             {view === "todos" ? "Todos" : "Bookmarks"}
           </span>
         )}
       </div>
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
         {view === "note" && <Pill icon={Copy}>Copy path</Pill>}
         {view === "bookmarks" && <Pill icon={Download}>Export</Pill>}
         {view !== "note" && <Pill icon={Tag}>New tag</Pill>}
@@ -215,10 +218,10 @@ function Properties() {
 
 function NotePane({ still }: { still: boolean }) {
   return (
-    <div className="mx-auto w-full max-w-[620px] px-8 pt-6 sm:px-10">
+    <div className="mx-auto w-full max-w-[620px] px-5 pt-5 sm:px-10 sm:pt-6">
       <Properties />
-      <h1 className="text-[30px] font-[680] tracking-[-0.025em] text-foreground">Q3 Roadmap</h1>
-      <div className="mt-4 space-y-4 text-[15px] leading-[1.75] text-foreground/85">
+      <h1 className="text-[26px] font-[680] tracking-[-0.025em] text-foreground sm:text-[30px]">Q3 Roadmap</h1>
+      <div className="mt-4 space-y-4 text-[14.5px] leading-[1.7] text-foreground/85 sm:text-[15px] sm:leading-[1.75]">
         <p>
           The quarter is about speed and focus — ship the editor rewrite, then open
           up the workflow to an in-app agent.
@@ -311,7 +314,7 @@ function TodosPane() {
   const rows = TODOS.filter((t) => t.tag === active);
   const open = rows.filter((r) => !r.done).length;
   return (
-    <div className="mx-auto flex w-full max-w-[760px] gap-8 px-8 pt-6 sm:px-10">
+    <div className="mx-auto flex w-full max-w-[760px] gap-8 px-5 pt-5 sm:px-10 sm:pt-6">
       <TagRail tags={TODO_TAGS} active={active} />
       <div className="min-w-0 flex-1">
         <p className="text-[13px] text-muted-foreground">
@@ -362,7 +365,7 @@ function BookmarksPane() {
   const active = "reading";
   const rows = BOOKMARKS.filter((b) => b.tag === active);
   return (
-    <div className="mx-auto flex w-full max-w-[760px] gap-8 px-8 pt-6 sm:px-10">
+    <div className="mx-auto flex w-full max-w-[760px] gap-8 px-5 pt-5 sm:px-10 sm:pt-6">
       <TagRail tags={BOOKMARK_TAGS} active={active} />
       <div className="min-w-0 flex-1">
         <p className="text-[13px] text-muted-foreground">
@@ -419,7 +422,7 @@ export function AppDemo() {
         <span className="size-3 rounded-full bg-black/12" />
         <span className="size-3 rounded-full bg-black/[0.08]" />
       </div>
-      <div className="flex h-[520px]">
+      <div className="flex h-[430px] sm:h-[520px]">
         <Sidebar view={view} />
         <main className="flex min-w-0 flex-1 flex-col">
           <Tabs />
