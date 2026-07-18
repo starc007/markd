@@ -1,6 +1,5 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import {
-  Check,
   Copy,
   ExternalLink,
   Globe2,
@@ -13,12 +12,16 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { openCloudPlans } from "@/lib/cloud";
 import { IpcError, ipc } from "@/lib/ipc";
+import { collectPublishBundle, type PublishBundle } from "@/lib/publishBundle";
 import type { PublishedShare } from "@/lib/types";
 import { noteTitle } from "@/lib/utils";
 import { useUi } from "@/stores/ui";
+import { useVault } from "@/stores/vault";
 
-type BusyAction = "publish" | "update" | "revoke" | null;
+type BusyAction = "publish" | "update" | "revoke" | "plans" | null;
 
 export function PublishNoteModal({
   open,
@@ -33,23 +36,35 @@ export function PublishNoteModal({
 }) {
   const [title, setTitle] = useState(noteTitle(rel));
   const [share, setShare] = useState<PublishedShare | null>(null);
+  const [bundle, setBundle] = useState<PublishBundle | null>(null);
   const [account, setAccount] = useState<{ email: string; plan: "free" | "cloud" } | null>(null);
   const [outdated, setOutdated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<BusyAction>(null);
   const [error, setError] = useState<{ kind: string; message: string } | null>(null);
   const openSettings = useUi((state) => state.openSettings);
+  const tree = useVault((state) => state.tree);
 
   useEffect(() => {
     if (!open) return;
     let disposed = false;
     setLoading(true);
+    setBundle(null);
     setAccount(null);
     setError(null);
-    void ipc
-      .publishedNoteStatus(rel, markdown)
-      .then((status) => {
+    void collectPublishBundle(rel, markdown, tree)
+      .then(async (nextBundle) => {
         if (disposed) return;
+        setBundle(nextBundle);
+        return ipc.publishedNoteStatus(
+          rel,
+          noteTitle(rel),
+          nextBundle.markdown,
+          nextBundle.pages,
+        );
+      })
+      .then((status) => {
+        if (disposed || !status) return;
         setShare(status.share);
         notifyPublishStatus(rel, Boolean(status.share));
         setAccount(status.account);
@@ -69,7 +84,7 @@ export function PublishNoteModal({
     return () => {
       disposed = true;
     };
-  }, [open, rel, markdown]);
+  }, [open, rel, markdown, tree]);
 
   const run = async (action: Exclude<BusyAction, null>) => {
     setBusy(action);
@@ -83,10 +98,12 @@ export function PublishNoteModal({
         toast("Note unpublished");
         return;
       }
+      const nextBundle = await collectPublishBundle(rel, markdown, tree);
+      setBundle(nextBundle);
       const next =
         action === "publish"
-          ? await ipc.publishNote(rel, title.trim(), markdown)
-          : await ipc.updatePublishedNote(rel, title.trim(), markdown);
+          ? await ipc.publishNote(rel, title.trim(), nextBundle.markdown, nextBundle.pages)
+          : await ipc.updatePublishedNote(rel, title.trim(), nextBundle.markdown, nextBundle.pages);
       setShare(next);
       notifyPublishStatus(rel, true);
       setTitle(next.title);
@@ -108,11 +125,24 @@ export function PublishNoteModal({
     toast("Public link copied");
   };
 
+  const openPlans = async () => {
+    if (busy) return;
+    setBusy("plans");
+    try {
+      await openCloudPlans();
+      onClose();
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : "Pricing could not be opened.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <Modal
       open={open}
       onClose={() => !busy && onClose()}
-      ariaLabel="Publish note on the web"
+      ariaLabel="Publish note site on the web"
       className="w-[480px]"
     >
       <header className="flex items-center gap-3 border-b border-line-soft px-5 py-4">
@@ -154,11 +184,10 @@ export function PublishNoteModal({
               Sign in to publish
             </h3>
             <p className="mx-auto mt-1.5 max-w-[330px] text-[11.5px] leading-5 text-muted">
-              Public pages belong to your Markd account, so you can update or remove
-              them from any signed-in device.
+              Sign in to publish this note and its linked pages with Markd Cloud.
             </p>
             <p className="mt-2 text-[10.5px] text-faint">
-              Free accounts can publish one active note.
+              Publishing requires Markd Cloud.
             </p>
             {error && (
               <div role="alert" className="mt-4 rounded-lg border border-danger/20 bg-danger/6 px-3 py-2.5 text-[11.5px] text-danger">
@@ -182,6 +211,30 @@ export function PublishNoteModal({
               </Button>
             </div>
           </div>
+        ) : account.plan !== "cloud" && !share ? (
+          <div className="py-2 text-center">
+            <div className="mx-auto grid h-10 w-10 place-items-center rounded-xl bg-panel text-muted">
+              <Globe2 size={17} strokeWidth={1.8} />
+            </div>
+            <h3 className="mt-4 text-[13px] font-semibold text-ink">
+              Markd Cloud required
+            </h3>
+            <p className="mx-auto mt-1.5 max-w-[330px] text-[11.5px] leading-5 text-muted">
+              Public sites, linked pages, and image hosting are included with Markd Cloud.
+            </p>
+            <div className="mt-5 flex justify-center gap-2 border-t border-line-soft pt-4">
+              <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
+              <Button
+                variant="primary"
+                size="sm"
+                loading={busy === "plans"}
+                disabled={Boolean(busy)}
+                onClick={openPlans}
+              >
+                {busy === "plans" ? "Opening…" : "View plans"}
+              </Button>
+            </div>
+          </div>
         ) : (
           <div className="space-y-5">
             <label className="block">
@@ -199,14 +252,11 @@ export function PublishNoteModal({
               <div className="rounded-xl bg-panel p-3.5">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-2">
-                    <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-invert text-invert-ink">
-                      <Check size={11} strokeWidth={2.5} />
-                    </span>
-                    <span className="text-[12px] font-medium text-ink">Published</span>
+                    <StatusBadge tone="success">Published</StatusBadge>
                     {outdated && (
-                      <span className="rounded-full border border-line bg-bg px-2 py-0.5 text-[9.5px] font-medium text-faint">
+                      <StatusBadge tone="warning">
                         Local changes
-                      </span>
+                      </StatusBadge>
                     )}
                   </div>
                   <div className="flex shrink-0 gap-2">
@@ -231,13 +281,13 @@ export function PublishNoteModal({
               </div>
             ) : (
               <div className="rounded-xl bg-panel p-3.5 text-[12px] leading-5 text-muted">
-                Publishing uploads a separate snapshot. Future edits remain private until
-                you update the published version.
+                Publishing uploads this note
+                {bundle?.pages.length ? ` and ${bundle.pages.length} linked page${bundle.pages.length === 1 ? "" : "s"}` : ""}
+                {" "}as a separate snapshot. Future edits remain private until you
+                update the published version.
                 {account && (
                   <p className="mt-2 text-[10.5px] text-faint">
-                    {account.plan === "cloud"
-                      ? `Signed in as ${account.email}`
-                      : `Free account · one active public note · ${account.email}`}
+                    {`Markd Cloud · ${account.email}`}
                   </p>
                 )}
               </div>
@@ -254,12 +304,11 @@ export function PublishNoteModal({
                     <Button
                       variant="primary"
                       size="sm"
-                      onClick={() => {
-                        onClose();
-                        openSettings("cloud");
-                      }}
+                      loading={busy === "plans"}
+                      disabled={Boolean(busy)}
+                      onClick={openPlans}
                     >
-                      Upgrade
+                      {busy === "plans" ? "Opening…" : "View plans"}
                     </Button>
                   </div>
                 )}
@@ -278,17 +327,30 @@ export function PublishNoteModal({
                   >
                     {busy === "revoke" ? "Unpublishing…" : "Unpublish"}
                   </Button>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    className="ml-auto"
-                    disabled={!title.trim() || Boolean(busy) || (!outdated && title === share.title)}
-                    loading={busy === "update"}
-                    onClick={() => run("update")}
-                  >
-                    {busy !== "update" && <RefreshCw size={13} strokeWidth={1.8} />}
-                    {busy === "update" ? "Updating…" : "Update page"}
-                  </Button>
+                  {account.plan === "cloud" ? (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="ml-auto"
+                      disabled={!title.trim() || Boolean(busy)}
+                      loading={busy === "update"}
+                      onClick={() => run("update")}
+                    >
+                      {busy !== "update" && <RefreshCw size={13} strokeWidth={1.8} />}
+                      {busy === "update" ? "Updating…" : "Update site"}
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="ml-auto"
+                      loading={busy === "plans"}
+                      disabled={Boolean(busy)}
+                      onClick={openPlans}
+                    >
+                      {busy === "plans" ? "Opening…" : "View plans"}
+                    </Button>
+                  )}
                 </>
               ) : (
                 <>
@@ -304,7 +366,7 @@ export function PublishNoteModal({
                     onClick={() => run("publish")}
                   >
                     {busy !== "publish" && <Globe2 size={13} strokeWidth={1.8} />}
-                    {busy === "publish" ? "Publishing…" : "Publish note"}
+                    {busy === "publish" ? "Publishing…" : "Publish site"}
                   </Button>
                 </>
               )}

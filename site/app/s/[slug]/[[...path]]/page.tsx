@@ -7,7 +7,7 @@ import {
   noteDescription,
 } from "@/lib/published-note";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export const viewport: Viewport = {
   colorScheme: "light dark",
@@ -18,12 +18,16 @@ export const viewport: Viewport = {
 };
 
 interface SharePageProps {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ slug: string; path?: string[] }>;
+}
+
+function pagePath(path?: string[]) {
+  return path?.length ? path.join("/") : undefined;
 }
 
 export async function generateMetadata({ params }: SharePageProps): Promise<Metadata> {
-  const { slug } = await params;
-  const note = await getPublishedNote(slug);
+  const { slug, path } = await params;
+  const note = await getPublishedNote(slug, pagePath(path));
   if (!note) return { title: "Published note · Markd", robots: { index: false } };
 
   const description = noteDescription(note.markdown) || "A note published with Markd.";
@@ -42,15 +46,9 @@ export async function generateMetadata({ params }: SharePageProps): Promise<Meta
 }
 
 export default async function SharePage({ params }: SharePageProps) {
-  const { slug } = await params;
-  const note = await getPublishedNote(slug);
+  const { slug, path } = await params;
+  const note = await getPublishedNote(slug, pagePath(path));
   if (!note) notFound();
-
-  const published = new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(note.publishedAt));
 
   return (
     <main className="published-page min-h-dvh bg-background text-foreground">
@@ -70,17 +68,25 @@ export default async function SharePage({ params }: SharePageProps) {
           </h1>
         </div>
 
-        <PublishedMarkdown markdown={note.markdown} />
+        <PublishedMarkdown
+          markdown={note.markdown}
+          siteSlug={slug}
+          assetBaseUrl={note.assetBaseUrl}
+          assetTypes={note.assetTypes}
+          assetDimensions={note.assetDimensions}
+        />
       </article>
 
       <footer className="mx-auto flex w-full max-w-3xl items-center justify-center px-5 py-4 text-[11.5px] text-faint sm:px-0">
-        <span>Published with   <a
-          href="/"
-          className="rounded-sm transition-colors text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-foreground"
-        >
-          Markd
-        </a></span>
-
+        <span>
+          Published with{" "}
+          <a
+            href="/"
+            className="rounded-sm text-foreground transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-foreground"
+          >
+            Markd
+          </a>
+        </span>
       </footer>
     </main>
   );

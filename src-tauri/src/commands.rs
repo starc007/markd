@@ -232,8 +232,8 @@ pub fn backlinks_for(state: State<'_, AppState>, rel: String) -> AppResult<Vec<B
 // ---- publishing ----
 
 #[tauri::command]
-pub fn cloud_account_status(app: AppHandle) -> AppResult<cloud::CloudAccountStatus> {
-    cloud::account_status(&app)
+pub async fn cloud_account_status(app: AppHandle) -> AppResult<cloud::CloudAccountStatus> {
+    cloud::account_status(&app).await
 }
 
 #[tauri::command]
@@ -256,13 +256,25 @@ pub async fn cloud_sign_out(app: AppHandle) -> AppResult<()> {
 }
 
 #[tauri::command]
-pub fn published_note_status(
+pub async fn cloud_plans_url(app: AppHandle) -> AppResult<String> {
+    cloud::plans_url(&app).await
+}
+
+#[tauri::command]
+pub async fn cloud_billing_portal_url(app: AppHandle) -> AppResult<String> {
+    cloud::portal_url(&app).await
+}
+
+#[tauri::command]
+pub async fn published_note_status(
     app: AppHandle,
     state: State<'_, AppState>,
     rel: String,
+    title: String,
     content: String,
+    pages: Vec<cloud::PublishPageDraft>,
 ) -> AppResult<cloud::PublishedNoteStatus> {
-    cloud::status(&app, &state.root()?, &rel, &content)
+    cloud::status(&app, &state.root()?, &rel, &title, &content, pages).await
 }
 
 #[tauri::command]
@@ -277,8 +289,9 @@ pub async fn publish_note(
     rel: String,
     title: String,
     content: String,
+    pages: Vec<cloud::PublishPageDraft>,
 ) -> AppResult<crate::cloud_metadata::PublishedShare> {
-    cloud::publish(&app, &state.root()?, &rel, &title, &content).await
+    cloud::publish(&app, &state.root()?, &rel, &title, &content, pages).await
 }
 
 #[tauri::command]
@@ -288,8 +301,9 @@ pub async fn update_published_note(
     rel: String,
     title: String,
     content: String,
+    pages: Vec<cloud::PublishPageDraft>,
 ) -> AppResult<crate::cloud_metadata::PublishedShare> {
-    cloud::update(&app, &state.root()?, &rel, &title, &content).await
+    cloud::update(&app, &state.root()?, &rel, &title, &content, pages).await
 }
 
 #[tauri::command]

@@ -1,18 +1,29 @@
 export interface Env {
   DB: D1Database;
   PUBLISHED_NOTES: R2Bucket;
+  IMAGES: ImagesBinding;
   EMAIL: SendEmail;
+  OTP_IP_RATE_LIMITER: RateLimit;
+  OTP_EMAIL_RATE_LIMITER: RateLimit;
   PUBLIC_SITE_ORIGIN: string;
+  PUBLIC_API_ORIGIN: string;
   OTP_PEPPER: string;
-}
-
-export interface PublishInput {
-  entryId: string;
-  title: string;
-  markdown: string;
+  R2_ACCOUNT_ID: string;
+  R2_BUCKET_NAME: string;
+  R2_ACCESS_KEY_ID: string;
+  R2_SECRET_ACCESS_KEY: string;
+  CACHE_ZONE_ID: string;
+  CACHE_PURGE_TOKEN: string;
+  DODO_PAYMENTS_API_KEY: string;
+  DODO_PAYMENTS_WEBHOOK_KEY: string;
+  DODO_PAYMENTS_ENVIRONMENT: "test_mode" | "live_mode";
+  DODO_BUSINESS_ID: string;
+  DODO_MONTHLY_PRODUCT_ID: string;
+  DODO_YEARLY_PRODUCT_ID: string;
 }
 
 export type AccountPlan = "free" | "cloud";
+export type BillingInterval = "monthly" | "yearly";
 
 export interface AuthenticatedUser {
   id: string;
@@ -20,22 +31,72 @@ export interface AuthenticatedUser {
   plan: AccountPlan;
 }
 
-export interface ShareRow {
+export type PublishObjectKind = "page" | "asset";
+
+export interface PublishObjectInput {
+  hash: string;
+  kind: PublishObjectKind;
+  contentType: string;
+  size: number;
+  width?: number;
+  height?: number;
+}
+
+export interface PublishPageInput {
+  entryId: string;
+  path: string;
+  title: string;
+  objectHash: string;
+}
+
+export interface PublishManifest {
+  version: 1;
+  rootEntryId: string;
+  pages: PublishPageInput[];
+  objects: PublishObjectInput[];
+}
+
+export interface BeginPublishInput {
+  siteId?: string;
+  entryId: string;
+  title: string;
+  manifest: PublishManifest;
+}
+
+export interface SiteRow {
   id: string;
   entry_id: string;
   user_id: string;
   slug: string;
   title: string;
-  object_key: string;
-  content_hash: string;
-  status: "active" | "revoked";
-  idempotency_key: string;
-  published_at: number;
+  current_release_id: string | null;
+  created_at: number;
   updated_at: number;
-  revoked_at: number | null;
 }
 
-export interface ShareResponse {
+export interface PublishSessionRow {
+  id: string;
+  site_id: string | null;
+  entry_id: string;
+  user_id: string;
+  title: string;
+  manifest_key: string;
+  manifest_hash: string;
+  expires_at: number;
+  created_at: number;
+}
+
+export interface ReleaseRow {
+  id: string;
+  site_id: string;
+  manifest_key: string;
+  manifest_hash: string;
+  page_count: number;
+  asset_count: number;
+  published_at: number;
+}
+
+export interface SiteResponse {
   id: string;
   entryId: string;
   slug: string;
@@ -44,4 +105,6 @@ export interface ShareResponse {
   contentHash: string;
   publishedAt: number;
   updatedAt: number;
+  pageCount: number;
+  assetCount: number;
 }

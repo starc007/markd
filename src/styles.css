@@ -45,6 +45,15 @@
     --color-success: var(--success);
     --color-success-bg: var(--success-bg);
     --color-success-line: var(--success-line);
+    --color-info: var(--info);
+    --color-info-bg: var(--info-bg);
+    --color-info-line: var(--info-line);
+    --color-warning: var(--warning);
+    --color-warning-bg: var(--warning-bg);
+    --color-warning-line: var(--warning-line);
+    --color-cloud: var(--cloud);
+    --color-cloud-bg: var(--cloud-bg);
+    --color-cloud-line: var(--cloud-line);
 
     /* shadcn/beui semantic tokens mapped onto our monochrome palette so any
      component pulled from the beui registry inherits our theme unchanged. */
@@ -86,10 +95,19 @@
     --active: rgba(25, 25, 25, 0.09);
     --invert: #1c1c1c;
     --invert-ink: #fbfbfa;
-    --danger: #b3261e;
-    --success: #166534;
-    --success-bg: #dcfce7;
-    --success-line: #86efac;
+    --danger: oklch(0.48 0.18 27);
+    --success: oklch(0.42 0.12 145);
+    --success-bg: oklch(0.95 0.04 145);
+    --success-line: oklch(0.79 0.1 145);
+    --info: oklch(0.44 0.16 255);
+    --info-bg: oklch(0.95 0.035 255);
+    --info-line: oklch(0.8 0.09 255);
+    --warning: oklch(0.45 0.11 75);
+    --warning-bg: oklch(0.96 0.05 85);
+    --warning-line: oklch(0.82 0.11 80);
+    --cloud: oklch(0.43 0.17 295);
+    --cloud-bg: oklch(0.95 0.04 295);
+    --cloud-line: oklch(0.8 0.09 295);
 }
 
 .dark {
@@ -105,10 +123,19 @@
     --active: rgba(235, 235, 232, 0.1);
     --invert: #ebebe8;
     --invert-ink: #131313;
-    --danger: #e5484d;
-    --success: #86efac;
-    --success-bg: rgba(34, 197, 94, 0.14);
-    --success-line: rgba(74, 222, 128, 0.3);
+    --danger: oklch(0.7 0.17 25);
+    --success: oklch(0.82 0.13 145);
+    --success-bg: oklch(0.72 0.14 145 / 0.14);
+    --success-line: oklch(0.78 0.13 145 / 0.3);
+    --info: oklch(0.78 0.12 255);
+    --info-bg: oklch(0.65 0.15 255 / 0.14);
+    --info-line: oklch(0.75 0.13 255 / 0.3);
+    --warning: oklch(0.84 0.13 80);
+    --warning-bg: oklch(0.72 0.14 80 / 0.14);
+    --warning-line: oklch(0.8 0.13 80 / 0.3);
+    --cloud: oklch(0.8 0.13 295);
+    --cloud-bg: oklch(0.66 0.16 295 / 0.15);
+    --cloud-line: oklch(0.76 0.13 295 / 0.3);
 }
 
 html,

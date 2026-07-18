@@ -5,6 +5,9 @@ export interface PublishedNote {
   markdown: string;
   publishedAt: number;
   updatedAt: number;
+  assetBaseUrl: string;
+  assetTypes: Record<string, string>;
+  assetDimensions: Record<string, { width: number; height: number }>;
 }
 
 export interface PublishedProperty {
@@ -30,15 +33,36 @@ function isPublishedNote(value: unknown): value is PublishedNote {
     typeof note.markdown === "string" &&
     typeof note.publishedAt === "number" &&
     typeof note.updatedAt === "number"
+    && typeof note.assetBaseUrl === "string" && isStringRecord(note.assetTypes)
+    && isDimensionRecord(note.assetDimensions)
   );
 }
 
+function isStringRecord(value: unknown): value is Record<string, string> {
+  return Boolean(value) && typeof value === "object"
+    && Object.values(value as Record<string, unknown>).every((item) => typeof item === "string");
+}
+
+function isDimensionRecord(
+  value: unknown,
+): value is Record<string, { width: number; height: number }> {
+  return Boolean(value) && typeof value === "object"
+    && Object.values(value as Record<string, unknown>).every((item) => {
+      if (!item || typeof item !== "object") return false;
+      const dimension = item as Record<string, unknown>;
+      return typeof dimension.width === "number" && typeof dimension.height === "number";
+    });
+}
+
 export const getPublishedNote = cache(
-  async (slug: string): Promise<PublishedNote | null> => {
+  async (slug: string, path?: string): Promise<PublishedNote | null> => {
+    const pagePath = path
+      ? `/pages/${path.split("/").map(encodeURIComponent).join("/")}`
+      : "";
     const response = await fetch(
-      `${apiOrigin()}/v1/public/shares/${encodeURIComponent(slug)}`,
+      `${apiOrigin()}/v1/public/sites/${encodeURIComponent(slug)}${pagePath}`,
       {
-        cache: "no-store",
+        next: { revalidate: 300, tags: [`markd-slug-${slug}`] },
         headers: { accept: "application/json" },
       },
     );

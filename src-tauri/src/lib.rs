@@ -5,6 +5,7 @@ mod backlinks;
 mod bookmarks;
 mod cloud;
 mod cloud_metadata;
+mod cloud_publish;
 mod commands;
 mod config;
 mod daily_notes;
@@ -63,6 +64,8 @@ pub fn run() {
             commands::cloud_request_otp,
             commands::cloud_verify_otp,
             commands::cloud_sign_out,
+            commands::cloud_plans_url,
+            commands::cloud_billing_portal_url,
             commands::published_note_status,
             commands::is_note_published,
             commands::publish_note,

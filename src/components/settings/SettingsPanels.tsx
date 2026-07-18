@@ -1,5 +1,4 @@
 import {
-  Check,
   FolderOpen,
   Globe2,
   Monitor,
@@ -9,6 +8,7 @@ import {
   Sun,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import type { CloudAccount, Theme } from "@/lib/types";
 import {
   findShortcutConflict,
@@ -21,7 +21,9 @@ import {
 } from "@/lib/shortcuts";
 import { cx, isMac } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { CloudAccountCard } from "@/components/settings/CloudAccountCard";
+import { openCloudBillingPortal, openCloudPlans } from "@/lib/cloud";
 import { useShortcuts } from "@/stores/shortcuts";
 import { useUpdater } from "@/stores/updater";
 import { useVault } from "@/stores/vault";
@@ -137,6 +139,16 @@ export function GeneralSettings() {
 
 export function CloudSettings() {
   const [account, setAccount] = useState<CloudAccount | null>(null);
+  const [billingBusy, setBillingBusy] = useState<"plans" | "portal" | null>(null);
+
+  const openBilling = (kind: "plans" | "portal", action: () => Promise<void>) => {
+    setBillingBusy(kind);
+    void action()
+      .catch((cause) => {
+        toast.error(cause instanceof Error ? cause.message : "Billing could not be opened.");
+      })
+      .finally(() => setBillingBusy(null));
+  };
 
   return (
     <div className="space-y-6">
@@ -148,28 +160,52 @@ export function CloudSettings() {
       </SettingsGroup>
 
       <SettingsGroup
-        title="Plans"
-        description="Start free. Upgrade only when you need more publishing or sync."
+        title="Subscription"
+        description="Your Markd Cloud access for publishing and future sync."
       >
-        <div className="grid grid-cols-2 gap-2">
-          <PlanCard
-            name="Free"
-            price="$0"
-            description="For trying public pages"
-            features={["1 active published note", "Local notes stay unlimited"]}
-            active={account?.plan === "free"}
-          />
-          <PlanCard
-            name="Markd Cloud"
-            price="$6/mo yearly"
-            description="$8 when billed monthly"
-            features={["Unlimited publishing", "Cross-device sync"]}
-            active={account?.plan === "cloud"}
-          />
+        <div className="flex items-center gap-3 rounded-xl bg-panel p-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-line bg-bg text-muted">
+            <Globe2 size={15.5} strokeWidth={1.7} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <p className="text-[12.5px] font-semibold text-ink">Markd Cloud</p>
+              {account?.plan === "cloud" && (
+                <StatusBadge tone="success">Active</StatusBadge>
+              )}
+            </div>
+            <p className="mt-0.5 text-[10.5px] text-faint">
+              {account?.plan === "cloud"
+                ? "Publishing is active for this account."
+                : "Publish connected notes and hosted images on the web."}
+            </p>
+          </div>
+          {account?.plan === "cloud" ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 bg-bg"
+              loading={billingBusy === "portal"}
+              disabled={Boolean(billingBusy)}
+              onClick={() => openBilling("portal", openCloudBillingPortal)}
+            >
+              {billingBusy === "portal" ? "Opening…" : "Manage billing"}
+            </Button>
+          ) : account ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 bg-bg"
+              loading={billingBusy === "plans"}
+              disabled={Boolean(billingBusy)}
+              onClick={() => openBilling("plans", openCloudPlans)}
+            >
+              {billingBusy === "plans" ? "Opening…" : "View plans"}
+            </Button>
+          ) : null}
         </div>
-        <p className="mt-2.5 flex items-center gap-1.5 text-[10.5px] text-faint">
-          <Globe2 size={11.5} strokeWidth={1.7} />
-          Publishing is being built first. Sync will follow.
+        <p className="mt-2.5 text-[10.5px] text-faint">
+          Billing and subscription changes are managed on the web.
         </p>
       </SettingsGroup>
     </div>
@@ -377,48 +413,6 @@ function SettingsGroup({
       </div>
       <div className="mt-3">{children}</div>
     </section>
-  );
-}
-
-function PlanCard({
-  name,
-  price,
-  description,
-  features,
-  active,
-}: {
-  name: string;
-  price: string;
-  description: string;
-  features: string[];
-  active: boolean;
-}) {
-  return (
-    <div
-      className={cx(
-        "relative min-h-[142px] rounded-xl border p-3.5",
-        active ? "border-ink bg-bg" : "border-line-soft bg-panel",
-      )}
-    >
-      {active && (
-        <span className="absolute right-3 top-3 rounded-full bg-invert px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-invert-ink">
-          Current
-        </span>
-      )}
-      <p className="text-[12px] font-semibold text-ink">{name}</p>
-      <p className="mt-2 text-[13px] font-semibold tracking-[-0.01em] text-ink">
-        {price}
-      </p>
-      <p className="mt-0.5 text-[10px] text-faint">{description}</p>
-      <ul className="mt-3 space-y-1.5">
-        {features.map((feature) => (
-          <li key={feature} className="flex items-center gap-1.5 text-[10.5px] text-muted">
-            <Check size={11} strokeWidth={2} />
-            {feature}
-          </li>
-        ))}
-      </ul>
-    </div>
   );
 }
 

@@ -28,6 +28,39 @@ export interface ButtonLinkProps extends Omit<HTMLMotionProps<"a">, "children"> 
   children?: ReactNode;
 }
 
+export interface ButtonProps extends Omit<HTMLMotionProps<"button">, "children"> {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  children?: ReactNode;
+}
+
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  function Button(
+    { variant = "primary", size = "md", className, children, ...rest },
+    ref,
+  ) {
+    const reduce = useReducedMotion();
+    const canHover = useHoverCapable();
+    return (
+      <motion.button
+        ref={ref}
+        className={cn(
+          "inline-flex select-none items-center justify-center font-medium transition-colors disabled:pointer-events-none disabled:opacity-55",
+          VARIANT[variant],
+          SIZE[size],
+          className,
+        )}
+        whileTap={reduce || rest.disabled ? undefined : { scale: 0.98 }}
+        whileHover={reduce || !canHover || rest.disabled ? undefined : { scale: 1.01 }}
+        transition={SPRING_PRESS}
+        {...rest}
+      >
+        {children}
+      </motion.button>
+    );
+  },
+);
+
 export const ButtonLink = forwardRef<HTMLAnchorElement, ButtonLinkProps>(
   function ButtonLink(
     { variant = "primary", size = "md", className, children, ...rest },
