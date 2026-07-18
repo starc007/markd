@@ -35,9 +35,9 @@
     "PUBLIC_API_ORIGIN": "https://api.usemarkd.app",
     "R2_BUCKET_NAME": "markd-published-notes",
     "DODO_PAYMENTS_ENVIRONMENT": "test_mode",
-    "DODO_BUSINESS_ID": "replace_with_dodo_business_id",
-    "DODO_MONTHLY_PRODUCT_ID": "replace_with_dodo_monthly_product_id",
-    "DODO_YEARLY_PRODUCT_ID": "replace_with_dodo_yearly_product_id"
+    "DODO_BUSINESS_ID": "bus_0NhKUHtWjZyM9DzXLgbBq",
+    "DODO_MONTHLY_PRODUCT_ID": "pdt_0NjSw2rt9DvwCBnTd7y51",
+    "DODO_YEARLY_PRODUCT_ID": "pdt_0NjSvvCkI1Kc5HwMMjNz1"
   },
   "secrets": {
     "required": [

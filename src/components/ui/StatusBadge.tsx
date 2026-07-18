@@ -4,11 +4,11 @@ import { cn } from "@/lib/utils";
 type StatusTone = "neutral" | "success" | "info" | "warning" | "cloud";
 
 const TONES: Record<StatusTone, string> = {
-  neutral: "border-line bg-panel text-muted [&>i]:bg-faint",
-  success: "border-success-line bg-success-bg text-success [&>i]:bg-success",
-  info: "border-info-line bg-info-bg text-info [&>i]:bg-info",
-  warning: "border-warning-line bg-warning-bg text-warning [&>i]:bg-warning",
-  cloud: "border-cloud-line bg-cloud-bg text-cloud [&>i]:bg-cloud",
+  neutral: "border-line/40 bg-panel text-muted",
+  success: "border-success-line/40 bg-success-bg text-success",
+  info: "border-info-line/40 bg-info-bg text-info",
+  warning: "border-warning-line/40 bg-warning-bg text-warning",
+  cloud: "border-cloud-line/40 bg-cloud-bg text-cloud",
 };
 
 export function StatusBadge({
