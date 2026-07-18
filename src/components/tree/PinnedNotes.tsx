@@ -40,6 +40,7 @@ export function PinnedNotes() {
       </div>
 
       <div
+        data-pinned-tree
         role="tree"
         aria-label="Pinned notes and folders"
         className="no-scrollbar max-h-[180px] overflow-y-auto"

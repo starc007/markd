@@ -175,11 +175,22 @@ function toggleSidebarEditorFocus() {
   }
 
   const focusSidebar = () =>
-    sidebar
-      ?.querySelector<HTMLElement>(
-        '[role="treeitem"][aria-selected="true"], [aria-current="page"], [role="treeitem"], [data-sidebar-focus-fallback]',
-      )
-      ?.focus();
+    (
+      sidebar?.querySelector<HTMLElement>(
+        '[data-note-tree] [role="treeitem"][aria-selected="true"]',
+      ) ??
+      sidebar?.querySelector<HTMLElement>(
+        '[data-pinned-tree] [role="treeitem"][aria-selected="true"]',
+      ) ??
+      sidebar?.querySelector<HTMLElement>(
+        '[data-note-tree] [role="treeitem"][tabindex="0"]',
+      ) ??
+      sidebar?.querySelector<HTMLElement>(
+        '[data-pinned-tree] [role="treeitem"][tabindex="0"]',
+      ) ??
+      sidebar?.querySelector<HTMLElement>("[aria-current='page']") ??
+      sidebar?.querySelector<HTMLElement>("[data-sidebar-focus-fallback]")
+    )?.focus();
   const ui = useUi.getState();
   if (ui.sidebarHidden) {
     ui.toggleSidebar();
