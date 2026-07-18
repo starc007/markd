@@ -71,7 +71,7 @@ export function PricingExperience() {
                 Markd Cloud
               </h2>
             </div>
-            <BillingToggle value={billing} onChange={setBilling} />
+            <BillingToggle value={billing} onChange={setBilling} reduceMotion={reduce} />
           </div>
 
           <div className="flex flex-col gap-6 p-5 sm:flex-row sm:items-center sm:px-6">
@@ -128,9 +128,11 @@ export function PricingExperience() {
 function BillingToggle({
   value,
   onChange,
+  reduceMotion,
 }: {
   value: Billing;
   onChange: (value: Billing) => void;
+  reduceMotion: boolean | null;
 }) {
   return (
     <div
@@ -146,13 +148,24 @@ function BillingToggle({
             type="button"
             aria-pressed={selected}
             onClick={() => onChange(option)}
-            className={`h-7 rounded-full px-3 text-[11.5px] font-medium capitalize transition-colors ${
+            className={`relative h-7 rounded-full px-3 text-[11.5px] font-medium capitalize transition-colors ${
               selected
-                ? "bg-primary text-primary-foreground"
+                ? "text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            {option}
+            {selected ? (
+              <motion.span
+                layoutId="billing-selection"
+                className="absolute inset-0 rounded-full bg-primary"
+                transition={
+                  reduceMotion
+                    ? { duration: 0 }
+                    : { type: "spring", stiffness: 480, damping: 38 }
+                }
+              />
+            ) : null}
+            <span className="relative z-10">{option}</span>
           </button>
         );
       })}
