@@ -12,9 +12,11 @@ import type { LucideIcon } from "lucide-react";
 import { Command } from "cmdk";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ipc } from "@/lib/ipc";
+import { formatShortcutText } from "@/lib/shortcuts";
 import { flattenNotes } from "@/lib/tree";
 import type { SearchHit, TreeNode } from "@/lib/types";
-import { cx, parentDir } from "@/lib/utils";
+import { cx, isMac, parentDir } from "@/lib/utils";
+import { useShortcuts } from "@/stores/shortcuts";
 import { useUi } from "@/stores/ui";
 import { activeDir, useVault } from "@/stores/vault";
 
@@ -40,6 +42,8 @@ export function CommandPalette() {
   const status = useVault((s) => s.status);
   const tree = useVault((s) => s.tree);
   const recentNotes = useVault((s) => s.recentNotes);
+  const shortcuts = useShortcuts((s) => s.bindings);
+  const mac = isMac();
 
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<SearchHit[]>([]);
@@ -105,45 +109,47 @@ export function CommandPalette() {
       {
         id: "new-note",
         label: "New note",
-        hint: "⌘N",
+        hint: formatShortcutText(shortcuts.newNote, mac),
         icon: FilePlus,
         run: () => vault.createNote(activeDir(vault)),
       },
       {
         id: "quick-capture",
         label: "Quick capture",
-        hint: "⌃⇧Space",
+        hint: mac ? "⌃⇧Space" : "Ctrl+Shift+Space",
         icon: Feather,
         run: () => void ipc.showQuickCapture(),
       },
       {
         id: "daily-note",
         label: "Open today's note",
-        hint: "⇧⌘Y",
+        hint: formatShortcutText(shortcuts.dailyNote, mac),
         icon: CalendarDays,
         run: () => void vault.openDailyNote(),
       },
       {
         id: "todos",
         label: "Open Todos",
+        hint: formatShortcutText(shortcuts.openTodos, mac),
         icon: CheckSquare,
         run: () => vault.setView({ type: "todos" }),
       },
       {
         id: "bookmarks",
         label: "Open Bookmarks",
+        hint: formatShortcutText(shortcuts.openBookmarks, mac),
         icon: Bookmark,
         run: () => vault.setView({ type: "bookmarks" }),
       },
       {
         id: "settings",
         label: "Settings",
-        hint: "⌘,",
+        hint: formatShortcutText(shortcuts.openSettings, mac),
         icon: Settings,
         run: () => useUi.getState().setSettingsOpen(true),
       },
     ].filter((action) => !q || action.label.toLowerCase().includes(q));
-  }, [trimmedQuery]);
+  }, [mac, shortcuts, trimmedQuery]);
 
   const recentItems = useMemo<PaletteItem[]>(() => {
     if (trimmedQuery) return [];

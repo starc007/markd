@@ -5,12 +5,14 @@ import { closeTab } from "@/components/editor/TabBar";
 import { Welcome } from "@/components/welcome/Welcome";
 import { initSessionSync, restoreSession } from "@/lib/session";
 import { notifyBacklinksChanged } from "@/lib/backlinks";
+import { matchesShortcut } from "@/lib/shortcuts";
+import { isMac } from "@/lib/utils";
 import { activeDir, useVault } from "@/stores/vault";
 import { useTabs } from "@/stores/tabs";
 import { useUi } from "@/stores/ui";
 import { usePins } from "@/stores/pins";
+import { useShortcuts } from "@/stores/shortcuts";
 import { useUpdater } from "@/stores/updater";
-import { isMac } from "@/lib/utils";
 
 const AppShell = lazy(() =>
   import("@/components/layout/AppShell").then((module) => ({
@@ -81,50 +83,46 @@ export default function App() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      const mod = isMac() ? event.metaKey : event.ctrlKey;
-      if (!mod) return;
+      const shortcuts = useShortcuts.getState().bindings;
       const ui = useUi.getState();
       const vault = useVault.getState();
 
-      if (event.shiftKey && event.key.toLowerCase() === "y" && vault.status === "ready") {
+      if (matchesShortcut(event, shortcuts.dailyNote) && vault.status === "ready") {
         event.preventDefault();
         void vault.openDailyNote();
-      } else if (
-        event.shiftKey &&
-        event.key.toLowerCase() === "t" &&
-        vault.status === "ready"
-      ) {
+      } else if (matchesShortcut(event, shortcuts.openTodos) && vault.status === "ready") {
         event.preventDefault();
         vault.setView({ type: "todos" });
-      } else if (
-        event.shiftKey &&
-        event.key.toLowerCase() === "b" &&
-        vault.status === "ready"
-      ) {
+      } else if (matchesShortcut(event, shortcuts.openBookmarks) && vault.status === "ready") {
         event.preventDefault();
         vault.setView({ type: "bookmarks" });
-      } else if (event.shiftKey && event.key.toLowerCase() === "e") {
+      } else if (matchesShortcut(event, shortcuts.focusSidebarEditor)) {
         event.preventDefault();
         toggleSidebarEditorFocus();
-      } else if (event.shiftKey && event.key.toLowerCase() === "d") {
+      } else if (matchesShortcut(event, shortcuts.cycleTheme)) {
         event.preventDefault();
         vault.cycleTheme();
-      } else if (event.key === "k") {
+      } else if (matchesShortcut(event, shortcuts.commandPalette)) {
         event.preventDefault();
         ui.setPaletteOpen(!ui.paletteOpen);
-      } else if (event.key === "n" && vault.status === "ready") {
+      } else if (matchesShortcut(event, shortcuts.newNote) && vault.status === "ready") {
         event.preventDefault();
         vault.createNote(activeDir(vault));
-      } else if (event.key === "\\") {
+      } else if (matchesShortcut(event, shortcuts.toggleSidebar)) {
         event.preventDefault();
         ui.toggleSidebar();
-      } else if (event.key === ",") {
+      } else if (matchesShortcut(event, shortcuts.openSettings)) {
         event.preventDefault();
         ui.setSettingsOpen(true);
-      } else if (event.key === "w" && vault.view?.type === "note") {
+      } else if (matchesShortcut(event, shortcuts.closeTab) && vault.view?.type === "note") {
         event.preventDefault();
         closeTab(vault.view.rel);
-      } else if (!event.shiftKey && /^[1-9]$/.test(event.key)) {
+      } else if (
+        (isMac() ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey) &&
+        !event.altKey &&
+        !event.shiftKey &&
+        /^[1-9]$/.test(event.key)
+      ) {
         const rel = useTabs.getState().tabs[Number(event.key) - 1];
         if (rel) {
           event.preventDefault();

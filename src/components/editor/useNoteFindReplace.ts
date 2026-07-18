@@ -1,6 +1,8 @@
 import type { Editor } from "@tiptap/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { matchesShortcut } from "@/lib/shortcuts";
+import { useShortcuts } from "@/stores/shortcuts";
 import { useUi } from "@/stores/ui";
 import {
   findEditorMatches,
@@ -170,11 +172,10 @@ export function useNoteFindReplace({
   useEffect(() => {
     if (!active) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.code !== "KeyF" || event.repeat) return;
-      const replaceShortcut =
-        event.ctrlKey && event.altKey && !event.metaKey;
-      const findShortcut =
-        !event.altKey && (event.metaKey || event.ctrlKey);
+      if (event.repeat) return;
+      const shortcuts = useShortcuts.getState().bindings;
+      const replaceShortcut = matchesShortcut(event, shortcuts.replaceInNote);
+      const findShortcut = matchesShortcut(event, shortcuts.findInNote);
       if (!replaceShortcut && !findShortcut) return;
       const ui = useUi.getState();
       if (ui.paletteOpen || ui.settingsOpen) return;

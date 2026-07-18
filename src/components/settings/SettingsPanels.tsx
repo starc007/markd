@@ -5,13 +5,24 @@ import {
   Monitor,
   Moon,
   RefreshCw,
+  RotateCcw,
   Sun,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { CloudAccount, Theme } from "@/lib/types";
+import {
+  findShortcutConflict,
+  formatShortcutParts,
+  sameShortcut,
+  shortcutFromEvent,
+  SHORTCUT_DEFINITIONS,
+  type ShortcutAction,
+  type ShortcutBinding,
+} from "@/lib/shortcuts";
 import { cx, isMac } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { CloudAccountCard } from "@/components/settings/CloudAccountCard";
+import { useShortcuts } from "@/stores/shortcuts";
 import { useUpdater } from "@/stores/updater";
 import { useVault } from "@/stores/vault";
 
@@ -40,28 +51,6 @@ const THEMES: Array<{
     icon: Moon,
   },
 ];
-
-function shortcuts(mac: boolean): Array<{ label: string; keys: string[] }> {
-  const mod = mac ? "⌘" : "Ctrl";
-  const shift = mac ? "⇧" : "Shift";
-  const control = mac ? "⌃" : "Ctrl";
-
-  return [
-    { label: "Command palette", keys: [mod, "K"] },
-    { label: "Find in note", keys: [mod, "F"] },
-    { label: "New note", keys: [mod, "N"] },
-    { label: "Quick capture", keys: [control, shift, "Space"] },
-    { label: "Today's note", keys: [mod, shift, "Y"] },
-    { label: "Open Todos", keys: [mod, shift, "T"] },
-    { label: "Open Bookmarks", keys: [mod, shift, "B"] },
-    { label: "Focus sidebar or editor", keys: [mod, shift, "E"] },
-    { label: "Open note tab", keys: [mod, "1–9"] },
-    { label: "Toggle sidebar", keys: [mod, "\\"] },
-    { label: "Cycle theme", keys: [mod, shift, "D"] },
-    { label: "Settings", keys: [mod, ","] },
-    { label: "Close tab", keys: [mod, "W"] },
-  ];
-}
 
 export function GeneralSettings() {
   const root = useVault((state) => state.root);
@@ -190,8 +179,8 @@ export function CloudSettings() {
 export function AppearanceSettings() {
   const theme = useVault((state) => state.theme);
   const setTheme = useVault((state) => state.setTheme);
-  const mod = isMac() ? "⌘" : "Ctrl";
-  const shift = isMac() ? "⇧" : "Shift";
+  const mac = isMac();
+  const cycleTheme = useShortcuts((state) => state.bindings.cycleTheme);
 
   return (
     <SettingsGroup
@@ -199,9 +188,7 @@ export function AppearanceSettings() {
       description="Choose how Markd looks across the editor and navigation."
       aside={
         <span className="flex items-center text-[10.5px] text-faint">
-          <Kbd>{mod}</Kbd>
-          <Kbd>{shift}</Kbd>
-          <Kbd>D</Kbd>
+          <ShortcutKeys shortcut={cycleTheme} mac={mac} />
           <span className="ml-1.5">to cycle</span>
         </span>
       }
@@ -241,33 +228,131 @@ export function AppearanceSettings() {
 }
 
 export function ShortcutSettings() {
-  const platformShortcuts = shortcuts(isMac());
+  const mac = isMac();
+  const bindings = useShortcuts((state) => state.bindings);
+  const setBinding = useShortcuts((state) => state.setBinding);
+  const resetBinding = useShortcuts((state) => state.resetBinding);
+  const resetAll = useShortcuts((state) => state.resetAll);
+  const [editing, setEditing] = useState<ShortcutAction | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const onCapture = (action: ShortcutAction, event: KeyboardEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    if (event.key === "Escape") {
+      setEditing(null);
+      setError(null);
+      return;
+    }
+    const shortcut = shortcutFromEvent(event);
+    if (!shortcut) {
+      setError("Use Command, Control, or Option with a key.");
+      return;
+    }
+    const fixedConflict = fixedShortcutConflict(shortcut, mac);
+    if (fixedConflict) {
+      setError(`Already used by ${fixedConflict}.`);
+      return;
+    }
+    const conflict = findShortcutConflict(bindings, shortcut, action);
+    if (conflict) {
+      setError(`Already used by ${conflict.label}.`);
+      return;
+    }
+    setBinding(action, shortcut);
+    setEditing(null);
+    setError(null);
+  };
+
+  useEffect(() => {
+    if (!editing) return;
+    const onKeyDown = (event: KeyboardEvent) => onCapture(editing, event);
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
+  }, [bindings, editing, mac]);
 
   return (
     <SettingsGroup
       title="Keyboard shortcuts"
-      description="Fast ways to move through Markd without leaving the keyboard."
+      description="Click a shortcut, then press the new key combination."
+      aside={
+        <Button variant="ghost" size="sm" onClick={resetAll}>
+          <RotateCcw size={13} strokeWidth={1.8} />
+          Reset all
+        </Button>
+      }
     >
       <div className="overflow-hidden rounded-xl bg-panel">
-        {platformShortcuts.map((shortcut, index) => (
+        {SHORTCUT_DEFINITIONS.map((shortcut, index) => (
           <div
-            key={shortcut.label}
+            key={shortcut.id}
             className={cx(
               "flex min-h-10 items-center justify-between gap-4 px-3.5 py-2 text-[12.5px] text-muted",
               index > 0 && "border-t border-line-soft",
             )}
           >
             <span>{shortcut.label}</span>
-            <span className="flex shrink-0 items-center gap-1">
-              {shortcut.keys.map((key, keyIndex) => (
-                <Kbd key={`${shortcut.label}-${keyIndex}`}>{key}</Kbd>
-              ))}
-            </span>
+            <div className="flex shrink-0 items-center gap-1.5">
+              <ShortcutCapture
+                label={shortcut.label}
+                shortcut={bindings[shortcut.id]}
+                mac={mac}
+                editing={editing === shortcut.id}
+                onStart={() => {
+                  setEditing(shortcut.id);
+                  setError(null);
+                }}
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={`Reset ${shortcut.label}`}
+                onClick={() => resetBinding(shortcut.id)}
+              >
+                <RotateCcw size={12.5} strokeWidth={1.8} />
+              </Button>
+            </div>
           </div>
         ))}
+        <ReadonlyShortcutRow
+          label="Quick capture"
+          keys={mac ? ["⌃", "⇧", "Space"] : ["Ctrl", "Shift", "Space"]}
+        />
+        <ReadonlyShortcutRow
+          label="Open note tab"
+          keys={mac ? ["⌘", "1-9"] : ["Ctrl", "1-9"]}
+        />
       </div>
+      {error && (
+        <p aria-live="polite" className="mt-2 text-[11.5px] text-danger">
+          {error}
+        </p>
+      )}
     </SettingsGroup>
   );
+}
+
+function fixedShortcutConflict(shortcut: ShortcutBinding, mac: boolean) {
+  const mod = mac ? { meta: true } : { ctrl: true };
+  if (
+    !shortcut.alt &&
+    !shortcut.shift &&
+    sameShortcut(shortcut, { ...mod, key: shortcut.key }) &&
+    /^[1-9]$/.test(shortcut.key)
+  ) {
+    return "Open note tab";
+  }
+  if (
+    sameShortcut(shortcut, {
+      ctrl: true,
+      shift: true,
+      key: "Space",
+    })
+  ) {
+    return "Quick capture";
+  }
+  return null;
 }
 
 function SettingsGroup({
@@ -342,5 +427,70 @@ function Kbd({ children }: { children: React.ReactNode }) {
     <kbd className="inline-grid h-5 min-w-5 place-items-center rounded border border-line bg-bg px-1 font-mono text-[10.5px] text-muted">
       {children}
     </kbd>
+  );
+}
+
+function ShortcutKeys({
+  shortcut,
+  mac,
+}: {
+  shortcut: ShortcutBinding;
+  mac: boolean;
+}) {
+  return (
+    <>
+      {formatShortcutParts(shortcut, mac).map((key, index) => (
+        <Kbd key={`${key}-${index}`}>{key}</Kbd>
+      ))}
+    </>
+  );
+}
+
+function ShortcutCapture({
+  label,
+  shortcut,
+  mac,
+  editing,
+  onStart,
+}: {
+  label: string;
+  shortcut: ShortcutBinding;
+  mac: boolean;
+  editing: boolean;
+  onStart: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={`Change ${label} shortcut`}
+      onClick={onStart}
+      className={cx(
+        "inline-flex h-7 min-w-[104px] items-center justify-center gap-1 rounded-md border px-2 font-mono text-[10.5px] transition-colors duration-100",
+        editing
+          ? "border-ink bg-bg text-ink"
+          : "border-line bg-bg text-muted hover:border-line hover:bg-hover hover:text-ink",
+      )}
+    >
+      {editing ? "Press keys" : <ShortcutKeys shortcut={shortcut} mac={mac} />}
+    </button>
+  );
+}
+
+function ReadonlyShortcutRow({
+  label,
+  keys,
+}: {
+  label: string;
+  keys: string[];
+}) {
+  return (
+    <div className="flex min-h-10 items-center justify-between gap-4 border-t border-line-soft px-3.5 py-2 text-[12.5px] text-muted">
+      <span>{label}</span>
+      <span className="flex shrink-0 items-center gap-1 opacity-70">
+        {keys.map((key, index) => (
+          <Kbd key={`${label}-${key}-${index}`}>{key}</Kbd>
+        ))}
+      </span>
+    </div>
   );
 }
