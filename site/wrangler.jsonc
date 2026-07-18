@@ -13,6 +13,6 @@
     "binding": "ASSETS"
   },
   "observability": {
-    "enabled": true
+    "enabled": false
   }
 }
