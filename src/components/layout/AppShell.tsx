@@ -240,12 +240,12 @@ export function AppShell() {
                   className={cx(
                     "inline-flex h-7 select-none items-center gap-1.5 rounded-md border px-2.5 text-[12.5px] font-medium transition-colors duration-100",
                     notePublished
-                      ? "border-line-soft bg-success-bg text-success hover:brightness-95"
+                      ? "border-success/10 bg-success-bg text-success hover:brightness-95"
                       : "border-line-soft bg-hover text-ink hover:bg-active",
                   )}
                 >
                   <Globe2 size={13} strokeWidth={1.9} />
-                  {notePublished ? "Published" : "Publish"}
+                  {notePublished ? "This page is live" : "Publish"}
                 </button>
               )}
               {path && view?.type !== "note" && (

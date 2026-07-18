@@ -6,7 +6,6 @@ import {
   Globe2,
   LogIn,
   RefreshCw,
-  Trash2,
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -38,7 +37,6 @@ export function PublishNoteModal({
   const [outdated, setOutdated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<BusyAction>(null);
-  const [confirmRevoke, setConfirmRevoke] = useState(false);
   const [error, setError] = useState<{ kind: string; message: string } | null>(null);
   const openSettings = useUi((state) => state.openSettings);
 
@@ -48,7 +46,6 @@ export function PublishNoteModal({
     setLoading(true);
     setAccount(null);
     setError(null);
-    setConfirmRevoke(false);
     void ipc
       .publishedNoteStatus(rel, markdown)
       .then((status) => {
@@ -83,7 +80,6 @@ export function PublishNoteModal({
         setShare(null);
         notifyPublishStatus(rel, false);
         setOutdated(false);
-        setConfirmRevoke(false);
         toast("Note unpublished");
         return;
       }
@@ -201,35 +197,37 @@ export function PublishNoteModal({
 
             {share ? (
               <div className="rounded-xl bg-panel p-3.5">
-                <div className="flex items-center gap-2">
-                  <span className="grid h-5 w-5 place-items-center rounded-full bg-invert text-invert-ink">
-                    <Check size={11} strokeWidth={2.5} />
-                  </span>
-                  <span className="text-[12px] font-medium text-ink">Published</span>
-                  {outdated && (
-                    <span className="ml-auto rounded-full border border-line bg-bg px-2 py-0.5 text-[9.5px] font-medium text-faint">
-                      Local changes
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-invert text-invert-ink">
+                      <Check size={11} strokeWidth={2.5} />
                     </span>
-                  )}
+                    <span className="text-[12px] font-medium text-ink">Published</span>
+                    {outdated && (
+                      <span className="rounded-full border border-line bg-bg px-2 py-0.5 text-[9.5px] font-medium text-faint">
+                        Local changes
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 gap-2">
+                    <Button variant="outline" size="sm" className="bg-bg" onClick={copyLink}>
+                      <Copy size={12.5} strokeWidth={1.9} />
+                      Copy link
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="bg-bg"
+                      onClick={() => openUrl(share.url)}
+                    >
+                      <ExternalLink size={12.5} strokeWidth={1.9} />
+                      Open
+                    </Button>
+                  </div>
                 </div>
                 <p className="mt-3 truncate font-mono text-[10.5px] text-muted">
                   {share.url}
                 </p>
-                <div className="mt-3 flex gap-2">
-                  <Button variant="outline" size="sm" className="bg-bg" onClick={copyLink}>
-                    <Copy size={12.5} strokeWidth={1.9} />
-                    Copy link
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="bg-bg"
-                    onClick={() => openUrl(share.url)}
-                  >
-                    <ExternalLink size={12.5} strokeWidth={1.9} />
-                    Open
-                  </Button>
-                </div>
               </div>
             ) : (
               <div className="rounded-xl bg-panel p-3.5 text-[12px] leading-5 text-muted">
@@ -271,43 +269,24 @@ export function PublishNoteModal({
             <div className="flex items-center gap-2 border-t border-line-soft pt-4">
               {share ? (
                 <>
-                  {!confirmRevoke ? (
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={() => setConfirmRevoke(true)}
-                    >
-                      <Trash2 size={13} strokeWidth={1.8} />
-                      Stop publishing
-                    </Button>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-danger">Remove the public page?</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setConfirmRevoke(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        disabled={Boolean(busy)}
-                        onClick={() => run("revoke")}
-                      >
-                        {busy === "revoke" ? "Removing…" : "Remove"}
-                      </Button>
-                    </div>
-                  )}
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    disabled={Boolean(busy)}
+                    loading={busy === "revoke"}
+                    onClick={() => run("revoke")}
+                  >
+                    {busy === "revoke" ? "Unpublishing…" : "Unpublish"}
+                  </Button>
                   <Button
                     variant="primary"
                     size="sm"
                     className="ml-auto"
                     disabled={!title.trim() || Boolean(busy) || (!outdated && title === share.title)}
+                    loading={busy === "update"}
                     onClick={() => run("update")}
                   >
-                    <RefreshCw size={13} strokeWidth={1.8} />
+                    {busy !== "update" && <RefreshCw size={13} strokeWidth={1.8} />}
                     {busy === "update" ? "Updating…" : "Update page"}
                   </Button>
                 </>
@@ -321,9 +300,10 @@ export function PublishNoteModal({
                     size="sm"
                     className="ml-auto"
                     disabled={!title.trim() || Boolean(busy)}
+                    loading={busy === "publish"}
                     onClick={() => run("publish")}
                   >
-                    <Globe2 size={13} strokeWidth={1.8} />
+                    {busy !== "publish" && <Globe2 size={13} strokeWidth={1.8} />}
                     {busy === "publish" ? "Publishing…" : "Publish note"}
                   </Button>
                 </>

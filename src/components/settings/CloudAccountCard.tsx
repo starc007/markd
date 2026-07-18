@@ -1,4 +1,4 @@
-import { Check, Cloud, LogIn, LogOut, Mail, RotateCcw } from "lucide-react";
+import { Check, Cloud, Loader2, LogIn, LogOut, Mail, RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -6,6 +6,7 @@ import { IpcError, ipc } from "@/lib/ipc";
 import type { CloudAccount, OtpChallenge } from "@/lib/types";
 
 type Step = "account" | "email" | "code";
+type BusyAction = "request" | "verify" | "signout" | null;
 
 export function CloudAccountCard({
   onAccountChange,
@@ -18,7 +19,7 @@ export function CloudAccountCard({
   const [code, setCode] = useState("");
   const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<BusyAction>(null);
   const [error, setError] = useState<string | null>(null);
   const [resendIn, setResendIn] = useState(0);
 
@@ -68,7 +69,7 @@ export function CloudAccountCard({
         : String(cause);
 
   const requestCode = async () => {
-    setBusy(true);
+    setBusy("request");
     setError(null);
     try {
       const next = await ipc.cloudRequestOtp(email.trim());
@@ -80,13 +81,13 @@ export function CloudAccountCard({
     } catch (cause) {
       setError(message(cause));
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   };
 
   const verifyCode = async () => {
     if (!challenge) return;
-    setBusy(true);
+    setBusy("verify");
     setError(null);
     try {
       const next = await ipc.cloudVerifyOtp(challenge.challengeId, code);
@@ -97,12 +98,12 @@ export function CloudAccountCard({
     } catch (cause) {
       setError(message(cause));
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   };
 
   const signOut = async () => {
-    setBusy(true);
+    setBusy("signout");
     setError(null);
     try {
       await ipc.cloudSignOut();
@@ -111,7 +112,7 @@ export function CloudAccountCard({
     } catch (cause) {
       setError(message(cause));
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   };
 
@@ -121,7 +122,14 @@ export function CloudAccountCard({
         {step === "account" && (
           <div className="flex items-center gap-3">
             <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-line bg-panel text-muted">
-              {account ? (
+              {loading ? (
+                <Loader2
+                  size={16}
+                  strokeWidth={1.8}
+                  className="animate-spin"
+                  aria-hidden="true"
+                />
+              ) : account ? (
                 <span className="text-[12px] font-semibold uppercase text-ink">
                   {account.email.slice(0, 1)}
                 </span>
@@ -151,10 +159,11 @@ export function CloudAccountCard({
                 variant="ghost"
                 size="sm"
                 className="shrink-0"
-                disabled={busy}
+                disabled={Boolean(busy)}
+                loading={busy === "signout"}
                 onClick={signOut}
               >
-                <LogOut size={13} strokeWidth={1.8} />
+                {busy !== "signout" && <LogOut size={13} strokeWidth={1.8} />}
                 {busy ? "Signing out…" : "Sign out"}
               </Button>
             ) : (
@@ -202,19 +211,27 @@ export function CloudAccountCard({
                 autoComplete="email"
                 required
                 value={email}
-                disabled={busy}
+                disabled={Boolean(busy)}
                 placeholder="you@example.com"
                 onChange={(event) => setEmail(event.target.value)}
               />
             </label>
             <div className="mt-3 flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setStep("account")}>Cancel</Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={Boolean(busy)}
+                onClick={() => setStep("account")}
+              >
+                Cancel
+              </Button>
               <Button
                 type="submit"
                 variant="primary"
                 size="sm"
                 className="ml-auto"
-                disabled={busy || !email.trim()}
+                disabled={Boolean(busy) || !email.trim()}
+                loading={busy === "request"}
               >
                 {busy ? "Sending…" : "Send code"}
               </Button>
@@ -250,7 +267,7 @@ export function CloudAccountCard({
                 maxLength={6}
                 required
                 value={code}
-                disabled={busy}
+                disabled={Boolean(busy)}
                 placeholder="000000"
                 onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))}
                 className="h-11 text-center font-mono text-[18px] font-semibold tracking-[0.32em]"
@@ -260,6 +277,7 @@ export function CloudAccountCard({
               <Button
                 variant="ghost"
                 size="sm"
+                disabled={Boolean(busy)}
                 onClick={() => {
                   setError(null);
                   setStep("email");
@@ -270,20 +288,26 @@ export function CloudAccountCard({
               <Button
                 variant="ghost"
                 size="sm"
-                disabled={busy || resendIn > 0}
+                disabled={Boolean(busy) || resendIn > 0}
+                loading={busy === "request"}
                 onClick={() => void requestCode()}
               >
-                <RotateCcw size={12} strokeWidth={1.8} />
-                {resendIn > 0 ? `Resend in ${resendIn}s` : "Resend"}
+                {busy !== "request" && <RotateCcw size={12} strokeWidth={1.8} />}
+                {busy === "request"
+                  ? "Sending…"
+                  : resendIn > 0
+                    ? `Resend in ${resendIn}s`
+                    : "Resend"}
               </Button>
               <Button
                 type="submit"
                 variant="primary"
                 size="sm"
                 className="ml-auto"
-                disabled={busy || code.length !== 6}
+                disabled={Boolean(busy) || code.length !== 6}
+                loading={busy === "verify"}
               >
-                {busy ? "Verifying…" : "Verify"}
+                {busy === "verify" ? "Verifying…" : "Verify"}
               </Button>
             </div>
           </form>

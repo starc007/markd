@@ -144,6 +144,7 @@ export function QuickCaptureWindow() {
           <Button
             size="sm"
             disabled={(!title.trim() && !value.trim()) || saving}
+            loading={saving}
             onClick={() => void save()}
           >
             {saving ? "Saving…" : "Save note"}

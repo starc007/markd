@@ -1,5 +1,6 @@
+import { Loader2 } from "lucide-react";
 import { motion, useReducedMotion, type HTMLMotionProps } from "motion/react";
-import { forwardRef } from "react";
+import { forwardRef, type ReactNode } from "react";
 import { SPRING_PRESS } from "@/lib/ease";
 import { cn } from "@/lib/utils";
 
@@ -21,33 +22,48 @@ const SIZE: Record<Size, string> = {
   icon: "h-7 w-7 rounded-md",
 };
 
-export interface ButtonProps extends HTMLMotionProps<"button"> {
+export interface ButtonProps extends Omit<HTMLMotionProps<"button">, "children"> {
   variant?: Variant;
   size?: Size;
+  loading?: boolean;
+  children?: ReactNode;
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
-    { variant = "secondary", size = "md", className, disabled, ...rest },
+    { variant = "secondary", size = "md", className, disabled, loading, children, ...rest },
     ref,
   ) => {
     const reduce = useReducedMotion();
+    const isDisabled = disabled || loading;
     return (
       <motion.button
         ref={ref}
         type="button"
-        disabled={disabled}
-        whileTap={reduce || disabled ? undefined : { scale: 0.96 }}
+        disabled={isDisabled}
+        aria-busy={loading || undefined}
+        whileTap={reduce || isDisabled ? undefined : { scale: 0.96 }}
         transition={SPRING_PRESS}
         className={cn(
-          "flex select-none items-center justify-center font-medium transition-colors duration-100",
+          "flex select-none items-center justify-center font-medium leading-none transition-colors duration-100",
+          size !== "icon" && "[&>svg]:translate-y-0",
           "disabled:pointer-events-none disabled:opacity-50",
           VARIANT[variant],
           SIZE[size],
           className,
         )}
         {...rest}
-      />
+      >
+        {loading ? (
+          <Loader2
+            size={13}
+            strokeWidth={2}
+            className="shrink-0 animate-spin"
+            aria-hidden="true"
+          />
+        ) : null}
+        {children}
+      </motion.button>
     );
   },
 );
