@@ -200,15 +200,38 @@
   margin: 0.45em 0;
 }
 
+.published-note strong {
+  font-weight: 650;
+}
+
 .published-note ul,
 .published-note ol {
-  margin: 0.55em 0;
-  padding-left: 1.35em;
+  margin: 0.45em 0;
+  padding-inline-start: 1.5em;
+}
+
+.published-note ul {
+  list-style: disc;
+}
+
+.published-note ol {
+  list-style: decimal;
+}
+
+.published-note ul ul {
+  list-style: circle;
+}
+
+.published-note ul ul ul {
+  list-style: square;
 }
 
 .published-note li {
-  margin: 0.25em 0;
-  padding-left: 0.1em;
+  margin: 0.15em 0;
+}
+
+.published-note li > p {
+  margin: 0;
 }
 
 .published-note li::marker {
@@ -232,7 +255,7 @@
   border-left: 2px solid var(--fg);
   color: var(--fg-muted);
   margin: 0.8em 0;
-  padding-left: 1em;
+  padding-inline-start: 1em;
 }
 
 .published-note code {
@@ -282,19 +305,47 @@
 
 .published-note th,
 .published-note td {
-  border-bottom: 1px solid var(--border);
-  padding: 0.65rem 0.8rem;
-  text-align: left;
+  border: 1px solid var(--border);
+  min-width: 80px;
+  padding: 6px 10px;
+  text-align: start;
 }
 
 .published-note th {
+  background: var(--panel);
   color: var(--fg);
-  font-weight: 650;
+  font-weight: 600;
+}
+
+.published-note ul.contains-task-list {
+  list-style: none;
+  padding-inline-start: 0;
+}
+
+.published-note li.task-list-item {
+  padding-inline-start: 24px;
+  position: relative;
+}
+
+.published-note li.task-list-item > input[type="checkbox"] {
+  height: 16px;
+  inset-inline-start: 0;
+  margin: 0;
+  position: absolute;
+  top: 5px;
+  width: 16px;
 }
 
 .published-note input[type="checkbox"] {
   accent-color: var(--fg);
-  margin-right: 0.5em;
+}
+
+.published-note img {
+  border-radius: 8px;
+  display: block;
+  height: auto;
+  margin: 1em 0;
+  max-width: 100%;
 }
 
 .published-note__asset-placeholder {
