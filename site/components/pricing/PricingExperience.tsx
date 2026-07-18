@@ -1,9 +1,11 @@
 "use client";
 
-import { Check, Globe2 } from "lucide-react";
+import { ArrowUpRight, Check, Globe2 } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
-import { DownloadButton } from "@/components/ui/download-button";
+import { Grainient } from "@/components/Grainient";
+import { MONO_SOFT } from "@/components/grainient-presets";
+import { ButtonLink } from "@/components/ui/button";
 import { EASE_OUT } from "@/lib/ease";
 
 type Billing = "yearly" | "monthly";
@@ -19,6 +21,9 @@ export function PricingExperience() {
   const [billing, setBilling] = useState<Billing>("yearly");
   const reduce = useReducedMotion();
   const yearly = billing === "yearly";
+  const checkoutUrl = yearly
+    ? process.env.NEXT_PUBLIC_MARKD_CLOUD_YEARLY_CHECKOUT_URL
+    : process.env.NEXT_PUBLIC_MARKD_CLOUD_MONTHLY_CHECKOUT_URL;
 
   const rise = (delay: number) =>
     reduce
@@ -60,9 +65,23 @@ export function PricingExperience() {
 
         <motion.div
           {...rise(0.18)}
-          className="mt-8 overflow-hidden rounded-2xl border border-border bg-paper text-left"
+          className="relative isolate mt-8 overflow-hidden rounded-2xl border border-border bg-card text-left"
         >
-          <div className="flex flex-col gap-5 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div aria-hidden="true" className="absolute inset-0 -z-10 opacity-80">
+            <Grainient
+              className="absolute inset-0"
+              {...MONO_SOFT}
+              timeSpeed={reduce ? 0 : 0.12}
+              warpStrength={0.65}
+              warpFrequency={3.6}
+              warpSpeed={0.8}
+              warpAmplitude={72}
+              grainAmount={0.045}
+              saturation={0.55}
+            />
+          </div>
+
+          <div className="flex flex-col gap-5 border-b border-black/[0.07] bg-white/60 p-5 backdrop-blur-[2px] sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <div>
               <p className="text-[12px] font-medium text-muted-foreground">
                 One plan. Everything included.
@@ -74,7 +93,7 @@ export function PricingExperience() {
             <BillingToggle value={billing} onChange={setBilling} reduceMotion={reduce} />
           </div>
 
-          <div className="flex flex-col gap-6 p-5 sm:flex-row sm:items-center sm:px-6">
+          <div className="flex flex-col gap-6 bg-white/28 p-5 backdrop-blur-[1px] sm:flex-row sm:items-center sm:px-6">
             <div className="sm:w-[190px] sm:shrink-0">
               <div className="flex items-end gap-2">
                 <motion.span
@@ -106,11 +125,25 @@ export function PricingExperience() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 border-t border-border bg-card px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-            <p className="text-[11.5px] text-muted-foreground">
-              Cloud checkout is opening soon.
-            </p>
-            <DownloadButton label="Download Markd" size="md" className="w-full sm:w-auto" />
+          <div className="flex flex-col gap-3 border-t border-black/[0.07] bg-white/68 px-5 py-4 backdrop-blur-[3px] sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div>
+              <p className="text-[12px] font-medium text-foreground">
+                Start publishing with Markd Cloud
+              </p>
+              <p className="mt-0.5 text-[10.5px] text-muted-foreground">
+                {yearly ? "One yearly payment of $72" : "$8 billed every month"}
+              </p>
+            </div>
+            <ButtonLink
+              href={checkoutUrl}
+              aria-disabled={!checkoutUrl}
+              tabIndex={checkoutUrl ? undefined : -1}
+              size="md"
+              className={`w-full sm:w-auto ${checkoutUrl ? "" : "pointer-events-none opacity-55"}`}
+            >
+              Buy {yearly ? "yearly" : "monthly"}
+              <ArrowUpRight className="size-[15px]" aria-hidden />
+            </ButtonLink>
           </div>
         </motion.div>
 
