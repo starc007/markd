@@ -64,10 +64,22 @@ function requestFingerprint(request: Request): string {
 }
 
 async function otpHash(env: Env, challengeId: string, code: string): Promise<string> {
+  return hmacSha256(otpPepper(env), `${challengeId}:${code}`);
+}
+
+function otpPepper(env: Env): string {
   if (!env.OTP_PEPPER || env.OTP_PEPPER.length < 32) {
     throw new Error("OTP_PEPPER must be configured as a Worker secret");
   }
-  return hmacSha256(env.OTP_PEPPER, `${challengeId}:${code}`);
+  return env.OTP_PEPPER;
+}
+
+function rateLimited(): OtpError {
+  return new OtpError(
+    429,
+    "otp_rate_limited",
+    "Too many sign-in codes were requested. Try again later.",
+  );
 }
 
 function challengeResponse(challenge: ChallengeRow, now: number): Response {
@@ -86,7 +98,13 @@ export async function requestOtp(request: Request, env: Env): Promise<Response> 
   const body = (await readJson(request, MAX_AUTH_BODY_BYTES)) as Record<string, unknown>;
   const email = normalizeEmail(body?.email);
   const now = Date.now();
-  const fingerprint = await hmacSha256(env.OTP_PEPPER, requestFingerprint(request));
+  const pepper = otpPepper(env);
+  const [emailFingerprint, fingerprint] = await Promise.all([
+    hmacSha256(pepper, `email:${email}`),
+    hmacSha256(pepper, `ip:${requestFingerprint(request)}`),
+  ]);
+  const ipLimit = await env.OTP_IP_RATE_LIMITER.limit({ key: fingerprint });
+  if (!ipLimit.success) throw rateLimited();
 
   const latest = await env.DB.prepare(
     `SELECT id, email, code_hash, attempts, expires_at, consumed_at, created_at
@@ -100,15 +118,20 @@ export async function requestOtp(request: Request, env: Env): Promise<Response> 
     return challengeResponse(latest, now);
   }
 
+  const emailLimit = await env.OTP_EMAIL_RATE_LIMITER.limit({ key: emailFingerprint });
+  if (!emailLimit.success) throw rateLimited();
+
   const windowStart = now - RATE_WINDOW_MS;
   const [emailCount, fingerprintCount] = await Promise.all([
     env.DB.prepare(
-      "SELECT COUNT(*) AS count FROM otp_challenges WHERE email = ? AND created_at >= ?",
+      `SELECT COUNT(*) AS count FROM otp_rate_events
+       WHERE email_fingerprint = ? AND created_at >= ?`,
     )
-      .bind(email, windowStart)
+      .bind(emailFingerprint, windowStart)
       .first<CountRow>(),
     env.DB.prepare(
-      "SELECT COUNT(*) AS count FROM otp_challenges WHERE request_fingerprint = ? AND created_at >= ?",
+      `SELECT COUNT(*) AS count FROM otp_rate_events
+       WHERE request_fingerprint = ? AND created_at >= ?`,
     )
       .bind(fingerprint, windowStart)
       .first<CountRow>(),
@@ -117,14 +140,11 @@ export async function requestOtp(request: Request, env: Env): Promise<Response> 
     (emailCount?.count ?? 0) >= MAX_EMAIL_REQUESTS_PER_HOUR ||
     (fingerprintCount?.count ?? 0) >= MAX_FINGERPRINT_REQUESTS_PER_HOUR
   ) {
-    throw new OtpError(
-      429,
-      "otp_rate_limited",
-      "Too many sign-in codes were requested. Try again later.",
-    );
+    throw rateLimited();
   }
 
   const id = newId("otp");
+  const rateEventId = newId("rate");
   const code = randomOtp();
   const challenge: ChallengeRow = {
     id,
@@ -135,13 +155,26 @@ export async function requestOtp(request: Request, env: Env): Promise<Response> 
     consumed_at: null,
     created_at: now,
   };
-  await env.DB.prepare(
-    `INSERT INTO otp_challenges (
-      id, email, code_hash, request_fingerprint, attempts, expires_at, created_at
-    ) VALUES (?, ?, ?, ?, 0, ?, ?)`,
-  )
-    .bind(id, email, challenge.code_hash, fingerprint, challenge.expires_at, now)
-    .run();
+  try {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO otp_challenges (
+          id, email, code_hash, request_fingerprint, attempts, expires_at, created_at
+        ) VALUES (?, ?, ?, ?, 0, ?, ?)`,
+      ).bind(id, email, challenge.code_hash, fingerprint, challenge.expires_at, now),
+      env.DB.prepare(
+        `INSERT INTO otp_rate_events (
+          id, email_fingerprint, request_fingerprint, created_at
+        ) VALUES (?, ?, ?, ?)`,
+      ).bind(rateEventId, emailFingerprint, fingerprint, now),
+    ]);
+  } catch (cause) {
+    const message = cause instanceof Error ? cause.message : String(cause);
+    if (message.includes("otp_email_rate_limit") || message.includes("otp_request_rate_limit")) {
+      throw rateLimited();
+    }
+    throw cause;
+  }
 
   try {
     await sendOtpEmail(env, email, code);
@@ -212,10 +245,10 @@ export async function verifyOtp(request: Request, env: Env): Promise<Response> {
   const sessionId = newId("session");
   const expiresAt = now + SESSION_TTL_MS;
   const consumed = await env.DB.prepare(
-    `UPDATE otp_challenges SET consumed_at = ?
+    `DELETE FROM otp_challenges
      WHERE id = ? AND consumed_at IS NULL AND expires_at > ? AND attempts < ?`,
   )
-    .bind(now, challengeId, now, MAX_ATTEMPTS)
+    .bind(challengeId, now, MAX_ATTEMPTS)
     .run();
   if (consumed.meta.changes !== 1) throw invalidOtp();
   await env.DB.prepare(
@@ -234,14 +267,20 @@ export async function verifyOtp(request: Request, env: Env): Promise<Response> {
 
 export async function cleanupExpiredAuthRecords(env: Env): Promise<void> {
   const now = Date.now();
-  const challengeCutoff = now - RATE_WINDOW_MS;
+  const rateCutoff = now - RATE_WINDOW_MS;
   await env.DB.batch([
     env.DB.prepare(
       `DELETE FROM otp_challenges WHERE id IN (
         SELECT id FROM otp_challenges
-        WHERE expires_at < ? ORDER BY expires_at LIMIT ?
+        WHERE expires_at <= ? ORDER BY expires_at LIMIT ?
       )`,
-    ).bind(challengeCutoff, CLEANUP_BATCH_SIZE),
+    ).bind(now, CLEANUP_BATCH_SIZE),
+    env.DB.prepare(
+      `DELETE FROM otp_rate_events WHERE id IN (
+        SELECT id FROM otp_rate_events
+        WHERE created_at < ? ORDER BY created_at LIMIT ?
+      )`,
+    ).bind(rateCutoff, CLEANUP_BATCH_SIZE),
     env.DB.prepare(
       `DELETE FROM sessions WHERE id IN (
         SELECT id FROM sessions

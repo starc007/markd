@@ -72,7 +72,7 @@ export function randomSlug(): string {
 }
 
 export function newId(
-  prefix: "site" | "release" | "publish" | "otp" | "session" | "user",
+  prefix: "site" | "release" | "publish" | "otp" | "rate" | "session" | "user",
 ): string {
   return `${prefix}_${crypto.randomUUID().replaceAll("-", "")}`;
 }

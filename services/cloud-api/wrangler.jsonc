@@ -18,6 +18,18 @@
   "triggers": {
     "crons": ["0 * * * *"]
   },
+  "ratelimits": [
+    {
+      "name": "OTP_IP_RATE_LIMITER",
+      "namespace_id": "41001",
+      "simple": { "limit": 20, "period": 60 }
+    },
+    {
+      "name": "OTP_EMAIL_RATE_LIMITER",
+      "namespace_id": "41002",
+      "simple": { "limit": 2, "period": 60 }
+    }
+  ],
   "vars": {
     "PUBLIC_SITE_ORIGIN": "https://usemarkd.app",
     "PUBLIC_API_ORIGIN": "https://api.usemarkd.app",

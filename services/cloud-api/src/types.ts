@@ -3,6 +3,8 @@ export interface Env {
   PUBLISHED_NOTES: R2Bucket;
   IMAGES: ImagesBinding;
   EMAIL: SendEmail;
+  OTP_IP_RATE_LIMITER: RateLimit;
+  OTP_EMAIL_RATE_LIMITER: RateLimit;
   PUBLIC_SITE_ORIGIN: string;
   PUBLIC_API_ORIGIN: string;
   OTP_PEPPER: string;
