@@ -1,6 +1,10 @@
 import type { ComponentPropsWithoutRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import {
+  publishedProperties,
+  splitPublishedFrontmatter,
+} from "@/lib/published-note";
 
 function isSafeLink(href: string | undefined): boolean {
   if (!href) return false;
@@ -23,8 +27,12 @@ function PublishedLink({ href, children, ...props }: ComponentPropsWithoutRef<"a
 }
 
 export function PublishedMarkdown({ markdown }: { markdown: string }) {
+  const { body } = splitPublishedFrontmatter(markdown);
+  const properties = publishedProperties(markdown);
+
   return (
     <div className="published-note">
+      {properties.length > 0 ? <PublishedProperties properties={properties} /> : null}
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         skipHtml
@@ -37,8 +45,40 @@ export function PublishedMarkdown({ markdown }: { markdown: string }) {
           ),
         }}
       >
-        {markdown}
+        {body}
       </ReactMarkdown>
     </div>
+  );
+}
+
+function PublishedProperties({
+  properties,
+}: {
+  properties: ReturnType<typeof publishedProperties>;
+}) {
+  return (
+    <dl className="mb-8 grid gap-2 border-b border-border pb-6 text-[13px]">
+      {properties.map((property) => (
+        <div key={property.key} className="grid gap-1.5 sm:grid-cols-[120px_1fr]">
+          <dt className="font-medium capitalize text-faint">{property.key}</dt>
+          <dd className="text-muted-foreground">
+            {Array.isArray(property.value) ? (
+              <span className="flex flex-wrap gap-1.5">
+                {property.value.map((item) => (
+                  <span
+                    key={item}
+                    className="rounded-md bg-panel px-2 py-0.5 text-[12px] text-foreground"
+                  >
+                    {item}
+                  </span>
+                ))}
+              </span>
+            ) : (
+              property.value
+            )}
+          </dd>
+        </div>
+      ))}
+    </dl>
   );
 }

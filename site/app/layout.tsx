@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
+import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
 import Script from "next/script";
 import { UMAMI_SRC, UMAMI_WEBSITE_ID } from "@/lib/analytics";
 import "./globals.css";
 
-const sans = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-jakarta" });
+const sans = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const serif = Fraunces({ subsets: ["latin"], variable: "--font-fraunces" });
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jbmono" });
 
@@ -43,7 +43,13 @@ export const metadata: Metadata = {
   },
 };
 
-export const viewport: Viewport = { themeColor: "#fcfcfb" };
+export const viewport: Viewport = {
+  colorScheme: "light dark",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fbfbfa" },
+    { media: "(prefers-color-scheme: dark)", color: "#1a1a1a" },
+  ],
+};
 
 const JSON_LD = {
   "@context": "https://schema.org",
