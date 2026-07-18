@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // Update manifest must never be stale — the app polls it for versions.
+        // Update manifest must never be stale because the app polls it for versions.
         source: "/updates/latest.json",
         headers: [
           { key: "Cache-Control", value: "no-cache, must-revalidate" },

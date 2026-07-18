@@ -28,11 +28,16 @@ function pagePath(path?: string[]) {
 export async function generateMetadata({ params }: SharePageProps): Promise<Metadata> {
   const { slug, path } = await params;
   const note = await getPublishedNote(slug, pagePath(path));
-  if (!note) return { title: "Published note · Markd", robots: { index: false } };
+  if (!note) {
+    return {
+      title: { absolute: "Published note · Markd" },
+      robots: { index: false },
+    };
+  }
 
   const description = noteDescription(note.markdown) || "A note published with Markd.";
   return {
-    title: `${note.title} · Markd`,
+    title: { absolute: `${note.title} · Markd` },
     description,
     robots: { index: false, follow: false },
     openGraph: {

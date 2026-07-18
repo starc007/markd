@@ -1,21 +1,40 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
 import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
+import {
+  PRODUCT_JSON_LD,
+  SITE_DESCRIPTION,
+  SITE_TITLE,
+  SITE_URL,
+  jsonLd,
+} from "@/lib/seo";
 import "./globals.css";
 
 const sans = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const serif = Fraunces({ subsets: ["latin"], variable: "--font-fraunces" });
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jbmono" });
-
-const TITLE = "Markd — the last notes app you'll download";
-const DESCRIPTION =
-  "Everyone's built a notes app; few are worth keeping. Markd is a fast, local-first markdown editor for macOS and Linux, with real UI, real speed, and AI that reads your notes. Plain .md files in a folder you own.";
+const googleSiteVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
+const bingSiteVerification = process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION;
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://usemarkd.app"),
-  title: TITLE,
-  description: DESCRIPTION,
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: SITE_TITLE,
+    template: "%s | Markd",
+  },
+  description: SITE_DESCRIPTION,
   applicationName: "Markd",
+  category: "productivity",
+  creator: "Markd",
+  publisher: "Markd",
+  referrer: "origin-when-cross-origin",
+  alternates: { canonical: "/" },
+  verification: {
+    ...(googleSiteVerification ? { google: googleSiteVerification } : {}),
+    ...(bingSiteVerification
+      ? { other: { "msvalidate.01": bingSiteVerification } }
+      : {}),
+  },
   keywords: [
     "markdown notes app",
     "notes app for macOS",
@@ -29,33 +48,23 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Markd" }],
   openGraph: {
-    title: TITLE,
-    description: DESCRIPTION,
-    url: "https://usemarkd.app",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    url: SITE_URL,
     siteName: "Markd",
     type: "website",
+    locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: TITLE,
-    description: DESCRIPTION,
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
   },
 };
 
 export const viewport: Viewport = {
   colorScheme: "light",
   themeColor: "#fbfbfa",
-};
-
-const JSON_LD = {
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  name: "Markd",
-  applicationCategory: "ProductivityApplication",
-  operatingSystem: "macOS 12+, Linux x86_64",
-  description: DESCRIPTION,
-  url: "https://usemarkd.app",
-  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -68,7 +77,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script
           type="application/ld+json"
           // eslint-disable-next-line react/no-danger
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
+          dangerouslySetInnerHTML={{ __html: jsonLd(PRODUCT_JSON_LD) }}
         />
         <AnalyticsProvider />
         {children}

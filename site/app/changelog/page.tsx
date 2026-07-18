@@ -7,11 +7,16 @@ import { CHANGELOG } from "@/lib/changelog";
 import { GITHUB } from "@/lib/config";
 
 export const metadata: Metadata = {
-  title: "Changelog | Markd",
+  title: "Changelog",
   description:
     "See what is new in Markd, the local-first Markdown notes app for macOS and Linux.",
   alternates: {
     canonical: "/changelog",
+  },
+  openGraph: {
+    title: "Markd changelog",
+    description: "New features, refinements, and fixes in every Markd release.",
+    url: "/changelog",
   },
 };
 

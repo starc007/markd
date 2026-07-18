@@ -9,11 +9,17 @@ import { AnalyticsEvent } from "@/components/analytics/AnalyticsEvent";
 import { DMG, LINUX_APPIMAGE, LINUX_DEB, VERSION } from "@/lib/config";
 
 export const metadata: Metadata = {
-  title: "Download Markd",
+  title: "Download for macOS and Linux",
   description:
     "Download Markd for Apple Silicon Macs or x86_64 GNU/Linux systems.",
   alternates: {
     canonical: "/download",
+  },
+  openGraph: {
+    title: "Download Markd for macOS and Linux",
+    description:
+      "Download the signed macOS app or an x86_64 Linux AppImage or Debian package.",
+    url: "/download",
   },
 };
 

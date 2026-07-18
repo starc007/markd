@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Markd — the last notes app you'll download";
+export const alt = "Markd: local-first Markdown notes for macOS and Linux";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -58,7 +58,7 @@ export default function Image() {
               maxWidth: 860,
             }}
           >
-            Local-first markdown for macOS and Linux, with AI that reads your notes.
+            Local-first Markdown for macOS and Linux, with plain files you own.
           </div>
         </div>
 

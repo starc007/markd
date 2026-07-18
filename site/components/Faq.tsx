@@ -3,7 +3,7 @@ import { Plus } from "lucide-react";
 const FAQS: { q: string; a: string }[] = [
   {
     q: "Where are my notes stored?",
-    a: "On your Mac, as plain Markdown files in a folder you choose. No database or account is required — open the folder in Finder anytime. Markd only uploads a separate copy when you explicitly publish a note.",
+    a: "On your Mac, as plain Markdown files in a folder you choose. No database or account is required; open the folder in Finder anytime. Markd only uploads a separate copy when you explicitly publish a note.",
   },
   {
     q: "Is there sync?",
@@ -19,7 +19,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "Is it free?",
-    a: "Yes — free and open source under the MIT license. No subscription, no upsell.",
+    a: "The Markd desktop app is free and open source under the MIT license. Markd Cloud is an optional paid subscription for publishing connected notes and hosted images on the web.",
   },
   {
     q: "Which platforms are supported?",
@@ -27,7 +27,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "What's the AI agent?",
-    a: "Coming soon: an agent that reads and writes your vault with your review on every edit, powered by your existing Claude subscription — no API keys, nothing leaves your Mac.",
+    a: "Coming soon: an agent that can draft, organize, and connect notes while showing every proposed edit for your approval. It is planned to work with your existing Claude subscription without requiring a separate API key.",
   },
 ];
 

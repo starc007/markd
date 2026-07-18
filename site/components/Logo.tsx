@@ -1,4 +1,4 @@
-// Markd app icon — the hash "#" mark, matching src-tauri/icons/icon-source.svg
+// Markd app icon: the hash "#" mark, matching src-tauri/icons/icon-source.svg
 // exactly (dark rounded tile, rounded white strokes).
 
 export function LogoMark({ size = 28 }: { size?: number }) {

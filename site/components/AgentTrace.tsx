@@ -57,7 +57,7 @@ export function AgentTrace() {
             {...rise(0.06)}
             className="mt-6 text-balance font-serif text-[32px] leading-tight text-foreground sm:text-[42px]"
           >
-            An agent that works inside your vault — with your hand on every edit.
+            An agent that works inside your vault, with your hand on every edit.
           </motion.h2>
           <motion.p
             {...rise(0.12)}
@@ -65,14 +65,14 @@ export function AgentTrace() {
           >
             Ask it to draft, tidy, or connect notes. It reads and writes the same
             plain files you do, narrates each step, and pauses for your approval
-            before anything lands. Powered by your Claude subscription — no API
-            keys, nothing leaves your Mac.
+            before anything lands. It is planned to use your Claude subscription
+            without requiring a separate API key.
           </motion.p>
           <motion.ul {...rise(0.18)} className="mt-7 flex flex-col gap-3">
             {[
-              "Reads and writes plain markdown — no hidden format",
+              "Reads and writes plain markdown with no hidden format",
               "Every change shown as a diff you approve or edit",
-              "Subscription, not API keys — runs entirely local",
+              "Uses your existing subscription with no separate API key",
             ].map((line) => (
               <li key={line} className="flex items-start gap-3">
                 <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">

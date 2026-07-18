@@ -46,7 +46,7 @@ const PAL = [
   { t: "Q3 Roadmap", s: "projects/roadmap.md" },
   { t: "Release notes", s: "release-notes.md" },
   { t: "Reading list", s: "reading-list.md" },
-  { t: "Meeting — planning", s: "journal/2024.md" },
+  { t: "Meeting: planning", s: "journal/2024.md" },
 ];
 
 function PaletteCell({ still }: { still: boolean }) {
@@ -301,15 +301,15 @@ export function FeaturesBento() {
             className="mt-5 text-balance font-serif text-[32px] leading-[1.1] text-foreground sm:text-[42px]"
           />
           <p className="mt-4 max-w-xl text-pretty text-[14.5px] leading-7 text-muted-foreground">
-            The things other apps ship in v3 — real search, page links, a command
-            palette, honest markdown — here on day one, and out of your way.
+            The things other apps ship in v3, including real search, page links, a
+            command palette, and honest markdown, are here on day one and out of your way.
           </p>
         </div>
 
         <div ref={gridRef} className="mt-12 grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-6">
           <Cell reduce={reduce} index={0} className="sm:col-span-2 lg:col-span-4">
             <PaletteCell still={still} />
-            <Caption title="Everything, one keystroke away" body="Press ⌘K to jump to any note or run any action — ranked in milliseconds, keyboard all the way." />
+            <Caption title="Everything, one keystroke away" body="Press ⌘K to jump to any note or run any action, ranked in milliseconds and keyboard all the way." />
           </Cell>
           <Cell reduce={reduce} index={1} className="sm:col-span-2 lg:col-span-2">
             <FilesCell />
@@ -317,7 +317,7 @@ export function FeaturesBento() {
           </Cell>
           <Cell reduce={reduce} index={2} className="lg:col-span-2">
             <LinksCell still={still} />
-            <Caption title="Link ideas together" body="Type [[ to connect notes — stored as clean markdown, with backlinks." />
+            <Caption title="Link ideas together" body="Type [[ to connect notes, stored as clean markdown with backlinks." />
           </Cell>
           <Cell reduce={reduce} index={3} className="lg:col-span-2">
             <FrontmatterCell still={still} />
@@ -325,7 +325,7 @@ export function FeaturesBento() {
           </Cell>
           <Cell reduce={reduce} index={4} className="lg:col-span-2">
             <SearchCell still={still} />
-            <Caption title="Find it instantly" body="Title and content search, ranked — the note you meant surfaces first." />
+            <Caption title="Find it instantly" body="Title and content search is ranked so the note you meant surfaces first." />
           </Cell>
         </div>
       </div>

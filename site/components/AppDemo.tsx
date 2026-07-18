@@ -223,13 +223,13 @@ function NotePane({ still }: { still: boolean }) {
       <h1 className="text-[26px] font-[680] tracking-[-0.025em] text-foreground sm:text-[30px]">Q3 Roadmap</h1>
       <div className="mt-4 space-y-4 text-[14.5px] leading-[1.7] text-foreground/85 sm:text-[15px] sm:leading-[1.75]">
         <p>
-          The quarter is about speed and focus — ship the editor rewrite, then open
+          The quarter is about speed and focus: ship the editor rewrite, then open
           up the workflow to an in-app agent.
         </p>
         <h2 className="pt-1 text-[19px] font-semibold tracking-[-0.01em] text-foreground">Milestones</h2>
         <ul className="space-y-2">
           {[
-            { done: true, text: "Persistent editor — instant note switching" },
+            { done: true, text: "Persistent editor with instant note switching" },
             { done: false, text: "Agent panel with review-before-apply" },
             { done: false, text: "Optional end-to-end sync" },
           ].map((t) => (
@@ -263,7 +263,7 @@ function NotePane({ still }: { still: boolean }) {
   );
 }
 
-/* Left filter rail — "Tags" with an active (filtered) pill. Monochrome, but
+/* Left filter rail: "Tags" with an active (filtered) pill. Monochrome, but
    each tag gets its own ink shade so the dots read as distinct swatches. */
 const TAG_SHADES = ["bg-foreground/85", "bg-foreground/60", "bg-foreground/40", "bg-foreground/70", "bg-foreground/50"];
 
@@ -357,7 +357,7 @@ const BOOKMARK_TAGS = ["reading", "dev", "agents"];
 const BOOKMARKS = [
   { title: "Local-first software", host: "inkandswitch.com", tag: "reading" },
   { title: "Designing calm software", host: "calmtech.com", tag: "reading" },
-  { title: "Tauri 2.0 — a new era", host: "tauri.app", tag: "dev" },
+  { title: "Tauri 2.0: a new era", host: "tauri.app", tag: "dev" },
   { title: "The Agent Client Protocol", host: "agentclientprotocol.com", tag: "agents" },
 ];
 

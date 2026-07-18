@@ -31,7 +31,7 @@ export function Hero() {
           <span className="rounded-full bg-accent-soft px-2 py-0.5 font-mono text-[10.5px] uppercase tracking-wide text-foreground">
             New
           </span>
-          An AI that actually reads your notes
+          Approval-first AI agent, coming soon
         </motion.a>
 
         <motion.h1
@@ -51,7 +51,7 @@ export function Hero() {
         >
           Everyone&apos;s built one; most don&apos;t survive their own v2. Markd
           is the fast, local-first markdown editor you actually keep.
-          Clean UI, instant everything, and AI that reads and writes your notes.
+          Clean UI, instant everything, and an approval-first AI agent on the way.
           Plain{" "}
           <code className="rounded bg-card px-1.5 py-0.5 font-mono text-[0.85em] text-fg-soft">
             .md
@@ -84,7 +84,7 @@ export function Hero() {
         </motion.p>
       </div>
 
-      {/* Demo stage — the real app UI, bleeding flush to the bottom. */}
+      {/* Demo stage with the real app UI bleeding flush to the bottom. */}
       <div className="mx-auto mt-16 w-full max-w-6xl sm:mt-24">
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 40 }}

@@ -1,4 +1,4 @@
-// Monochrome silver gradient presets for the Grainient backdrops — keeps every
+// Monochrome silver gradient presets for the Grainient backdrops. Keeps every
 // animated stage strictly ink/paper, no color.
 export type GrainientPreset = {
   color1: string;
