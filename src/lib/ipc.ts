@@ -5,6 +5,7 @@ import type {
   CloudAccount,
   Bookmark,
   PublishedNoteStatus,
+  PublishPageDraft,
   PublishedShare,
   OtpChallenge,
   SearchHit,
@@ -72,14 +73,26 @@ export const ipc = {
   cloudVerifyOtp: (challengeId: string, code: string) =>
     call<CloudAccount>("cloud_verify_otp", { challengeId, code }),
   cloudSignOut: () => call<void>("cloud_sign_out"),
-  publishedNoteStatus: (rel: string, content: string) =>
-    call<PublishedNoteStatus>("published_note_status", { rel, content }),
+  publishedNoteStatus: (
+    rel: string,
+    title: string,
+    content: string,
+    pages: PublishPageDraft[],
+  ) => call<PublishedNoteStatus>("published_note_status", { rel, title, content, pages }),
   isNotePublished: (rel: string) =>
     call<boolean>("is_note_published", { rel }),
-  publishNote: (rel: string, title: string, content: string) =>
-    call<PublishedShare>("publish_note", { rel, title, content }),
-  updatePublishedNote: (rel: string, title: string, content: string) =>
-    call<PublishedShare>("update_published_note", { rel, title, content }),
+  publishNote: (
+    rel: string,
+    title: string,
+    content: string,
+    pages: PublishPageDraft[],
+  ) => call<PublishedShare>("publish_note", { rel, title, content, pages }),
+  updatePublishedNote: (
+    rel: string,
+    title: string,
+    content: string,
+    pages: PublishPageDraft[],
+  ) => call<PublishedShare>("update_published_note", { rel, title, content, pages }),
   revokePublishedNote: (rel: string) =>
     call<void>("revoke_published_note", { rel }),
   pinsList: () => call<string[]>("pins_list"),

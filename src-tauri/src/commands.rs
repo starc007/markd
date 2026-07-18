@@ -260,9 +260,11 @@ pub fn published_note_status(
     app: AppHandle,
     state: State<'_, AppState>,
     rel: String,
+    title: String,
     content: String,
+    pages: Vec<cloud::PublishPageDraft>,
 ) -> AppResult<cloud::PublishedNoteStatus> {
-    cloud::status(&app, &state.root()?, &rel, &content)
+    cloud::status(&app, &state.root()?, &rel, &title, &content, pages)
 }
 
 #[tauri::command]
@@ -277,8 +279,9 @@ pub async fn publish_note(
     rel: String,
     title: String,
     content: String,
+    pages: Vec<cloud::PublishPageDraft>,
 ) -> AppResult<crate::cloud_metadata::PublishedShare> {
-    cloud::publish(&app, &state.root()?, &rel, &title, &content).await
+    cloud::publish(&app, &state.root()?, &rel, &title, &content, pages).await
 }
 
 #[tauri::command]
@@ -288,8 +291,9 @@ pub async fn update_published_note(
     rel: String,
     title: String,
     content: String,
+    pages: Vec<cloud::PublishPageDraft>,
 ) -> AppResult<crate::cloud_metadata::PublishedShare> {
-    cloud::update(&app, &state.root()?, &rel, &title, &content).await
+    cloud::update(&app, &state.root()?, &rel, &title, &content, pages).await
 }
 
 #[tauri::command]

@@ -1,5 +1,5 @@
 import type { ComponentPropsWithoutRef } from "react";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
   publishedProperties,
@@ -8,16 +8,30 @@ import {
 
 function isSafeLink(href: string | undefined): boolean {
   if (!href) return false;
-  return href.startsWith("#") || /^(https?:|mailto:)/i.test(href);
+  return href.startsWith("#") || href.startsWith("markd-page:") || /^(https?:|mailto:)/i.test(href);
 }
 
-function PublishedLink({ href, children, ...props }: ComponentPropsWithoutRef<"a">) {
+function PublishedLink({
+  href,
+  siteSlug,
+  children,
+  ...props
+}: ComponentPropsWithoutRef<"a"> & { siteSlug: string }) {
   if (!isSafeLink(href)) return <span>{children}</span>;
+  const pagePath = href?.startsWith("markd-page:")
+    ? href.slice("markd-page:".length)
+    : null;
+  const safeHref =
+    pagePath === null
+      ? href
+      : pagePath
+        ? `/s/${encodeURIComponent(siteSlug)}/${pagePath}`
+        : `/s/${encodeURIComponent(siteSlug)}`;
   const external = /^https?:/i.test(href ?? "");
   return (
     <a
       {...props}
-      href={href}
+      href={safeHref}
       target={external ? "_blank" : undefined}
       rel={external ? "noreferrer noopener" : undefined}
     >
@@ -26,7 +40,19 @@ function PublishedLink({ href, children, ...props }: ComponentPropsWithoutRef<"a
   );
 }
 
-export function PublishedMarkdown({ markdown }: { markdown: string }) {
+export function PublishedMarkdown({
+  markdown,
+  siteSlug,
+  assetBaseUrl,
+  assetTypes,
+  assetDimensions,
+}: {
+  markdown: string;
+  siteSlug: string;
+  assetBaseUrl: string;
+  assetTypes: Record<string, string>;
+  assetDimensions: Record<string, { width: number; height: number }>;
+}) {
   const { body } = splitPublishedFrontmatter(markdown);
   const properties = publishedProperties(markdown);
 
@@ -36,13 +62,66 @@ export function PublishedMarkdown({ markdown }: { markdown: string }) {
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         skipHtml
+        urlTransform={(url) =>
+          typeof url === "string" && url.startsWith("markd-asset:")
+            ? url
+            : defaultUrlTransform(url)
+        }
         components={{
-          a: PublishedLink,
-          img: ({ alt }) => (
-            <span className="published-note__asset-placeholder">
-              {alt || "Image attachment"}
-            </span>
-          ),
+          a: (props) => <PublishedLink {...props} siteSlug={siteSlug} />,
+          img: ({ alt, src }) => {
+            const hash = typeof src === "string" && src.startsWith("markd-asset:")
+              ? src.slice("markd-asset:".length)
+              : null;
+            if (!hash || !/^[a-f0-9]{64}$/.test(hash)) {
+              return (
+                <span className="published-note__asset-placeholder">
+                  {alt || "Image attachment"}
+                </span>
+              );
+            }
+            const widths = [320, 640, 960, 1280, 1600];
+            const sizes = "(max-width: 720px) calc(100vw - 40px), 672px";
+            const dimensions = assetDimensions[hash];
+            if (assetTypes[hash] === "image/gif") {
+              return (
+                <img
+                  src={`${assetBaseUrl}/${hash}`}
+                  alt={alt ?? ""}
+                  width={dimensions?.width}
+                  height={dimensions?.height}
+                  loading="lazy"
+                  decoding="async"
+                />
+              );
+            }
+            return (
+              <picture>
+                <source
+                  type="image/avif"
+                  srcSet={widths
+                    .map((width) => `${assetBaseUrl}/${hash}?w=${width}&f=avif ${width}w`)
+                    .join(", ")}
+                  sizes={sizes}
+                />
+                <source
+                  type="image/webp"
+                  srcSet={widths
+                    .map((width) => `${assetBaseUrl}/${hash}?w=${width}&f=webp ${width}w`)
+                    .join(", ")}
+                  sizes={sizes}
+                />
+                <img
+                  src={`${assetBaseUrl}/${hash}`}
+                  alt={alt ?? ""}
+                  width={dimensions?.width}
+                  height={dimensions?.height}
+                  loading="lazy"
+                  decoding="async"
+                />
+              </picture>
+            );
+          },
         }}
       >
         {body}

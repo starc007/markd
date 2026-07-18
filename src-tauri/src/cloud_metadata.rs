@@ -19,6 +19,10 @@ pub struct PublishedShare {
     pub content_hash: String,
     pub published_at: i64,
     pub updated_at: i64,
+    #[serde(default)]
+    pub page_count: usize,
+    #[serde(default)]
+    pub asset_count: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -110,7 +114,11 @@ pub fn clear_share(root: &Path, rel: &str) -> AppResult<()> {
 
 pub fn has_published_under(root: &Path, rel: &str) -> AppResult<bool> {
     Ok(read(root)?.entries.iter().any(|(entry_rel, entry)| {
-        entry.share.is_some() && (entry_rel == rel || entry_rel.starts_with(&format!("{rel}/")))
+        entry
+            .share
+            .as_ref()
+            .is_some_and(|share| share.id.starts_with("site_"))
+            && (entry_rel == rel || entry_rel.starts_with(&format!("{rel}/")))
     }))
 }
 
@@ -178,7 +186,7 @@ mod tests {
             dir.path(),
             "projects/Plan.md",
             PublishedShare {
-                id: "share_123".into(),
+                id: "site_123".into(),
                 entry_id: cloud_entry.entry_id,
                 slug: "public-slug".into(),
                 url: "https://usemarkd.app/s/public-slug".into(),
@@ -186,6 +194,8 @@ mod tests {
                 content_hash: "abc".into(),
                 published_at: 1,
                 updated_at: 1,
+                page_count: 0,
+                asset_count: 0,
             },
         )
         .unwrap();

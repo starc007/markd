@@ -7,11 +7,23 @@
   "observability": {
     "enabled": true
   },
+  "triggers": {
+    "crons": ["0 * * * *"]
+  },
   "vars": {
-    "PUBLIC_SITE_ORIGIN": "https://usemarkd.app"
+    "PUBLIC_SITE_ORIGIN": "https://usemarkd.app",
+    "PUBLIC_API_ORIGIN": "https://api.usemarkd.app",
+    "R2_BUCKET_NAME": "markd-published-notes"
   },
   "secrets": {
-    "required": ["OTP_PEPPER"]
+    "required": [
+      "OTP_PEPPER",
+      "R2_ACCOUNT_ID",
+      "R2_ACCESS_KEY_ID",
+      "R2_SECRET_ACCESS_KEY",
+      "CACHE_ZONE_ID",
+      "CACHE_PURGE_TOKEN"
+    ]
   },
   "send_email": [
     {
@@ -19,6 +31,9 @@
       "allowed_sender_addresses": ["no-reply@usemarkd.app"]
     }
   ],
+  "images": {
+    "binding": "IMAGES"
+  },
   "d1_databases": [
     {
       "binding": "DB",

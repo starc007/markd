@@ -7,6 +7,27 @@ export async function sha256(value: string): Promise<string> {
   ).join("");
 }
 
+export async function sha256Bytes(value: ArrayBuffer | Uint8Array): Promise<string> {
+  const bytes = value instanceof Uint8Array ? value : new Uint8Array(value);
+  const digest = await crypto.subtle.digest("SHA-256", Uint8Array.from(bytes).buffer);
+  return hex(new Uint8Array(digest));
+}
+
+export async function hmacBytes(
+  secret: string | Uint8Array,
+  value: string,
+): Promise<Uint8Array> {
+  const raw = typeof secret === "string" ? encoder.encode(secret) : secret;
+  const key = await crypto.subtle.importKey(
+    "raw",
+    Uint8Array.from(raw).buffer,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  return new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(value)));
+}
+
 export async function hmacSha256(secret: string, value: string): Promise<string> {
   const key = await crypto.subtle.importKey(
     "raw",
@@ -50,6 +71,12 @@ export function randomSlug(): string {
     .replace(/=+$/, "");
 }
 
-export function newId(prefix: "share" | "otp" | "session" | "user"): string {
+export function newId(
+  prefix: "site" | "release" | "publish" | "otp" | "session" | "user",
+): string {
   return `${prefix}_${crypto.randomUUID().replaceAll("-", "")}`;
+}
+
+function hex(bytes: Uint8Array): string {
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }

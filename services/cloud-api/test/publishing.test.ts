@@ -2,44 +2,124 @@ import { describe, expect, test } from "bun:test";
 import { hmacSha256, randomOtp, randomSlug, randomToken, sha256 } from "../src/crypto";
 import { sendOtpEmail } from "../src/email";
 import { normalizeEmail, OtpError } from "../src/otp";
+import { presignedPutUrl } from "../src/r2-signing";
+import type { Env } from "../src/types";
 import {
-  idempotencyKey,
-  publishInput,
+  beginPublishInput,
   ValidationError,
 } from "../src/validation";
 
+const ROOT_HASH = "a".repeat(64);
+const ASSET_HASH = "b".repeat(64);
+
 describe("publishing validation", () => {
-  test("accepts a valid publish snapshot", () => {
+  test("accepts a content-addressed release", () => {
     expect(
-      publishInput({
+      beginPublishInput({
         entryId: "entry_1234567890abcdef",
         title: "  Project notes  ",
-        markdown: "# Project\n\nHello.",
+        manifest: {
+          version: 1,
+          rootEntryId: "entry_1234567890abcdef",
+          pages: [{
+            entryId: "entry_1234567890abcdef",
+            path: "",
+            title: "Project notes",
+            objectHash: ROOT_HASH,
+          }],
+          objects: [{
+            hash: ROOT_HASH,
+            kind: "page",
+            contentType: "text/markdown; charset=utf-8",
+            size: 24,
+          }],
+        },
       }),
     ).toEqual({
       entryId: "entry_1234567890abcdef",
       title: "Project notes",
-      markdown: "# Project\n\nHello.",
-    });
-  });
-
-  test("rejects empty notes", () => {
-    expect(() =>
-      publishInput({
-        entryId: "entry_1234567890abcdef",
-        title: "Empty",
-        markdown: "  ",
-      }),
-    ).toThrow(ValidationError);
-  });
-
-  test("requires an idempotency credential", () => {
-    const request = new Request("https://api.example.test/v1/shares", {
-      headers: {
-        "idempotency-key": "publish_1234567890abcdef",
+      manifest: {
+        version: 1,
+        rootEntryId: "entry_1234567890abcdef",
+        pages: [{
+          entryId: "entry_1234567890abcdef",
+          path: "",
+          title: "Project notes",
+          objectHash: ROOT_HASH,
+        }],
+        objects: [{
+          hash: ROOT_HASH,
+          kind: "page",
+          contentType: "text/markdown; charset=utf-8",
+          size: 24,
+        }],
       },
     });
-    expect(idempotencyKey(request)).toBe("publish_1234567890abcdef");
+  });
+
+  test("accepts linked pages and hosted images", () => {
+    const result = beginPublishInput({
+        entryId: "entry_1234567890abcdef",
+        title: "Project notes",
+        manifest: {
+          version: 1,
+          rootEntryId: "entry_1234567890abcdef",
+          pages: [{
+            entryId: "entry_1234567890abcdef",
+            path: "",
+            title: "Project notes",
+            objectHash: ROOT_HASH,
+          }, {
+            entryId: "entry_abcdef1234567890",
+            path: "roadmap",
+            title: "Roadmap",
+            objectHash: ROOT_HASH,
+          }],
+          objects: [{
+            hash: ROOT_HASH,
+            kind: "page",
+            contentType: "text/markdown; charset=utf-8",
+            size: 24,
+          }, {
+            hash: ASSET_HASH,
+            kind: "asset",
+            contentType: "image/png",
+            size: 128,
+          }],
+        },
+    });
+    expect(result.manifest.pages).toHaveLength(2);
+    expect(result.manifest.objects).toHaveLength(2);
+  });
+
+  test("rejects executable image formats", () => {
+    expect(() =>
+      beginPublishInput({
+        entryId: "entry_1234567890abcdef",
+        title: "Unsafe",
+        manifest: {
+          version: 1,
+          rootEntryId: "entry_1234567890abcdef",
+          pages: [{
+            entryId: "entry_1234567890abcdef",
+            path: "",
+            title: "Unsafe",
+            objectHash: ROOT_HASH,
+          }],
+          objects: [{
+            hash: ROOT_HASH,
+            kind: "page",
+            contentType: "text/markdown; charset=utf-8",
+            size: 12,
+          }, {
+            hash: ASSET_HASH,
+            kind: "asset",
+            contentType: "image/svg+xml",
+            size: 128,
+          }],
+        },
+      }),
+    ).toThrow(ValidationError);
   });
 });
 
@@ -53,6 +133,29 @@ describe("publishing identifiers", () => {
     expect(await sha256("Markd")).toBe(
       "5f760a58961babe4c488f61b3457e73fc9d9b78f5727b04ae80a8e470580eb6f",
     );
+  });
+
+  test("scopes direct uploads to one checksum-bound R2 object", async () => {
+    const env = {
+      R2_ACCOUNT_ID: "account123",
+      R2_BUCKET_NAME: "published",
+      R2_ACCESS_KEY_ID: "access123",
+      R2_SECRET_ACCESS_KEY: "secret123",
+    } as Env;
+    const checksum = "YWJj";
+    const signed = new URL(
+      await presignedPutUrl(
+        env,
+        `objects/user_123/${ROOT_HASH}`,
+        "image/png",
+        checksum,
+      ),
+    );
+    expect(signed.hostname).toBe("account123.r2.cloudflarestorage.com");
+    expect(signed.pathname).toBe(`/published/objects/user_123/${ROOT_HASH}`);
+    expect(signed.searchParams.get("X-Amz-Expires")).toBe("900");
+    expect(signed.searchParams.get("X-Amz-SignedHeaders")).toContain("x-amz-checksum-sha256");
+    expect(signed.searchParams.get("X-Amz-Signature")).toMatch(/^[a-f0-9]{64}$/);
   });
 });
 

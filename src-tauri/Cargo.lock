@@ -6,6 +6,9 @@ version = 4
 name = "Markd"
 version = "0.1.5"
 dependencies = [
+ "base64 0.22.1",
+ "futures-util",
+ "infer",
  "regex",
  "reqwest 0.12.28",
  "scraper",

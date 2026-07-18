@@ -5,6 +5,7 @@ mod backlinks;
 mod bookmarks;
 mod cloud;
 mod cloud_metadata;
+mod cloud_publish;
 mod commands;
 mod config;
 mod daily_notes;

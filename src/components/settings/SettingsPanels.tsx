@@ -149,21 +149,21 @@ export function CloudSettings() {
 
       <SettingsGroup
         title="Plans"
-        description="Start free. Upgrade only when you need more publishing or sync."
+        description="Local notes stay free. Publishing and sync require Markd Cloud."
       >
         <div className="grid grid-cols-2 gap-2">
           <PlanCard
             name="Free"
             price="$0"
-            description="For trying public pages"
-            features={["1 active published note", "Local notes stay unlimited"]}
+            description="For local notes"
+            features={["Unlimited local notes", "No web publishing"]}
             active={account?.plan === "free"}
           />
           <PlanCard
             name="Markd Cloud"
             price="$6/mo yearly"
             description="$8 when billed monthly"
-            features={["Unlimited publishing", "Cross-device sync"]}
+            features={["Published sites with linked pages", "Hosted images", "Cross-device sync"]}
             active={account?.plan === "cloud"}
           />
         </div>

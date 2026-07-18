@@ -61,6 +61,15 @@ export interface PublishedShare {
   contentHash: string;
   publishedAt: number;
   updatedAt: number;
+  pageCount: number;
+  assetCount: number;
+}
+
+export interface PublishPageDraft {
+  rel: string;
+  path: string;
+  title: string;
+  markdown: string;
 }
 
 export interface CloudAccount {
@@ -83,7 +92,6 @@ export interface PublishedNoteStatus {
   account: CloudAccount | null;
   share: PublishedShare | null;
   isOutdated: boolean;
-  freeShareLimit: number;
 }
 
 export type View =
