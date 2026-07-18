@@ -11,6 +11,7 @@ const MAX_EMAIL_REQUESTS_PER_HOUR = 5;
 const MAX_FINGERPRINT_REQUESTS_PER_HOUR = 20;
 const MAX_ATTEMPTS = 5;
 const MAX_AUTH_BODY_BYTES = 16 * 1_024;
+const CLEANUP_BATCH_SIZE = 5_000;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const CHALLENGE_PATTERN = /^otp_[a-f0-9]{32}$/;
@@ -229,4 +230,23 @@ export async function verifyOtp(request: Request, env: Env): Promise<Response> {
     expiresAt,
     user: { id: user.id, email: user.email, plan: user.plan ?? "free" },
   });
+}
+
+export async function cleanupExpiredAuthRecords(env: Env): Promise<void> {
+  const now = Date.now();
+  const challengeCutoff = now - RATE_WINDOW_MS;
+  await env.DB.batch([
+    env.DB.prepare(
+      `DELETE FROM otp_challenges WHERE id IN (
+        SELECT id FROM otp_challenges
+        WHERE expires_at < ? ORDER BY expires_at LIMIT ?
+      )`,
+    ).bind(challengeCutoff, CLEANUP_BATCH_SIZE),
+    env.DB.prepare(
+      `DELETE FROM sessions WHERE id IN (
+        SELECT id FROM sessions
+        WHERE expires_at <= ? ORDER BY expires_at LIMIT ?
+      )`,
+    ).bind(now, CLEANUP_BATCH_SIZE),
+  ]);
 }

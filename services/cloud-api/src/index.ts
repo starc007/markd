@@ -5,7 +5,7 @@ import {
   revokeSession,
 } from "./auth";
 import { error, json, RequestBodyError } from "./http";
-import { OtpError, requestOtp, verifyOtp } from "./otp";
+import { cleanupExpiredAuthRecords, OtpError, requestOtp, verifyOtp } from "./otp";
 import {
   beginPublish,
   cleanupExpiredPublishSessions,
@@ -78,6 +78,10 @@ export default {
     }
   },
   async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext) {
-    ctx.waitUntil(cleanupExpiredPublishSessions(env));
+    ctx.waitUntil(
+      Promise.all([cleanupExpiredAuthRecords(env), cleanupExpiredPublishSessions(env)]).then(
+        () => undefined,
+      ),
+    );
   },
 } satisfies ExportedHandler<Env>;
