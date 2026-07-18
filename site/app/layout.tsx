@@ -1,7 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
 import Script from "next/script";
-import { UMAMI_SRC, UMAMI_WEBSITE_ID } from "@/lib/analytics";
+import {
+  GOOGLE_ANALYTICS_ID,
+  UMAMI_SRC,
+  UMAMI_WEBSITE_ID,
+} from "@/lib/analytics";
 import "./globals.css";
 
 const sans = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -71,6 +75,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
         />
+        {GOOGLE_ANALYTICS_ID ? (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ANALYTICS_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${GOOGLE_ANALYTICS_ID}');
+              `}
+            </Script>
+          </>
+        ) : null}
         {UMAMI_WEBSITE_ID ? (
           <Script
             defer

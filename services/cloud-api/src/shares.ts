@@ -214,22 +214,20 @@ export async function updateShare(
 export async function revokeShare(
   request: Request,
   env: Env,
-  ctx: ExecutionContext,
   shareId: string,
 ): Promise<Response> {
   const user = await authenticatedUser(request, env);
   const current = await findOwnedShare(env, shareId, user.id);
   if (!current) return notFound();
 
-  const now = Date.now();
+  await env.PUBLISHED_NOTES.delete(current.object_key);
+
   const result = await env.DB.prepare(
-    `UPDATE shares SET status = 'revoked', revoked_at = ?, updated_at = ?
-     WHERE id = ? AND user_id = ? AND status = 'active'`,
+    "DELETE FROM shares WHERE id = ? AND user_id = ? AND status = 'active'",
   )
-    .bind(now, now, shareId, user.id)
+    .bind(shareId, user.id)
     .run();
   if (result.meta.changes !== 1) return notFound();
-  ctx.waitUntil(env.PUBLISHED_NOTES.delete(current.object_key));
   return new Response(null, { status: 204 });
 }
 

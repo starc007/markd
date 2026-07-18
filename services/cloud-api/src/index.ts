@@ -60,7 +60,7 @@ async function route(
       return updateShare(request, env, ctx, shareMatch[1]);
     }
     if (request.method === "DELETE") {
-      return revokeShare(request, env, ctx, shareMatch[1]);
+      return revokeShare(request, env, shareMatch[1]);
     }
   }
 

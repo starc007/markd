@@ -15,6 +15,8 @@ export const UMAMI_WEBSITE_ID = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID;
 // Cloud by default; override for a self-hosted instance.
 export const UMAMI_SRC =
   process.env.NEXT_PUBLIC_UMAMI_SRC ?? "https://cloud.umami.is/script.js";
+export const GOOGLE_ANALYTICS_ID =
+  process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID;
 
 /** Fire a custom event (e.g. a download). Safe to call anywhere. */
 export function track(
