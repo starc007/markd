@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
+import { MARKD_CLOUD_PLANS_URL } from "@/lib/cloud";
 import { IpcError, ipc } from "@/lib/ipc";
 import { collectPublishBundle, type PublishBundle } from "@/lib/publishBundle";
 import type { PublishedShare } from "@/lib/types";
@@ -203,7 +204,7 @@ export function PublishNoteModal({
               <Globe2 size={17} strokeWidth={1.8} />
             </div>
             <h3 className="mt-4 text-[13px] font-semibold text-ink">
-              Upgrade to publish
+              Markd Cloud required
             </h3>
             <p className="mx-auto mt-1.5 max-w-[330px] text-[11.5px] leading-5 text-muted">
               Public sites, linked pages, and image hosting are included with Markd Cloud.
@@ -215,10 +216,10 @@ export function PublishNoteModal({
                 size="sm"
                 onClick={() => {
                   onClose();
-                  openSettings("cloud");
+                  openUrl(MARKD_CLOUD_PLANS_URL);
                 }}
               >
-                Upgrade
+                View plans
               </Button>
             </div>
           </div>
@@ -296,10 +297,10 @@ export function PublishNoteModal({
                       size="sm"
                       onClick={() => {
                         onClose();
-                        openSettings("cloud");
+                        openUrl(MARKD_CLOUD_PLANS_URL);
                       }}
                     >
-                      Upgrade
+                      View plans
                     </Button>
                   </div>
                 )}
@@ -337,10 +338,10 @@ export function PublishNoteModal({
                       className="ml-auto"
                       onClick={() => {
                         onClose();
-                        openSettings("cloud");
+                        openUrl(MARKD_CLOUD_PLANS_URL);
                       }}
                     >
-                      Upgrade to update
+                      View plans
                     </Button>
                   )}
                 </>

@@ -142,9 +142,9 @@ export function CloudAccountCard({
                 <p className="truncate text-[12.5px] font-semibold text-ink">
                   {loading ? "Checking account…" : (account?.email ?? "Not signed in")}
                 </p>
-                {account && (
+                {account?.plan === "cloud" && (
                   <span className="rounded-full border border-line px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-faint">
-                    {account.plan === "cloud" ? "Cloud" : "Free"}
+                    Cloud
                   </span>
                 )}
               </div>
