@@ -2,6 +2,7 @@ import { Check, Cloud, Loader2, LogIn, LogOut, Mail, RotateCcw } from "lucide-re
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { IpcError, ipc } from "@/lib/ipc";
 import type { CloudAccount, OtpChallenge } from "@/lib/types";
 
@@ -143,9 +144,7 @@ export function CloudAccountCard({
                   {loading ? "Checking account…" : (account?.email ?? "Not signed in")}
                 </p>
                 {account?.plan === "cloud" && (
-                  <span className="rounded-full border border-line px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-faint">
-                    Cloud
-                  </span>
+                  <StatusBadge tone="cloud">Cloud</StatusBadge>
                 )}
               </div>
               <p className="mt-0.5 text-[10.5px] text-faint">

@@ -519,7 +519,7 @@ function siteResponse(env: Env, site: SiteRow, release: ReleaseRow): SiteRespons
 
 function requirePaid(plan: string, env: Env): void {
   if (plan === "cloud") return;
-  throw new PaidPublishingError(`${env.PUBLIC_SITE_ORIGIN.replace(/\/$/, "")}/login?intent=upgrade`);
+  throw new PaidPublishingError(`${env.PUBLIC_SITE_ORIGIN.replace(/\/$/, "")}/pricing`);
 }
 
 export class PaidPublishingError extends Error {

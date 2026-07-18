@@ -21,6 +21,7 @@ import {
 } from "@/lib/shortcuts";
 import { cx, isMac } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { CloudAccountCard } from "@/components/settings/CloudAccountCard";
 import { MARKD_CLOUD_PLANS_URL } from "@/lib/cloud";
 import { useShortcuts } from "@/stores/shortcuts";
@@ -160,9 +161,7 @@ export function CloudSettings() {
             <div className="flex items-center gap-2">
               <p className="text-[12.5px] font-semibold text-ink">Markd Cloud</p>
               {account?.plan === "cloud" && (
-                <span className="rounded-full bg-invert px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-invert-ink">
-                  Active
-                </span>
+                <StatusBadge tone="success">Active</StatusBadge>
               )}
             </div>
             <p className="mt-0.5 text-[10.5px] text-faint">

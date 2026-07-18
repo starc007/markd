@@ -1,6 +1,5 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import {
-  Check,
   Copy,
   ExternalLink,
   Globe2,
@@ -13,6 +12,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { MARKD_CLOUD_PLANS_URL } from "@/lib/cloud";
 import { IpcError, ipc } from "@/lib/ipc";
 import { collectPublishBundle, type PublishBundle } from "@/lib/publishBundle";
@@ -240,14 +240,11 @@ export function PublishNoteModal({
               <div className="rounded-xl bg-panel p-3.5">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-2">
-                    <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-invert text-invert-ink">
-                      <Check size={11} strokeWidth={2.5} />
-                    </span>
-                    <span className="text-[12px] font-medium text-ink">Published</span>
+                    <StatusBadge tone="success">Published</StatusBadge>
                     {outdated && (
-                      <span className="rounded-full border border-line bg-bg px-2 py-0.5 text-[9.5px] font-medium text-faint">
+                      <StatusBadge tone="warning">
                         Local changes
-                      </span>
+                      </StatusBadge>
                     )}
                   </div>
                   <div className="flex shrink-0 gap-2">
