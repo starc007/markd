@@ -5,7 +5,8 @@
   "compatibility_date": "2025-10-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "vars": {
-    "MARKD_CLOUD_API_URL": "https://api.usemarkd.app"
+    "MARKD_CLOUD_API_URL": "https://api.usemarkd.app",
+    "NEXT_PUBLIC_GOOGLE_ANALYTICS_ID": "G-2L2GCRLYS0"
   },
   "assets": {
     "directory": ".open-next/assets",
