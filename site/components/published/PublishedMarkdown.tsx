@@ -63,7 +63,8 @@ export function PublishedMarkdown({
         remarkPlugins={[remarkGfm]}
         skipHtml
         urlTransform={(url) =>
-          typeof url === "string" && url.startsWith("markd-asset:")
+          typeof url === "string" &&
+          (url.startsWith("markd-asset:") || url.startsWith("markd-page:"))
             ? url
             : defaultUrlTransform(url)
         }
