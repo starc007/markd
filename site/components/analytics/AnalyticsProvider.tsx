@@ -5,6 +5,7 @@ import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
 import {
   GOOGLE_ANALYTICS_ID,
+  isAnalyticsEnabled,
   isAnalyticsExcludedPath,
   markAnalyticsProviderReady,
   UMAMI_SRC,
@@ -13,6 +14,7 @@ import {
 
 export function AnalyticsProvider() {
   const pathname = usePathname();
+  const enabled = isAnalyticsEnabled();
   const excluded = isAnalyticsExcludedPath(pathname);
   const [googleReady, setGoogleReady] = useState(false);
   const [umamiReady, setUmamiReady] = useState(false);
@@ -20,6 +22,7 @@ export function AnalyticsProvider() {
   const lastUmamiPath = useRef<string | null>(null);
 
   useEffect(() => {
+    if (!enabled) return;
     if (GOOGLE_ANALYTICS_ID) {
       Object.assign(window, { [`ga-disable-${GOOGLE_ANALYTICS_ID}`]: excluded });
     }
@@ -42,9 +45,9 @@ export function AnalyticsProvider() {
       });
       lastUmamiPath.current = pathname;
     }
-  }, [excluded, googleReady, pathname, umamiReady]);
+  }, [enabled, excluded, googleReady, pathname, umamiReady]);
 
-  if (excluded) return null;
+  if (!enabled || excluded) return null;
 
   return (
     <>

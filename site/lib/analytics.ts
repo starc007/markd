@@ -54,6 +54,10 @@ const readyProviders: Record<Provider, boolean> = {
 };
 const queuedEvents: QueuedEvent[] = [];
 
+export function isAnalyticsEnabled(): boolean {
+  return process.env.NODE_ENV === "production";
+}
+
 export function isAnalyticsExcludedPath(pathname: string): boolean {
   return pathname === "/s" || pathname.startsWith("/s/");
 }
@@ -64,6 +68,7 @@ export function track<E extends AnalyticsEventName>(
 ): void {
   try {
     if (
+      !isAnalyticsEnabled() ||
       typeof window === "undefined" ||
       isAnalyticsExcludedPath(window.location.pathname)
     ) {
