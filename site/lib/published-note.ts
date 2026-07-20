@@ -12,7 +12,26 @@ export interface PublishedNote {
 
 export interface PublishedProperty {
   key: string;
-  value: string | string[];
+  value: string | string[] | number | boolean;
+}
+
+export type PublishedPropertyType =
+  | "text"
+  | "number"
+  | "checkbox"
+  | "date"
+  | "url"
+  | "list";
+
+export function publishedPropertyType(
+  value: PublishedProperty["value"],
+): PublishedPropertyType {
+  if (Array.isArray(value)) return "list";
+  if (typeof value === "boolean") return "checkbox";
+  if (typeof value === "number") return "number";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return "date";
+  if (/^https?:\/\//i.test(value)) return "url";
+  return "text";
 }
 
 const FRONTMATTER_RE = /^---[ \t]*\r?\n[\s\S]*?\r?\n---[ \t]*(?:\r?\n|$)/;
@@ -127,6 +146,21 @@ function parsePublishedFrontmatter(frontmatter: string): PublishedProperty[] {
 
     const key = match[1].trim();
     const scalar = match[2].trim();
+    if (scalar === "[]") {
+      properties.push({ key, value: [] });
+      index += 1;
+      continue;
+    }
+    if (scalar === "true" || scalar === "false") {
+      properties.push({ key, value: scalar === "true" });
+      index += 1;
+      continue;
+    }
+    if (/^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i.test(scalar)) {
+      properties.push({ key, value: Number(scalar) });
+      index += 1;
+      continue;
+    }
     if (scalar) {
       properties.push({ key, value: unquotePropertyValue(scalar) });
       index += 1;

@@ -28,9 +28,26 @@ export function joinFrontmatter(frontmatter: string, body: string): string {
   return frontmatter + body;
 }
 
+export type PropertyType =
+  | "text"
+  | "number"
+  | "checkbox"
+  | "date"
+  | "url"
+  | "list";
+
 export interface Property {
   key: string;
-  value: string | string[];
+  value: string | string[] | number | boolean;
+}
+
+export function propertyType(value: Property["value"]): PropertyType {
+  if (Array.isArray(value)) return "list";
+  if (typeof value === "boolean") return "checkbox";
+  if (typeof value === "number") return "number";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return "date";
+  if (/^https?:\/\//i.test(value)) return "url";
+  return "text";
 }
 
 function unquote(raw: string): string {
@@ -69,6 +86,21 @@ export function parseFrontmatter(frontmatter: string): Property[] {
     }
     const key = match[1].trim();
     const scalar = match[2].trim();
+    if (scalar === "[]") {
+      props.push({ key, value: [] });
+      i += 1;
+      continue;
+    }
+    if (scalar === "true" || scalar === "false") {
+      props.push({ key, value: scalar === "true" });
+      i += 1;
+      continue;
+    }
+    if (/^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i.test(scalar)) {
+      props.push({ key, value: Number(scalar) });
+      i += 1;
+      continue;
+    }
     if (scalar) {
       props.push({ key, value: unquote(scalar) });
       i += 1;
@@ -100,10 +132,14 @@ export function isValidPropertyKey(key: string): boolean {
 function propertyLines(property: Property): string[] {
   const key = property.key.trim();
   if (Array.isArray(property.value)) {
+    if (property.value.length === 0) return [`${key}: []`];
     return [
       `${key}:`,
       ...property.value.map((item) => `  - ${JSON.stringify(item)}`),
     ];
+  }
+  if (typeof property.value === "number" || typeof property.value === "boolean") {
+    return [`${key}: ${String(property.value)}`];
   }
   return [`${key}: ${JSON.stringify(property.value)}`];
 }

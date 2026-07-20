@@ -176,9 +176,10 @@ export function MorphPopoverContent({
   useEffect(() => {
     if (!ctx.open) return;
     requestAnimationFrame(() => {
-      contentRef.current
-        ?.querySelector<HTMLElement>('[role="menuitem"]')
-        ?.focus();
+      const content = contentRef.current;
+      const preferred = content?.querySelector<HTMLElement>("[data-autofocus]");
+      const firstItem = content?.querySelector<HTMLElement>('[role="menuitem"]');
+      (preferred ?? firstItem)?.focus();
     });
   }, [ctx.open]);
 
