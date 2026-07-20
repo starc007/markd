@@ -1,5 +1,5 @@
 import { hmacSha256, newId, randomOtp, randomToken, sha256 } from "./crypto";
-import { sendOtpEmail } from "./email";
+import { queueWelcomeEmail, sendOtpEmail } from "./email";
 import { json, readJson } from "./http";
 import type { AccountPlan, Env } from "./types";
 
@@ -193,7 +193,11 @@ function invalidOtp(): OtpError {
   );
 }
 
-export async function verifyOtp(request: Request, env: Env): Promise<Response> {
+export async function verifyOtp(
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext,
+): Promise<Response> {
   const body = (await readJson(request, MAX_AUTH_BODY_BYTES)) as Record<string, unknown>;
   const challengeId = typeof body?.challengeId === "string" ? body.challengeId : "";
   const code = typeof body?.code === "string" ? body.code.trim() : "";
@@ -225,7 +229,7 @@ export async function verifyOtp(request: Request, env: Env): Promise<Response> {
     throw invalidOtp();
   }
 
-  await env.DB.prepare(
+  const createdUser = await env.DB.prepare(
     "INSERT OR IGNORE INTO users (id, email, created_at) VALUES (?, ?, ?)",
   )
     .bind(newId("user"), challenge.email, now)
@@ -257,6 +261,10 @@ export async function verifyOtp(request: Request, env: Env): Promise<Response> {
   )
     .bind(sessionId, user.id, await sha256(accessToken), expiresAt, now)
     .run();
+
+  if (createdUser.meta.changes === 1) {
+    queueWelcomeEmail(ctx, env, user.email);
+  }
 
   return json({
     accessToken,

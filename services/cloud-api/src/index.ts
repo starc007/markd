@@ -41,7 +41,9 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   const url = new URL(request.url);
   if (request.method === "GET" && url.pathname === "/health") return json({ ok: true });
   if (request.method === "POST" && url.pathname === "/v1/auth/otp/request") return requestOtp(request, env);
-  if (request.method === "POST" && url.pathname === "/v1/auth/otp/verify") return verifyOtp(request, env);
+  if (request.method === "POST" && url.pathname === "/v1/auth/otp/verify") {
+    return verifyOtp(request, env, ctx);
+  }
   if (request.method === "DELETE" && url.pathname === "/v1/session") return revokeSession(request, env);
   if (request.method === "POST" && url.pathname === "/v1/billing/handoffs") {
     return createBillingHandoff(request, env);
@@ -53,7 +55,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     return billingPortal(request, env);
   }
   if (request.method === "POST" && url.pathname === "/v1/webhooks/dodo") {
-    return dodoWebhook(request, env);
+    return dodoWebhook(request, env, ctx);
   }
   if (request.method === "GET" && url.pathname === "/v1/me") {
     const user = await authenticatedUser(request, env);

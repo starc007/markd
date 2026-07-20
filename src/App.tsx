@@ -30,6 +30,11 @@ const SettingsModal = lazy(() =>
     default: module.SettingsModal,
   })),
 );
+const ReleaseNotesModal = lazy(() =>
+  import("@/components/updater/ReleaseNotesModal").then((module) => ({
+    default: module.ReleaseNotesModal,
+  })),
+);
 export default function App() {
   const status = useVault((s) => s.status);
   const root = useVault((s) => s.root);
@@ -145,6 +150,7 @@ export default function App() {
         {status === "ready" && <AppShell />}
         <CommandPalette />
         <SettingsModal />
+        <ReleaseNotesModal />
       </Suspense>
       <Toaster
         position="top-right"

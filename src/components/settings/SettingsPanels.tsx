@@ -26,6 +26,7 @@ import { Spinner } from "@/components/ui/Spinner";
 import { CloudAccountCard } from "@/components/settings/CloudAccountCard";
 import { openCloudBillingPortal, openCloudPlans } from "@/lib/cloud";
 import { useShortcuts } from "@/stores/shortcuts";
+import { useUi } from "@/stores/ui";
 import { useUpdater } from "@/stores/updater";
 import { useVault } from "@/stores/vault";
 
@@ -61,7 +62,8 @@ export function GeneralSettings() {
   const updateStatus = useUpdater((state) => state.status);
   const updateVersion = useUpdater((state) => state.version);
   const checkUpdate = useUpdater((state) => state.check);
-  const installUpdate = useUpdater((state) => state.install);
+  const requestInstall = useUpdater((state) => state.requestInstall);
+  const setSettingsOpen = useUi((state) => state.setSettingsOpen);
 
   const updateCopy =
     updateStatus === "available"
@@ -102,36 +104,39 @@ export function GeneralSettings() {
         description="Keep Markd current with the latest fixes and improvements."
       >
         <div className="flex items-center justify-between gap-4 rounded-xl bg-panel p-3">
-          <p aria-live="polite" className="min-w-0 text-[12.5px] text-muted">
-            {updateCopy}
-          </p>
-          {updateStatus === "available" ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={installUpdate}
-              className="shrink-0 bg-bg"
-            >
-              Install &amp; restart
-            </Button>
-          ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => checkUpdate({ silent: false })}
-              disabled={
-                updateStatus === "checking" || updateStatus === "downloading"
-              }
-              className="shrink-0 bg-bg"
-            >
-              {updateStatus === "checking" ? (
-                <Spinner size={14} />
-              ) : (
-                <RefreshCw size={13} strokeWidth={1.75} />
-              )}
-              Check
-            </Button>
-          )}
+            <p aria-live="polite" className="min-w-0 text-[12.5px] text-muted">
+              {updateCopy}
+            </p>
+            {updateStatus === "available" ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSettingsOpen(false);
+                  void requestInstall();
+                }}
+                className="shrink-0 bg-bg"
+              >
+                Install &amp; restart
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => checkUpdate({ silent: false })}
+                disabled={
+                  updateStatus === "checking" || updateStatus === "downloading"
+                }
+                className="shrink-0 bg-bg"
+              >
+                {updateStatus === "checking" ? (
+                  <Spinner size={14} />
+                ) : (
+                  <RefreshCw size={13} strokeWidth={1.75} />
+                )}
+                Check
+              </Button>
+            )}
         </div>
       </SettingsGroup>
     </div>

@@ -7,10 +7,10 @@
  * It reads the signature files and creates a properly formatted JSON file.
  *
  * Usage:
- *   bun scripts/generate-latest-json.js <version> <notes>
+ *   bun scripts/generate-latest-json.js <version> [--type=fix|feature] <notes>
  *
  * Example:
- *   bun scripts/generate-latest-json.js "0.1.1" "Bug fixes and improvements"
+ *   bun scripts/generate-latest-json.js "0.2.0" --type=feature "New properties"
  */
 
 import { readFileSync, writeFileSync } from "fs";
@@ -27,7 +27,9 @@ const APP_NAME = "Markd";
 // Get command line arguments
 const args = process.argv.slice(2);
 if (args.length < 2) {
-  console.error("Usage: bun scripts/generate-latest-json.js <version> <notes>");
+  console.error(
+    "Usage: bun scripts/generate-latest-json.js <version> [--type=fix|feature] <notes>",
+  );
   console.error(
     'Example: bun scripts/generate-latest-json.js "0.1.1" "Bug fixes"'
   );
@@ -35,7 +37,16 @@ if (args.length < 2) {
 }
 
 const version = args[0];
-const notes = args.slice(1).join(" "); // Join remaining args as notes
+const typeArg = args.slice(1).find((arg) => /^--type=(fix|feature)$/.test(arg));
+const releaseType = typeArg?.slice("--type=".length);
+const notes = args
+  .slice(1)
+  .filter((arg) => arg !== typeArg)
+  .join(" ");
+if (!notes.trim()) {
+  console.error("Release notes cannot be empty");
+  process.exit(1);
+}
 const pubDate = new Date().toISOString();
 const releaseUrl = `https://github.com/${GITHUB_REPO}/releases/download/v${version}`;
 
@@ -101,6 +112,7 @@ const latestJson = {
   version,
   notes,
   pub_date: pubDate,
+  ...(releaseType ? { release_type: releaseType } : {}),
   platforms: {},
 };
 

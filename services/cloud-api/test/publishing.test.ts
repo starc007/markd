@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { hmacSha256, randomOtp, randomSlug, randomToken, sha256 } from "../src/crypto";
-import { sendOtpEmail } from "../src/email";
+import { sendOtpEmail, sendWelcomeEmail, welcomeName } from "../src/email";
 import { normalizeEmail, OtpError } from "../src/otp";
 import { presignedPutUrl } from "../src/r2-signing";
 import type { Env } from "../src/types";
@@ -223,5 +223,35 @@ describe("email OTP authentication", () => {
     expect(message.subject).toBe("Your Markd sign-in code");
     expect(message.text).toContain("123456");
     expect(message.text).toContain("expires in 5 minutes");
+  });
+
+  test("sends the welcome message from the configured Markd sender", async () => {
+    const messages: EmailMessageBuilder[] = [];
+    const EMAIL = {
+      async send(next: EmailMessageBuilder) {
+        messages.push(next);
+        return { messageId: "test" } as EmailSendResult;
+      },
+    } as SendEmail;
+
+    await sendWelcomeEmail({ EMAIL }, "person@example.com");
+    const message = messages[0];
+    expect(message.from).toEqual({
+      email: "no-reply@usemarkd.app",
+      name: "saurabh from markd",
+    });
+    expect(message.to).toBe("person@example.com");
+    expect(message.subject).toBe("welcome to markd");
+    expect(message.text).toContain("hey person,");
+    expect(message.text).toContain("second brain");
+    expect(message.text).toContain("https://usemarkd.app/download");
+    expect(message.html).toContain("prefers-color-scheme: dark");
+    expect(message.html).toContain("https://usemarkd.app/apple-icon.png");
+  });
+
+  test("derives a safe welcome name from the email address", () => {
+    expect(welcomeName("john.doe@example.com")).toBe("John");
+    expect(welcomeName("SAURABH+markd@example.com")).toBe("Saurabh");
+    expect(welcomeName("007@example.com")).toBe("there");
   });
 });

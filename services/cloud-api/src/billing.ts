@@ -10,6 +10,7 @@ import {
 } from "./dodo";
 import { json, readJson } from "./http";
 import { normalizeEmail } from "./otp";
+import { queueWelcomeEmail } from "./email";
 import type { AuthenticatedUser, BillingInterval, Env } from "./types";
 
 const HANDOFF_TTL_MS = 15 * 60 * 1000;
@@ -106,7 +107,11 @@ export async function billingPortal(request: Request, env: Env): Promise<Respons
   }
 }
 
-export async function dodoWebhook(request: Request, env: Env): Promise<Response> {
+export async function dodoWebhook(
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext,
+): Promise<Response> {
   const rawBody = await request.text();
   let verified;
   try {
@@ -124,7 +129,13 @@ export async function dodoWebhook(request: Request, env: Env): Promise<Response>
   if (duplicate) return json({ received: true, duplicate: true });
 
   if (SUBSCRIPTION_EVENTS.has(verified.payload.type)) {
-    await syncSubscription(env, verified.payload.type, verified.payload.timestamp, verified.payload.data);
+    await syncSubscription(
+      env,
+      ctx,
+      verified.payload.type,
+      verified.payload.timestamp,
+      verified.payload.data,
+    );
   }
   await env.DB.prepare(
     "INSERT OR IGNORE INTO billing_webhooks (id, event_type, processed_at) VALUES (?, ?, ?)",
@@ -143,6 +154,7 @@ export async function cleanupBillingRecords(env: Env): Promise<void> {
 
 async function syncSubscription(
   env: Env,
+  ctx: ExecutionContext,
   eventType: string,
   eventTimestamp: string,
   subscription: DodoSubscription,
@@ -150,7 +162,7 @@ async function syncSubscription(
   if (!subscription.subscription_id || !subscription.product_id) return;
   const interval = productInterval(env, subscription.product_id);
   if (!interval) return;
-  const userId = await subscriptionUserId(env, subscription);
+  const userId = await subscriptionUserId(env, ctx, subscription);
   if (!userId) throw new BillingError(409, "billing_user_missing", "The subscription has no Markd user.");
 
   const providerUpdatedAt = Date.parse(eventTimestamp);
@@ -184,7 +196,11 @@ async function syncSubscription(
   ).run();
 }
 
-async function subscriptionUserId(env: Env, subscription: DodoSubscription): Promise<string | null> {
+async function subscriptionUserId(
+  env: Env,
+  ctx: ExecutionContext,
+  subscription: DodoSubscription,
+): Promise<string | null> {
   const metadataUser = subscription.metadata?.markd_user_id;
   if (metadataUser) {
     const user = await env.DB.prepare("SELECT id FROM users WHERE id = ?")
@@ -200,11 +216,14 @@ async function subscriptionUserId(env: Env, subscription: DodoSubscription): Pro
   }
   if (!subscription.customer?.email) return null;
   const email = normalizeEmail(subscription.customer.email);
-  await env.DB.prepare(
+  const createdUser = await env.DB.prepare(
     "INSERT OR IGNORE INTO users (id, email, created_at) VALUES (?, ?, ?)",
   ).bind(newId("user"), email, Date.now()).run();
   const user = await env.DB.prepare("SELECT id AS user_id FROM users WHERE email = ?")
     .bind(email).first<EntitlementLookup>();
+  if (user && createdUser.meta.changes === 1) {
+    queueWelcomeEmail(ctx, env, email);
+  }
   return user?.user_id ?? null;
 }
 

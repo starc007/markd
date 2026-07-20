@@ -147,7 +147,7 @@ function IconAction({
 function UpdateRow() {
   const status = useUpdater((s) => s.status);
   const version = useUpdater((s) => s.version);
-  const install = useUpdater((s) => s.install);
+  const requestInstall = useUpdater((s) => s.requestInstall);
 
   if (
     status !== "available" &&
@@ -163,7 +163,7 @@ function UpdateRow() {
       <button
         type="button"
         disabled={busy}
-        onClick={install}
+        onClick={() => void requestInstall()}
         className="flex w-full items-center gap-2 rounded-md bg-hover px-2.5 py-1.5 text-[12.5px] font-medium text-ink transition-colors duration-100 hover:bg-active disabled:cursor-default disabled:hover:bg-hover"
       >
         {busy ? (

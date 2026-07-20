@@ -25,15 +25,27 @@ NC='\033[0m' # No Color
 if [ $# -lt 2 ]; then
   echo -e "${RED}❌ Error: Missing arguments${NC}"
   echo ""
-  echo "Usage: $0 <version> <release-notes>"
+  echo "Usage: $0 <version> [--type=fix|feature] <release-notes>"
   echo ""
   echo "Example:"
-  echo "  $0 \"0.1.1\" \"Bug fixes and improvements\""
+  echo "  $0 \"0.2.0\" --type=feature \"New properties\""
   exit 1
 fi
 
 VERSION=$1
 NOTES="${@:2}" # All remaining arguments as release notes
+NOTES_WITHOUT_TYPE="${NOTES#--type=fix }"
+NOTES_WITHOUT_TYPE="${NOTES_WITHOUT_TYPE#--type=feature }"
+
+if [[ "$NOTES" == --type=* ]] && [[ "$NOTES" != --type=fix\ * ]] && [[ "$NOTES" != --type=feature\ * ]]; then
+  echo -e "${RED}❌ Error: Release type must be fix or feature${NC}"
+  exit 1
+fi
+
+if [ -z "$NOTES_WITHOUT_TYPE" ]; then
+  echo -e "${RED}❌ Error: Release notes cannot be empty${NC}"
+  exit 1
+fi
 
 echo -e "${GREEN}🚀 Starting release process for version ${VERSION}${NC}"
 echo ""
