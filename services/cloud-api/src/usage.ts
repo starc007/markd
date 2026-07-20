@@ -25,9 +25,7 @@ export interface AccountUsage {
   liveSites: number;
   storedBytes: number;
   imageCount: number;
-  monthlyPublishes: number;
   storageLimitBytes: number;
-  periodStartedAt: number;
 }
 
 export class PublishingUsageError extends Error {
@@ -47,26 +45,17 @@ export async function getAccountUsage(request: Request, env: Env): Promise<Respo
 }
 
 export async function accountUsage(env: Env, userId: string): Promise<AccountUsage> {
-  const periodStartedAt = monthStartUtc(Date.now());
-  const [sites, storage, monthly] = await Promise.all([
+  const [sites, storage] = await Promise.all([
     env.DB.prepare("SELECT COUNT(*) AS count FROM sites WHERE user_id = ?")
       .bind(userId)
       .first<CountRow>(),
     storageUsage(env, userId),
-    env.DB.prepare(
-      `SELECT publish_count AS count FROM account_usage_monthly
-       WHERE user_id = ? AND month_start = ?`,
-    )
-      .bind(userId, periodStartedAt)
-      .first<CountRow>(),
   ]);
   return {
     liveSites: sites?.count ?? 0,
     storedBytes: storage?.stored_bytes ?? 0,
     imageCount: storage?.image_count ?? 0,
-    monthlyPublishes: monthly?.count ?? 0,
     storageLimitBytes: MAX_ACCOUNT_STORAGE_BYTES,
-    periodStartedAt,
   };
 }
 
@@ -114,20 +103,6 @@ export function storageBytesForNewObjects(
     (total, object) => total + (knownHashes.has(object.hash) ? 0 : object.size),
     0,
   );
-}
-
-export function monthStartUtc(timestamp: number): number {
-  const date = new Date(timestamp);
-  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1);
-}
-
-export function monthlyPublishStatement(env: Env, userId: string, timestamp: number) {
-  return env.DB.prepare(
-    `INSERT INTO account_usage_monthly (user_id, month_start, publish_count)
-     VALUES (?, ?, 1)
-     ON CONFLICT (user_id, month_start) DO UPDATE SET
-       publish_count = publish_count + 1`,
-  ).bind(userId, monthStartUtc(timestamp));
 }
 
 export function recordUsageEvent(

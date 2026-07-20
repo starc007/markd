@@ -15,7 +15,6 @@ import type {
 import {
   assertAccountStorageLimit,
   assertPublishRateLimit,
-  monthlyPublishStatement,
   recordUsageEvent,
 } from "./usage";
 import { beginPublishInput, MAX_REQUEST_BYTES } from "./validation";
@@ -24,6 +23,12 @@ const SITE_COLUMNS = `
   id, entry_id, user_id, slug, title, current_release_id, created_at, updated_at
 `;
 const SESSION_TTL_MS = 20 * 60 * 1000;
+const STALE_PUBLISH_GRACE_MS = 60 * 60 * 1000;
+const SESSION_CLEANUP_BATCH_SIZE = 5;
+const RECORD_CLEANUP_BATCH_SIZE = 25;
+const OBJECT_CLEANUP_BATCH_SIZE = 500;
+const HASH_CLEANUP_CHUNK_SIZE = 1_000;
+const R2_CLEANUP_BATCH_SIZE = 500;
 
 export async function beginPublish(request: Request, env: Env): Promise<Response> {
   const user = await authenticatedUser(request, env);
@@ -156,10 +161,6 @@ export async function finalizePublish(
   const releaseId = newId("release");
   const finalManifestKey = `manifests/${siteId}/${releaseId}.json`;
   const releaseManifest = await enrichImageMetadata(env, user.id, manifest);
-  await env.PUBLISHED_NOTES.put(finalManifestKey, JSON.stringify(releaseManifest), {
-    httpMetadata: { contentType: "application/json; charset=utf-8" },
-    customMetadata: { siteId, releaseId, manifestHash: session.manifest_hash },
-  });
 
   const pageCount = manifest.pages.length;
   const assetCount = manifest.objects.filter((object) => object.kind === "asset").length;
@@ -181,6 +182,11 @@ export async function finalizePublish(
         ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
       ).bind(releaseId, siteId, finalManifestKey, session.manifest_hash, pageCount, assetCount, now),
     ]);
+
+    await env.PUBLISHED_NOTES.put(finalManifestKey, JSON.stringify(releaseManifest), {
+      httpMetadata: { contentType: "application/json; charset=utf-8" },
+      customMetadata: { siteId, releaseId, manifestHash: session.manifest_hash },
+    });
 
     for (let index = 0; index < manifest.objects.length; index += 40) {
       const statements = manifest.objects.slice(index, index + 40).flatMap((object) => [
@@ -210,22 +216,25 @@ export async function finalizePublish(
         `UPDATE sites SET title = ?, current_release_id = ?, updated_at = ?
          WHERE id = ? AND user_id = ?`,
       ).bind(session.title, releaseId, now, siteId, user.id),
+      queueR2KeysStatement(env, [session.manifest_key]),
       env.DB.prepare("DELETE FROM publish_sessions WHERE id = ?").bind(session.id),
-      monthlyPublishStatement(env, user.id, now),
     ]);
   } catch (cause) {
-    await env.PUBLISHED_NOTES.delete(finalManifestKey);
+    await queueR2Keys(env, [finalManifestKey]);
     await env.DB.prepare("DELETE FROM releases WHERE id = ?").bind(releaseId).run();
     if (!site) {
       await env.DB.prepare("DELETE FROM sites WHERE id = ? AND current_release_id IS NULL")
         .bind(siteId)
         .run();
     }
+    await cleanupOrphans(env, user.id, manifest.objects.map((object) => object.hash));
     throw cause;
   }
 
-  ctx.waitUntil(env.PUBLISHED_NOTES.delete(session.manifest_key));
-  ctx.waitUntil(pruneReleases(env, siteId, user.id));
+  ctx.waitUntil(
+    pruneReleases(env, siteId, user.id)
+      .then(() => drainR2CleanupQueue(env)),
+  );
   ctx.waitUntil(purgeSiteCache(env, siteId, slug));
   const release: ReleaseRow = {
     id: releaseId,
@@ -278,26 +287,10 @@ export async function deleteSite(
   const user = await authenticatedUser(request, env);
   const site = await findOwnedSite(env, siteId, user.id);
   if (!site) return notFound();
-  const releases = await env.DB.prepare(
-    "SELECT id, manifest_key FROM releases WHERE site_id = ?",
-  )
-    .bind(siteId)
-    .all<{ id: string; manifest_key: string }>();
-  const hashes = await env.DB.prepare(
-    `SELECT DISTINCT release_objects.content_hash
-     FROM release_objects JOIN releases ON releases.id = release_objects.release_id
-     WHERE releases.site_id = ?`,
-  )
-    .bind(siteId)
-    .all<{ content_hash: string }>();
-  await env.DB.prepare("DELETE FROM sites WHERE id = ? AND user_id = ?")
-    .bind(siteId, user.id)
-    .run();
+  await removeSiteData(env, site);
   recordUsageEvent(env, user.id, "unpublish", site.id, site.slug);
   ctx.waitUntil(Promise.all([
-    Promise.allSettled(
-      releases.results.map((release) => env.PUBLISHED_NOTES.delete(release.manifest_key)),
-    ).then(() => cleanupOrphans(env, user.id, hashes.results.map((row) => row.content_hash))),
+    drainR2CleanupQueue(env),
     purgeSiteCache(env, site.id, site.slug),
   ]).then(() => undefined));
   return new Response(null, { status: 204 });
@@ -490,14 +483,18 @@ async function retireRelease(env: Env, releaseId: string, userId: string) {
   )
     .bind(releaseId)
     .all<{ content_hash: string }>();
-  await env.DB.prepare("DELETE FROM releases WHERE id = ?").bind(releaseId).run();
-  await env.PUBLISHED_NOTES.delete(release.manifest_key);
+  await env.DB.batch([
+    queueR2KeysStatement(env, [release.manifest_key]),
+    env.DB.prepare("DELETE FROM releases WHERE id = ?").bind(releaseId),
+  ]);
   await cleanupOrphans(env, userId, hashes.results.map((row) => row.content_hash));
 }
 
 async function pruneReleases(env: Env, siteId: string, userId: string) {
   const releases = await env.DB.prepare(
-    `SELECT id FROM releases WHERE site_id = ? ORDER BY published_at DESC LIMIT -1 OFFSET 3`,
+    `SELECT releases.id FROM releases
+     JOIN sites ON sites.id = releases.site_id
+     WHERE releases.site_id = ? AND releases.id != sites.current_release_id`,
   )
     .bind(siteId)
     .all<{ id: string }>();
@@ -507,18 +504,91 @@ async function pruneReleases(env: Env, siteId: string, userId: string) {
 }
 
 async function cleanupOrphans(env: Env, userId: string, hashes: string[]) {
-  for (const hash of hashes) {
-    const referenced = await env.DB.prepare(
-      "SELECT 1 AS found FROM release_objects WHERE user_id = ? AND content_hash = ? LIMIT 1",
-    )
-      .bind(userId, hash)
-      .first<{ found: number }>();
-    if (referenced) continue;
-    await env.PUBLISHED_NOTES.delete(objectKey(userId, hash));
-    await env.DB.prepare("DELETE FROM stored_objects WHERE user_id = ? AND content_hash = ?")
-      .bind(userId, hash)
-      .run();
+  for (let index = 0; index < hashes.length; index += HASH_CLEANUP_CHUNK_SIZE) {
+    const hashJson = JSON.stringify(hashes.slice(index, index + HASH_CLEANUP_CHUNK_SIZE));
+    const unreferenced = `
+      user_id = ? AND content_hash IN (SELECT value FROM json_each(?))
+      AND NOT EXISTS (
+        SELECT 1 FROM release_objects
+        WHERE release_objects.user_id = stored_objects.user_id
+          AND release_objects.content_hash = stored_objects.content_hash
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM publish_session_objects
+        WHERE publish_session_objects.user_id = stored_objects.user_id
+          AND publish_session_objects.content_hash = stored_objects.content_hash
+      )`;
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO legacy_publish_objects (object_key, queued_at)
+         SELECT object_key, ? FROM stored_objects WHERE ${unreferenced}
+         ON CONFLICT (object_key) DO UPDATE SET queued_at = excluded.queued_at`,
+      ).bind(Date.now(), userId, hashJson),
+      env.DB.prepare(`DELETE FROM stored_objects WHERE ${unreferenced}`)
+        .bind(userId, hashJson),
+    ]);
   }
+}
+
+async function removeSiteData(env: Env, site: SiteRow) {
+  const releases = await env.DB.prepare(
+    "SELECT manifest_key FROM releases WHERE site_id = ?",
+  )
+    .bind(site.id)
+    .all<{ manifest_key: string }>();
+  const hashes = await env.DB.prepare(
+    `SELECT DISTINCT release_objects.content_hash
+     FROM release_objects JOIN releases ON releases.id = release_objects.release_id
+     WHERE releases.site_id = ?`,
+  )
+    .bind(site.id)
+    .all<{ content_hash: string }>();
+  await env.DB.batch([
+    queueR2KeysStatement(env, releases.results.map((release) => release.manifest_key)),
+    env.DB.prepare("DELETE FROM sites WHERE id = ? AND user_id = ?")
+      .bind(site.id, site.user_id),
+  ]);
+  await cleanupOrphans(env, site.user_id, hashes.results.map((row) => row.content_hash));
+}
+
+function queueR2KeysStatement(env: Env, keys: string[]) {
+  return env.DB.prepare(
+    `INSERT INTO legacy_publish_objects (object_key, queued_at)
+     SELECT CAST(value AS TEXT), ? FROM json_each(?)
+     WHERE true
+     ON CONFLICT (object_key) DO UPDATE SET queued_at = excluded.queued_at`,
+  ).bind(Date.now(), JSON.stringify(keys));
+}
+
+async function queueR2Keys(env: Env, keys: string[]) {
+  if (!keys.length) return;
+  await queueR2KeysStatement(env, keys).run();
+}
+
+async function drainR2CleanupQueue(env: Env) {
+  await env.DB.prepare(
+    `DELETE FROM legacy_publish_objects WHERE object_key IN (
+       SELECT object_key FROM stored_objects
+       UNION
+       SELECT 'objects/' || user_id || '/' || content_hash FROM publish_session_objects
+     )`,
+  ).run();
+  const queued = await env.DB.prepare(
+    `SELECT object_key FROM legacy_publish_objects
+     WHERE object_key NOT LIKE 'objects/%' OR queued_at <= ?
+     ORDER BY queued_at, object_key LIMIT ?`,
+  )
+    .bind(Date.now() - STALE_PUBLISH_GRACE_MS, R2_CLEANUP_BATCH_SIZE)
+    .all<{ object_key: string }>();
+  const keys = queued.results.map((object) => object.object_key);
+  if (!keys.length) return;
+  await env.PUBLISHED_NOTES.delete(keys);
+  await env.DB.prepare(
+    `DELETE FROM legacy_publish_objects
+     WHERE object_key IN (SELECT value FROM json_each(?))`,
+  )
+    .bind(JSON.stringify(keys))
+    .run();
 }
 
 async function purgeSiteCache(env: Env, siteId: string, slug: string) {
@@ -562,12 +632,12 @@ export class PaidPublishingError extends Error {
   }
 }
 
-export async function cleanupExpiredPublishSessions(env: Env) {
+async function cleanupExpiredPublishSessions(env: Env) {
   const expired = await env.DB.prepare(
     `SELECT id, user_id, manifest_key FROM publish_sessions
-     WHERE expires_at <= ? ORDER BY expires_at LIMIT 100`,
+     WHERE expires_at <= ? ORDER BY expires_at LIMIT ?`,
   )
-    .bind(Date.now())
+    .bind(Date.now(), SESSION_CLEANUP_BATCH_SIZE)
     .all<{ id: string; user_id: string; manifest_key: string }>();
   for (const session of expired.results) {
     const hashes = await env.DB.prepare(
@@ -575,29 +645,89 @@ export async function cleanupExpiredPublishSessions(env: Env) {
     )
       .bind(session.id)
       .all<{ content_hash: string }>();
-    await env.DB.prepare("DELETE FROM publish_sessions WHERE id = ?").bind(session.id).run();
-    await env.PUBLISHED_NOTES.delete(session.manifest_key);
-    for (const { content_hash: hash } of hashes.results) {
-      const stored = await env.DB.prepare(
-        `SELECT 1 AS found FROM stored_objects WHERE user_id = ? AND content_hash = ?
-         UNION ALL
-         SELECT 1 AS found FROM publish_session_objects WHERE user_id = ? AND content_hash = ?
-         LIMIT 1`,
-      )
-        .bind(session.user_id, hash, session.user_id, hash)
-        .first<{ found: number }>();
-      if (!stored) await env.PUBLISHED_NOTES.delete(objectKey(session.user_id, hash));
-    }
+    const hashJson = JSON.stringify(hashes.results.map((row) => row.content_hash));
+    await env.DB.batch([
+      queueR2KeysStatement(env, [session.manifest_key]),
+      env.DB.prepare("DELETE FROM publish_sessions WHERE id = ?").bind(session.id),
+      env.DB.prepare(
+        `INSERT INTO legacy_publish_objects (object_key, queued_at)
+         SELECT 'objects/' || ? || '/' || CAST(value AS TEXT), ? FROM json_each(?)
+         WHERE NOT EXISTS (
+           SELECT 1 FROM stored_objects
+           WHERE stored_objects.user_id = ? AND stored_objects.content_hash = value
+         ) AND NOT EXISTS (
+           SELECT 1 FROM publish_session_objects
+           WHERE publish_session_objects.user_id = ?
+             AND publish_session_objects.content_hash = value
+         )
+         ON CONFLICT (object_key) DO UPDATE SET queued_at = excluded.queued_at`,
+      ).bind(session.user_id, Date.now(), hashJson, session.user_id, session.user_id),
+    ]);
   }
-  const legacy = await env.DB.prepare(
-    "SELECT object_key FROM legacy_publish_objects LIMIT 100",
-  ).all<{ object_key: string }>();
-  for (const object of legacy.results) {
-    await env.PUBLISHED_NOTES.delete(object.object_key);
-    await env.DB.prepare("DELETE FROM legacy_publish_objects WHERE object_key = ?")
-      .bind(object.object_key)
-      .run();
+}
+
+async function cleanupDetachedReleases(env: Env) {
+  const releases = await env.DB.prepare(
+    `SELECT releases.id, sites.user_id FROM releases
+     JOIN sites ON sites.id = releases.site_id
+     WHERE releases.id != sites.current_release_id AND releases.published_at <= ?
+     ORDER BY releases.published_at LIMIT ?`,
+  )
+    .bind(Date.now() - STALE_PUBLISH_GRACE_MS, RECORD_CLEANUP_BATCH_SIZE)
+    .all<{ id: string; user_id: string }>();
+  for (const release of releases.results) {
+    await retireRelease(env, release.id, release.user_id);
   }
+}
+
+async function cleanupIncompleteSites(env: Env) {
+  const sites = await env.DB.prepare(
+    `SELECT ${SITE_COLUMNS.split(",").map((column) => `sites.${column.trim()}`).join(", ")}
+     FROM sites LEFT JOIN releases ON releases.id = sites.current_release_id
+     WHERE (sites.current_release_id IS NULL OR releases.id IS NULL) AND sites.updated_at <= ?
+     ORDER BY sites.updated_at LIMIT ?`,
+  )
+    .bind(Date.now() - STALE_PUBLISH_GRACE_MS, RECORD_CLEANUP_BATCH_SIZE)
+    .all<SiteRow>();
+  for (const site of sites.results) {
+    await removeSiteData(env, site);
+    await purgeSiteCache(env, site.id, site.slug);
+  }
+}
+
+async function cleanupUnreferencedStoredObjects(env: Env) {
+  const objects = await env.DB.prepare(
+    `SELECT stored_objects.user_id, stored_objects.content_hash FROM stored_objects
+     WHERE stored_objects.created_at <= ?
+       AND NOT EXISTS (
+         SELECT 1 FROM release_objects
+         WHERE release_objects.user_id = stored_objects.user_id
+           AND release_objects.content_hash = stored_objects.content_hash
+       )
+       AND NOT EXISTS (
+         SELECT 1 FROM publish_session_objects
+         WHERE publish_session_objects.user_id = stored_objects.user_id
+           AND publish_session_objects.content_hash = stored_objects.content_hash
+       )
+     ORDER BY stored_objects.created_at LIMIT ?`,
+  )
+    .bind(Date.now() - STALE_PUBLISH_GRACE_MS, OBJECT_CLEANUP_BATCH_SIZE)
+    .all<{ user_id: string; content_hash: string }>();
+  const byUser = new Map<string, string[]>();
+  for (const object of objects.results) {
+    const hashes = byUser.get(object.user_id) ?? [];
+    hashes.push(object.content_hash);
+    byUser.set(object.user_id, hashes);
+  }
+  for (const [userId, hashes] of byUser) await cleanupOrphans(env, userId, hashes);
+}
+
+export async function cleanupPublishingRecords(env: Env) {
+  await cleanupExpiredPublishSessions(env);
+  await cleanupDetachedReleases(env);
+  await cleanupIncompleteSites(env);
+  await cleanupUnreferencedStoredObjects(env);
+  await drainR2CleanupQueue(env);
 }
 
 function objectKey(userId: string, hash: string) {

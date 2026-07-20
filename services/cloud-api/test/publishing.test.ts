@@ -6,7 +6,6 @@ import { presignedPutUrl } from "../src/r2-signing";
 import type { Env } from "../src/types";
 import {
   MAX_ACCOUNT_STORAGE_BYTES,
-  monthStartUtc,
   publicViewInput,
   storageBytesForNewObjects,
 } from "../src/usage";
@@ -177,10 +176,6 @@ describe("publishing usage", () => {
       ),
     ).toBe(128);
     expect(MAX_ACCOUNT_STORAGE_BYTES).toBe(10 * 1024 * 1024 * 1024);
-  });
-
-  test("uses calendar months in UTC for publish counters", () => {
-    expect(monthStartUtc(Date.UTC(2026, 6, 20, 14, 30))).toBe(Date.UTC(2026, 6, 1));
   });
 
   test("accepts only valid public page view dimensions", () => {

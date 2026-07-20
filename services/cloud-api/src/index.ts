@@ -16,7 +16,7 @@ import { error, json, RequestBodyError } from "./http";
 import { cleanupExpiredAuthRecords, OtpError, requestOtp, verifyOtp } from "./otp";
 import {
   beginPublish,
-  cleanupExpiredPublishSessions,
+  cleanupPublishingRecords,
   deleteSite,
   finalizePublish,
   getOwnedSite,
@@ -116,7 +116,7 @@ export default {
     ctx.waitUntil(
       Promise.all([
         cleanupExpiredAuthRecords(env),
-        cleanupExpiredPublishSessions(env),
+        cleanupPublishingRecords(env),
         cleanupBillingRecords(env),
       ]).then(
         () => undefined,
