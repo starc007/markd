@@ -74,7 +74,7 @@ export function entryMenuItems(
       icon: FolderOpen,
       onSelect: () => {
         if (!vault.root) return;
-        void revealItemInDir(`${vault.root}/notes/${node.rel}`).catch((error) =>
+        void revealItemInDir(`${vault.root}/${node.rel}`).catch((error) =>
           toast.error("Could not reveal item", {
             description: error instanceof Error ? error.message : String(error),
           }),

@@ -4,7 +4,7 @@ export type NodeKind = "folder" | "note";
 
 export interface TreeNode {
   name: string;
-  /** Path relative to the vault's notes root, e.g. "projects/app.md". */
+  /** Path relative to the vault root, e.g. "projects/app.md". */
   rel: string;
   kind: NodeKind;
   children?: TreeNode[];

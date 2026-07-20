@@ -58,7 +58,8 @@ Pick any folder on disk as your vault:
 
 ```
 <vault>/
-├── notes/          plain .md files, filename is the title, folders are real folders
+├── Note.md         plain .md files, filename is the title
+├── projects/       real folders containing more notes
 └── .markd/         app data: todos, bookmarks, tags, pasted images
 ```
 

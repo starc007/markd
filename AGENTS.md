@@ -19,11 +19,11 @@ Rust owns the filesystem; the frontend is UI + state only. All IO goes through t
 
 User picks any folder as a vault:
 
-- `<vault>/notes/` — plain `.md` files, filename = title, no IDs. Folders are real folders. Portable plain-markdown. Frontmatter is optional: Markd preserves external YAML and only authors flat properties after an explicit user action in the Properties UI.
+- `<vault>/` — plain `.md` files live directly in the selected vault root, filename = title, no IDs. Folders are real folders. `.markd/` remains reserved app data. Portable plain-markdown. Frontmatter is optional: Markd preserves external YAML and only authors flat properties after an explicit user action in the Properties UI.
 - `<vault>/.markd/` — app data: `todos.json`, `bookmarks.json`, `assets/` (pasted images).
 - Vault path + theme persist in the app config dir (`config.json`).
 
-Notes are addressed by path relative to `notes/` (e.g. `projects/app.md`), never by ID. Deletes go to OS trash. External edits are picked up on window focus (dirty editor wins).
+Notes are addressed by path relative to the vault root (e.g. `projects/app.md`), never by ID. Deletes go to OS trash. External edits are picked up on window focus (dirty editor wins).
 
 ### Rust (`src-tauri/src/`)
 

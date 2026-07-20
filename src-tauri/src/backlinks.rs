@@ -8,7 +8,9 @@ use crate::backlink_links::{
     rewrite_line, scan_content,
 };
 use crate::error::AppResult;
-use crate::vault::{notes_root, rel_of, scan_tree, NodeKind, TreeNode};
+use crate::vault::{
+    is_reserved_note_path, notes_root, rel_of, scan_tree, NodeKind, TreeNode,
+};
 
 #[derive(Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -25,7 +27,7 @@ pub fn find_backlinks(root: &Path, target_rel: &str) -> AppResult<Vec<BacklinkMe
     };
     let note_rels = collect_note_rels(root)?;
     let mut mentions = Vec::new();
-    walk_notes(&notes_root(root), &mut |path, content| {
+    walk_notes(root, &notes_root(root), &mut |path, content| {
         let source_rel = rel_of(root, path)?;
         let mut occurrence = 0;
         scan_content(content, |line, line_number, raw, wiki| {
@@ -76,7 +78,7 @@ fn collect_note_rels(root: &Path) -> AppResult<Vec<String>> {
 /// moves. The Markdown files remain the rebuildable source of truth.
 pub fn rewrite_links(root: &Path, from: &str, to: &str) -> AppResult<usize> {
     let mut changed_files = 0;
-    walk_notes(&notes_root(root), &mut |path, content| {
+    walk_notes(root, &notes_root(root), &mut |path, content| {
         let mut output = String::with_capacity(content.len());
         let mut changed = false;
         let mut in_frontmatter = has_frontmatter(content);
@@ -128,18 +130,22 @@ pub fn rewrite_links(root: &Path, from: &str, to: &str) -> AppResult<usize> {
     Ok(changed_files)
 }
 
-fn walk_notes(dir: &Path, visit: &mut impl FnMut(&Path, &str) -> AppResult<()>) -> AppResult<()> {
+fn walk_notes(
+    root: &Path,
+    dir: &Path,
+    visit: &mut impl FnMut(&Path, &str) -> AppResult<()>,
+) -> AppResult<()> {
     let Ok(entries) = fs::read_dir(dir) else {
         return Ok(());
     };
     for entry in entries.flatten() {
         let path = entry.path();
         let name = entry.file_name().to_string_lossy().to_string();
-        if name.starts_with('.') {
+        if name.starts_with('.') || is_reserved_note_path(root, &path) {
             continue;
         }
         if path.is_dir() {
-            walk_notes(&path, visit)?;
+            walk_notes(root, &path, visit)?;
         } else if path.extension().is_some_and(|ext| ext == "md") {
             let content = fs::read_to_string(&path).unwrap_or_default();
             visit(&path, &content)?;

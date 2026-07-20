@@ -31,7 +31,7 @@ const notes = "yours, forever";
 > Your words stay on your disk. No account, no cloud.
 "#;
 
-/// Write a starter `notes/Welcome.md` if it doesn't already exist. Used on the
+/// Write a starter `Welcome.md` if it doesn't already exist. Used on the
 /// first launch of a brand-new vault so it isn't an empty screen.
 pub fn seed_welcome(root: &Path) -> AppResult<()> {
     let path = notes_root(root).join("Welcome.md");
@@ -73,7 +73,7 @@ fn available_path(dir: &Path, stem: &str, ext: Option<&str>) -> PathBuf {
     candidate
 }
 
-/// Create an empty note inside `dir_rel` ("" = notes root). Returns its rel path.
+/// Create an empty note inside `dir_rel` ("" = vault root). Returns its rel path.
 pub fn create_note(root: &Path, dir_rel: &str, title: &str) -> AppResult<String> {
     create_note_with_content(root, dir_rel, title, "")
 }

@@ -4,7 +4,7 @@ use std::path::Path;
 use serde::Serialize;
 
 use crate::error::AppResult;
-use crate::vault::{notes_root, rel_of};
+use crate::vault::{is_reserved_note_path, notes_root, rel_of};
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -45,7 +45,7 @@ fn walk(
     for entry in entries.flatten() {
         let path = entry.path();
         let name = entry.file_name().to_string_lossy().to_string();
-        if name.starts_with('.') {
+        if name.starts_with('.') || is_reserved_note_path(root, &path) {
             continue;
         }
         if path.is_dir() {
@@ -133,6 +133,17 @@ mod tests {
         let dir = tempdir().unwrap();
         ensure_layout(dir.path()).unwrap();
         assert!(search_notes(dir.path(), "  ", 10).unwrap().is_empty());
+    }
+
+    #[test]
+    fn ignores_generated_root_guides() {
+        let dir = tempdir().unwrap();
+        ensure_layout(dir.path()).unwrap();
+        fs::write(dir.path().join("AGENTS.md"), "private marker phrase").unwrap();
+
+        assert!(search_notes(dir.path(), "private marker phrase", 10)
+            .unwrap()
+            .is_empty());
     }
 
     #[test]

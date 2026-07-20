@@ -12,8 +12,8 @@ and edit it directly with ordinary file tools.
 
 ## Layout
 
-- `notes/` — the notes, as plain `.md` files. Filename (minus `.md`) is the
-  note title. Subfolders are real folders and nest freely. **This is the main
+- Markdown files in this root are notes. Filename (minus `.md`) is the note
+  title. Subfolders are real folders and nest freely. **This is the main
   surface — read and write here.**
 - `.markd/` — app data managed by Markd: `todos.json`, `bookmarks.json`, tag
   registries, and `assets/` (pasted images). Safe to read; edit only if you
@@ -27,14 +27,14 @@ and edit it directly with ordinary file tools.
 - A note may begin with a YAML frontmatter block delimited by `---`.
   **Preserve it** when editing; Markd renders it as an editable properties
   panel and only authors it after an explicit user action.
-- Internal page links are Markdown links whose target is a note path relative
-  to `notes/`, e.g. `[Roadmap](projects/roadmap.md)`. `[[wiki]]` and
+- Internal page links are Markdown links whose target is relative to this
+  vault root, e.g. `[Roadmap](projects/roadmap.md)`. `[[wiki]]` and
   `[[target|alias]]` links are also understood.
 - Images reference vault-relative paths under `.markd/assets/`.
 
 ## Editing rules
 
-- Create a note by writing `notes/<Title>.md`. Rename a note by renaming the
+- Create a note by writing `<Title>.md` in this folder. Rename a note by renaming the
   file — the filename is the title; there are no IDs or required frontmatter.
 - Keep content plain Markdown; don't invent app-specific syntax.
 - Markd picks up external changes when its window regains focus.
@@ -59,11 +59,34 @@ registry). Timestamps are epoch milliseconds; generate a UUID and set
 "#;
 
 /// Write `CLAUDE.md` and `AGENTS.md` at the vault root so coding agents know
-/// how to work with the vault. Only creates files that don't already exist —
-/// a user's own guide is never overwritten.
+/// how to work with the vault. Only known layout phrases from Markd's previous
+/// generated guide are updated; a user's own guide is never overwritten.
 pub fn ensure(root: &Path) -> AppResult<()> {
-    write_if_missing(&root.join("AGENTS.md"), AGENTS_MD)?;
+    let agents = root.join("AGENTS.md");
+    write_if_missing(&agents, AGENTS_MD)?;
+    update_legacy_layout_guide(&agents)?;
     write_if_missing(&root.join("CLAUDE.md"), CLAUDE_MD)?;
+    Ok(())
+}
+
+fn update_legacy_layout_guide(path: &Path) -> AppResult<()> {
+    let existing = fs::read_to_string(path)?;
+    if !existing.starts_with("# Notes vault — agent guide")
+        || !existing.contains("- `notes/` — the notes")
+    {
+        return Ok(());
+    }
+    let updated = existing
+        .replace(
+            "- `notes/` — the notes, as plain `.md` files. Filename (minus `.md`) is the\n  note title. Subfolders are real folders and nest freely. **This is the main\n  surface — read and write here.**",
+            "- Markdown files in this root are notes. Filename (minus `.md`) is the\n  note title. Subfolders are real folders and nest freely. **This is the main\n  surface — read and write here.**",
+        )
+        .replace("relative\n  to `notes/`,", "relative to this\n  vault root,")
+        .replace(
+            "Create a note by writing `notes/<Title>.md`.",
+            "Create a note by writing `<Title>.md` in this folder.",
+        );
+    fs::write(path, updated)?;
     Ok(())
 }
 
@@ -99,5 +122,24 @@ mod tests {
             fs::read_to_string(dir.path().join("AGENTS.md")).unwrap(),
             "mine",
         );
+    }
+
+    #[test]
+    fn updates_the_generated_legacy_layout_guidance() {
+        let dir = tempdir().unwrap();
+        fs::write(
+            dir.path().join("AGENTS.md"),
+            "# Notes vault — agent guide\n\n- `notes/` — the notes, as plain `.md` files. Filename (minus `.md`) is the\n  note title. Subfolders are real folders and nest freely. **This is the main\n  surface — read and write here.**\n- Internal page links are Markdown links whose target is a note path relative\n  to `notes/`, e.g. `[Roadmap](projects/roadmap.md)`.\nCreate a note by writing `notes/<Title>.md`.\n",
+        )
+        .unwrap();
+
+        ensure(dir.path()).unwrap();
+
+        let guide = fs::read_to_string(dir.path().join("AGENTS.md")).unwrap();
+        assert!(!guide.contains("- `notes/` — the notes"));
+        assert!(guide.contains("Markdown files in this root are notes"));
+        assert!(guide.contains("relative to this\n  vault root"));
+        assert!(!guide.contains("`notes/<Title>.md`"));
+        assert!(guide.contains("`<Title>.md` in this folder"));
     }
 }

@@ -59,7 +59,7 @@ function viewPath(
   view: ReturnType<typeof useVault.getState>["view"],
 ): string | null {
   if (!root || !view) return null;
-  if (view.type === "note") return `${root}/notes/${view.rel}`;
+  if (view.type === "note") return `${root}/${view.rel}`;
   if (view.type === "todos") return `${root}/.markd/todos.json`;
   if (view.type === "bookmarks") return `${root}/.markd/bookmarks.json`;
   return null;

@@ -13,7 +13,8 @@ use crate::search::SearchHit;
 use crate::todos::{self, Todo};
 use crate::vault::{self, TreeNode};
 use crate::{
-    agent_docs, assets, cloud, daily_notes, link_meta, notes, pins, quick_capture, search,
+    agent_docs, assets, cloud, cloud_metadata, daily_notes, link_meta, notes, pins, quick_capture,
+    search,
 };
 
 #[derive(Default)]
@@ -63,7 +64,12 @@ fn snapshot(app: &AppHandle, root: &PathBuf) -> AppResult<VaultSnapshot> {
 fn activate_vault(app: &AppHandle, state: &AppState, root: PathBuf) -> AppResult<VaultSnapshot> {
     // First run = Markd has never set this folder up (no .markd yet).
     let first_run = !root.join(vault::DATA_DIR).exists();
-    vault::ensure_layout(&root)?;
+    let migrations = vault::ensure_layout(&root)?;
+    for migration in migrations {
+        let _ = backlinks::rewrite_links(&root, &migration.from, &migration.to);
+        let _ = pins::remap(&root, &migration.from, &migration.to);
+        let _ = cloud_metadata::remap(&root, &migration.from, &migration.to);
+    }
     // Drop in agent guide files so coding agents understand the vault.
     let _ = agent_docs::ensure(&root);
     // Seed a starter note only on a brand-new vault, so it isn't empty.
