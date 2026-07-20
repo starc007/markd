@@ -1,11 +1,12 @@
 {
-  "version": "0.1.5",
-  "notes": "Backlinks and linked mentions, pinned notes and folders, editable properties, Quick Capture, daily notes, editor colors, and a redesigned Settings experience.",
-  "pub_date": "2026-07-16T10:12:10.067Z",
+  "version": "0.1.6",
+  "notes": "Publish linked notes and images as one connected site. Find and replace text, customize shortcuts, edit typed properties inline, and keep notes directly in your vault root.",
+  "pub_date": "2026-07-20T19:02:07.163Z",
+  "release_type": "feature",
   "platforms": {
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUais5QS9oMXBYdFliZ2cyb3JQTzY5QWRsaytiWDlEMlc1d09mbE9ZNktZUEZmQU1ERFMzMEhsb3hnMm1lM3YyZTh3K3V6N0l0cGRyTmJIUWxETnVYTllPNWEwSGI0V1F3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0MTk2NTk0CWZpbGU6TWFya2QuYXBwLnRhci5negpZVDZzZUx5eWZET0FOYVR3c2FzS2Jlelp0bHdLU20wdUVVVThhcXk2NDdtNVZiUEQ4MUw2Sk1QSUlFbE10ZnExc0tSc3J6YTVqaTRzYy8yV2R0SXZCdz09Cg==",
-      "url": "https://github.com/starc007/markd/releases/download/v0.1.5/Markd.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUais5QS9oMXBYdFdqQjV5Nkp2cm14WWJxUDkwSm1sYklYdm9raVY5aXB6QnIxL243ZmMrQzUvZnZiYU1OWnJxR042cEdwbE5tbW4xN1pKT0NrZkNxVS9tVTlyYXhYZnc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0NTc0MDEzCWZpbGU6TWFya2QuYXBwLnRhci5negpPbjk3a2JYaG1WNTVFd3ZSUVF2RytySm1EZjFCQkFPR292WEMzeThIQlJDSi9ZWUxDdTJVSVlDZytJTlA5U2pwT2FCcWNGWHVBMkRHcjduTVBNMWFEQT09Cg==",
+      "url": "https://github.com/starc007/markd/releases/download/v0.1.6/Markd.app.tar.gz"
     }
   }
 }
