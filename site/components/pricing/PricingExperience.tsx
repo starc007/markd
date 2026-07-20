@@ -207,8 +207,15 @@ export function PricingExperience({
         </motion.div>
 
         <motion.p
+          {...rise(0.22)}
+          className="mt-3 text-[10.5px] leading-4 text-faint"
+        >
+          Unlimited sites include 10 GB of fair-use published storage.
+        </motion.p>
+
+        <motion.p
           {...rise(0.24)}
-          className="mt-4 font-mono text-[10.5px] uppercase tracking-[0.12em] text-faint"
+          className="mt-3 font-mono text-[10.5px] uppercase tracking-[0.12em] text-faint"
         >
           Local-first · private drafts · publish when ready
         </motion.p>

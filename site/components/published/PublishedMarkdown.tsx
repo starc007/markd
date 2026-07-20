@@ -81,7 +81,7 @@ export function PublishedMarkdown({
                 </span>
               );
             }
-            const widths = [320, 640, 960, 1280, 1600];
+            const widths = [480, 960, 1440];
             const sizes = "(max-width: 720px) calc(100vw - 40px), 672px";
             const dimensions = assetDimensions[hash];
             if (assetTypes[hash] === "image/gif") {
@@ -99,16 +99,9 @@ export function PublishedMarkdown({
             return (
               <picture>
                 <source
-                  type="image/avif"
-                  srcSet={widths
-                    .map((width) => `${assetBaseUrl}/${hash}?w=${width}&f=avif ${width}w`)
-                    .join(", ")}
-                  sizes={sizes}
-                />
-                <source
                   type="image/webp"
                   srcSet={widths
-                    .map((width) => `${assetBaseUrl}/${hash}?w=${width}&f=webp ${width}w`)
+                    .map((width) => `${assetBaseUrl}/${hash}?w=${width} ${width}w`)
                     .join(", ")}
                   sizes={sizes}
                 />

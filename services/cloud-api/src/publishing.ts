@@ -12,6 +12,12 @@ import type {
   SiteResponse,
   SiteRow,
 } from "./types";
+import {
+  assertAccountStorageLimit,
+  assertPublishRateLimit,
+  monthlyPublishStatement,
+  recordUsageEvent,
+} from "./usage";
 import { beginPublishInput, MAX_REQUEST_BYTES } from "./validation";
 
 const SITE_COLUMNS = `
@@ -22,9 +28,11 @@ const SESSION_TTL_MS = 20 * 60 * 1000;
 export async function beginPublish(request: Request, env: Env): Promise<Response> {
   const user = await authenticatedUser(request, env);
   requirePaid(user.plan, env);
+  await assertPublishRateLimit(env, user.id);
   const input = beginPublishInput(await readJson(request, MAX_REQUEST_BYTES));
   const current = await ownedSiteForInput(env, user.id, input);
   if (input.siteId && (!current || current.entry_id !== input.entryId)) return notFound();
+  await assertAccountStorageLimit(env, user.id, input.manifest.objects);
   const sessionId = newId("publish");
   const now = Date.now();
   const manifestJson = JSON.stringify(input.manifest);
@@ -131,6 +139,7 @@ export async function finalizePublish(
     return error(409, "publish_session_invalid", "The release manifest could not be verified.");
   }
   const manifest = JSON.parse(manifestJson) as PublishManifest;
+  await assertAccountStorageLimit(env, user.id, manifest.objects);
   const missing = await missingObjects(env, user.id, manifest.objects);
   if (missing.length) {
     return error(409, "publish_upload_incomplete", "Some release objects have not finished uploading.", {
@@ -202,6 +211,7 @@ export async function finalizePublish(
          WHERE id = ? AND user_id = ?`,
       ).bind(session.title, releaseId, now, siteId, user.id),
       env.DB.prepare("DELETE FROM publish_sessions WHERE id = ?").bind(session.id),
+      monthlyPublishStatement(env, user.id, now),
     ]);
   } catch (cause) {
     await env.PUBLISHED_NOTES.delete(finalManifestKey);
@@ -236,6 +246,18 @@ export async function finalizePublish(
     created_at: site?.created_at ?? now,
     updated_at: now,
   };
+  recordUsageEvent(
+    env,
+    user.id,
+    "publish",
+    siteId,
+    releaseId,
+    {
+      pages: pageCount,
+      images: assetCount,
+      bytes: manifest.objects.reduce((total, object) => total + object.size, 0),
+    },
+  );
   return json({ site: siteResponse(env, row, release) }, 201);
 }
 
@@ -271,6 +293,7 @@ export async function deleteSite(
   await env.DB.prepare("DELETE FROM sites WHERE id = ? AND user_id = ?")
     .bind(siteId, user.id)
     .run();
+  recordUsageEvent(env, user.id, "unpublish", site.id, site.slug);
   ctx.waitUntil(Promise.all([
     Promise.allSettled(
       releases.results.map((release) => env.PUBLISHED_NOTES.delete(release.manifest_key)),
@@ -329,18 +352,33 @@ export async function getPublicAsset(
   if (!object) return notFound();
   const width = requestedImageWidth(request);
   if (width && asset.contentType !== "image/gif") {
-    const format = requestedImageFormat(request);
     const transformed = await env.IMAGES
       .input(object.body)
       .transform({ width, fit: "scale-down" })
-      .output({ format, quality: 82 });
+      .output({ format: "image/webp", quality: 82 });
+    recordUsageEvent(
+      env,
+      resolved.site.user_id,
+      "asset_request",
+      resolved.site.id,
+      hash,
+      { bytes: asset.size, width },
+    );
     return assetResponse(
       transformed.response().body,
       transformed.contentType(),
       resolved.site.id,
-      `"${hash}-${width}-${format.slice(6)}"`,
+      `"${hash}-${width}-webp"`,
     );
   }
+  recordUsageEvent(
+    env,
+    resolved.site.user_id,
+    "asset_request",
+    resolved.site.id,
+    hash,
+    { bytes: asset.size },
+  );
   return assetResponse(object.body, asset.contentType, resolved.site.id, object.httpEtag, asset.size);
 }
 
@@ -365,11 +403,7 @@ function assetResponse(
 
 function requestedImageWidth(request: Request) {
   const width = Number(new URL(request.url).searchParams.get("w"));
-  return [320, 640, 960, 1280, 1600].includes(width) ? width : null;
-}
-
-function requestedImageFormat(request: Request): "image/avif" | "image/webp" {
-  return new URL(request.url).searchParams.get("f") === "avif" ? "image/avif" : "image/webp";
+  return [480, 960, 1440].includes(width) ? width : null;
 }
 
 async function ownedSiteForInput(env: Env, userId: string, input: BeginPublishInput) {

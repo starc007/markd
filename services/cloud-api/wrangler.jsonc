@@ -28,6 +28,11 @@
       "name": "OTP_EMAIL_RATE_LIMITER",
       "namespace_id": "41002",
       "simple": { "limit": 2, "period": 60 }
+    },
+    {
+      "name": "PUBLISH_RATE_LIMITER",
+      "namespace_id": "41003",
+      "simple": { "limit": 12, "period": 60 }
     }
   ],
   "vars": {
@@ -60,6 +65,12 @@
   "images": {
     "binding": "IMAGES"
   },
+  "analytics_engine_datasets": [
+    {
+      "binding": "USAGE_ANALYTICS",
+      "dataset": "markd_publishing_usage"
+    }
+  ],
   "d1_databases": [
     {
       "binding": "DB",

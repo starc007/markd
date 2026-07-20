@@ -5,6 +5,12 @@ import { normalizeEmail, OtpError } from "../src/otp";
 import { presignedPutUrl } from "../src/r2-signing";
 import type { Env } from "../src/types";
 import {
+  MAX_ACCOUNT_STORAGE_BYTES,
+  monthStartUtc,
+  publicViewInput,
+  storageBytesForNewObjects,
+} from "../src/usage";
+import {
   beginPublishInput,
   ValidationError,
 } from "../src/validation";
@@ -156,6 +162,35 @@ describe("publishing identifiers", () => {
     expect(signed.searchParams.get("X-Amz-Expires")).toBe("900");
     expect(signed.searchParams.get("X-Amz-SignedHeaders")).toContain("x-amz-checksum-sha256");
     expect(signed.searchParams.get("X-Amz-Signature")).toMatch(/^[a-f0-9]{64}$/);
+  });
+});
+
+describe("publishing usage", () => {
+  test("counts only content that is new to the account", () => {
+    expect(
+      storageBytesForNewObjects(
+        [
+          { hash: ROOT_HASH, kind: "page", contentType: "text/markdown; charset=utf-8", size: 24 },
+          { hash: ASSET_HASH, kind: "asset", contentType: "image/png", size: 128 },
+        ],
+        new Set([ROOT_HASH]),
+      ),
+    ).toBe(128);
+    expect(MAX_ACCOUNT_STORAGE_BYTES).toBe(10 * 1024 * 1024 * 1024);
+  });
+
+  test("uses calendar months in UTC for publish counters", () => {
+    expect(monthStartUtc(Date.UTC(2026, 6, 20, 14, 30))).toBe(Date.UTC(2026, 6, 1));
+  });
+
+  test("accepts only valid public page view dimensions", () => {
+    const slug = "abcdefghijklmnopqrstuv";
+    expect(publicViewInput({ slug, path: "guides/getting-started" })).toEqual({
+      slug,
+      path: "guides/getting-started",
+    });
+    expect(() => publicViewInput({ slug: "bad", path: "" })).toThrow();
+    expect(() => publicViewInput({ slug, path: "../private" })).toThrow();
   });
 });
 

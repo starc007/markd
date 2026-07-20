@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import { PublishedHeaderActions } from "@/components/published/PublishedHeaderActions";
 import { PublishedMarkdown } from "@/components/published/PublishedMarkdown";
+import { PublishedUsageBeacon } from "@/components/published/PublishedUsageBeacon";
 import {
   getPublishedNote,
   noteDescription,
@@ -52,11 +53,14 @@ export async function generateMetadata({ params }: SharePageProps): Promise<Meta
 
 export default async function SharePage({ params }: SharePageProps) {
   const { slug, path } = await params;
-  const note = await getPublishedNote(slug, pagePath(path));
+  const currentPath = pagePath(path);
+  const note = await getPublishedNote(slug, currentPath);
   if (!note) notFound();
+  const viewEndpoint = `${new URL(note.assetBaseUrl).origin}/v1/public/views`;
 
   return (
     <main className="published-page min-h-dvh bg-background text-foreground">
+      <PublishedUsageBeacon endpoint={viewEndpoint} slug={slug} path={currentPath ?? ""} />
       <header className="fixed top-0 z-20 w-full border-b border-border/20 bg-background/60 backdrop-blur-xl">
         <div className="mx-auto flex h-11 w-full items-center gap-3 px-3">
           <p className="min-w-0 flex-1 truncate text-[14px] font-semibold text-foreground">

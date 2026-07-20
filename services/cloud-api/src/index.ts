@@ -25,6 +25,11 @@ import {
   PaidPublishingError,
 } from "./publishing";
 import type { Env } from "./types";
+import {
+  getAccountUsage,
+  PublishingUsageError,
+  recordPublicView,
+} from "./usage";
 import { ValidationError } from "./validation";
 
 const SITE_ID = /^\/v1\/sites\/(site_[a-f0-9]{32})$/;
@@ -53,6 +58,12 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   if (request.method === "GET" && url.pathname === "/v1/me") {
     const user = await authenticatedUser(request, env);
     return json({ user: { id: user.id, email: user.email, plan: user.plan } });
+  }
+  if (request.method === "GET" && url.pathname === "/v1/me/usage") {
+    return getAccountUsage(request, env);
+  }
+  if (request.method === "POST" && url.pathname === "/v1/public/views") {
+    return recordPublicView(request, env);
   }
   if (request.method === "POST" && url.pathname === "/v1/publish-sessions") {
     return beginPublish(request, env);
@@ -90,6 +101,9 @@ export default {
         return error(402, "cloud_subscription_required", cause.message, {
           upgradeUrl: cause.upgradeUrl,
         });
+      }
+      if (cause instanceof PublishingUsageError) {
+        return error(cause.status, cause.code, cause.message, cause.details);
       }
       if (cause instanceof OtpError) return error(cause.status, cause.code, cause.message);
       if (cause instanceof ValidationError) return error(400, cause.code, cause.message);
