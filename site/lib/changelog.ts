@@ -10,6 +10,25 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.1.6",
+    date: "2026-07-21",
+    displayDate: "July 21, 2026",
+    title: "Publish and stay in control",
+    summary:
+      "Publish connected notes while keeping every local file yours.",
+    changes: [
+      "Publish a note together with its linked pages and images as one connected site.",
+      "Subscribe to Markd Cloud from the website or desktop app and manage billing in Settings.",
+      "Find and replace text inside a note without leaving the editor.",
+      "Add and edit typed note properties inline, including clickable URL properties.",
+      "Customize keyboard shortcuts and move through notes, todos, and bookmarks faster.",
+      "Keep Markdown files directly in the vault root with a safe upgrade for existing vaults.",
+      "Use a faster command palette and clearer async states throughout the app.",
+      "Read published notes with matching typography and automatic light or dark mode.",
+    ],
+    releaseUrl: "https://github.com/starc007/markd/releases/tag/v0.1.6",
+  },
+  {
     version: "0.1.5",
     date: "2026-07-16",
     displayDate: "July 16, 2026",
