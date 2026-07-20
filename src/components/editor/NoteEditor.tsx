@@ -7,6 +7,7 @@ import {
   notifyBacklinksChanged,
 } from "@/lib/backlinks";
 import { ipc } from "@/lib/ipc";
+import { invalidatePublishStatus } from "@/lib/queryClient";
 import {
   joinFrontmatter,
   parseFrontmatter,
@@ -113,6 +114,7 @@ export const NoteEditor = memo(function NoteEditor({
       const fullText = joinFrontmatter(frontmatter.current, markdown);
       try {
         await ipc.writeNote(targetRel, fullText);
+        invalidatePublishStatus();
         notifyBacklinksChanged();
         if (relRef.current === targetRel) {
           lastSaved.current = fullText;

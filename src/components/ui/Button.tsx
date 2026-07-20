@@ -1,6 +1,6 @@
-import { Loader2 } from "lucide-react";
 import { motion, useReducedMotion, type HTMLMotionProps } from "motion/react";
 import { forwardRef, type ReactNode } from "react";
+import { Spinner } from "@/components/ui/Spinner";
 import { SPRING_PRESS } from "@/lib/ease";
 import { cn } from "@/lib/utils";
 
@@ -46,7 +46,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         transition={SPRING_PRESS}
         className={cn(
           "flex select-none items-center justify-center font-medium leading-none transition-colors duration-100",
-          size !== "icon" && "[&>svg]:translate-y-0",
+          "[&>svg]:block [&>svg]:shrink-0",
           "disabled:pointer-events-none disabled:opacity-50",
           VARIANT[variant],
           SIZE[size],
@@ -55,12 +55,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {...rest}
       >
         {loading ? (
-          <Loader2
-            size={13}
-            strokeWidth={2}
-            className="shrink-0 animate-spin"
-            aria-hidden="true"
-          />
+          <Spinner size={14} />
         ) : null}
         {children}
       </motion.button>

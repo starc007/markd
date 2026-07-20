@@ -1,5 +1,6 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import {
+  Code2,
   Copy,
   ExternalLink,
   Globe2,
@@ -7,21 +8,28 @@ import {
   RefreshCw,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
+import { CopyButton } from "@/components/ui/CopyButton";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { openCloudPlans } from "@/lib/cloud";
 import { IpcError, ipc } from "@/lib/ipc";
 import { collectPublishBundle, type PublishBundle } from "@/lib/publishBundle";
-import type { PublishedShare } from "@/lib/types";
+import { publishedEmbedCode } from "@/lib/publishedEmbed";
+import { publishStatusQueryKey, queryClient } from "@/lib/queryClient";
+import type { PublishedNoteStatus, PublishedShare } from "@/lib/types";
 import { noteTitle } from "@/lib/utils";
 import { useUi } from "@/stores/ui";
 import { useVault } from "@/stores/vault";
 
 type BusyAction = "publish" | "update" | "revoke" | "plans" | null;
+type PublishStatusResult = {
+  bundle: PublishBundle;
+  status: PublishedNoteStatus;
+};
 
 export function PublishNoteModal({
   open,
@@ -43,33 +51,51 @@ export function PublishNoteModal({
   const [busy, setBusy] = useState<BusyAction>(null);
   const [error, setError] = useState<{ kind: string; message: string } | null>(null);
   const openSettings = useUi((state) => state.openSettings);
+  const root = useVault((state) => state.root);
   const tree = useVault((state) => state.tree);
+  const embedCode = share ? publishedEmbedCode(share.url, share.title) : "";
+  const statusQueryKey = useMemo(
+    () => publishStatusQueryKey(root, rel, markdown, tree),
+    [root, rel, markdown, tree],
+  );
 
   useEffect(() => {
     if (!open) return;
     let disposed = false;
-    setLoading(true);
-    setBundle(null);
-    setAccount(null);
+    const applyResult = ({ bundle: nextBundle, status }: PublishStatusResult) => {
+      setBundle(nextBundle);
+      setShare(status.share);
+      notifyPublishStatus(rel, Boolean(status.share));
+      setAccount(status.account);
+      setOutdated(status.isOutdated);
+      setTitle(status.share?.title ?? noteTitle(rel));
+    };
+    const cached = queryClient.getQueryData<PublishStatusResult>(statusQueryKey);
+    setLoading(!cached);
+    if (cached) {
+      applyResult(cached);
+    } else {
+      setBundle(null);
+      setAccount(null);
+    }
     setError(null);
-    void collectPublishBundle(rel, markdown, tree)
-      .then(async (nextBundle) => {
-        if (disposed) return;
-        setBundle(nextBundle);
-        return ipc.publishedNoteStatus(
-          rel,
-          noteTitle(rel),
-          nextBundle.markdown,
-          nextBundle.pages,
-        );
+    void queryClient
+      .fetchQuery({
+        queryKey: statusQueryKey,
+        queryFn: async () => {
+          const nextBundle = await collectPublishBundle(rel, markdown, tree);
+          const status = await ipc.publishedNoteStatus(
+            rel,
+            noteTitle(rel),
+            nextBundle.markdown,
+            nextBundle.pages,
+          );
+          return { bundle: nextBundle, status };
+        },
       })
-      .then((status) => {
-        if (disposed || !status) return;
-        setShare(status.share);
-        notifyPublishStatus(rel, Boolean(status.share));
-        setAccount(status.account);
-        setOutdated(status.isOutdated);
-        setTitle(status.share?.title ?? noteTitle(rel));
+      .then((result) => {
+        if (disposed) return;
+        applyResult(result);
       })
       .catch((cause) => {
         if (disposed) return;
@@ -84,7 +110,7 @@ export function PublishNoteModal({
     return () => {
       disposed = true;
     };
-  }, [open, rel, markdown, tree]);
+  }, [open, rel, markdown, tree, statusQueryKey]);
 
   const run = async (action: Exclude<BusyAction, null>) => {
     setBusy(action);
@@ -92,6 +118,12 @@ export function PublishNoteModal({
     try {
       if (action === "revoke") {
         await ipc.revokePublishedNote(rel);
+        if (bundle) {
+          queryClient.setQueryData<PublishStatusResult>(statusQueryKey, {
+            bundle,
+            status: { account, share: null, isOutdated: false },
+          });
+        }
         setShare(null);
         notifyPublishStatus(rel, false);
         setOutdated(false);
@@ -105,6 +137,10 @@ export function PublishNoteModal({
           ? await ipc.publishNote(rel, title.trim(), nextBundle.markdown, nextBundle.pages)
           : await ipc.updatePublishedNote(rel, title.trim(), nextBundle.markdown, nextBundle.pages);
       setShare(next);
+      queryClient.setQueryData<PublishStatusResult>(statusQueryKey, {
+        bundle: nextBundle,
+        status: { account, share: next, isOutdated: false },
+      });
       notifyPublishStatus(rel, true);
       setTitle(next.title);
       setOutdated(false);
@@ -278,6 +314,23 @@ export function PublishNoteModal({
                 <p className="mt-3 truncate font-mono text-[10.5px] text-muted">
                   {share.url}
                 </p>
+                <div className="mt-3 border-t border-line-soft pt-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="flex items-center gap-1.5 text-[10.5px] font-medium text-muted">
+                      <Code2 size={12} strokeWidth={1.9} />
+                      Embed code
+                    </span>
+                    <CopyButton
+                      value={embedCode}
+                      text="Copy code"
+                      copiedText="Copied"
+                      className="bg-bg"
+                    />
+                  </div>
+                  <code className="mt-2 block max-h-12 overflow-hidden break-all rounded-md border border-line bg-bg px-2.5 py-2 font-mono text-[9.5px] leading-4 text-faint">
+                    {embedCode}
+                  </code>
+                </div>
               </div>
             ) : (
               <div className="rounded-xl bg-panel p-3.5 text-[12px] leading-5 text-muted">

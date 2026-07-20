@@ -6,13 +6,13 @@ import {
   Command,
   FilePlus,
   FolderPlus,
-  Loader2,
   Search,
   Settings,
 } from "lucide-react";
 import { FileTree } from "@/components/tree/FileTree";
 import { PinnedNotes } from "@/components/tree/PinnedNotes";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { Spinner } from "@/components/ui/Spinner";
 import { formatShortcutParts, type ShortcutBinding } from "@/lib/shortcuts";
 import { cx, isMac } from "@/lib/utils";
 import { useShortcuts } from "@/stores/shortcuts";
@@ -167,11 +167,7 @@ function UpdateRow() {
         className="flex w-full items-center gap-2 rounded-md bg-hover px-2.5 py-1.5 text-[12.5px] font-medium text-ink transition-colors duration-100 hover:bg-active disabled:cursor-default disabled:hover:bg-hover"
       >
         {busy ? (
-          <Loader2
-            size={14}
-            strokeWidth={2}
-            className="shrink-0 animate-spin text-faint"
-          />
+          <Spinner size={14} className="text-faint" />
         ) : (
           <ArrowDownToLine size={14} strokeWidth={2} className="shrink-0" />
         )}

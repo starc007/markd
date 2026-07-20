@@ -1,9 +1,11 @@
-import { Check, Cloud, Loader2, LogIn, LogOut, Mail, RotateCcw } from "lucide-react";
+import { Check, Cloud, LogIn, LogOut, Mail, RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Spinner } from "@/components/ui/Spinner";
 import { IpcError, ipc } from "@/lib/ipc";
+import { invalidatePublishStatus } from "@/lib/queryClient";
 import type { CloudAccount, OtpChallenge } from "@/lib/types";
 
 type Step = "account" | "email" | "code";
@@ -25,6 +27,7 @@ export function CloudAccountCard({
   const [resendIn, setResendIn] = useState(0);
 
   const updateAccount = (next: CloudAccount | null) => {
+    invalidatePublishStatus();
     setAccount(next);
     onAccountChange(next);
     window.dispatchEvent(
@@ -124,12 +127,7 @@ export function CloudAccountCard({
           <div className="flex items-center gap-3">
             <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-line bg-panel text-muted">
               {loading ? (
-                <Loader2
-                  size={16}
-                  strokeWidth={1.8}
-                  className="animate-spin"
-                  aria-hidden="true"
-                />
+                <Spinner size={14} />
               ) : account ? (
                 <span className="text-[12px] font-semibold uppercase text-ink">
                   {account.email.slice(0, 1)}

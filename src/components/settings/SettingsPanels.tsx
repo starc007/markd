@@ -22,6 +22,7 @@ import {
 import { cx, isMac } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Spinner } from "@/components/ui/Spinner";
 import { CloudAccountCard } from "@/components/settings/CloudAccountCard";
 import { openCloudBillingPortal, openCloudPlans } from "@/lib/cloud";
 import { useShortcuts } from "@/stores/shortcuts";
@@ -123,11 +124,11 @@ export function GeneralSettings() {
               }
               className="shrink-0 bg-bg"
             >
-              <RefreshCw
-                size={13}
-                strokeWidth={1.75}
-                className={updateStatus === "checking" ? "animate-spin" : undefined}
-              />
+              {updateStatus === "checking" ? (
+                <Spinner size={14} />
+              ) : (
+                <RefreshCw size={13} strokeWidth={1.75} />
+              )}
               Check
             </Button>
           )}

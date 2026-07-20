@@ -1,10 +1,12 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { QueryClientProvider } from "@tanstack/react-query";
 import App from "./App";
 import { QuickCaptureWindow } from "./components/capture/QuickCaptureWindow";
 import { ErrorBoundary } from "./components/ui/ErrorBoundary";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import "./styles.css";
+import { queryClient } from "./lib/queryClient";
 
 // Kill macOS autocorrect/autocapitalize/spellcheck in every text field.
 document.addEventListener("focusin", (event) => {
@@ -22,7 +24,9 @@ const Root = getCurrentWindow().label === "quick-capture" ? QuickCaptureWindow :
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <ErrorBoundary>
-      <Root />
+      <QueryClientProvider client={queryClient}>
+        <Root />
+      </QueryClientProvider>
     </ErrorBoundary>
   </React.StrictMode>,
 );

@@ -5,6 +5,7 @@ import { closeTab } from "@/components/editor/TabBar";
 import { Welcome } from "@/components/welcome/Welcome";
 import { initSessionSync, restoreSession } from "@/lib/session";
 import { notifyBacklinksChanged } from "@/lib/backlinks";
+import { invalidatePublishStatus } from "@/lib/queryClient";
 import { matchesShortcut } from "@/lib/shortcuts";
 import { isMac } from "@/lib/utils";
 import { activeDir, useVault } from "@/stores/vault";
@@ -60,7 +61,10 @@ export default function App() {
 
   // Pick up edits made outside the app when the window regains focus.
   useEffect(() => {
-    const onFocus = () => refreshTree();
+    const onFocus = () => {
+      invalidatePublishStatus();
+      void refreshTree();
+    };
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
   }, [refreshTree]);
