@@ -11,6 +11,7 @@ import { MobileMenu } from "./MobileMenu";
 const LINKS = [
   { label: "Features", href: "/#features" },
   { label: "Agent", href: "/#agent" },
+  { label: "Pricing", href: "/pricing" },
   { label: "FAQ", href: "/#faq" },
   { label: "Changelog", href: "/changelog" },
 ];

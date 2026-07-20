@@ -2,7 +2,7 @@
 
 # Verify the signed and notarized DMG before distribution.
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -10,23 +10,32 @@ VERSION="${1:-}"
 
 echo "🔎 Verifying notarized DMG..."
 
-# Find the requested release DMG without accidentally selecting an older build.
+# Find exactly one requested release DMG without selecting an older build.
 if [ -n "$VERSION" ]; then
-  DMG_PATH=$(find "$PROJECT_ROOT/src-tauri/target/release/bundle/dmg" -name "*_${VERSION}_*.dmg" -type f 2>/dev/null | head -n 1)
+  DMG_MATCHES=()
+  while IFS= read -r path; do
+    DMG_MATCHES+=("$path")
+  done < <(find "$PROJECT_ROOT/src-tauri/target/release/bundle/dmg" -maxdepth 1 -name "Markd_${VERSION}_*.dmg" -type f -print 2>/dev/null | sort)
 else
-  DMG_PATH=$(find "$PROJECT_ROOT/src-tauri/target/release/bundle/dmg" -name "*.dmg" -type f 2>/dev/null | head -n 1)
+  DMG_MATCHES=()
+  while IFS= read -r path; do
+    DMG_MATCHES+=("$path")
+  done < <(find "$PROJECT_ROOT/src-tauri/target/release/bundle/dmg" -maxdepth 1 -name "Markd_*.dmg" -type f -print 2>/dev/null | sort)
 fi
 
-if [ -z "$DMG_PATH" ]; then
-  echo "❌ Error: DMG file not found in build directory"
-  echo "   Please build the app first with: bun run tauri build"
+[ "${#DMG_MATCHES[@]}" -eq 1 ] || {
+  echo "❌ Error: expected exactly one matching DMG, found ${#DMG_MATCHES[@]}"
   exit 1
-fi
+}
+DMG_PATH="${DMG_MATCHES[0]}"
 
 echo "✅ Found DMG: $DMG_PATH"
 
 echo "💿 Checking disk image integrity..."
 hdiutil verify "$DMG_PATH"
+
+echo "✍️  Checking Developer ID signature..."
+codesign --verify --verbose=2 "$DMG_PATH"
 
 echo "🎟️  Checking stapled notarization ticket..."
 xcrun stapler validate "$DMG_PATH"

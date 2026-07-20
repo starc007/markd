@@ -23,6 +23,9 @@ fi
 
 command -v security >/dev/null || fail "The macOS security tool is unavailable."
 command -v xcrun >/dev/null || fail "Xcode command line tools are unavailable."
+command -v codesign >/dev/null || fail "codesign is unavailable."
+command -v spctl >/dev/null || fail "spctl is unavailable."
+command -v hdiutil >/dev/null || fail "hdiutil is unavailable."
 xcrun --find notarytool >/dev/null 2>&1 || fail "notarytool is unavailable. Install or select a current Xcode."
 xcrun --find stapler >/dev/null 2>&1 || fail "stapler is unavailable. Install or select a current Xcode."
 
@@ -61,6 +64,17 @@ else
   fail "Notarization credentials are missing. See NOTARIZATION.md."
 fi
 
+[ -n "${TAURI_SIGNING_PRIVATE_KEY:-}" ] || fail "TAURI_SIGNING_PRIVATE_KEY is required for updater artifacts."
+[ -n "${TAURI_SIGNING_PRIVATE_KEY_PASSWORD:-}" ] || fail "TAURI_SIGNING_PRIVATE_KEY_PASSWORD is required for the encrypted updater key."
+
+if [[ "$TAURI_SIGNING_PRIVATE_KEY" != *$'\n'* && -f "$TAURI_SIGNING_PRIVATE_KEY" ]]; then
+  [ -r "$TAURI_SIGNING_PRIVATE_KEY" ] || fail "TAURI_SIGNING_PRIVATE_KEY is not readable."
+  UPDATER_KEY_KIND="private key file"
+else
+  UPDATER_KEY_KIND="inline private key"
+fi
+
 echo "✅ Developer ID identity: $IDENTITY"
 echo "✅ Notarization credentials: $CREDENTIAL_KIND"
+echo "✅ Updater signing credentials: $UPDATER_KEY_KIND"
 echo "✅ notarytool: $(xcrun notarytool --version)"

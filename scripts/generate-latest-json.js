@@ -7,13 +7,13 @@
  * It reads the signature files and creates a properly formatted JSON file.
  *
  * Usage:
- *   bun scripts/generate-latest-json.js <version> [--type=fix|feature] <notes>
+ *   bun scripts/generate-latest-json.js <version> [--type=fix|feature] [--require=darwin-aarch64] <notes>
  *
  * Example:
  *   bun scripts/generate-latest-json.js "0.2.0" --type=feature "New properties"
  */
 
-import { readFileSync, writeFileSync } from "fs";
+import { existsSync, readFileSync, statSync, writeFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -37,11 +37,27 @@ if (args.length < 2) {
 }
 
 const version = args[0];
+if (!/^\d+\.\d+\.\d+$/.test(version)) {
+  console.error(`Invalid semantic version: ${version}`);
+  process.exit(1);
+}
+
+const invalidTypeArg = args.slice(1).find((arg) => arg.startsWith("--type=") && !/^--type=(fix|feature)$/.test(arg));
+if (invalidTypeArg) {
+  console.error(`Invalid release type: ${invalidTypeArg}`);
+  process.exit(1);
+}
+
 const typeArg = args.slice(1).find((arg) => /^--type=(fix|feature)$/.test(arg));
+const requireArg = args.slice(1).find((arg) => arg.startsWith("--require="));
+if (requireArg && requireArg !== "--require=darwin-aarch64") {
+  console.error(`Unsupported required platform: ${requireArg}`);
+  process.exit(1);
+}
 const releaseType = typeArg?.slice("--type=".length);
 const notes = args
   .slice(1)
-  .filter((arg) => arg !== typeArg)
+  .filter((arg) => arg !== typeArg && arg !== requireArg)
   .join(" ");
 if (!notes.trim()) {
   console.error("Release notes cannot be empty");
@@ -69,6 +85,7 @@ function readSignature(filePath) {
 // Note: Signature files are only created when you build with the updater plugin
 // and create update bundles (not just DMG files)
 const macosSigPath = join(buildDir, "macos", `${APP_NAME}.app.tar.gz.sig`);
+const macosArchivePath = join(buildDir, "macos", `${APP_NAME}.app.tar.gz`);
 const windowsSigPath = join(
   buildDir,
   "nsis",
@@ -102,6 +119,17 @@ if (!macosSig) {
 }
 if (!macosSig) {
   macosSig = readSignature(macosSigPathAlt2);
+}
+
+if (requireArg) {
+  if (!existsSync(macosArchivePath) || statSync(macosArchivePath).size === 0) {
+    console.error(`Required updater archive is missing or empty: ${macosArchivePath}`);
+    process.exit(1);
+  }
+  if (!macosSig) {
+    console.error("Required darwin-aarch64 updater signature is missing.");
+    process.exit(1);
+  }
 }
 
 const windowsSig = readSignature(windowsSigPath);
@@ -182,5 +210,10 @@ if (platformCount === 0) {
   console.log("   1. Review the generated latest.json file");
   console.log(`   2. Upload the update bundles to GitHub release v${version}`);
   console.log("   3. Publish latest.json at /updates/latest.json");
+}
+
+if (requireArg && !latestJson.platforms["darwin-aarch64"]) {
+  console.error("Required darwin-aarch64 platform was not generated.");
+  process.exit(1);
 }
 console.log("");

@@ -47,13 +47,22 @@ bun run release:check
 ```
 
 The check rejects ad-hoc signing, Apple Development certificates, missing private keys, and partial notarization credentials.
+It also requires `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, because a release without a signed updater archive must not be published.
 
 ## 4. Release
 
 ```bash
-bun run release -- "0.1.5" "Release notes"
+bun run release -- 0.1.7 --type=feature "Release notes"
 ```
 
-Tauri signs the app, uploads it to Apple's notary service, waits for acceptance, and staples the ticket. The release script then verifies the DMG with `hdiutil`, `stapler`, and Gatekeeper before staging it for the website.
+The release script removes stale artifacts and builds the app without submitting an intermediate bundle for notarization. It then applies the final Developer ID signature, notarizes and staples that exact app, creates a fresh updater archive from it, and signs the archive. Only then does it create and notarize the DMG. The script verifies the app and DMG with `codesign`, `hdiutil`, `stapler`, and Gatekeeper before generating updater metadata.
+
+If DMG creation or notarization fails after the app has passed verification, resume without rebuilding it:
+
+```bash
+bun run release -- 0.1.7 --type=feature --resume "Release notes"
+```
+
+The resume path validates the existing app version, signature, notarization ticket, updater archive, and updater signature before using them. If Tauri's DMG command fails, the release automatically retries with Tauri's generated `create-dmg` helper.
 
 Never use `--skip-stapling` for a public release.

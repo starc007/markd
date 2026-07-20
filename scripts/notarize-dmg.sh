@@ -18,6 +18,16 @@ DMG_PATH="${1:-}"
   exit 1
 }
 
+IDENTITY="${APPLE_SIGNING_IDENTITY:-}"
+[ -n "$IDENTITY" ] || {
+  echo "❌ APPLE_SIGNING_IDENTITY is required to sign the DMG." >&2
+  exit 1
+}
+
+echo "Signing $(basename "$DMG_PATH") with Developer ID..."
+codesign --force --sign "$IDENTITY" --timestamp "$DMG_PATH"
+codesign --verify --verbose=2 "$DMG_PATH"
+
 echo "Uploading $(basename "$DMG_PATH") to Apple's notary service..."
 
 if [ -n "${APPLE_API_KEY:-}" ] && [ -n "${APPLE_API_KEY_PATH:-}" ]; then
@@ -41,5 +51,7 @@ fi
 
 xcrun notarytool submit "$DMG_PATH" "${NOTARY_ARGS[@]}" --wait
 xcrun stapler staple "$DMG_PATH"
+xcrun stapler validate "$DMG_PATH"
+spctl --assess --type open --context context:primary-signature --verbose=2 "$DMG_PATH"
 
-echo "✅ DMG notarization accepted and ticket stapled."
+echo "✅ DMG signed, notarized, stapled, and accepted by Gatekeeper."
