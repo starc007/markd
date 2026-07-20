@@ -33,16 +33,19 @@ if [ $# -lt 2 ]; then
 fi
 
 VERSION=$1
-NOTES="${@:2}" # All remaining arguments as release notes
-NOTES_WITHOUT_TYPE="${NOTES#--type=fix }"
-NOTES_WITHOUT_TYPE="${NOTES_WITHOUT_TYPE#--type=feature }"
-
-if [[ "$NOTES" == --type=* ]] && [[ "$NOTES" != --type=fix\ * ]] && [[ "$NOTES" != --type=feature\ * ]]; then
-  echo -e "${RED}❌ Error: Release type must be fix or feature${NC}"
-  exit 1
+shift
+RELEASE_TYPE_ARG=""
+if [[ "$1" == --type=* ]]; then
+  if [[ "$1" != "--type=fix" && "$1" != "--type=feature" ]]; then
+    echo -e "${RED}❌ Error: Release type must be fix or feature${NC}"
+    exit 1
+  fi
+  RELEASE_TYPE_ARG=$1
+  shift
 fi
+NOTES="$*"
 
-if [ -z "$NOTES_WITHOUT_TYPE" ]; then
+if [ -z "$NOTES" ]; then
   echo -e "${RED}❌ Error: Release notes cannot be empty${NC}"
   exit 1
 fi
@@ -95,7 +98,11 @@ echo ""
 
 # Step 3: Generate update manifest
 echo -e "${YELLOW}📝 Step 3: Generating update manifest...${NC}"
-bun run update:generate "$VERSION" "$NOTES"
+if [ -n "$RELEASE_TYPE_ARG" ]; then
+  bun run update:generate "$VERSION" "$RELEASE_TYPE_ARG" "$NOTES"
+else
+  bun run update:generate "$VERSION" "$NOTES"
+fi
 
 if [ $? -ne 0 ]; then
   echo -e "${RED}❌ Failed to generate update manifest!${NC}"
