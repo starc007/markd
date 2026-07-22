@@ -42,6 +42,7 @@ import {
   MorphPopoverContent,
   MorphPopoverTrigger,
 } from "@/components/motion/popover-morph";
+import { ResizableSidebar } from "./ResizableSidebar";
 import { Sidebar } from "./Sidebar";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { Tooltip } from "@/components/ui/Tooltip";
@@ -50,8 +51,6 @@ import { useTodos } from "@/stores/todos";
 import { usePins } from "@/stores/pins";
 import { useUi } from "@/stores/ui";
 import { useVault } from "@/stores/vault";
-
-const SIDEBAR_WIDTH = 240;
 
 /** Absolute on-disk path for the current view — handy to hand to an agent. */
 function viewPath(
@@ -69,9 +68,11 @@ export function AppShell() {
   const view = useVault((s) => s.view);
   const root = useVault((s) => s.root);
   const sidebarHidden = useUi((s) => s.sidebarHidden);
+  const sidebarWidth = useUi((s) => s.sidebarWidth);
   const backlinksHidden = useUi((s) => s.backlinksHidden);
   const markdownSource = useUi((s) => s.markdownSource);
   const toggleSidebar = useUi((s) => s.toggleSidebar);
+  const setSidebarWidth = useUi((s) => s.setSidebarWidth);
   const toggleBacklinks = useUi((s) => s.toggleBacklinks);
   const toggleMarkdownSource = useUi((s) => s.toggleMarkdownSource);
   const createBookmarkTag = useBookmarks((s) => s.createTag);
@@ -139,18 +140,13 @@ export function AppShell() {
 
   return (
     <div className="flex h-full bg-bg">
-      {/* Collapse by animating width (spring) with the panel clipped at a
-          fixed inner width — slides cleanly, no content reflow-jitter. */}
-      <motion.div
-        animate={{ width: sidebarHidden ? 0 : SIDEBAR_WIDTH }}
-        initial={false}
-        transition={SPRING_PANEL}
-        className="h-full shrink-0 overflow-hidden"
+      <ResizableSidebar
+        hidden={sidebarHidden}
+        width={sidebarWidth}
+        onWidthChange={setSidebarWidth}
       >
-        <div style={{ width: SIDEBAR_WIDTH }} className="h-full">
-          <Sidebar />
-        </div>
-      </motion.div>
+        <Sidebar />
+      </ResizableSidebar>
 
       <main className="relative flex min-w-0 flex-1 flex-col">
         {/* Row 1 — titlebar: sidebar toggle + open-note tabs. The strip is

@@ -1,4 +1,8 @@
 import { create } from "zustand";
+import {
+  SIDEBAR_DEFAULT_WIDTH,
+  clampSidebarWidth,
+} from "@/lib/sidebarResize";
 
 type SaveState = "idle" | "saving" | "error";
 export type SettingsPage = "general" | "cloud" | "appearance" | "shortcuts";
@@ -8,6 +12,7 @@ interface UiState {
   settingsOpen: boolean;
   settingsPage: SettingsPage;
   sidebarHidden: boolean;
+  sidebarWidth: number;
   backlinksHidden: boolean;
   markdownSource: boolean;
   saveState: SaveState;
@@ -16,6 +21,7 @@ interface UiState {
   openSettings: (page?: SettingsPage) => void;
   setSettingsPage: (page: SettingsPage) => void;
   toggleSidebar: () => void;
+  setSidebarWidth: (width: number) => void;
   toggleBacklinks: () => void;
   toggleMarkdownSource: () => void;
   setSaveState: (state: SaveState) => void;
@@ -26,6 +32,7 @@ export const useUi = create<UiState>((set, get) => ({
   settingsOpen: false,
   settingsPage: "general",
   sidebarHidden: false,
+  sidebarWidth: SIDEBAR_DEFAULT_WIDTH,
   backlinksHidden: true,
   markdownSource: false,
   saveState: "idle",
@@ -35,6 +42,8 @@ export const useUi = create<UiState>((set, get) => ({
     set({ settingsOpen: true, settingsPage }),
   setSettingsPage: (settingsPage) => set({ settingsPage }),
   toggleSidebar: () => set({ sidebarHidden: !get().sidebarHidden }),
+  setSidebarWidth: (sidebarWidth) =>
+    set({ sidebarWidth: clampSidebarWidth(sidebarWidth) }),
   toggleBacklinks: () => set({ backlinksHidden: !get().backlinksHidden }),
   toggleMarkdownSource: () =>
     set({ markdownSource: !get().markdownSource }),
