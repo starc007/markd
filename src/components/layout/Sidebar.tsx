@@ -32,8 +32,9 @@ export function Sidebar() {
 
   return (
     <aside
+      id="markd-sidebar"
       data-markd-sidebar
-      className="flex h-full w-[240px] shrink-0 flex-col border-r border-line-soft bg-panel"
+      className="flex h-full w-full shrink-0 flex-col border-r border-line-soft bg-panel"
     >
       {/* drag region + traffic-light clearance */}
       <div data-tauri-drag-region className="flex h-12 items-end px-3 pb-1" />

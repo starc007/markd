@@ -4,6 +4,7 @@ import type { View } from "@/lib/types";
 import { useBookmarks } from "@/stores/bookmarks";
 import { useTabs } from "@/stores/tabs";
 import { useTodos } from "@/stores/todos";
+import { useUi } from "@/stores/ui";
 import { useVault } from "@/stores/vault";
 
 /**
@@ -16,6 +17,7 @@ interface Session {
   view: View | null;
   todoFilter: string | null;
   bookmarkFilter: string | null;
+  sidebarWidth?: number;
 }
 
 const storageKey = (root: string) => `markd:session:${root}`;
@@ -28,6 +30,7 @@ function writeSession(root: string) {
     view: vault.view,
     todoFilter: useTodos.getState().tagFilter,
     bookmarkFilter: useBookmarks.getState().tagFilter,
+    sidebarWidth: useUi.getState().sidebarWidth,
   };
   try {
     localStorage.setItem(storageKey(root), JSON.stringify(data));
@@ -58,6 +61,9 @@ export function restoreSession(root: string) {
 
   useTodos.setState({ tagFilter: data.todoFilter ?? null });
   useBookmarks.setState({ tagFilter: data.bookmarkFilter ?? null });
+  if (data.sidebarWidth !== undefined) {
+    useUi.getState().setSidebarWidth(data.sidebarWidth);
+  }
 
   const view = data.view;
   if (view?.type === "note") {
@@ -89,6 +95,9 @@ export function initSessionSync() {
   });
   useBookmarks.subscribe((s, p) => {
     if (s.tagFilter !== p.tagFilter) saveSession();
+  });
+  useUi.subscribe((s, p) => {
+    if (s.sidebarWidth !== p.sidebarWidth) saveSession();
   });
   // Flush any pending debounced save before the window goes away.
   window.addEventListener("beforeunload", () => {
