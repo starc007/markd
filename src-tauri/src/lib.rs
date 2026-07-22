@@ -11,6 +11,7 @@ mod config;
 mod daily_notes;
 mod error;
 mod link_meta;
+mod linux_webkit;
 mod notes;
 mod pins;
 mod quick_capture;
@@ -24,6 +25,8 @@ use tauri_plugin_global_shortcut::ShortcutState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    linux_webkit::configure();
+
     let quick_capture = tauri_plugin_global_shortcut::Builder::new()
         .with_shortcut("Control+Shift+Space")
         .expect("valid Quick Capture shortcut")
