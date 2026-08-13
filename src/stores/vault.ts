@@ -204,7 +204,7 @@ export const useVault = create<VaultState>((set, get) => ({
   },
 
   createNote: async (dir) => {
-    try {
+    const promise = (async () => {
       const rel = await ipc.createNote(dir, "Untitled");
       await get().refreshTree();
       get().expandTo(rel);
@@ -212,13 +212,16 @@ export const useVault = create<VaultState>((set, get) => ({
       get().setView({ type: "note", rel });
       useTabs.getState().requestTitleFocus(rel);
       notifyBacklinksChanged();
-    } catch (err) {
-      oops(err);
-    }
+    })();
+    toast.promise(promise, {
+      loading: "Creating note...",
+      success: "Note created",
+      error: (err) => (err instanceof Error ? err.message : String(err)),
+    });
   },
 
   openDailyNote: async () => {
-    try {
+    const promise = (async () => {
       const now = new Date();
       const date = [
         now.getFullYear(),
@@ -230,27 +233,37 @@ export const useVault = create<VaultState>((set, get) => ({
       get().expandTo(rel);
       get().setView({ type: "note", rel });
       notifyBacklinksChanged();
-    } catch (err) {
-      oops(err);
-    }
+    })();
+    toast.promise(promise, {
+      loading: "Opening daily note...",
+      success: "Daily note opened",
+      error: (err) => (err instanceof Error ? err.message : String(err)),
+    });
   },
 
   createFolder: async (dir, name) => {
-    try {
+    const promise = (async () => {
       const rel = await ipc.createFolder(dir, name);
       await get().refreshTree();
       get().expandTo(`${rel}/x`);
       return rel;
-    } catch (err) {
-      oops(err);
+    })();
+    toast.promise(promise, {
+      loading: "Creating folder...",
+      success: "Folder created",
+      error: (err) => (err instanceof Error ? err.message : String(err)),
+    });
+    try {
+      return await promise;
+    } catch {
       return null;
     }
   },
 
   renameEntry: async (rel, name) => {
-    try {
+    const { view } = get();
+    const promise = (async () => {
       const next = await ipc.renameEntry(rel, name);
-      const { view } = get();
       await get().refreshTree();
       remapRecents(set, get, rel, next);
       useTabs.getState().remap(rel, next);
@@ -262,15 +275,18 @@ export const useVault = create<VaultState>((set, get) => ({
         }
       }
       notifyNotesRewritten();
-    } catch (err) {
-      oops(err);
-    }
+    })();
+    toast.promise(promise, {
+      loading: "Renaming...",
+      success: "Renamed successfully",
+      error: (err) => (err instanceof Error ? err.message : String(err)),
+    });
   },
 
   moveEntry: async (rel, dir) => {
-    try {
+    const { view } = get();
+    const promise = (async () => {
       const next = await ipc.moveEntry(rel, dir);
-      const { view } = get();
       await get().refreshTree();
       get().expandTo(next);
       remapRecents(set, get, rel, next);
@@ -283,15 +299,18 @@ export const useVault = create<VaultState>((set, get) => ({
         }
       }
       notifyNotesRewritten();
-    } catch (err) {
-      oops(err);
-    }
+    })();
+    toast.promise(promise, {
+      loading: "Moving...",
+      success: "Moved successfully",
+      error: (err) => (err instanceof Error ? err.message : String(err)),
+    });
   },
 
   deleteEntry: async (rel) => {
-    try {
+    const { view } = get();
+    const promise = (async () => {
       await ipc.deleteEntry(rel);
-      const { view } = get();
       await get().refreshTree();
       const gone = (r: string) => r === rel || r.startsWith(`${rel}/`);
       set({ recentNotes: get().recentNotes.filter((r) => !gone(r)) });
@@ -307,13 +326,14 @@ export const useVault = create<VaultState>((set, get) => ({
         const next = right ?? survivors[survivors.length - 1] ?? null;
         get().setView(next ? { type: "note", rel: next } : null);
       }
-      toast("Moved to Trash", {
-        description: rel.split("/").pop()?.replace(/\.md$/, ""),
-      });
       notifyBacklinksChanged();
-    } catch (err) {
-      oops(err);
-    }
+    })();
+    toast.promise(promise, {
+      loading: "Moving to Trash...",
+      success: "Moved to Trash",
+      description: rel.split("/").pop()?.replace(/\.md$/, ""),
+      error: (err) => (err instanceof Error ? err.message : String(err)),
+    });
   },
 
   setTheme: async (theme) => {
