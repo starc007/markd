@@ -31,15 +31,14 @@ afterEach(() => {
 });
 
 describe("analytics safety", () => {
-  test("a failed provider cannot block the next provider or caller", () => {
+  test("an unavailable Tracwell client cannot block Google or the caller", () => {
     mutableEnv.NODE_ENV = "production";
     let googleEvents = 0;
     installWindow("/pricing", {
-      umami: { track: () => { throw new Error("provider unavailable"); } },
       gtag: () => { googleEvents += 1; },
     });
     markAnalyticsProviderReady("google");
-    markAnalyticsProviderReady("umami");
+    markAnalyticsProviderReady("tracwell");
 
     assert.doesNotThrow(() =>
       track("pricing_checkout_opened", { interval: "yearly" }),
@@ -51,7 +50,6 @@ describe("analytics safety", () => {
     mutableEnv.NODE_ENV = "production";
     let events = 0;
     installWindow("/s/public-note", {
-      umami: { track: () => { events += 1; } },
       gtag: () => { events += 1; },
     });
 
@@ -63,11 +61,10 @@ describe("analytics safety", () => {
     mutableEnv.NODE_ENV = "development";
     let events = 0;
     installWindow("/pricing", {
-      umami: { track: () => { events += 1; } },
       gtag: () => { events += 1; },
     });
     markAnalyticsProviderReady("google");
-    markAnalyticsProviderReady("umami");
+    markAnalyticsProviderReady("tracwell");
 
     track("pricing_page_viewed", { source: "website" });
     assert.equal(events, 0);

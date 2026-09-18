@@ -1,3 +1,5 @@
+import { createTracwell, type TracwellClient } from "tracwell";
+
 export type AnalyticsProperties = Record<string, string | number | boolean>;
 
 export type AnalyticsEventMap = {
@@ -26,22 +28,14 @@ declare global {
   interface Window {
     dataLayer?: unknown[];
     gtag?: (...args: unknown[]) => void;
-    umami?: {
-      track: {
-        (): void;
-        (event: string, data?: AnalyticsProperties): void;
-        (payload: AnalyticsProperties): void;
-      };
-    };
   }
 }
 
-export const UMAMI_WEBSITE_ID = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID;
-export const UMAMI_SRC =
-  process.env.NEXT_PUBLIC_UMAMI_SRC ?? "https://cloud.umami.is/script.js";
+export const TRACWELL_PROJECT_KEY =
+  "tw_live_7741af77ba1f485b95d7132245dca203";
 export const GOOGLE_ANALYTICS_ID = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID;
 
-type Provider = "google" | "umami";
+type Provider = "google" | "tracwell";
 type QueuedEvent = {
   event: AnalyticsEventName;
   properties: AnalyticsProperties;
@@ -50,9 +44,10 @@ type QueuedEvent = {
 const MAX_QUEUED_EVENTS = 100;
 const readyProviders: Record<Provider, boolean> = {
   google: !GOOGLE_ANALYTICS_ID,
-  umami: !UMAMI_WEBSITE_ID,
+  tracwell: false,
 };
 const queuedEvents: QueuedEvent[] = [];
+let tracwellClient: TracwellClient | undefined;
 
 export function isAnalyticsEnabled(): boolean {
   return process.env.NODE_ENV === "production";
@@ -60,6 +55,35 @@ export function isAnalyticsEnabled(): boolean {
 
 export function isAnalyticsExcludedPath(pathname: string): boolean {
   return pathname === "/s" || pathname.startsWith("/s/");
+}
+
+/**
+ * Creates the one browser-side client used by the site. This must only be
+ * called from a client lifecycle after `document` is available.
+ */
+export function initializeTracwell(): TracwellClient | undefined {
+  if (
+    typeof window === "undefined" ||
+    typeof document === "undefined" ||
+    tracwellClient
+  ) {
+    return tracwellClient;
+  }
+
+  try {
+    tracwellClient = createTracwell({
+      collectionMode: "product",
+      projectKey: TRACWELL_PROJECT_KEY,
+      consent: "granted",
+      respectDoNotTrack: true,
+    });
+  } catch {
+    // Analytics is best-effort and must never interrupt the site.
+  } finally {
+    markAnalyticsProviderReady("tracwell");
+  }
+
+  return tracwellClient;
 }
 
 export function track<E extends AnalyticsEventName>(
@@ -103,14 +127,17 @@ export function markAnalyticsProviderReady(provider: Provider): void {
 }
 
 function allProvidersReady(): boolean {
-  return readyProviders.google && readyProviders.umami;
+  return readyProviders.google && readyProviders.tracwell;
 }
 
-function sendEvent(event: AnalyticsEventName, properties: AnalyticsProperties): void {
+function sendEvent(
+  event: AnalyticsEventName,
+  properties: AnalyticsProperties,
+): void {
   try {
-    window.umami?.track(event, properties);
+    tracwellClient?.track(event, properties);
   } catch {
-    // One failed provider must not prevent other providers from receiving it.
+    // One failed provider must not prevent the other provider from receiving it.
   }
 
   try {
