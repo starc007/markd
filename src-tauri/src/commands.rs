@@ -5,6 +5,7 @@ use serde::Serialize;
 use tauri::{AppHandle, Manager, State};
 use tauri_plugin_dialog::DialogExt;
 
+use crate::agent::{self, AgentPromptResult, AgentProvider, AgentProviderInfo};
 use crate::backlinks::{self, BacklinkMention};
 use crate::bookmarks::{self, Bookmark};
 use crate::config::{self, Theme};
@@ -550,4 +551,19 @@ pub fn set_theme(app: AppHandle, theme: Theme) -> AppResult<()> {
 #[tauri::command]
 pub fn get_theme(app: AppHandle) -> Theme {
     config::load(&app).theme
+}
+
+#[tauri::command]
+pub fn agent_providers() -> Vec<AgentProviderInfo> {
+    agent::providers()
+}
+
+#[tauri::command]
+pub async fn agent_prompt(
+    state: State<'_, AppState>,
+    provider: AgentProvider,
+    prompt: String,
+) -> AppResult<AgentPromptResult> {
+    let root = state.root()?;
+    agent::prompt(provider, root, prompt).await
 }

@@ -1,5 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
+  AgentProvider,
+  AgentProviderInfo,
+  AgentPromptResult,
   BacklinkMention,
   CloudAccountStatus,
   CloudAccount,
@@ -135,4 +138,7 @@ export const ipc = {
     call<string>("save_image_asset", { data, extension }),
   setTheme: (theme: Theme) => call<void>("set_theme", { theme }),
   getTheme: () => call<Theme>("get_theme"),
+  agentProviders: () => call<AgentProviderInfo[]>("agent_providers"),
+  agentPrompt: (provider: AgentProvider, prompt: string) =>
+    call<AgentPromptResult>("agent_prompt", { provider, prompt }),
 };

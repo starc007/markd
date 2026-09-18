@@ -94,6 +94,21 @@ export interface PublishedNoteStatus {
   isOutdated: boolean;
 }
 
+export type AgentProvider = "claude" | "codex";
+
+export interface AgentProviderInfo {
+  id: AgentProvider;
+  name: string;
+  adapter: string;
+  auth: string;
+  canWrite: boolean;
+}
+
+export interface AgentPromptResult {
+  provider: AgentProvider;
+  text: string;
+}
+
 export type View =
   | { type: "note"; rel: string }
   | { type: "todos" }

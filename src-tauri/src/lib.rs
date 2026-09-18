@@ -1,3 +1,4 @@
+mod agent;
 mod agent_docs;
 mod assets;
 mod backlink_links;
@@ -101,6 +102,8 @@ pub fn run() {
             commands::save_image_asset,
             commands::set_theme,
             commands::get_theme,
+            commands::agent_providers,
+            commands::agent_prompt,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
