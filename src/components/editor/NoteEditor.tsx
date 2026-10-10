@@ -24,6 +24,7 @@ import {
 } from "@/lib/markdownPaste";
 import { flattenNotes } from "@/lib/tree";
 import { cx, debounce, noteTitle } from "@/lib/utils";
+import { countWords, countMarkdownWords, extractBodySelection } from "@/lib/wordCount";
 import { useTabs } from "@/stores/tabs";
 import { useUi } from "@/stores/ui";
 import { useVault } from "@/stores/vault";
@@ -74,6 +75,7 @@ export const NoteEditor = memo(function NoteEditor({
   const [slashMenu, setSlashMenu] = useState<SlashMenuState | null>(null);
   const [linkPicker, setLinkPicker] = useState<LinkPickerState | null>(null);
   const [words, setWords] = useState(0);
+  const [selectedWords, setSelectedWords] = useState(0);
   const [missing, setMissing] = useState(false);
   const [properties, setProperties] = useState<Property[]>([]);
   const [propertyAddRequest, setPropertyAddRequest] = useState(0);
@@ -86,6 +88,8 @@ export const NoteEditor = memo(function NoteEditor({
   } | null>(null);
 
   const relRef = useRef(rel);
+  const markdownSourceRef = useRef(markdownSource);
+  markdownSourceRef.current = markdownSource;
   // Frontmatter of the loaded note, kept out of the editor and re-attached on
   // save so the file's metadata survives round-trips.
   const frontmatter = useRef("");
@@ -346,11 +350,31 @@ export const NoteEditor = memo(function NoteEditor({
         pending.current = markdown;
         setSaveState("saving");
         debouncedPersist(markdown);
-        setWords(countWords(markdown));
+        const fullText = editor.state.doc.textBetween(
+          0,
+          editor.state.doc.content.size,
+          " ",
+          " ",
+        );
+        setWords(countWords(fullText));
+        const sel = editor.state.selection;
+        if (sel.empty) {
+          setSelectedWords(0);
+        } else {
+          const selectedText = editor.state.doc.textBetween(sel.from, sel.to, " ", " ");
+          setSelectedWords(countWords(selectedText));
+        }
         setContentVersion((value) => value + 1);
         updateSlashMenu(editor);
       },
       onSelectionUpdate({ editor }) {
+        const sel = editor.state.selection;
+        if (sel.empty) {
+          setSelectedWords(0);
+        } else {
+          const selectedText = editor.state.doc.textBetween(sel.from, sel.to, " ", " ");
+          setSelectedWords(countWords(selectedText));
+        }
         updateSlashMenu(editor);
       },
     },
@@ -367,7 +391,7 @@ export const NoteEditor = memo(function NoteEditor({
       pending.current = body;
       setSaveState("saving");
       debouncedPersist(body);
-      setWords(countWords(body));
+      setWords(countMarkdownWords(body));
       setContentVersion((value) => value + 1);
     },
     [debouncedPersist, setSaveState],
@@ -453,7 +477,19 @@ export const NoteEditor = memo(function NoteEditor({
         });
         swapping.current = false;
         setLoadNonce((value) => value + 1);
-        setWords(countWords(body));
+        setWords(
+          markdownSourceRef.current
+            ? countMarkdownWords(body)
+            : countWords(
+                editor.state.doc.textBetween(
+                  0,
+                  editor.state.doc.content.size,
+                  " ",
+                  " ",
+                ),
+              ),
+        );
+        setSelectedWords(0);
         // A freshly loaded note starts at the top.
         savedScroll.current = 0;
         if (scrollRef.current) scrollRef.current.scrollTop = 0;
@@ -479,9 +515,12 @@ export const NoteEditor = memo(function NoteEditor({
   useEffect(() => {
     if (!editor || previousSource.current === markdownSource) return;
     previousSource.current = markdownSource;
+    setSelectedWords(0);
 
     if (markdownSource) {
-      setRawText(joinFrontmatter(frontmatter.current, editor.getMarkdown()));
+      const fullMarkdown = joinFrontmatter(frontmatter.current, editor.getMarkdown());
+      setRawText(fullMarkdown);
+      setWords(countMarkdownWords(splitFrontmatter(fullMarkdown).body));
       return;
     }
 
@@ -494,6 +533,11 @@ export const NoteEditor = memo(function NoteEditor({
       contentType: "markdown",
     });
     swapping.current = false;
+    setWords(
+      countWords(
+        editor.state.doc.textBetween(0, editor.state.doc.content.size, " ", " "),
+      ),
+    );
   }, [editor, markdownSource, rawText]);
 
   // Flush any unsaved edit when the editor unmounts (tab closed / view gone).
@@ -526,12 +570,23 @@ export const NoteEditor = memo(function NoteEditor({
         });
         swapping.current = false;
         setLoadNonce((value) => value + 1);
-        setWords(countWords(body));
+        setWords(
+          markdownSourceRef.current
+            ? countMarkdownWords(body)
+            : countWords(
+                editor.state.doc.textBetween(
+                  0,
+                  editor.state.doc.content.size,
+                  " ",
+                  " ",
+                ),
+              ),
+        );
       }
     } catch {
       // note may have been deleted externally; tree refresh handles it
     }
-  }, [editor]);
+  }, [editor, markdownSource]);
 
   useEffect(() => {
     const onFocus = () => {
@@ -774,6 +829,10 @@ export const NoteEditor = memo(function NoteEditor({
                 value={rawText}
                 onChange={applyRawTextChange}
                 selection={noteFind.sourceSelection}
+                onSelectionChange={({ from, to, docText }) => {
+                  const selectedText = extractBodySelection(docText, from, to);
+                  setSelectedWords(countMarkdownWords(selectedText));
+                }}
               />
             </Suspense>
           ) : (
@@ -825,7 +884,9 @@ export const NoteEditor = memo(function NoteEditor({
             (words === 0 || missing) && "opacity-0",
           )}
         >
-          {words} {words === 1 ? "word" : "words"}
+          {selectedWords > 0
+            ? `${selectedWords} of ${words} ${words === 1 ? "word" : "words"}`
+            : `${words} ${words === 1 ? "word" : "words"}`}
         </div>
       )}
       {active && publishSnapshot && (
@@ -841,8 +902,3 @@ export const NoteEditor = memo(function NoteEditor({
 });
 
 type EditorInstance = ReturnType<typeof useEditor>;
-
-function countWords(markdown: string) {
-  const text = markdown.trim();
-  return text ? text.split(/\s+/).filter(Boolean).length : 0;
-}

@@ -60,16 +60,25 @@ export function MarkdownSourceEditor({
   value,
   onChange,
   selection,
+  onSelectionChange,
 }: {
   value: string;
   onChange: (value: string) => void;
   selection?: { from: number; to: number; nonce: number } | null;
+  onSelectionChange?: (range: {
+    from: number;
+    to: number;
+    text: string;
+    docText: string;
+  }) => void;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const syncingRef = useRef(false);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  const onSelectionChangeRef = useRef(onSelectionChange);
+  onSelectionChangeRef.current = onSelectionChange;
 
   useEffect(() => {
     if (!hostRef.current) return;
@@ -91,12 +100,35 @@ export function MarkdownSourceEditor({
             if (update.docChanged && !syncingRef.current) {
               onChangeRef.current(update.state.doc.toString());
             }
+            if (update.selectionSet || update.docChanged) {
+              if (onSelectionChangeRef.current) {
+                const sel = update.state.selection.main;
+                const text = sel.empty
+                  ? ""
+                  : update.state.sliceDoc(sel.from, sel.to);
+                onSelectionChangeRef.current({
+                  from: sel.from,
+                  to: sel.to,
+                  text,
+                  docText: update.state.doc.toString(),
+                });
+              }
+            }
           }),
         ],
       }),
     });
     viewRef.current = view;
     view.focus();
+
+    // Report initial selection on mount (empty selection) so stale selection counts from other modes are cleared.
+    const initialSel = view.state.selection.main;
+    onSelectionChangeRef.current?.({
+      from: initialSel.from,
+      to: initialSel.to,
+      text: initialSel.empty ? "" : view.state.sliceDoc(initialSel.from, initialSel.to),
+      docText: view.state.doc.toString(),
+    });
 
     return () => {
       view.destroy();
