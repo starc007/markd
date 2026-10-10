@@ -162,33 +162,50 @@ pub fn load_tree(state: State<'_, AppState>) -> AppResult<Vec<TreeNode>> {
 // ---- notes ----
 
 #[tauri::command]
-pub fn read_note(state: State<'_, AppState>, rel: String) -> AppResult<String> {
-    notes::read_note(&state.root()?, &rel)
+pub async fn read_note(state: State<'_, AppState>, rel: String) -> AppResult<String> {
+    let root = state.root()?;
+    tauri::async_runtime::spawn_blocking(move || notes::read_note(&root, &rel))
+        .await
+        .map_err(|e| AppError::Other(e.to_string()))?
 }
 
 #[tauri::command]
-pub fn write_note(state: State<'_, AppState>, rel: String, content: String) -> AppResult<()> {
-    notes::write_note(&state.root()?, &rel, &content)
+pub async fn write_note(state: State<'_, AppState>, rel: String, content: String) -> AppResult<()> {
+    let root = state.root()?;
+    tauri::async_runtime::spawn_blocking(move || notes::write_note(&root, &rel, &content))
+        .await
+        .map_err(|e| AppError::Other(e.to_string()))?
 }
 
 #[tauri::command]
-pub fn create_note(state: State<'_, AppState>, dir: String, title: String) -> AppResult<String> {
-    notes::create_note(&state.root()?, &dir, &title)
+pub async fn create_note(state: State<'_, AppState>, dir: String, title: String) -> AppResult<String> {
+    let root = state.root()?;
+    tauri::async_runtime::spawn_blocking(move || notes::create_note(&root, &dir, &title))
+        .await
+        .map_err(|e| AppError::Other(e.to_string()))?
 }
 
 #[tauri::command]
-pub fn create_note_with_content(
+pub async fn create_note_with_content(
     state: State<'_, AppState>,
     dir: String,
     title: String,
     content: String,
 ) -> AppResult<String> {
-    notes::create_note_with_content(&state.root()?, &dir, &title, &content)
+    let root = state.root()?;
+    tauri::async_runtime::spawn_blocking(move || {
+        notes::create_note_with_content(&root, &dir, &title, &content)
+    })
+    .await
+    .map_err(|e| AppError::Other(e.to_string()))?
 }
 
 #[tauri::command]
-pub fn open_daily_note(state: State<'_, AppState>, date: String) -> AppResult<String> {
-    daily_notes::open_or_create(&state.root()?, &date)
+pub async fn open_daily_note(state: State<'_, AppState>, date: String) -> AppResult<String> {
+    let root = state.root()?;
+    tauri::async_runtime::spawn_blocking(move || daily_notes::open_or_create(&root, &date))
+        .await
+        .map_err(|e| AppError::Other(e.to_string()))?
 }
 
 #[tauri::command]
@@ -202,32 +219,50 @@ pub fn close_quick_capture(app: AppHandle) -> AppResult<()> {
 }
 
 #[tauri::command]
-pub fn create_folder(state: State<'_, AppState>, dir: String, name: String) -> AppResult<String> {
-    notes::create_folder(&state.root()?, &dir, &name)
+pub async fn create_folder(state: State<'_, AppState>, dir: String, name: String) -> AppResult<String> {
+    let root = state.root()?;
+    tauri::async_runtime::spawn_blocking(move || notes::create_folder(&root, &dir, &name))
+        .await
+        .map_err(|e| AppError::Other(e.to_string()))?
 }
 
 #[tauri::command]
-pub fn rename_entry(state: State<'_, AppState>, rel: String, name: String) -> AppResult<String> {
-    notes::rename_entry(&state.root()?, &rel, &name)
+pub async fn rename_entry(state: State<'_, AppState>, rel: String, name: String) -> AppResult<String> {
+    let root = state.root()?;
+    tauri::async_runtime::spawn_blocking(move || notes::rename_entry(&root, &rel, &name))
+        .await
+        .map_err(|e| AppError::Other(e.to_string()))?
 }
 
 #[tauri::command]
-pub fn move_entry(state: State<'_, AppState>, rel: String, dir: String) -> AppResult<String> {
-    notes::move_entry(&state.root()?, &rel, &dir)
+pub async fn move_entry(state: State<'_, AppState>, rel: String, dir: String) -> AppResult<String> {
+    let root = state.root()?;
+    tauri::async_runtime::spawn_blocking(move || notes::move_entry(&root, &rel, &dir))
+        .await
+        .map_err(|e| AppError::Other(e.to_string()))?
 }
 
 #[tauri::command]
-pub fn delete_entry(state: State<'_, AppState>, rel: String) -> AppResult<()> {
-    notes::delete_entry(&state.root()?, &rel)
+pub async fn delete_entry(state: State<'_, AppState>, rel: String) -> AppResult<()> {
+    println!("delete_entry: {}", rel);
+    let root = state.root()?;
+    tauri::async_runtime::spawn_blocking(move || notes::delete_entry(&root, &rel))
+        .await
+        .map_err(|e| AppError::Other(e.to_string()))?
 }
 
 #[tauri::command]
-pub fn search_notes(
+pub async fn search_notes(
     state: State<'_, AppState>,
     query: String,
     limit: Option<usize>,
 ) -> AppResult<Vec<SearchHit>> {
-    search::search_notes(&state.root()?, &query, limit.unwrap_or(30))
+    let root = state.root()?;
+    tauri::async_runtime::spawn_blocking(move || {
+        search::search_notes(&root, &query, limit.unwrap_or(30))
+    })
+    .await
+    .map_err(|e| AppError::Other(e.to_string()))?
 }
 
 #[tauri::command]
